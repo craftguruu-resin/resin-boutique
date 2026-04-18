@@ -128,10 +128,13 @@ function buildBillSvg(p) {
     var it = items[i];
     var y0 = startY + i * rowH;
     var lineAmt = (it.unitPrice || 0) * (it.qty || 1);
-    var title = esc(it.name);
+    var szRaw = String(it.sizeLabel || "").trim();
+    var nameRaw = String(it.name || "").trim() || "Item";
+    var rawTitle = szRaw ? nameRaw + " — " + szRaw : nameRaw;
+    var title = esc(rawTitle);
     if (title.length > 46) title = title.slice(0, 43) + "…";
     var skuPart = String(it.sku || "").trim() ? esc(String(it.sku || "").trim()) + " · " : "";
-    var sub = skuPart + esc(it.sizeLabel || "") + " · Qty " + (it.qty || 1);
+    var sub = skuPart + "Qty " + (it.qty || 1) + " · " + fmtInr(it.unitPrice || 0) + " each";
     var tUri = thumbUris[i] || null;
 
     if (i > 0) {

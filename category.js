@@ -391,10 +391,14 @@
         (D.countOfferedSizesForProduct && D.countOfferedSizesForProduct(p) === 1 ? "" : "s") +
         "</p>" +
         '<div class="product-meta">' +
-        '<span class="price-note">Tap for sizes</span>' +
-        '<a class="add-btn add-btn--mini" href="product.html?id=' +
-        encodeURIComponent(p.id) +
-        '">Size &amp; price →</a>' +
+        '<span class="price-note">' +
+        (oos ? "Unavailable" : "Tap for sizes") +
+        "</span>" +
+        (oos
+          ? '<span class="add-btn add-btn--mini add-btn--mini--disabled" aria-disabled="true">Out of stock</span>'
+          : '<a class="add-btn add-btn--mini" href="product.html?id=' +
+            encodeURIComponent(p.id) +
+            '">Size &amp; price →</a>') +
         "</div>" +
         "</div>";
       els.productGrid.appendChild(card);

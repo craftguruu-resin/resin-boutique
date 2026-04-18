@@ -4,6 +4,8 @@
   var V = window.CraftguruVendor;
   if (!V) return;
 
+  var lastHeroSettings = null;
+
   function base() {
     return String(V.apiBase() || "").replace(/\/+$/, "");
   }
@@ -35,11 +37,11 @@
   function setPreviewAnim(raw) {
     var ring = document.getElementById("vhPreviewRing");
     if (!ring) return;
-    var a = String(raw || "orbit")
+    var a = String(raw || "slide")
       .toLowerCase()
       .replace(/[^a-z0-9-]/g, "");
-    if (!a) a = "orbit";
-    if (a === "none" || a === "static") {
+    if (!a) a = "slide";
+    if (a === "none" || a === "static" || a === "slide") {
       ring.removeAttribute("data-hero-anim");
     } else {
       ring.setAttribute("data-hero-anim", a);
@@ -82,7 +84,7 @@
       img.removeAttribute("data-cg-preview-url");
     }
     img.src = V.vendorPageHref("media/brand-craftguru.png");
-    setPreviewAnim("orbit");
+    setPreviewAnim("slide");
   }
 
   function syncPreviewFromFirstSlide(slides) {
@@ -103,7 +105,36 @@
     setPreviewAnim(s0.animation || "orbit");
   }
 
-  function renderList(slides) {
+  function applyPlaybackForm(settings) {
+    var inp = document.getElementById("vhIntervalSec");
+    if (!inp || !settings) return;
+    var sec = (Number(settings.carouselIntervalMs) || 2000) / 1000;
+    if (!Number.isFinite(sec)) sec = 2;
+    inp.value = String(Math.round(sec * 10) / 10);
+  }
+
+  function putHeroSettings(body) {
+    return fetch(base() + "/api/vendor/hero-settings", {
+      method: "PUT",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: JSON.stringify(body || {}),
+      cache: "no-store",
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var j = {};
+        try {
+          j = text ? JSON.parse(text) : {};
+        } catch (_) {}
+        if (!res.ok || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "Save failed");
+        }
+        return j.heroSettings || null;
+      });
+    });
+  }
+
+  function renderList(slides, settings) {
+    lastHeroSettings = settings || lastHeroSettings;
     var ul = document.getElementById("vhList");
     var empty = document.getElementById("vhEmpty");
     if (!ul || !empty) return;
@@ -115,21 +146,29 @@
       return;
     }
     empty.style.display = "none";
+    var pinId = settings && settings.singleSlideId != null ? Number(settings.singleSlideId) : NaN;
+    var mode = settings && String(settings.displayMode || "").toLowerCase() === "single" ? "single" : "carousel";
     slides.forEach(function (s) {
       var li = document.createElement("li");
       li.style.display = "flex";
       li.style.alignItems = "center";
       li.style.gap = "0.75rem";
       li.style.flexWrap = "wrap";
+      var isPinned = mode === "single" && Number.isFinite(pinId) && pinId === Number(s.id);
       li.innerHTML =
         '<img src="' +
         esc(imgHref(s.image)) +
         '" alt="" width="120" height="120" style="object-fit:cover;border-radius:8px;border:1px solid rgba(15,23,42,.1)" />' +
         "<div style=\"flex:1;min-width:8rem\"><strong>#" +
         esc(String(s.id)) +
-        "</strong><br /><span class=\"vs-muted\">" +
+        "</strong>" +
+        (isPinned ? ' <span class="vs-pill" style="margin-left:0.35rem">Fixed hero</span>' : "") +
+        "<br /><span class=\"vs-muted\">" +
         esc(s.animation || "orbit") +
         "</span></div>" +
+        '<button type="button" class="vs-btn vs-btn--ghost vh-pin" data-id="' +
+        esc(String(s.id)) +
+        '">Set fixed hero</button>' +
         '<button type="button" class="vs-btn vs-btn--ghost vs-btn--danger vh-del" data-id="' +
         esc(String(s.id)) +
         '">Remove</button>';
@@ -138,8 +177,8 @@
     syncPreviewFromFirstSlide(slides);
   }
 
-  function loadSlides() {
-    showMsg("", false);
+  function loadSlides(opts) {
+    if (!opts || !opts.quiet) showMsg("", false);
     return fetch(base() + "/api/catalog/hero-slides", { cache: "no-store" })
       .then(function (res) {
         return res.json();
@@ -148,7 +187,9 @@
         if (!j || !j.ok) {
           throw new Error((j && j.error) || "Load failed");
         }
-        renderList(j.slides || []);
+        var settings = j.heroSettings || null;
+        applyPlaybackForm(settings);
+        renderList(j.slides || [], settings);
       })
       .catch(function (e) {
         showMsg(String((e && e.message) || e), true);
@@ -199,7 +240,62 @@
         });
     });
 
+    var ivBtn = document.getElementById("vhSaveInterval");
+    if (ivBtn) {
+      ivBtn.addEventListener("click", function () {
+        var inp = document.getElementById("vhIntervalSec");
+        var sec = inp ? parseFloat(String(inp.value || "2"), 10) : 2;
+        if (!Number.isFinite(sec)) sec = 2;
+        showMsg("Saving…", false);
+        putHeroSettings({ carouselIntervalSeconds: sec })
+          .then(function (s) {
+            applyPlaybackForm(s);
+            return loadSlides({ quiet: true });
+          })
+          .then(function () {
+            showMsg("Timing saved.", false);
+          })
+          .catch(function (e) {
+            showMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
+
+    var carBtn = document.getElementById("vhCarouselMode");
+    if (carBtn) {
+      carBtn.addEventListener("click", function () {
+        showMsg("Saving…", false);
+        putHeroSettings({ displayMode: "carousel" })
+          .then(function () {
+            return loadSlides({ quiet: true });
+          })
+          .then(function () {
+            showMsg("Carousel mode — all slides rotate.", false);
+          })
+          .catch(function (e) {
+            showMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
+
     document.getElementById("vhList").addEventListener("click", function (ev) {
+      var pin = ev.target && ev.target.closest ? ev.target.closest(".vh-pin") : null;
+      if (pin) {
+        var pid = pin.getAttribute("data-id");
+        if (!pid) return;
+        showMsg("Saving…", false);
+        putHeroSettings({ displayMode: "single", singleSlideId: Number(pid) })
+          .then(function () {
+            return loadSlides({ quiet: true });
+          })
+          .then(function () {
+            showMsg("Fixed hero — guest site shows this slide only (no rotation).", false);
+          })
+          .catch(function (e) {
+            window.alert(String((e && e.message) || e));
+          });
+        return;
+      }
       var b = ev.target && ev.target.closest ? ev.target.closest(".vh-del") : null;
       if (!b) return;
       var id = b.getAttribute("data-id");

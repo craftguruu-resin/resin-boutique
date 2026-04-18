@@ -19,6 +19,29 @@
     return D.getOfferedSizeKeysForProduct(product);
   }
 
+  /** Default cart size: lowest MRP among offered keys; ties prefer s → m → l. */
+  function pickDefaultSizeKey(p, keys) {
+    if (!keys || !keys.length) return "m";
+    if (!p || !p.prices) return keys[0];
+    var order = { s: 0, m: 1, l: 2 };
+    var best = keys[0];
+    var bestP = Number(p.prices[best]);
+    for (var i = 1; i < keys.length; i++) {
+      var k = keys[i];
+      var pr = Number(p.prices[k]);
+      if (!Number.isFinite(pr)) continue;
+      if (!Number.isFinite(bestP) || pr < bestP) {
+        best = k;
+        bestP = pr;
+      } else if (pr === bestP) {
+        var ok = order[k] != null ? order[k] : 99;
+        var ob = order[best] != null ? order[best] : 99;
+        if (ok < ob) best = k;
+      }
+    }
+    return best;
+  }
+
   function refreshSizePickPrices() {
     if (!product || !els.sizes) return;
     offeredSizeKeys().forEach(function (key) {
@@ -47,7 +70,6 @@
     qtyTierHint: document.getElementById("qtyTierHint"),
     hint: document.getElementById("sizeHint"),
     addBtn: document.getElementById("addToCartBtn"),
-    addBtnTop: document.getElementById("addToCartTopBtn"),
     back: document.getElementById("backLink"),
     crumbSub: document.getElementById("productCrumbSub"),
     crumbSubBack: document.getElementById("crumbSubBack"),
@@ -82,7 +104,6 @@
     els.qtyTierHint = document.getElementById("qtyTierHint");
     els.hint = document.getElementById("sizeHint");
     els.addBtn = document.getElementById("addToCartBtn");
-    els.addBtnTop = document.getElementById("addToCartTopBtn");
     els.back = document.getElementById("backLink");
     els.crumbSub = document.getElementById("productCrumbSub");
     els.crumbSubBack = document.getElementById("crumbSubBack");
@@ -129,10 +150,6 @@
       els.addBtn.disabled = oos;
       els.addBtn.setAttribute("aria-disabled", oos ? "true" : "false");
     }
-    if (els.addBtnTop) {
-      els.addBtnTop.disabled = oos;
-      els.addBtnTop.setAttribute("aria-disabled", oos ? "true" : "false");
-    }
     if (els.sizes) {
       els.sizes.querySelectorAll(".size-pick").forEach(function (b) {
         b.disabled = oos;
@@ -167,7 +184,7 @@
     render();
   }
 
-  var selected = "m";
+  var selected = "";
   var selectedQty = 1;
 
   function escapeHtml(s) {
@@ -274,7 +291,7 @@
       if (q === 1) {
         els.priceBreakdown.textContent = "1 × " + fmt(unit) + " · MRP per piece";
       } else {
-        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " ea · same MRP per piece";
+        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " each · same MRP per piece";
       }
     }
     if (els.priceSizeLabel) {
@@ -332,7 +349,7 @@
         product.name +
         " sits in our " +
         catLabel +
-        " line from the Jaipur bench. Pick a size, set quantity, and add to cart — every piece is the same MRP per unit.";
+        " line from the Jaipur bench. We start with the smallest-priced format; change size below, set quantity, then add to cart — same MRP per unit for each format.";
     }
 
     var rgb = document.getElementById("productReturnGiftBadge");
@@ -353,8 +370,24 @@
     }
 
     var offered = offeredSizeKeys();
-    if (offered.indexOf(selected) < 0) {
-      selected = offered[0] || "m";
+    if (!selected || offered.indexOf(selected) < 0) {
+      selected = pickDefaultSizeKey(product, offered);
+    }
+
+    var multiHint = document.getElementById("productSizeMultiHint");
+    if (multiHint) {
+      if (offered.length > 1) {
+        var curNm = D.getSizeLabelNameForProduct
+          ? D.getSizeLabelNameForProduct(product, selected)
+          : String(selected || "").toUpperCase();
+        multiHint.hidden = false;
+        multiHint.textContent =
+          curNm +
+          " is selected (lowest MRP for this piece). For other formats and prices — tap a size below.";
+      } else {
+        multiHint.hidden = true;
+        multiHint.textContent = "";
+      }
     }
 
     if (els.sizes) {
@@ -426,12 +459,10 @@
     refreshQtyUi();
 
     function pulseAddButtons() {
-      [els.addBtn, els.addBtnTop].forEach(function (b) {
-        if (!b) return;
-        b.classList.remove("btn-add-lg--burst");
-        void b.offsetWidth;
-        b.classList.add("btn-add-lg--burst");
-      });
+      if (!els.addBtn) return;
+      els.addBtn.classList.remove("btn-add-lg--burst");
+      void els.addBtn.offsetWidth;
+      els.addBtn.classList.add("btn-add-lg--burst");
     }
 
     function wireAddToCart(btn) {
@@ -465,21 +496,18 @@
           var t = document.getElementById("cartToggle");
           if (t) t.click();
         }
-        [els.addBtn, els.addBtnTop].forEach(function (b) {
-          if (!b) return;
-          var lab = b.querySelector(".btn-add-premium__text");
+        if (els.addBtn) {
+          var lab = els.addBtn.querySelector(".btn-add-premium__text");
           if (lab) lab.textContent = "Added ✓";
-          b.classList.add("btn-add-lg--success");
-          b.classList.remove("btn-add-lg--burst");
-        });
+          els.addBtn.classList.add("btn-add-lg--success");
+          els.addBtn.classList.remove("btn-add-lg--burst");
+        }
         pulseAddButtons();
         setTimeout(function () {
-          [els.addBtn, els.addBtnTop].forEach(function (b) {
-            if (!b) return;
-            var lab = b.querySelector(".btn-add-premium__text");
-            if (lab) lab.textContent = "Add to cart";
-            b.classList.remove("btn-add-lg--success");
-          });
+          if (!els.addBtn) return;
+          var lab2 = els.addBtn.querySelector(".btn-add-premium__text");
+          if (lab2) lab2.textContent = "Add to cart";
+          els.addBtn.classList.remove("btn-add-lg--success");
         }, 1600);
       });
     }
@@ -488,7 +516,6 @@
       els.addLabel = els.addBtn.querySelector(".btn-add-premium__text");
     }
     wireAddToCart(els.addBtn);
-    wireAddToCart(els.addBtnTop);
 
     applyOutOfStockUi();
 
@@ -500,45 +527,117 @@
     bindProductImageZoom();
   }
 
+  function productPagePrefersReducedMotion() {
+    try {
+      return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function bindProductImageZoom() {
     var host = document.getElementById("productZoomHost");
     var img = document.getElementById("productImage");
-    var lens = document.getElementById("productZoomLens");
-    if (!host || !img || !lens) return;
+    if (!host || !img) return;
     if (host.dataset.cgZoomBound === "1") return;
     host.dataset.cgZoomBound = "1";
-    var Z = 2.35;
-    var lensR = 70;
-    function hide() {
-      lens.style.opacity = "0";
-      lens.style.visibility = "hidden";
+
+    if (productPagePrefersReducedMotion()) {
+      return;
     }
-    function onMove(e) {
-      if (!img.naturalWidth || !img.naturalHeight) return;
+
+    var scale = 1;
+    var panX = 0;
+    var panY = 0;
+    var minScale = 1;
+    var maxScale = 3.5;
+    var drag = null;
+
+    function applyTransform() {
+      img.style.transformOrigin = "center center";
+      img.style.transform = "translate3d(" + panX + "px," + panY + "px,0) scale(" + scale + ")";
+    }
+
+    function clampPan() {
       var r = host.getBoundingClientRect();
-      var x = e.clientX - r.left;
-      var y = e.clientY - r.top;
-      if (x < 0 || y < 0 || x > r.width || y > r.height) {
-        hide();
+      var w = r.width;
+      var h = r.height;
+      if (w < 1 || h < 1) return;
+      var margin = Math.max(w, h) * 0.35 * (scale - 1);
+      var maxX = margin + w * 0.15;
+      var maxY = margin + h * 0.15;
+      panX = Math.max(-maxX, Math.min(maxX, panX));
+      panY = Math.max(-maxY, Math.min(maxY, panY));
+    }
+
+    function resetView() {
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      host.classList.remove("product-hero-img--is-zoomed", "product-hero-img--is-panning");
+      applyTransform();
+    }
+
+    function onWheel(e) {
+      if (!img.naturalWidth) return;
+      var dy = e.deltaY;
+      if (e.deltaMode === 1) dy *= 14;
+      else if (e.deltaMode === 2) dy *= host.clientHeight || 480;
+      var factor = 1 - dy * 0.00135;
+      if (factor < 0.88) factor = 0.88;
+      if (factor > 1.12) factor = 1.12;
+      var next = scale * factor;
+      if (next < minScale + 0.02) {
+        resetView();
+        e.preventDefault();
         return;
       }
-      var url = img.currentSrc || img.src;
-      lens.style.width = lensR * 2 + "px";
-      lens.style.height = lensR * 2 + "px";
-      lens.style.left = Math.max(0, Math.min(r.width - lensR * 2, x - lensR)) + "px";
-      lens.style.top = Math.max(0, Math.min(r.height - lensR * 2, y - lensR)) + "px";
-      lens.style.backgroundImage = "url(" + JSON.stringify(String(url)) + ")";
-      lens.style.backgroundRepeat = "no-repeat";
-      lens.style.backgroundSize = r.width * Z + "px " + r.height * Z + "px";
-      var bx = (x / r.width) * (r.width * Z) - lensR;
-      var by = (y / r.height) * (r.height * Z) - lensR;
-      lens.style.backgroundPosition = -bx + "px " + -by + "px";
-      lens.style.opacity = "1";
-      lens.style.visibility = "visible";
+      next = Math.min(maxScale, Math.max(minScale, next));
+      e.preventDefault();
+      scale = next;
+      if (scale <= minScale + 0.001) {
+        resetView();
+        return;
+      }
+      clampPan();
+      host.classList.add("product-hero-img--is-zoomed");
+      applyTransform();
     }
-    host.addEventListener("mousemove", onMove);
-    host.addEventListener("mouseleave", hide);
-    hide();
+
+    function onDown(e) {
+      if (scale <= 1.02) return;
+      if (e.button !== 0) return;
+      drag = { sx: e.clientX, sy: e.clientY, ox: panX, oy: panY };
+      host.classList.add("product-hero-img--is-panning");
+    }
+
+    function onUp() {
+      if (drag) {
+        drag = null;
+        host.classList.remove("product-hero-img--is-panning");
+      }
+    }
+
+    function onMove(e) {
+      if (!drag) return;
+      panX = drag.ox + (e.clientX - drag.sx);
+      panY = drag.oy + (e.clientY - drag.sy);
+      clampPan();
+      applyTransform();
+    }
+
+    host.addEventListener("wheel", onWheel, { passive: false });
+    host.addEventListener("mousedown", onDown);
+    window.addEventListener("mouseup", onUp);
+    window.addEventListener("mousemove", onMove);
+    host.addEventListener("dblclick", function (ev) {
+      if (ev.target === img || host.contains(ev.target)) resetView();
+    });
+    img.addEventListener("load", function () {
+      resetView();
+    });
+
+    applyTransform();
   }
 
   var productRootEl = document.getElementById("productRoot");

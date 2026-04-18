@@ -75,6 +75,22 @@ function ensureVendorInventoryColumns() {
     })
     .then(function () {
       return p.query(
+        "CREATE TABLE IF NOT EXISTS storefront_hero_settings (" +
+          "id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1)," +
+          "display_mode VARCHAR(20) NOT NULL DEFAULT 'carousel'," +
+          "carousel_interval_ms INT NOT NULL DEFAULT 2000," +
+          "single_slide_id INT NULL REFERENCES storefront_hero_slides(id) ON DELETE SET NULL," +
+          "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+          ")"
+      );
+    })
+    .then(function () {
+      return p.query(
+        "INSERT INTO storefront_hero_settings (id) SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM storefront_hero_settings WHERE id = 1)"
+      );
+    })
+    .then(function () {
+      return p.query(
         "CREATE TABLE IF NOT EXISTS raw_materials (" +
           "id VARCHAR(120) PRIMARY KEY," +
           "name VARCHAR(500) NOT NULL," +

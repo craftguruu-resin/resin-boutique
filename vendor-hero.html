@@ -19,11 +19,26 @@
         <div>
           <h1 class="vs-topbar__title">Homepage hero</h1>
           <p class="vs-topbar__sub">
-            Upload showcase images for the guest homepage disc. Pick an animation preset per slide. Empty list keeps the default catalog hero.
+            Upload multiple offer images for the guest homepage disc, set how fast they rotate, or pin one slide as a fixed hero while a promotion runs.
           </p>
         </div>
       </header>
       <div class="vs-content">
+        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
+          <h2 class="vs-card__title" style="margin-top: 0">Homepage playback</h2>
+          <p class="vs-muted" style="margin-top: 0">
+            <strong>Rotate all slides</strong> runs your images in order with the delay below.
+            <strong>Set fixed hero</strong> on a row shows only that image (no rotation, no motion) until you return to carousel.
+          </p>
+          <div class="vs-row-actions" style="flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; margin-bottom: 0.5rem">
+            <div class="vs-field" style="margin: 0">
+              <label for="vhIntervalSec">Seconds between slides</label>
+              <input type="number" id="vhIntervalSec" min="1.5" max="60" step="0.5" value="2" style="width: 6rem" />
+            </div>
+            <button type="button" class="vs-btn vs-btn--primary" id="vhSaveInterval">Save timing</button>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vhCarouselMode">Rotate all slides</button>
+          </div>
+        </div>
         <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
           <h2 class="vs-card__title" style="margin-top: 0">Add hero slide</h2>
           <form id="vhAddForm" class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.75rem">
@@ -32,18 +47,11 @@
               <input type="file" id="vhImage" name="image" accept="image/jpeg,image/png,image/webp" required />
             </div>
             <div class="vs-field" style="margin: 0; min-width: 13rem">
-              <label for="vhAnim">Animation</label>
+              <label for="vhAnim">Motion on this slide</label>
               <select id="vhAnim" name="animation">
-                <option value="orbit" selected>Site default — Orbit 3D</option>
-                <option value="none">Static (no motion)</option>
-                <option value="drift">Drift parallax</option>
-                <option value="prism">Prism tone</option>
-                <option value="glide">Glide float</option>
-                <option value="bloom">Bloom pulse</option>
-                <option value="sway">Sway tilt</option>
-                <option value="breathe">Breathe scale</option>
-                <option value="tilt">Tilt perspective</option>
-                <option value="pulse-soft">Soft pulse</option>
+                <option value="slide" selected>Slide — new photo from the right</option>
+                <option value="none">Static (no ring motion)</option>
+                <option value="orbit">Slow orbit (single-slide / fixed hero only)</option>
               </select>
             </div>
             <button type="submit" class="vs-btn vs-btn--primary" id="vhSubmit">Upload slide</button>

@@ -1581,9 +1581,8 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
       o.outOfStock = !!x.outOfStock;
       o.returnGift = !!x.returnGift;
-      if (x.listed === false) {
-        o.listed = false;
-      }
+      /* Always send listed so the guest merge never confuses “missing key” with delisting. */
+      o.listed = x.listed !== false;
       /* Row exists in catalog_price_overrides — always expose flags so the storefront can clear OOS/prices when toggled off. */
       out[key] = o;
     });
@@ -1605,12 +1604,16 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
 
 /** Public: configurable hero slides (empty = storefront uses defaults). */
 app.get("/api/catalog/hero-slides", function (_req, res) {
-  storefrontHeroDb.listSlides(function (e, slides) {
+  storefrontHeroDb.listSlidesWithSettings(function (e, pack) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
     res.setHeader("Cache-Control", "no-store");
-    res.json({ ok: true, slides: slides || [] });
+    res.json({
+      ok: true,
+      slides: (pack && pack.slides) || [],
+      heroSettings: (pack && pack.heroSettings) || { displayMode: "carousel", carouselIntervalMs: 2000, singleSlideId: null },
+    });
   });
 });
 
@@ -1828,6 +1831,27 @@ app.delete("/api/vendor/hero-slides/:id", function (req, res) {
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true });
+    });
+  });
+});
+
+/** Vendor: hero carousel timing + fixed single-slide mode for promotions. */
+app.put("/api/vendor/hero-settings", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    storefrontHeroDb.saveHeroSettings(req.body || {}, function (e2, settings) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("not configured") >= 0 ? 503 : msg.indexOf("Pick a slide") >= 0 || msg.indexOf("not found") >= 0 ? 400 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, heroSettings: settings });
     });
   });
 });

@@ -59,10 +59,12 @@
         '<div class="cart-item-info"><strong>' +
         escapeHtml(line.name) +
         "</strong><span>" +
-        escapeHtml(sz) +
+        escapeHtml(String(sz || "")) +
+        " · Qty " +
+        line.qty +
         " · " +
         CART.formatMoney(line.price) +
-        " ea</span></div>" +
+        " each</span></div>" +
         '<div class="cart-item__side">' +
         '<div class="cart-item-qty-wrap">' +
         '<button type="button" class="cart-item__qty cart-item__qty--minus" data-qty-delta="-1" data-line-id="' +

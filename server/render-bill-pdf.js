@@ -35,6 +35,14 @@ function trunc(s, max) {
   return t.length <= max ? t : t.slice(0, max - 1) + "\u2026";
 }
 
+function billItemTitle(it) {
+  var n = String((it && it.name) || "").trim();
+  var sz = String((it && it.sizeLabel) || "").trim();
+  if (!n) n = "Item";
+  if (!sz) return n;
+  return n + " — " + sz;
+}
+
 /**
  * Square PNG buffer for bill thumbnails (gallery + line list).
  * @param {string} rel media/... path from cart
@@ -58,14 +66,12 @@ function loadThumbPng(rel, px) {
 
 function metaLine(it) {
   var sku = String(it.sku || "").trim();
-  var sz = String(it.sizeLabel || "").trim();
   var q = Math.max(1, Math.floor(Number(it.qty) || 1));
   var u = Number(it.unitPrice) || 0;
   var parts = [];
   if (sku) parts.push("SKU " + sku);
-  if (sz) parts.push(sz);
   parts.push("Qty " + q);
-  parts.push(fmtInr(u) + (q > 1 ? " ea" : " ea"));
+  parts.push(fmtInr(u) + " each");
   return parts.join(" · ");
 }
 
@@ -194,7 +200,7 @@ function renderOrderBillPdf(p) {
         var lineAmt = (Number(it.unitPrice) || 0) * (Math.max(1, Math.floor(Number(it.qty) || 1)) || 1);
         var priceColW = 72;
         var titleW = margin + contentW - priceColW - 8 - textLeft;
-        doc.fillColor(INK).font("Helvetica-Bold").fontSize(11).text(trunc(it.name, 48), textLeft, y + 8, {
+        doc.fillColor(INK).font("Helvetica-Bold").fontSize(11).text(trunc(billItemTitle(it), 52), textLeft, y + 8, {
           width: Math.max(80, titleW),
         });
         doc.fillColor(MUTED).font("Helvetica").fontSize(9).text(metaLine(it), textLeft, y + 26, {

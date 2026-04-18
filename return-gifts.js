@@ -94,9 +94,11 @@
         CART.formatMoney(minP) +
         "</p>" +
         '<div class="product-meta">' +
-        '<a class="add-btn add-btn--mini" href="product.html?id=' +
-        encodeURIComponent(p.id) +
-        '">Open piece →</a>' +
+        (oos
+          ? '<span class="add-btn add-btn--mini add-btn--mini--disabled" aria-disabled="true">Out of stock</span>'
+          : '<a class="add-btn add-btn--mini" href="product.html?id=' +
+            encodeURIComponent(p.id) +
+            '">Open piece →</a>') +
         "</div>" +
         "</div>";
       grid.appendChild(card);

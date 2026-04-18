@@ -977,7 +977,7 @@
         (line.qty || 1) +
         " · " +
         fmt(line.price) +
-        " ea</span>" +
+        " each</span>" +
         "</div>" +
         "</a>" +
         '<button type="button" class="checkout-line__remove" data-remove-id="' +

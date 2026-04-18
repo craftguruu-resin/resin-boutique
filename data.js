@@ -281,11 +281,13 @@
         delete p.outOfStock;
         n++;
       }
-      if (o.listed === false) {
-        p.listed = false;
+      if (Object.prototype.hasOwnProperty.call(o, "listed")) {
+        if (o.listed === false) {
+          p.listed = false;
+        } else {
+          delete p.listed;
+        }
         n++;
-      } else {
-        delete p.listed;
       }
       if (o.returnGift === true) {
         p.returnGift = true;

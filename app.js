@@ -104,7 +104,21 @@
       })
       .then(function (j) {
         if (!j || !j.ok || !j.slides || !j.slides.length) return;
-        var slides = j.slides;
+        var settings = j.heroSettings || {};
+        var mode = String(settings.displayMode || "carousel").toLowerCase();
+        var pinId = settings.singleSlideId != null ? Number(settings.singleSlideId) : NaN;
+        var intervalMs = Math.round(Number(settings.carouselIntervalMs) || 2000);
+        if (!Number.isFinite(intervalMs) || intervalMs < 1500) intervalMs = 2000;
+        if (intervalMs > 60000) intervalMs = 60000;
+
+        var slides = j.slides.slice();
+        if (mode === "single" && Number.isFinite(pinId)) {
+          var pinned = slides.filter(function (s) {
+            return Number(s.id) === pinId;
+          });
+          if (pinned.length) slides = pinned;
+        }
+
         var img = document.querySelector(".hero-atelier__photo-img");
         var ring = document.querySelector(".hero-atelier__photo-ring");
         var floatscape = document.getElementById("heroFloatscape");
@@ -115,24 +129,130 @@
           if (r.indexOf("http") === 0 || r.indexOf("//") === 0) return r;
           return D.imageUrl ? D.imageUrl(r) : r;
         }
+        function stripHeroMotionClasses() {
+          img.classList.remove(
+            "hero-atelier__photo-img--hero-leave",
+            "hero-atelier__photo-img--hero-enter-start",
+            "hero-atelier__photo-img--hero-enter-run"
+          );
+        }
+        function sameHeroSrc(a, b) {
+          try {
+            if (!a || !b) return false;
+            if (a === b) return true;
+            var da = a.split("?")[0];
+            var db = b.split("?")[0];
+            return da === db || decodeURIComponent(da) === decodeURIComponent(db);
+          } catch (_) {
+            return false;
+          }
+        }
         var idx = 0;
-        function applySlide() {
-          var s = slides[idx % slides.length];
-          idx += 1;
-          var anim = String((s && s.animation) || "orbit")
+        var firstHeroGo = true;
+        var heroBusy = false;
+        function applyRingAnimForSlide(s) {
+          var anim = String((s && s.animation) || "slide")
             .toLowerCase()
             .replace(/[^a-z0-9-]/g, "");
-          if (!anim) anim = "orbit";
-          if (anim === "none" || anim === "static") {
+          if (!anim) anim = "slide";
+          if (mode === "single" || anim === "none" || anim === "static") {
+            ring.removeAttribute("data-hero-anim");
+          } else if (anim === "slide") {
             ring.removeAttribute("data-hero-anim");
           } else {
             ring.setAttribute("data-hero-anim", anim);
           }
-          img.src = encodedSrc(s.image);
+        }
+        function applySlide() {
+          if (heroBusy) return;
+
+          if (slides.length <= 1 || mode === "single") {
+            ring.classList.remove("hero-atelier__photo-ring--slide-hero");
+            var s0 = slides[idx % slides.length];
+            idx += 1;
+            stripHeroMotionClasses();
+            applyRingAnimForSlide(s0);
+            img.src = encodedSrc(s0.image);
+            firstHeroGo = false;
+            return;
+          }
+
+          ring.classList.add("hero-atelier__photo-ring--slide-hero");
+          ring.removeAttribute("data-hero-anim");
+
+          var s = slides[idx % slides.length];
+          var nextSrc = encodedSrc(s.image);
+          idx += 1;
+
+          if (firstHeroGo) {
+            firstHeroGo = false;
+            stripHeroMotionClasses();
+            img.src = nextSrc;
+            return;
+          }
+
+          if (prefersReducedMotion() || sameHeroSrc(img.getAttribute("src") || "", nextSrc)) {
+            stripHeroMotionClasses();
+            img.src = nextSrc;
+            return;
+          }
+
+          heroBusy = true;
+          var leaveConsumed = false;
+          var leaveSafety = window.setTimeout(function () {
+            img.removeEventListener("transitionend", onLeaveEnd);
+            afterPreload();
+          }, 750);
+          function afterPreload() {
+            if (leaveConsumed) return;
+            leaveConsumed = true;
+            window.clearTimeout(leaveSafety);
+            img.removeEventListener("transitionend", onLeaveEnd);
+            stripHeroMotionClasses();
+            img.src = nextSrc;
+            img.classList.add("hero-atelier__photo-img--hero-enter-start");
+            void img.offsetWidth;
+            img.classList.remove("hero-atelier__photo-img--hero-enter-start");
+            img.classList.add("hero-atelier__photo-img--hero-enter-run");
+            var enterDone = false;
+            var enterSafety = window.setTimeout(function () {
+              img.removeEventListener("transitionend", onEnterEnd);
+              if (!enterDone) {
+                enterDone = true;
+                img.classList.remove("hero-atelier__photo-img--hero-enter-run");
+                heroBusy = false;
+              }
+            }, 750);
+            function onEnterEnd(ev) {
+              if (ev.target !== img) return;
+              if (enterDone) return;
+              enterDone = true;
+              window.clearTimeout(enterSafety);
+              img.removeEventListener("transitionend", onEnterEnd);
+              img.classList.remove("hero-atelier__photo-img--hero-enter-run");
+              heroBusy = false;
+            }
+            img.addEventListener("transitionend", onEnterEnd, { once: true });
+          }
+          function onLeaveEnd(ev) {
+            if (ev.target !== img) return;
+            window.clearTimeout(leaveSafety);
+            img.removeEventListener("transitionend", onLeaveEnd);
+            var pre = new Image();
+            pre.onload = function () {
+              afterPreload();
+            };
+            pre.onerror = function () {
+              afterPreload();
+            };
+            pre.src = nextSrc;
+          }
+          img.addEventListener("transitionend", onLeaveEnd, { once: true });
+          img.classList.add("hero-atelier__photo-img--hero-leave");
         }
         applySlide();
-        if (slides.length > 1) {
-          cgHeroTimer = setInterval(applySlide, 7500);
+        if (slides.length > 1 && mode !== "single") {
+          cgHeroTimer = setInterval(applySlide, intervalMs);
         }
         if (floatscape) {
           floatscape.classList.add("hero-floatscape--from-api");
@@ -526,10 +646,12 @@
         escapeHtml(line.name) +
         "</strong>" +
         "<span>" +
-        sz +
+        escapeHtml(String(sz || "")) +
+        " · Qty " +
+        line.qty +
         " · " +
         CART.formatMoney(line.price) +
-        " ea</span>" +
+        " each</span>" +
         "</div>" +
         '<div class="cart-item__side">' +
         '<div class="cart-item-qty-wrap">' +
