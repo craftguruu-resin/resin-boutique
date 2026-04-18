@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<!--
+  Local dev: data-bill-api-base points at Node (npm start in server/). Change the port if PORT in .env is not 3847.
+  Production (same host as API): set data-bill-api-base="" or remove the attribute so the app uses this page's origin.
+  If server/.env sets BILL_API_SECRET, set the same value on data-bill-api-secret below (match checkout.html).
+-->
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Inventory — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="inventory">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Inventory</h1>
+          <p class="vs-topbar__sub">Track stock for resin, pigments, and supplies you purchase for production.</p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="viRefreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <div id="viDeskSection">
+          <div class="vi-tabbar vs-row-actions" style="margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem">
+            <button type="button" class="vs-btn vs-btn--primary vi-tab" data-tab="studio">Studio materials</button>
+            <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="catalog">Storefront catalog &amp; prices</button>
+            <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="addproduct">Add product</button>
+          </div>
+
+          <div class="vs-card vi-studio-toolbar" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
+            <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
+              <div class="vs-field" style="margin: 0; flex: 1; min-width: 10rem; max-width: 22rem">
+                <label for="viSkuFilter">Search by SKU</label>
+                <input type="search" id="viSkuFilter" maxlength="120" placeholder="Contains…" autocomplete="off" />
+              </div>
+              <button type="button" class="vs-btn vs-btn--primary" id="viSkuSearchBtn">Search</button>
+              <button type="button" class="vs-btn vs-btn--ghost" id="viSkuClearBtn">Clear</button>
+            </div>
+          </div>
+
+          <p class="vs-muted" id="viCatalogStats" style="margin: 0 0 0.75rem; font-size: 0.82rem" hidden></p>
+
+          <div id="viStudioPanel">
+            <div class="vs-card" style="margin-bottom: 1rem">
+              <p class="vs-muted" style="margin: 0 0 0.75rem; font-size: 0.9rem">
+                Link a row to a <strong>catalog product</strong> to match it with the guest storefront (subcategory hint, reporting). Use <strong>Qty S / M / L</strong> when adding a line (or leave blank for 0). The <strong>Qty</strong> column shows the sum of S+M+L for linked lines. <strong>Prices, sellable stock, and hide-on-site (OOS)</strong> are managed under <strong>Storefront catalog &amp; prices</strong> or <strong>Products</strong> — not here.
+              </p>
+              <h2 class="vs-login__title" style="margin-top: 0">Add stock line</h2>
+              <div class="vi-add-stock-layout">
+                <div class="vi-add-stock-layout__main">
+                  <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem">
+                    <div class="vs-field">
+                      <label for="viName">Name</label>
+                      <input type="text" id="viName" placeholder="e.g. Epoxy resin 1L" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viCategory">Base category (parent)</label>
+                      <select id="viCategory">
+                        <option value="">— Unsorted —</option>
+                      </select>
+                    </div>
+                    <div class="vs-field">
+                      <label for="viProduct">Product (from catalog)</label>
+                      <select id="viProduct" disabled>
+                        <option value="">— Pick a category first —</option>
+                      </select>
+                    </div>
+                    <div class="vs-field" id="viSubcatWrap" style="grid-column: 1 / -1" hidden>
+                      <label>Subcategory (from catalog product)</label>
+                      <p id="viSubcatLabel" class="vs-muted" style="margin: 0; font-size: 0.9rem">—</p>
+                    </div>
+                    <div class="vs-field">
+                      <label for="viSku">SKU (optional)</label>
+                      <input type="text" id="viSku" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viQtyS">Qty S (units)</label>
+                      <input type="number" id="viQtyS" min="0" step="0.01" value="" placeholder="0" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viQtyM">Qty M (units)</label>
+                      <input type="number" id="viQtyM" min="0" step="0.01" value="" placeholder="0" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viQtyL">Qty L (units)</label>
+                      <input type="number" id="viQtyL" min="0" step="0.01" value="" placeholder="0" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viReorder">Reorder at</label>
+                      <input type="number" id="viReorder" min="0" step="0.01" value="5" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viCost">Unit cost (INR)</label>
+                      <input type="number" id="viCost" min="0" step="0.01" value="0" />
+                    </div>
+                    <div class="vs-field">
+                      <label for="viSupplier">Supplier</label>
+                      <input type="text" id="viSupplier" />
+                    </div>
+                  </div>
+                </div>
+                <div class="vi-add-stock-layout__aside">
+                  <div class="vs-field" id="viProductPreviewWrap" hidden>
+                    <label>Catalog image</label>
+                    <img id="viProductPreviewImg" class="vi-catalog-preview-img" alt="" width="400" height="400" />
+                  </div>
+                </div>
+              </div>
+              <div class="vs-field">
+                <label for="viNotes">Notes</label>
+                <textarea id="viNotes"></textarea>
+              </div>
+              <button type="button" class="vs-btn vs-btn--primary" id="viAddBtn">Add item</button>
+            </div>
+
+            <div class="vs-table-wrap">
+              <table class="vs-table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Base category</th>
+                    <th>Product</th>
+                    <th>SKU</th>
+                    <th>Qty</th>
+                    <th>Reorder</th>
+                    <th>Unit</th>
+                    <th>Supplier</th>
+                    <th>Save</th>
+                  </tr>
+                </thead>
+                <tbody id="viTbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div id="viCatalogPanel" hidden>
+            <div class="vs-card" style="margin-bottom: 1rem">
+              <p class="vs-muted" style="margin-top: 0">
+                Edit <strong>prices</strong> (₹) here. Use <strong>Hide on site (OOS)</strong> to grey out the piece on the guest site. <strong>Sellable stock</strong> per size is read-only — set it under <strong>Studio materials</strong> (linked SKUs). The <strong>Products</strong> page lists the full catalog with search. Tap <strong>Refresh</strong> (top right) to reload data.
+              </p>
+              <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
+                <div class="vs-field" style="margin: 0; min-width: 12rem">
+                  <label for="viCatalogCategoryFilter">Category</label>
+                  <select id="viCatalogCategoryFilter">
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem">
+                  <label for="viCatalogSearch">Search</label>
+                  <input type="search" id="viCatalogSearch" placeholder="Name, product id, or SKU…" />
+                </div>
+                <button type="button" class="vs-btn vs-btn--primary" id="viCatalogSearchBtn">Search</button>
+              </div>
+            </div>
+            <div class="vs-table-wrap">
+              <table class="vs-table">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Category</th>
+                    <th>S (₹)</th>
+                    <th>M (₹)</th>
+                    <th>L (₹)</th>
+                    <th title="From studio-linked inventory">S stock</th>
+                    <th title="From studio-linked inventory">M stock</th>
+                    <th title="From studio-linked inventory">L stock</th>
+                    <th>Out of stock</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="viCatalogTbody"></tbody>
+              </table>
+            </div>
+            <p class="vs-muted" id="viCatalogPaging" style="margin: 0.65rem 0 0"></p>
+            <button type="button" class="vs-btn" id="viCatalogMoreBtn" hidden>Load more</button>
+          </div>
+
+          <div id="viAddProductPanel" hidden>
+            <div class="vs-card" style="margin-bottom: 1rem">
+              <h2 class="vs-login__title" style="margin-top: 0">Add storefront product</h2>
+              <p class="vs-muted" style="margin-top: 0">
+                Pick the <strong>category</strong>, then the new name, three prices, and a photo. The listing is stored under that category (same folder layout as the
+                static catalog). It appears on the guest site after refresh; set stock and prices under <strong>Storefront catalog &amp; prices</strong> or link from
+                <strong>Studio materials</strong>.
+              </p>
+              <p class="vs-muted" id="viApMsg" style="margin: 0 0 0.75rem; color: #b45309" hidden></p>
+              <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem">
+                <div class="vs-field">
+                  <label for="viApCategory">Category</label>
+                  <select id="viApCategory">
+                    <option value="">— Choose —</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApName">Product name</label>
+                  <input type="text" id="viApName" placeholder="Shown on the website" maxlength="500" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApPriceS">Price tier 1 (S) ₹</label>
+                  <input type="number" id="viApPriceS" min="0" step="1" value="0" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApPriceM">Price tier 2 (M) ₹</label>
+                  <input type="number" id="viApPriceM" min="0" step="1" value="0" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApPriceL">Price tier 3 (L) ₹</label>
+                  <input type="number" id="viApPriceL" min="0" step="1" value="0" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApSizeS">Size label S (shown on website)</label>
+                  <input type="text" id="viApSizeS" maxlength="120" placeholder="e.g. 6 inch" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApSizeM">Size label M</label>
+                  <input type="text" id="viApSizeM" maxlength="120" placeholder="e.g. 8 inch" />
+                </div>
+                <div class="vs-field">
+                  <label for="viApSizeL">Size label L</label>
+                  <input type="text" id="viApSizeL" maxlength="120" placeholder="e.g. 10 inch or 44×23×34 cm" />
+                </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApImage">Product photo (JPEG or PNG)</label>
+                  <input type="file" id="viApImage" accept="image/jpeg,image/png,image/webp" />
+                </div>
+              </div>
+              <button type="button" class="vs-btn vs-btn--primary" id="viApSubmit">Create product</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-inventory.js"></script>
+</body>
+</html>

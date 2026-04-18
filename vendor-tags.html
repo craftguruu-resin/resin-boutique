@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<!-- Local dev: Node API. Production same-origin: clear data-bill-api-base. BILL_API_SECRET: match checkout.html. -->
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders &amp; parcel tags — Craftguru</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="tags">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Orders &amp; tags</h1>
+          <p class="vs-topbar__sub">Search orders, update dispatch status, print vendor parcel tags (IST).</p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vtRefreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <div id="vtDeskSection">
+          <div class="vs-card vs-card--toolbar" style="margin-bottom: 1rem">
+            <p class="vs-toolbar-heading">Payment</p>
+            <div class="vs-pill-row">
+              <button type="button" class="vs-pill vt-filter" data-filter="all">All orders</button>
+              <button type="button" class="vs-pill vt-filter" data-filter="paid">Paid</button>
+              <button type="button" class="vs-pill vt-filter" data-filter="pending">Pending payment</button>
+            </div>
+            <p class="vs-toolbar-heading">Fulfillment</p>
+            <p class="vs-muted" style="margin: 0 0 0.5rem; font-size: 0.78rem">
+              Tap a status to save. Use <strong>Out for delivery</strong> when it is with the courier; use <strong>Shipped</strong> after handoff. Customers see those labels on My orders. Use <strong>Open</strong> to focus orders still in progress.
+            </p>
+            <div class="vs-pill-row">
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="all">All</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="new">New</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="packed">Packed</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="shipping">Out for delivery</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="shipped">Shipped</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="delivered">Delivered</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="cancelled">Cancelled</button>
+              <button type="button" class="vs-pill vt-ful-filter" data-ff="open">Open</button>
+            </div>
+            <div class="vs-field" style="margin-bottom: 0; margin-top: 0.85rem">
+              <label for="vtSearch">Search order # or tag</label>
+              <input type="search" id="vtSearch" placeholder="e.g. 10042 or CG-…" />
+            </div>
+          </div>
+
+          <div class="vs-card" id="vtRangeContext" hidden style="margin-bottom: 1rem">
+            <p class="vs-section-title" id="vtRangeTitle" style="margin-top: 0"></p>
+            <p class="vs-muted" id="vtRangeSub" style="margin: 0 0 0.75rem; font-size: 0.82rem"></p>
+            <p class="vs-toolbar-heading" style="margin-bottom: 0.35rem">Product volume (filtered orders)</p>
+            <p class="vs-muted" style="margin: 0 0 0.5rem; font-size: 0.75rem">
+              Totals from line items (up to 40 orders). Tap <strong>Tag</strong> on a row for full bill and print.
+            </p>
+            <div class="vd-bar-list" id="vtProductRollup"></div>
+          </div>
+
+          <div class="vs-split">
+            <div>
+              <div class="vs-table-wrap">
+                <table class="vs-table" id="vtTable">
+                  <thead>
+                    <tr>
+                      <th>Order</th>
+                      <th>Customer</th>
+                      <th>Total</th>
+                      <th>Payment</th>
+                      <th>Fulfillment</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="vtTbody"></tbody>
+                </table>
+              </div>
+            </div>
+            <div class="vs-detail" id="vtDetail" hidden>
+              <p class="vs-section-title" style="margin-top: 0">Order detail</p>
+              <p class="vs-muted" id="vtDetailMeta"></p>
+              <div class="vs-row-actions" style="margin: 0.75rem 0">
+                <button type="button" class="vs-btn vs-btn--primary" id="vtPrintBtn">Print tag + bill</button>
+              </div>
+              <div id="vtDetailBody"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-tag-builders.js"></script>
+  <script src="vendor-tags.js"></script>
+</body>
+</html>

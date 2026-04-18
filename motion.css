@@ -1,0 +1,183 @@
+/* Ambient motion + scroll reveals — linked from index and subpages */
+
+:root {
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --reveal-duration: 0.9s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .animated-backdrop,
+  .orb,
+  .mesh-gradient {
+    display: none !important;
+  }
+
+  .hero-floatscape__aurora,
+  .hero-floatscape__grid {
+    display: none !important;
+  }
+
+  .hero-float-chip,
+  .hero-float-polar {
+    animation: none !important;
+  }
+
+  .hero-float-polar {
+    transform: rotate(var(--r, 0deg));
+  }
+
+  .hero-atelier__ring-pulse {
+    display: none !important;
+  }
+
+  .reveal,
+  .reveal-tile,
+  .reveal-pill,
+  .reveal-line,
+  .about-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+}
+
+.mesh-gradient {
+  position: fixed;
+  inset: -20%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 0%, rgba(120, 200, 255, 0.35), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 85% 15%, rgba(200, 160, 255, 0.22), transparent 50%),
+    radial-gradient(ellipse 70% 60% at 50% 100%, rgba(255, 255, 255, 0.5), transparent 55%);
+  animation: mesh-drift 18s ease-in-out infinite alternate;
+  opacity: 0.85;
+}
+
+@keyframes mesh-drift {
+  0% {
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  100% {
+    transform: translate(-3%, 2%) rotate(6deg) scale(1.06);
+  }
+}
+
+.tone-shift {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: 0.22;
+  background: radial-gradient(ellipse 100% 80% at 50% 0%, rgba(160, 210, 255, 0.5), transparent 55%);
+  animation: tone-drift 22s ease-in-out infinite alternate;
+}
+
+@keyframes tone-drift {
+  0% {
+    opacity: 0.15;
+    transform: scale(1) translate(0, 0);
+  }
+  100% {
+    opacity: 0.28;
+    transform: scale(1.08) translate(-2%, 1%);
+  }
+}
+
+.grid-lines {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image:
+    linear-gradient(rgba(20, 40, 80, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20, 40, 80, 0.35) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 40%, black 20%, transparent 75%);
+}
+
+.animated-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.45;
+  mix-blend-mode: screen;
+  animation: orb-float 14s ease-in-out infinite;
+}
+
+.orb-1 {
+  width: min(420px, 55vw);
+  height: min(420px, 55vw);
+  left: -8%;
+  top: 12%;
+  background: radial-gradient(circle, rgba(100, 180, 255, 0.7), transparent 68%);
+}
+
+.orb-2 {
+  width: min(360px, 48vw);
+  height: min(360px, 48vw);
+  right: -5%;
+  top: 22%;
+  background: radial-gradient(circle, rgba(230, 190, 255, 0.55), transparent 65%);
+  animation-delay: -4s;
+  animation-duration: 17s;
+}
+
+.orb-3 {
+  width: min(500px, 70vw);
+  height: min(500px, 70vw);
+  left: 25%;
+  bottom: -15%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.55), transparent 62%);
+  animation-delay: -7s;
+  animation-duration: 19s;
+  opacity: 0.35;
+}
+
+@keyframes orb-float {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(4%, -3%) scale(1.05);
+  }
+  66% {
+    transform: translate(-3%, 4%) scale(0.96);
+  }
+}
+
+.reveal {
+  opacity: 0;
+  transform: translate3d(0, 28px, 0) scale(0.98);
+  filter: blur(6px);
+  transition:
+    opacity var(--reveal-duration) var(--ease-out-expo),
+    transform var(--reveal-duration) var(--ease-out-expo),
+    filter 0.8s var(--ease-out-expo);
+  transition-delay: var(--delay, 0s);
+}
+
+.reveal.is-inview {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: blur(0);
+}

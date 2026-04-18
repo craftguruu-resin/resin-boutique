@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<!-- Local dev: Node API. Production same-origin: clear data-bill-api-base. BILL_API_SECRET: match checkout.html. -->
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Orders dashboard — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="dashboard">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Dashboard</h1>
+          <p class="vs-topbar__sub">Orders &amp; revenue (IST). Charts follow the period selector.</p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vdRefreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <div id="vdDeskSection">
+          <div class="vd-ledger">
+            <p id="vdErr" class="vd-ledger__err" hidden></p>
+
+            <div class="vd-ledger__toolbar">
+              <div class="vd-ledger__tabs" role="tablist" aria-label="Chart period">
+                <button type="button" class="vd-ledger__tab" data-vd-period="daily">Daily</button>
+                <button type="button" class="vd-ledger__tab" data-vd-period="yearly">Yearly</button>
+                <button type="button" class="vd-ledger__tab vd-ledger__tab--active" data-vd-period="monthly">Monthly</button>
+              </div>
+              <div class="vd-ledger__period">
+                <span id="vdPeriodLabel">—</span>
+              </div>
+            </div>
+
+            <div class="vd-kpi-row">
+              <a
+                href="vendor-tags.html?range=today"
+                class="vd-kpi-card vd-kpi-card--link"
+                aria-label="Open Orders and tags filtered to today (IST)"
+              >
+                <div class="vd-kpi-card__chart"><canvas id="vdDon1" width="72" height="72" aria-hidden="true"></canvas></div>
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Orders today</p>
+                  <p class="vd-kpi-card__value" id="vdKpiOrdersToday">0</p>
+                  <p class="vd-kpi-card__sub" id="vdKpiOrdersTodaySub">Paid vs other today</p>
+                </div>
+              </a>
+              <a
+                href="vendor-tags.html?range=week"
+                class="vd-kpi-card vd-kpi-card--link"
+                aria-label="Open paid orders from the last 7 days with product totals"
+              >
+                <div class="vd-kpi-card__chart"><canvas id="vdDon2" width="72" height="72" aria-hidden="true"></canvas></div>
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Last 7 days</p>
+                  <p class="vd-kpi-card__value" id="vdKpiOrdersWeek">0</p>
+                  <p class="vd-kpi-card__sub" id="vdKpiOrdersWeekSub">Paid orders · rolling 7d IST</p>
+                </div>
+              </a>
+              <a
+                href="vendor-tags.html?range=month"
+                class="vd-kpi-card vd-kpi-card--link"
+                aria-label="Open paid orders this calendar month with product totals"
+              >
+                <div class="vd-kpi-card__chart"><canvas id="vdDon3" width="72" height="72" aria-hidden="true"></canvas></div>
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">This month</p>
+                  <p class="vd-kpi-card__value" id="vdKpiOrdersMonth">0</p>
+                  <p class="vd-kpi-card__sub" id="vdKpiOrdersMonthSub">Paid orders · calendar month</p>
+                </div>
+              </a>
+              <a
+                href="vendor-tags.html?range=revenue"
+                class="vd-kpi-card vd-kpi-card--link"
+                aria-label="Open this month paid revenue context with product mix"
+              >
+                <div class="vd-kpi-card__chart"><canvas id="vdDon4" width="72" height="72" aria-hidden="true"></canvas></div>
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Amount received</p>
+                  <p class="vd-kpi-card__value" id="vdKpiAmtToday">₹0</p>
+                  <p class="vd-kpi-card__sub" id="vdKpiAmtSub"><span id="vdKpiAmtSubLine">—</span></p>
+                </div>
+              </a>
+            </div>
+
+            <div class="vd-main-grid">
+              <div class="vd-panel">
+                <h2 class="vd-panel__title" id="vdMainChartTitle">Daily orders &amp; revenue</h2>
+                <p class="vd-panel__hint" id="vdMainChartHint">Bars = paid order count per bucket · Orange line = amount (₹).</p>
+                <div class="vs-chart-wrap vd-chart-wrap--tall"><canvas id="vdMainChart" aria-label="Orders chart"></canvas></div>
+              </div>
+              <div>
+                <div class="vd-panel" style="margin-bottom: 1rem">
+                  <h3 class="vd-panel__title">By base category</h3>
+                  <p class="vd-panel__hint">Paid · this month · line revenue</p>
+                  <div class="vd-bar-list" id="vdCatAmount"></div>
+                </div>
+                <div class="vd-panel">
+                  <h3 class="vd-panel__title">Order count by category</h3>
+                  <p class="vd-panel__hint">Distinct paid orders touching category</p>
+                  <div class="vd-bar-list" id="vdCatCount"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="vd-panel">
+              <h3 class="vd-panel__title" style="margin-top: 0">Recent paid orders</h3>
+              <div class="vs-notify" id="vdNotify"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-dashboard.js"></script>
+</body>
+</html>

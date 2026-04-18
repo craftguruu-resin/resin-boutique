@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <!-- If checkout is not on the API port, set data-bill-api-port on <html>, or once: localStorage.setItem('craftguruBillApiPort','YOUR_PORT'). -->
+  <!-- If server/.env sets BILL_API_SECRET, set the same value on data-bill-api-secret above (vendor pages must match). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checkout — Craft guru</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="motion.css" />
+</head>
+<body class="subpage page-checkout">
+  <div class="mesh-gradient" aria-hidden="true"></div>
+  <div class="tone-shift" aria-hidden="true"></div>
+  <div class="animated-backdrop" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-lines" aria-hidden="true"></div>
+
+  <header class="site-top site-top--fx">
+    <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
+      <img
+        class="brand__logo-img"
+        src="media/brand-craftguru.png"
+        width="360"
+        height="108"
+        alt="Craftguru"
+        decoding="async"
+      />
+    </a>
+    <nav class="nav-dock nav-dock--fx" aria-label="Main">
+      <a href="index.html" class="nav-dock-link">Home</a>
+      <a href="index.html#categories" class="nav-dock-link is-active">Shop</a>
+      <a href="about.html" class="nav-dock-link">About</a>
+    </nav>
+    <div class="site-top-end">
+      <a href="index.html" class="icon-btn checkout-exit" id="checkoutPageExit" aria-label="Exit checkout and return home">✕</a>
+      <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
+        <span class="btn-cart-label">Cart</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="sub-main">
+    <div id="checkoutMain">
+      <div class="checkout-page">
+        <div class="checkout-page__head">
+          <h1>Checkout</h1>
+          <p class="checkout-page__lead">
+            Review your order, add contact and shipping, then pay the <strong>exact total</strong> with <strong>Razorpay</strong>. Signing in first is optional: the email and phone you enter here are stored with your order so you can use <strong>Log in</strong> (email code) later on My orders. If you do sign in above, your email is pre-filled.
+          </p>
+        </div>
+
+        <div class="checkout-layout">
+          <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary" aria-labelledby="summary-heading">
+            <h2 id="summary-heading">Order summary</h2>
+            <div class="checkout-snips" aria-label="Selected items preview">
+              <div class="checkout-snips__grid" id="checkoutSnipsGrid"></div>
+            </div>
+            <ul class="checkout-lines" id="checkoutLines"></ul>
+            <div class="checkout-totals">
+              <div class="checkout-total-row">
+                <span>Items total (incl. 18% GST)</span>
+                <span id="valSubtotal">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>Taxable value (excl. GST)</span>
+                <span id="valTaxable">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>GST (18%)</span>
+                <span id="valTax">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>Shipping</span>
+                <span id="valShipping">₹0</span>
+              </div>
+              <div class="checkout-total-row checkout-total-row--grand">
+                <span>Total due</span>
+                <span id="valTotal">₹0</span>
+              </div>
+            </div>
+
+            <div class="checkout-bill-download" id="checkoutBillDownload" aria-labelledby="checkoutBillDlHeading">
+              <h3 class="checkout-bill-download__h" id="checkoutBillDlHeading">Download bill</h3>
+              <p class="checkout-bill-download__lead">Save a PDF that matches this order summary, including product photos.</p>
+              <button type="button" class="checkout-submit checkout-bill-download__btn" id="btnDownloadBillPdf">
+                Download PDF bill
+              </button>
+            </div>
+          </aside>
+
+          <div class="checkout-layout__main">
+          <div class="checkout-panel checkout-intro" id="checkoutStepReview" aria-labelledby="checkoutIntroTitle">
+            <span class="checkout-step-badge" id="checkoutStepLabel">Step 1 of 2</span>
+            <h2 id="checkoutIntroTitle">Review your order</h2>
+            <p>
+              Your cart and totals are on the left — they stay in <strong>this browser</strong> until you complete checkout. You can enter contact and shipping below without signing in first; we store your email and phone so you can sign back in later with the same email and a one-time code.
+            </p>
+            <button type="button" class="checkout-submit" id="checkoutGoDetails">Continue to fill details →</button>
+          </div>
+
+          <div class="checkout-panel checkout-hidden" id="checkoutStepFill" hidden>
+            <button type="button" class="checkout-back-link" id="checkoutBackReview">← Back to order review</button>
+            <form id="checkoutForm" class="checkout-form-grid" novalidate>
+              <div class="checkout-address-panel">
+                <div class="checkout-address-panel__head">
+                  <span class="checkout-address-panel__pill">Step 1</span>
+                  <h3 class="checkout-address-panel__title">Guest &amp; shipping</h3>
+                  <p class="checkout-address-panel__lead">
+                    Fill contact and address here first — no sign-in required to save or pay. Use the same email later with a 6-digit code to see orders and pick a saved address. One email is tied to one Indian mobile on file. The page must reach your Node bill API (set <code>data-bill-api-port</code> on <code>&lt;html&gt;</code> if needed).
+                  </p>
+                </div>
+
+              <fieldset class="checkout-fieldset">
+                <legend>Guest contact</legend>
+                <div class="checkout-row2">
+                  <div>
+                    <label class="checkout-label" for="guestName">Full name</label>
+                    <input class="checkout-input" type="text" id="guestName" name="guestName" required autocomplete="name" placeholder="Priya Sharma" />
+                  </div>
+                  <div>
+                    <label class="checkout-label" for="guestEmail">Email</label>
+                    <input class="checkout-input" type="email" id="guestEmail" name="guestEmail" required autocomplete="email" placeholder="you@email.com" />
+                  </div>
+                </div>
+                <div>
+                  <label class="checkout-label" for="guestPhone">Phone</label>
+                  <input
+                    class="checkout-input"
+                    type="tel"
+                    id="guestPhone"
+                    name="guestPhone"
+                    required
+                    autocomplete="tel"
+                    placeholder="+91 98765 43210"
+                  />
+                </div>
+              </fieldset>
+
+              <div class="checkout-note" id="checkoutGuestSessionBar" hidden style="margin-bottom: 1rem">
+                <span id="checkoutGuestSessionText"></span>
+                <button type="button" class="checkout-back-link" id="checkoutGuestSignOutBtn" style="margin-left: 0.75rem">Sign out</button>
+                <a href="account.html" class="checkout-back-link" style="margin-left: 0.75rem">My orders</a>
+              </div>
+
+              <fieldset class="checkout-fieldset" id="checkoutSavedAddrFieldset" hidden>
+                <legend>Saved addresses</legend>
+                <label class="checkout-label" style="display: flex; gap: 0.5rem; align-items: center; font-weight: 500">
+                  <input type="radio" name="checkoutAddrMode" value="new" id="checkoutAddrModeNew" checked /> Enter a new address below
+                </label>
+                <label class="checkout-label" style="display: flex; gap: 0.5rem; align-items: center; font-weight: 500; margin-top: 0.35rem">
+                  <input type="radio" name="checkoutAddrMode" value="saved" id="checkoutAddrModeSaved" /> Use a saved address
+                </label>
+                <div id="checkoutSavedAddrPicker" hidden style="margin-top: 0.75rem">
+                  <label class="checkout-label" for="checkoutSavedAddrSelect">Choose</label>
+                  <select class="checkout-select" id="checkoutSavedAddrSelect"></select>
+                </div>
+              </fieldset>
+
+              <fieldset class="checkout-fieldset">
+                <legend>Shipping address</legend>
+                <div>
+                  <label class="checkout-label" for="addrLine1">Street address</label>
+                  <input class="checkout-input" type="text" id="addrLine1" name="addrLine1" required autocomplete="address-line1" placeholder="123 Glass Lane" />
+                </div>
+                <div>
+                  <label class="checkout-label" for="addrLine2">Apt / suite (optional)</label>
+                  <input class="checkout-input" type="text" id="addrLine2" name="addrLine2" autocomplete="address-line2" />
+                </div>
+                <div class="checkout-row2">
+                  <div>
+                    <label class="checkout-label" for="city">City</label>
+                    <input class="checkout-input" type="text" id="city" name="city" required autocomplete="address-level2" />
+                  </div>
+                  <div>
+                    <label class="checkout-label" for="state">State / region</label>
+                    <input class="checkout-input" type="text" id="state" name="state" required autocomplete="address-level1" />
+                  </div>
+                </div>
+                <div class="checkout-row2">
+                  <div>
+                    <label class="checkout-label" for="zip">Postal code</label>
+                    <input class="checkout-input" type="text" id="zip" name="zip" required autocomplete="postal-code" />
+                  </div>
+                  <div>
+                    <label class="checkout-label" for="country">Country</label>
+                    <select class="checkout-select" id="country" name="country" required autocomplete="country-name">
+                      <option value="">Select…</option>
+                      <option value="IN" selected>India</option>
+                      <option value="US">United States</option>
+                      <option value="CA">Canada</option>
+                      <option value="GB">United Kingdom</option>
+                      <option value="AU">Australia</option>
+                    </select>
+                  </div>
+                </div>
+              </fieldset>
+
+              <details class="checkout-auth-details" id="checkoutAuthOptional">
+                <summary class="checkout-auth-details__summary">Optional: sign in with email code (saved addresses &amp; order history)</summary>
+                <div class="checkout-auth-details__body">
+                  <div id="checkoutAuthCard" class="auth-modal__sheet checkout-auth-sheet" aria-labelledby="checkoutAuthHeading">
+                    <div class="auth-modal__head checkout-auth-sheet__head">
+                      <h2 id="checkoutAuthHeading" style="margin: 0; font-size: 1.15rem">Email sign-in (optional)</h2>
+                    </div>
+                    <p class="checkout-note" style="margin: 0 0 0.75rem">
+                      6-digit code by email, valid for 5 minutes. Already checked out with this email? Use <strong>Log in</strong>. New account from the home page? Use <strong>Sign up</strong>.
+                    </p>
+                    <div class="auth-tabs">
+                      <button type="button" class="auth-tab is-active" id="checkoutAuthTabLo">Log in</button>
+                      <button type="button" class="auth-tab" id="checkoutAuthTabSu">Sign up</button>
+                    </div>
+                    <div id="checkoutAuthPanelLo">
+                      <div class="auth-field">
+                        <label for="checkoutAuthEmailLo">Email</label>
+                        <input id="checkoutAuthEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+                      </div>
+                      <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpLo">Send OTP</button>
+                      <div class="auth-field">
+                        <label for="checkoutAuthOtpLo">Enter OTP</label>
+                        <input id="checkoutAuthOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+                      </div>
+                      <p class="auth-msg" id="checkoutAuthMsgLo" style="display: none"></p>
+                      <button type="button" class="auth-submit" id="checkoutAuthVerifyLo">Verify &amp; load account</button>
+                    </div>
+                    <div id="checkoutAuthPanelSu" class="is-hidden">
+                      <div class="auth-field">
+                        <label for="checkoutAuthNameSu">Name (optional)</label>
+                        <input id="checkoutAuthNameSu" type="text" autocomplete="name" placeholder="Your name" />
+                      </div>
+                      <div class="auth-field">
+                        <label for="checkoutAuthEmailSu">Email</label>
+                        <input id="checkoutAuthEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+                      </div>
+                      <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpSu">Send OTP</button>
+                      <div class="auth-field">
+                        <label for="checkoutAuthOtpSu">Enter OTP</label>
+                        <input id="checkoutAuthOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+                      </div>
+                      <p class="auth-msg" id="checkoutAuthMsgSu" style="display: none"></p>
+                      <button type="button" class="auth-submit" id="checkoutAuthVerifySu">Verify &amp; load account</button>
+                    </div>
+                  </div>
+                </div>
+              </details>
+
+              <fieldset class="checkout-fieldset checkout-fieldset--upi-teaser">
+                <legend>Payment</legend>
+                <p class="checkout-upi-teaser__text">
+                  Add your address first — we create an <strong>order from #10001</strong> and a <strong>vendor parcel tag</strong> (studio email when SMTP is set). Then use <strong>Pay now</strong> for Razorpay when enabled. Prefer opening checkout from the same URL as <code>npm start</code> (Express), or set <code>data-bill-api-port</code> on <code>&lt;html&gt;</code> to match your API <code>PORT</code>.
+                </p>
+              </fieldset>
+
+              <div class="checkout-actions-row" id="checkoutActionsRow">
+                <button type="submit" class="checkout-submit checkout-actions-row__primary" id="checkoutAddAddressBtn">
+                  Add guest address
+                </button>
+                <button type="button" class="checkout-submit checkout-actions-row__pay" id="checkoutOpenUpiModal">
+                  Pay now
+                </button>
+              </div>
+              <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
+              <p class="checkout-note">
+                Add guest address saves the order and tag; keeps you on this page. Pay now opens Razorpay. Questions on WhatsApp
+                <strong>+91-8824350056</strong>.
+              </p>
+              </div>
+            </form>
+          </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="checkoutSuccess" class="checkout-page checkout-hidden" aria-live="polite">
+      <div class="checkout-panel checkout-success">
+        <p class="checkout-success__order" id="orderIdDisplay">RA-······</p>
+        <h2>Order received</h2>
+        <p>Thank you — we have your order reference. Our studio will confirm payment and message you on WhatsApp shortly to confirm dispatch.</p>
+        <a class="btn-glass-dome" href="index.html#categories"><span>Continue shopping</span></a>
+      </div>
+    </div>
+  </main>
+
+  <div
+    class="checkout-pay-modal"
+    id="checkoutPayModal"
+    hidden
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="checkoutPayModalTitle"
+  >
+    <button type="button" class="checkout-pay-modal__backdrop" id="checkoutPayModalBackdrop" aria-label="Close payment window"></button>
+    <div class="checkout-pay-modal__sheet">
+      <div class="checkout-pay-modal__head">
+        <div class="checkout-pay-modal__head-text">
+          <p class="checkout-pay-modal__eyebrow">Secure payment</p>
+          <h2 id="checkoutPayModalTitle">Pay with Razorpay</h2>
+        </div>
+        <button type="button" class="checkout-pay-modal__x" id="checkoutPayModalClose" aria-label="Close">✕</button>
+      </div>
+      <div class="checkout-pay-modal__body-wrap">
+        <div class="checkout-pay-modal__verify is-hidden" id="checkoutPaymentVerify" aria-live="polite">
+          <div class="checkout-verify-inner">
+            <div class="checkout-verify-ringwrap">
+              <svg class="checkout-verify-svg" viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="checkout-verify-svg__track" cx="60" cy="60" r="52" />
+                <circle class="checkout-verify-svg__bar" cx="60" cy="60" r="52" id="checkoutVerifyRingBar" />
+              </svg>
+              <span class="checkout-verify-count" id="checkoutVerifyCount">5</span>
+            </div>
+            <p class="checkout-verify-title" id="checkoutVerifyTitle">Checking payment…</p>
+            <p class="checkout-verify-sub" id="checkoutVerifySub">Updating your payment status on screen</p>
+          </div>
+        </div>
+      <div class="checkout-pay-modal__body">
+        <div class="checkout-pay-modal__col checkout-pay-modal__col--summary">
+          <p class="checkout-pay-modal__kicker">Pay this exact amount</p>
+          <ul class="checkout-pay-modal__lines">
+            <li><span>Items (incl. 18% GST)</span><span id="checkoutModalSub">₹0</span></li>
+            <li><span>Taxable (ex GST)</span><span id="checkoutModalTaxable">₹0</span></li>
+            <li><span>GST (18%)</span><span id="checkoutModalTax">₹0</span></li>
+            <li><span>Shipping</span><span id="checkoutModalShip">₹0</span></li>
+            <li class="checkout-pay-modal__lines--grand"><span>Total due</span><span id="checkoutModalGrand">₹0</span></li>
+          </ul>
+          <div class="checkout-payment-status" id="checkoutPaymentStatus" data-state="idle">
+            <p class="checkout-payment-status__label" id="checkoutPaymentStatusLabel">Status</p>
+            <p class="checkout-payment-status__msg" id="checkoutPaymentStatusMsg">
+              Open Pay now after your details are filled. Totals here match your cart; complete payment with Razorpay on the right.
+            </p>
+          </div>
+          <p class="checkout-pay-modal__fine checkout-pay-modal__fine--razor">
+            Payments are processed by Razorpay. This shop does not store your card or UPI PIN.
+          </p>
+        </div>
+        <div class="checkout-pay-modal__col checkout-pay-modal__col--razor">
+          <div class="checkout-razor-panel">
+            <div class="checkout-razor-panel__glow" aria-hidden="true"></div>
+            <div class="checkout-razor-panel__inner">
+              <div class="checkout-razor-panel__brand">
+                <span class="checkout-razor-panel__mark" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L20 7v10l-8 5-8-5V7l8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <span class="checkout-razor-panel__brand-name">Razorpay</span>
+                <span class="checkout-razor-panel__badge">PCI DSS</span>
+              </div>
+              <p class="checkout-razor-panel__kicker">Encrypted checkout</p>
+              <h3 class="checkout-razor-panel__title">Complete your payment</h3>
+              <p class="checkout-razor-panel__lead">
+                Your total is locked to this cart on our server. Continue in Razorpay&apos;s window — UPI, cards, netbanking and wallets where available.
+              </p>
+              <ul class="checkout-razor-panel__pills" aria-label="Payment options">
+                <li>UPI</li>
+                <li>Cards</li>
+                <li>Netbanking</li>
+                <li>Wallets</li>
+              </ul>
+              <button type="button" class="checkout-razor-panel__cta" id="btnRazorpayCheckout">
+                <span class="checkout-razor-panel__cta-text">Pay securely now</span>
+                <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
+              </button>
+              <button type="button" class="checkout-razor-panel__cta checkout-razor-panel__cta--test" id="btnCheckoutTestPay">
+                Pay without Razorpay (testing)
+              </button>
+              <p class="checkout-razor-panel__fine">
+                Test button creates a real order in your database when <code>ALLOW_TEST_CHECKOUT=1</code> is set on the server. Remove for production.
+              </p>
+              <p class="checkout-razor-panel__trust">We never see your UPI PIN or full card number.</p>
+              <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtn">Cancel and close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="checkout-result-popup" id="checkoutResultPopup" hidden role="alertdialog" aria-modal="true" aria-labelledby="checkoutResultTitle">
+    <div class="checkout-result-popup__backdrop" id="checkoutResultBackdrop"></div>
+    <div class="checkout-result-popup__card">
+      <div class="checkout-result-popup__icon" id="checkoutResultIcon" aria-hidden="true">✓</div>
+      <h3 class="checkout-result-popup__title" id="checkoutResultTitle">Payment successful</h3>
+      <p class="checkout-result-popup__msg" id="checkoutResultMsg">Payment verified.</p>
+      <button type="button" class="checkout-submit checkout-result-popup__ok" id="checkoutResultOk">OK</button>
+    </div>
+  </div>
+
+  <footer class="site-footer site-footer--craftguru" id="site-footer">
+    <div class="footer-sitemap">
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Useful Links</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="index.html#footer-connect">Contact Us</a></li>
+          <li><a href="#">FAQs</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Main menu</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
+          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
+          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
+          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Varmala Preservation</a></li>
+          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
+          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
+          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Help</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Shipping Options</a></li>
+          <li><a href="#">Terms &amp; Conditions</a></li>
+          <li><a href="#">Purchase &amp; Returns</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col" id="footer-connect">
+        <h3 class="footer-sitemap__title">Connect Us</h3>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">📞</span><a href="tel:+918824350056">+91-8824350056</a></p>
+        <p class="footer-connect__muted">9.30 am to 7.00 pm Monday to Saturday</p>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">✉️</span><a href="mailto:sales@craftguru.co.in">sales@craftguru.co.in</a></p>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Newsletter</h3>
+        <form class="footer-newsletter" id="footerNewsletterForm" action="#" method="post">
+          <label class="visually-hidden" for="footerNewsletterEmail">Email address</label>
+          <div class="footer-newsletter__field">
+            <input type="email" id="footerNewsletterEmail" class="footer-newsletter__input" placeholder="Enter email" autocomplete="email" />
+            <button type="submit" class="footer-newsletter__btn" aria-label="Subscribe to newsletter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 6h16v12H4V6zm0 0 8 6 8-6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </form>
+        <div class="footer-social" aria-label="Social links">
+          <a class="footer-social__link" href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">X</a>
+          <a class="footer-social__link" href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+          <a class="footer-social__link footer-social__link--wide" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YT</a>
+          <a class="footer-social__link" href="https://www.pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">P</a>
+          <a class="footer-social__link" href="https://www.instagram.com/craftguruindia/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
+          <a class="footer-social__link" href="mailto:sales@craftguru.co.in" aria-label="Email">@</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-copy footer-copy--craftguru">© <span id="year"></span> Craft Guru · Jaipur</p>
+  </footer>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-header">
+        <h2>Your cart</h2>
+        <button type="button" class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+      </div>
+      <ul class="cart-list" id="cartList"></ul>
+      <div class="cart-footer">
+        <div class="cart-total-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">₹0</strong>
+        </div>
+        <button type="button" class="btn-checkout" id="checkoutBtn">Go to checkout</button>
+        <p class="cart-note">Questions? WhatsApp +91-8824350056 · Instagram @craftguruindia</p>
+      </div>
+    </div>
+  </aside>
+  <div class="cart-backdrop" id="cartBackdrop" hidden></div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="data.js"></script>
+  <script src="catalog-merge.js"></script>
+  <script src="cart.js"></script>
+  <script src="shell.js"></script>
+  <script src="header.js"></script>
+  <script src="global-find.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="checkout.js"></script>
+</body>
+</html>

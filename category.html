@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Category — Craft guru</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="motion.css" />
+</head>
+<body class="subpage">
+  <div class="mesh-gradient" aria-hidden="true"></div>
+  <div class="tone-shift" aria-hidden="true"></div>
+  <div class="animated-backdrop" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-lines" aria-hidden="true"></div>
+
+  <header class="site-top site-top--fx">
+    <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
+      <img
+        class="brand__logo-img"
+        src="media/brand-craftguru.png"
+        width="360"
+        height="108"
+        alt="Craftguru"
+        decoding="async"
+      />
+    </a>
+    <nav class="nav-dock nav-dock--fx" aria-label="Main">
+      <a href="index.html" class="nav-dock-link">Home</a>
+      <a href="index.html#categories" class="nav-dock-link is-active">Shop</a>
+      <a href="about.html" class="nav-dock-link">About</a>
+    </nav>
+    <div class="site-top-end">
+      <div class="global-find" id="globalFindRoot" data-find-mode="category">
+        <button
+          type="button"
+          class="global-find__trigger"
+          id="globalFindTrigger"
+          aria-expanded="false"
+          aria-controls="globalFindPopover"
+          aria-label="Open catalog search"
+        >
+          <span class="global-find__orbit" aria-hidden="true"></span>
+          <svg class="global-find__glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.25" stroke="currentColor" stroke-width="1.5" />
+            <path d="M14.6 14.6L20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="global-find__popover" id="globalFindPopover" role="region" aria-label="Search catalog" hidden>
+          <div class="global-find__panel">
+            <div class="global-find__panel-glow" aria-hidden="true"></div>
+            <p class="global-find__kicker" id="globalFindKicker">Discover</p>
+            <div class="global-find__sort-block" id="globalFindSortWrap" hidden>
+              <label class="global-find__mini-label" for="globalFindSort">Order</label>
+              <select id="globalFindSort" class="global-find__select"></select>
+            </div>
+            <div class="global-find__filter-block" id="globalFindCategoryFilterWrap" hidden>
+              <label class="global-find__mini-label" for="globalFindPriceCap">Filter · max “from” price</label>
+              <select id="globalFindPriceCap" class="global-find__select">
+                <option value="">Any price</option>
+                <option value="35">≤ ₹35</option>
+                <option value="50">≤ ₹50</option>
+                <option value="75">≤ ₹75</option>
+                <option value="100">≤ ₹100</option>
+                <option value="150">≤ ₹150</option>
+                <option value="250">≤ ₹250</option>
+                <option value="500">≤ ₹500</option>
+                <option value="1000">≤ ₹1,000</option>
+              </select>
+            </div>
+            <label class="visually-hidden" for="globalFindQuery">Search catalog</label>
+            <input type="search" id="globalFindQuery" class="global-find__input" autocomplete="off" />
+            <p class="global-find__hint" id="globalFindHint" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
+        <span class="btn-cart-label">Cart</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="sub-main">
+    <section class="band-shop band-shop--flush">
+      <div class="band-shop-inner">
+        <p class="crumb crumb--fx">
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span>
+          <a id="crumbCatLink" href="#"><span id="crumbCat">Category</span></a>
+          <span id="crumbSubWrap" hidden> <span aria-hidden="true">/</span> <span id="crumbSubLabel">—</span></span>
+        </p>
+        <p class="flow-step flow-step--on-dark" id="categoryFlowStep">Step 1 · Choose a product below — Step 2 is size &amp; cart on the next page</p>
+        <div class="section-head section-head--solo">
+          <div>
+            <h1 class="band-title band-title--fx" id="categoryHeading">Browse</h1>
+            <p class="band-sub" id="categorySub">Loading…</p>
+          </div>
+        </div>
+        <div class="product-grid" id="subcategoryGrid" hidden></div>
+        <div class="product-grid" id="productGrid"></div>
+        <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer site-footer--craftguru" id="site-footer">
+    <div class="footer-sitemap">
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Useful Links</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="index.html#footer-connect">Contact Us</a></li>
+          <li><a href="#">FAQs</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Main menu</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
+          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
+          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
+          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Varmala Preservation</a></li>
+          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
+          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
+          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Help</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Shipping Options</a></li>
+          <li><a href="#">Terms &amp; Conditions</a></li>
+          <li><a href="#">Purchase &amp; Returns</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col" id="footer-connect">
+        <h3 class="footer-sitemap__title">Connect Us</h3>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">📞</span><a href="tel:+918824350056">+91-8824350056</a></p>
+        <p class="footer-connect__muted">9.30 am to 7.00 pm Monday to Saturday</p>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">✉️</span><a href="mailto:sales@craftguru.co.in">sales@craftguru.co.in</a></p>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Newsletter</h3>
+        <form class="footer-newsletter" id="footerNewsletterForm" action="#" method="post">
+          <label class="visually-hidden" for="footerNewsletterEmail">Email address</label>
+          <div class="footer-newsletter__field">
+            <input type="email" id="footerNewsletterEmail" class="footer-newsletter__input" placeholder="Enter email" autocomplete="email" />
+            <button type="submit" class="footer-newsletter__btn" aria-label="Subscribe to newsletter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 6h16v12H4V6zm0 0 8 6 8-6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </form>
+        <div class="footer-social" aria-label="Social links">
+          <a class="footer-social__link" href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">X</a>
+          <a class="footer-social__link" href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+          <a class="footer-social__link footer-social__link--wide" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YT</a>
+          <a class="footer-social__link" href="https://www.pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">P</a>
+          <a class="footer-social__link" href="https://www.instagram.com/craftguruindia/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
+          <a class="footer-social__link" href="mailto:sales@craftguru.co.in" aria-label="Email">@</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-copy footer-copy--craftguru">© <span id="year"></span> Craft Guru · Jaipur</p>
+  </footer>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-header">
+        <h2>Your cart</h2>
+        <button type="button" class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+      </div>
+      <ul class="cart-list" id="cartList"></ul>
+      <div class="cart-footer">
+        <div class="cart-total-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">₹0</strong>
+        </div>
+        <button type="button" class="btn-checkout" id="checkoutBtn">Go to checkout</button>
+        <p class="cart-note">Checkout to order · WhatsApp +91-8824350056</p>
+      </div>
+    </div>
+  </aside>
+  <div class="cart-backdrop" id="cartBackdrop" hidden></div>
+
+  <script src="data.js"></script>
+  <script src="catalog-merge.js"></script>
+  <script src="cart.js"></script>
+  <script src="shell.js"></script>
+  <script src="header.js"></script>
+  <script src="global-find.js"></script>
+  <script src="category.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>

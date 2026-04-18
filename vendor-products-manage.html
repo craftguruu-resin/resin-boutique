@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<!--
+  Local dev: data-bill-api-base points at Node (npm start in server/). Production: set to your API origin or leave empty to use same host.
+-->
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Products — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="products">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Update or discontinue products</h1>
+          <p class="vs-topbar__sub">
+            Full guest storefront list (built-in catalog + products you added). Search by name, id, or studio SKU. Edit prices and hide-on-site (OOS) for any listing; names and photos only for products you added. Discontinued vendor products are hidden until you set them active again.
+          </p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vpmRefresh">Refresh</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
+          <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
+            <div class="vs-field" style="margin: 0; min-width: 10rem">
+              <label for="vpmStatus">Status</label>
+              <select id="vpmStatus">
+                <option value="all">All</option>
+                <option value="active">Active (not OOS)</option>
+                <option value="oos">Out of stock</option>
+                <option value="disc">Discontinued</option>
+              </select>
+            </div>
+            <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem; max-width: 28rem">
+              <label for="vpmSearch">Search by name or SKU</label>
+              <input type="search" id="vpmSearch" maxlength="200" placeholder="Product name, id, or SKU…" autocomplete="off" />
+            </div>
+            <button type="button" class="vs-btn vs-btn--primary" id="vpmSearchBtn">Search</button>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vpmSearchClear">Clear</button>
+          </div>
+        </div>
+
+        <div class="vs-card" style="margin-bottom: 1rem; overflow: auto">
+          <div class="vs-table-wrap">
+            <table class="vs-table" id="vpmTable">
+              <thead>
+                <tr>
+                  <th>Image</th>
+                  <th>Name</th>
+                  <th>SKU</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="vpmTbody"></tbody>
+            </table>
+          </div>
+          <p id="vpmEmpty" class="vs-muted" style="display: none; padding: 0.75rem 1rem">No products match.</p>
+        </div>
+
+        <div class="vs-card" id="vpmEditCard" hidden>
+          <h2 class="vs-card__title" style="margin-top: 0">Edit product</h2>
+          <p class="vs-muted" style="margin-top: 0">Product id: <code id="vpmEditId"></code></p>
+          <p id="vpmCatalogNote" class="vs-muted" style="margin-top: 0; display: none">
+            Catalog listing: change <strong>prices</strong>, <strong>OOS</strong>, or <strong>discontinue / set active</strong> (syncs with Inventory product pickers). Name and image stay on the bundled site catalog.
+          </p>
+          <div class="vs-field">
+            <label for="vpmName">Name</label>
+            <input type="text" id="vpmName" maxlength="500" />
+          </div>
+          <div class="vs-row-actions" style="flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem">
+            <div class="vs-field" style="margin: 0; min-width: 6rem">
+              <label for="vpmPriceS">Price S</label>
+              <input type="number" id="vpmPriceS" min="0" step="0.01" />
+            </div>
+            <div class="vs-field" style="margin: 0; min-width: 6rem">
+              <label for="vpmPriceM">Price M</label>
+              <input type="number" id="vpmPriceM" min="0" step="0.01" />
+            </div>
+            <div class="vs-field" style="margin: 0; min-width: 6rem">
+              <label for="vpmPriceL">Price L</label>
+              <input type="number" id="vpmPriceL" min="0" step="0.01" />
+            </div>
+          </div>
+          <div class="vs-row-actions" style="flex-wrap: wrap; gap: 0.75rem; margin-top: 0.5rem">
+            <div class="vs-field" style="margin: 0; flex: 1; min-width: 8rem">
+              <label for="vpmLblS">Size label S (optional)</label>
+              <input type="text" id="vpmLblS" maxlength="120" />
+            </div>
+            <div class="vs-field" style="margin: 0; flex: 1; min-width: 8rem">
+              <label for="vpmLblM">Size label M (optional)</label>
+              <input type="text" id="vpmLblM" maxlength="120" />
+            </div>
+            <div class="vs-field" style="margin: 0; flex: 1; min-width: 8rem">
+              <label for="vpmLblL">Size label L (optional)</label>
+              <input type="text" id="vpmLblL" maxlength="120" />
+            </div>
+          </div>
+          <div class="vs-field" style="margin-top: 0.75rem">
+            <label for="vpmImage">New image (optional)</label>
+            <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
+          </div>
+          <div class="vs-field" style="margin-top: 0.75rem">
+            <label class="vi-oos-inline vi-oos-inline--minimal" style="cursor: pointer; display: inline-flex; gap: 0.4rem; align-items: center">
+              <input type="checkbox" id="vpmOos" />
+              <span>Hide on guest site (out of stock)</span>
+            </label>
+          </div>
+          <p class="vs-muted" id="vpmMsg" style="display: none; margin-top: 0.5rem"></p>
+          <div class="vs-row-actions" style="margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem">
+            <button type="button" class="vs-btn vs-btn--primary" id="vpmSave">Save changes</button>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vpmCancelEdit">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-products-manage.js"></script>
+</body>
+</html>

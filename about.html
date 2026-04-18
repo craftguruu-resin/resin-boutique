@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="" data-bill-api-port="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>About Craftguru — Jaipur resin studio &amp; catalog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="motion.css" />
+</head>
+<body class="subpage">
+  <div class="mesh-gradient" aria-hidden="true"></div>
+  <div class="tone-shift" aria-hidden="true"></div>
+  <div class="animated-backdrop" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-lines" aria-hidden="true"></div>
+
+  <header class="site-top site-top--fx">
+    <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
+      <img
+        class="brand__logo-img"
+        src="media/brand-craftguru.png"
+        width="360"
+        height="108"
+        alt="Craftguru"
+        decoding="async"
+      />
+    </a>
+    <nav class="nav-dock nav-dock--fx" aria-label="Main">
+      <a href="index.html" class="nav-dock-link">Home</a>
+      <a href="index.html#categories" class="nav-dock-link">Shop</a>
+      <a href="about.html" class="nav-dock-link is-active">About</a>
+    </nav>
+    <div class="site-top-end">
+      <div class="global-find" id="globalFindRoot" data-find-mode="about">
+        <button
+          type="button"
+          class="global-find__trigger"
+          id="globalFindTrigger"
+          aria-expanded="false"
+          aria-controls="globalFindPopover"
+          aria-label="Open catalog search"
+        >
+          <span class="global-find__orbit" aria-hidden="true"></span>
+          <svg class="global-find__glyph" width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.25" stroke="currentColor" stroke-width="1.5" />
+            <path d="M14.6 14.6L20 20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </button>
+        <div class="global-find__popover" id="globalFindPopover" role="region" aria-label="Search catalog" hidden>
+          <div class="global-find__panel">
+            <div class="global-find__panel-glow" aria-hidden="true"></div>
+            <p class="global-find__kicker" id="globalFindKicker">Discover</p>
+            <div class="global-find__sort-block" id="globalFindSortWrap" hidden>
+              <label class="global-find__mini-label" for="globalFindSort">Order</label>
+              <select id="globalFindSort" class="global-find__select"></select>
+            </div>
+            <label class="visually-hidden" for="globalFindQuery">Search catalog</label>
+            <input type="search" id="globalFindQuery" class="global-find__input" autocomplete="off" />
+            <p class="global-find__hint" id="globalFindHint" aria-live="polite"></p>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
+        <span class="btn-cart-label">Cart</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="sub-main">
+    <article class="about-page about-page--craftguru">
+      <header class="about-hero about-reveal" style="--about-d: 0.04s">
+        <p class="about-eyebrow">Jaipur bench · Wholesale &amp; retail · Catalog 2026</p>
+        <h1 class="about-hero-title about-hero-title--glint">Craftguru</h1>
+        <p class="about-lead">
+          We are a hand-pouring studio and catalog house for crystal epoxy resin—coasters, wall clocks, pooja plates, keychains, trays, mantra frames, and custom preservation pieces. This site is your line sheet: browse categories, open sizes and MRP on each product page, then check out or reach us on WhatsApp for bulk, custom pours, and studio visits by appointment.
+        </p>
+        <ul class="about-stat-row" aria-label="Highlights">
+          <li class="about-stat-pill" style="--pill: 0">Hand-poured in India</li>
+          <li class="about-stat-pill" style="--pill: 1">India-wide shipping</li>
+          <li class="about-stat-pill" style="--pill: 2">WhatsApp-first support</li>
+        </ul>
+      </header>
+
+      <section class="about-band about-reveal" style="--about-d: 0.1s" aria-labelledby="about-who">
+        <h2 id="about-who">Who we are today</h2>
+        <p>
+          Craftguru operates from Jaipur with a bench-first mindset: colour chemistry, controlled exotherm, and finish QA matter as much as the final silhouette. We serve retail buyers who want one statement piece and wholesale partners who need predictable spec, clean packaging, and honest timelines—especially through heat, monsoon transit, and busy retail seasons.
+        </p>
+        <p>
+          Our online catalog mirrors what we pour in the studio—when you pick a size on a product page, you are choosing the same pour rules we use for stockists. Account sign-in (phone + OTP) lets you save progress after checkout on this device; Instagram and WhatsApp stay the fastest lanes for sizing doubts and custom briefs.
+        </p>
+      </section>
+
+      <section class="about-band about-reveal" style="--about-d: 0.16s" aria-labelledby="about-what">
+        <h2 id="about-what">What we pour</h2>
+        <p>Lines we ship today include (and keep growing with the bench):</p>
+        <ul class="about-list">
+          <li>Resin coasters, trays, and cutlery or tissue holders for tables that see daily use.</li>
+          <li>Wall clocks and mantra frames where depth and rim-light read clean from a distance.</li>
+          <li>Pooja plates, ring platters, varmala preservation, and customised frames for rituals and milestones.</li>
+          <li>Keychains, nameplates, and gallery pieces sized for gifting or retail shelves.</li>
+        </ul>
+      </section>
+
+      <div class="about-columns">
+        <section class="about-reveal" style="--about-d: 0.22s">
+          <h2>Our process</h2>
+          <p>
+            Crystal-clear epoxy, UV-aware pigments, staged metallics, and slow cures keep surfaces glassy instead of foggy. Large faces get thermal management; thin edges get craze-aware handling. Every SKU path ends with a light check and fingertip pass—same bar for one-offs and repeat wholesale batches.
+          </p>
+        </section>
+        <section class="about-reveal" style="--about-d: 0.28s">
+          <h2>Sustainability &amp; packaging</h2>
+          <p>
+            Scrap from larger pours is recast into smaller SKUs where chemistry allows. Packing uses recycled paper where we can, corner armour only where resin needs it, and minimal single-use plastic—enough to survive Indian courier networks, not more.
+          </p>
+        </section>
+      </div>
+
+      <section class="about-band about-reveal" style="--about-d: 0.32s" aria-labelledby="about-buy">
+        <h2 id="about-buy">How to buy</h2>
+        <p>
+          Start from <strong>Home → Shop categories</strong>, open a line, then a product. Sizes and MRP live on the product page. Add to cart, go to checkout for card-style payment steps (demo UI in staging builds), or WhatsApp <a href="https://wa.me/918824350056">+91-8824350056</a> for pro-forma invoices, bulk MOQs, and custom colour holds.
+        </p>
+      </section>
+
+      <section class="about-band about-reveal" style="--about-d: 0.38s" aria-labelledby="about-contact">
+        <h2 id="about-contact">Studio hours &amp; contact</h2>
+        <div class="about-connect-grid">
+          <div class="about-connect-item">
+            <strong>Phone</strong>
+            <a href="tel:+918824350056">+91-8824350056</a><br />
+            <span>9:30 am – 7:00 pm, Mon–Sat (IST)</span>
+          </div>
+          <div class="about-connect-item">
+            <strong>Email</strong>
+            <a href="mailto:sales@craftguru.co.in">sales@craftguru.co.in</a>
+          </div>
+          <div class="about-connect-item">
+            <strong>Instagram</strong>
+            <a href="https://www.instagram.com/craftguruindia/" target="_blank" rel="noopener noreferrer">@craftguruindia</a> — pours, drops, factory notes.
+          </div>
+          <div class="about-connect-item">
+            <strong>Location</strong>
+            Jaipur, Rajasthan · India-wide dispatch · Visits by appointment.
+          </div>
+        </div>
+      </section>
+
+      <p class="about-cta about-cta--pair about-reveal" style="--about-d: 0.44s">
+        <a class="btn-glass-dome" href="index.html#categories"><span>Browse categories</span></a>
+        <a class="btn-glass-dome" href="index.html#shop"><span>Featured resin</span></a>
+      </p>
+      <p class="about-studio-gate-wrap about-reveal" style="--about-d: 0.5s">
+        <button type="button" class="about-studio-gate" id="vendorStudioGateBtn" aria-haspopup="dialog" aria-controls="vendorGateModal">
+          Studio dispatch
+        </button>
+      </p>
+    </article>
+  </main>
+
+  <div class="vendor-gate-modal" id="vendorGateModal" hidden role="dialog" aria-modal="true" aria-labelledby="vendorGateTitle">
+    <button type="button" class="vendor-gate-modal__backdrop" id="vendorGateModalBackdrop" aria-label="Close"></button>
+    <div class="vendor-gate-modal__card">
+      <h3 class="vendor-gate-modal__title" id="vendorGateTitle">Studio sign-in</h3>
+      <p class="vendor-gate-modal__hint">Owner access — dashboard, orders, tags, inventory, and returns.</p>
+      <label class="vendor-gate-modal__label" for="vendorGateUser">Username</label>
+      <input type="text" id="vendorGateUser" class="vendor-gate-modal__input" autocomplete="username" />
+      <label class="vendor-gate-modal__label" for="vendorGatePass">Password</label>
+      <input type="password" id="vendorGatePass" class="vendor-gate-modal__input" autocomplete="current-password" />
+      <p class="vendor-gate-modal__err" id="vendorGateErr" role="alert" hidden></p>
+      <button type="button" class="checkout-submit vendor-gate-modal__primary" id="vendorGateSubmit">Open vendor desk</button>
+      <button type="button" class="vendor-gate-modal__ghost" id="vendorGateCancel">Cancel</button>
+    </div>
+  </div>
+
+  <footer class="site-footer site-footer--craftguru" id="site-footer">
+    <div class="footer-sitemap">
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Useful Links</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="about.html">About Us</a></li>
+          <li><a href="index.html#footer-connect">Contact Us</a></li>
+          <li><a href="#">FAQs</a></li>
+          <li><a href="#">Blog</a></li>
+          <li><a href="#">Careers</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Main menu</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
+          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
+          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
+          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Varmala Preservation</a></li>
+          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
+          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
+          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Help</h3>
+        <ul class="footer-sitemap__list">
+          <li><a href="#">Privacy Policy</a></li>
+          <li><a href="#">Shipping Options</a></li>
+          <li><a href="#">Terms &amp; Conditions</a></li>
+          <li><a href="#">Purchase &amp; Returns</a></li>
+        </ul>
+      </div>
+      <div class="footer-sitemap__col" id="footer-connect">
+        <h3 class="footer-sitemap__title">Connect Us</h3>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">📞</span><a href="tel:+918824350056">+91-8824350056</a></p>
+        <p class="footer-connect__muted">9.30 am to 7.00 pm Monday to Saturday</p>
+        <p class="footer-connect__line"><span class="footer-connect__icon" aria-hidden="true">✉️</span><a href="mailto:sales@craftguru.co.in">sales@craftguru.co.in</a></p>
+      </div>
+      <div class="footer-sitemap__col">
+        <h3 class="footer-sitemap__title">Newsletter</h3>
+        <form class="footer-newsletter" id="footerNewsletterForm" action="#" method="post">
+          <label class="visually-hidden" for="footerNewsletterEmail">Email address</label>
+          <div class="footer-newsletter__field">
+            <input type="email" id="footerNewsletterEmail" class="footer-newsletter__input" placeholder="Enter email" autocomplete="email" />
+            <button type="submit" class="footer-newsletter__btn" aria-label="Subscribe to newsletter">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <path d="M4 6h16v12H4V6zm0 0 8 6 8-6" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </form>
+        <div class="footer-social" aria-label="Social links">
+          <a class="footer-social__link" href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">X</a>
+          <a class="footer-social__link" href="https://www.facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">f</a>
+          <a class="footer-social__link footer-social__link--wide" href="https://www.youtube.com" target="_blank" rel="noopener noreferrer" aria-label="YouTube">YT</a>
+          <a class="footer-social__link" href="https://www.pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">P</a>
+          <a class="footer-social__link" href="https://www.instagram.com/craftguruindia/" target="_blank" rel="noopener noreferrer" aria-label="Instagram">IG</a>
+          <a class="footer-social__link" href="mailto:sales@craftguru.co.in" aria-label="Email">@</a>
+        </div>
+      </div>
+    </div>
+    <p class="footer-copy footer-copy--craftguru">© <span id="year"></span> Craft Guru · Jaipur</p>
+  </footer>
+
+  <aside class="cart-drawer" id="cartDrawer" aria-hidden="true">
+    <div class="cart-drawer-inner">
+      <div class="cart-header">
+        <h2>Your cart</h2>
+        <button type="button" class="icon-btn" id="cartClose" aria-label="Close cart">✕</button>
+      </div>
+      <ul class="cart-list" id="cartList"></ul>
+      <div class="cart-footer">
+        <div class="cart-total-row">
+          <span>Subtotal</span>
+          <strong id="cartSubtotal">₹0</strong>
+        </div>
+        <button type="button" class="btn-checkout" id="checkoutBtn">Go to checkout</button>
+        <p class="cart-note">Checkout to order · WhatsApp +91-8824350056</p>
+      </div>
+    </div>
+  </aside>
+  <div class="cart-backdrop" id="cartBackdrop" hidden></div>
+
+  <script src="data.js"></script>
+  <script src="cart.js"></script>
+  <script src="shell.js"></script>
+  <script src="header.js"></script>
+  <script src="global-find.js"></script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+  <script>
+    (function () {
+      var TOKEN_KEY = "craftguruVendorToken";
+      var STATIC_DEV_PORTS = { "5500": 1, "5501": 1, "8080": 1, "8888": 1, "3001": 1, "5173": 1, "5174": 1, "4173": 1 };
+      function apiPortOverride() {
+        try {
+          var v = document.documentElement.getAttribute("data-bill-api-port");
+          if (v != null && String(v).trim()) {
+            var n = parseInt(String(v).trim(), 10);
+            if (isFinite(n) && n > 0 && n < 65536) return String(n);
+          }
+        } catch (_) {}
+        try {
+          var ls = localStorage.getItem("craftguruBillApiPort");
+          if (ls != null && String(ls).trim()) {
+            var n2 = parseInt(String(ls).trim(), 10);
+            if (isFinite(n2) && n2 > 0 && n2 < 65536) return String(n2);
+          }
+        } catch (_) {}
+        return "";
+      }
+      function apiBase() {
+        try {
+          var v = document.documentElement.getAttribute("data-bill-api-base");
+          if (v != null) {
+            var t = String(v).trim().replace(/\/+$/, "");
+            if (t.length) return t;
+          }
+        } catch (_) {}
+        try {
+          if (window.location && window.location.protocol !== "file:") {
+            var loc = window.location;
+            var port = loc.port || (loc.protocol === "https:" ? "443" : "80");
+            if (STATIC_DEV_PORTS[port]) {
+              var po = apiPortOverride();
+              return "http://127.0.0.1:" + (po || "3847");
+            }
+            return String(loc.origin).replace(/\/+$/, "");
+          }
+        } catch (_) {}
+        var p = apiPortOverride();
+        if (p) return "http://127.0.0.1:" + p;
+        return "http://127.0.0.1:3847";
+      }
+      var modal = document.getElementById("vendorGateModal");
+      var btn = document.getElementById("vendorStudioGateBtn");
+      var bd = document.getElementById("vendorGateModalBackdrop");
+      var cancel = document.getElementById("vendorGateCancel");
+      var submit = document.getElementById("vendorGateSubmit");
+      var user = document.getElementById("vendorGateUser");
+      var pass = document.getElementById("vendorGatePass");
+      var err = document.getElementById("vendorGateErr");
+      function openM() {
+        if (!modal) return;
+        if (err) {
+          err.setAttribute("hidden", "hidden");
+          err.textContent = "";
+        }
+        modal.removeAttribute("hidden");
+        if (user) user.focus();
+      }
+      function closeM() {
+        if (modal) modal.setAttribute("hidden", "hidden");
+      }
+      if (btn) btn.addEventListener("click", openM);
+      if (bd) bd.addEventListener("click", closeM);
+      if (cancel) cancel.addEventListener("click", closeM);
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && modal && !modal.hasAttribute("hidden")) closeM();
+      });
+      if (submit) {
+        submit.addEventListener("click", function () {
+          if (err) {
+            err.setAttribute("hidden", "hidden");
+            err.textContent = "";
+          }
+          var base = apiBase();
+          fetch(base + "/api/vendor/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: (user && user.value) || "",
+              password: (pass && pass.value) || "",
+            }),
+          })
+            .then(function (res) {
+              return res.text().then(function (txt) {
+                var j = {};
+                try {
+                  j = JSON.parse(txt);
+                } catch (_) {}
+                if (!res.ok || !j.ok) {
+                  throw new Error((j && j.error) || txt.slice(0, 120) || "Sign-in failed");
+                }
+                return j;
+              });
+            })
+            .then(function (j) {
+              try {
+                localStorage.setItem(TOKEN_KEY, j.token || "");
+                sessionStorage.setItem(TOKEN_KEY, j.token || "");
+              } catch (_) {}
+              window.location.href = "vendor-dashboard.html";
+            })
+            .catch(function (e) {
+              if (err) {
+                err.textContent = String((e && e.message) || "Sign-in failed");
+                err.removeAttribute("hidden");
+              }
+            });
+        });
+      }
+    })();
+  </script>
+  <script>
+    (function () {
+      var nodes = document.querySelectorAll(".about-reveal");
+      if (!nodes.length) return;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        nodes.forEach(function (el) {
+          el.classList.add("is-inview");
+        });
+        return;
+      }
+      var obs = new IntersectionObserver(
+        function (entries) {
+          entries.forEach(function (entry) {
+            if (entry.isIntersecting) {
+              entry.target.classList.add("is-inview");
+              obs.unobserve(entry.target);
+            }
+          });
+        },
+        { root: null, rootMargin: "0px 0px -7% 0px", threshold: 0.08 }
+      );
+      nodes.forEach(function (el) {
+        obs.observe(el);
+      });
+    })();
+  </script>
+</body>
+</html>

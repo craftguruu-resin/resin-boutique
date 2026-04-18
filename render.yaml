@@ -1,0 +1,12 @@
+# Optional: Render Blueprint — "New" → "Blueprint" → paste repo or commit render.yaml
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: craftguru-api
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health

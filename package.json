@@ -1,0 +1,8 @@
+{
+  "name": "resin-boutique",
+  "private": true,
+  "description": "Storefront + tools; API lives in server/",
+  "scripts": {
+    "pages:patch-api": "node tools/set-bill-api-base.js"
+  }
+}

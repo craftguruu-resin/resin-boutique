@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My orders — Craft guru</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="motion.css" />
+  <link rel="stylesheet" href="account-page.css" />
+</head>
+<body class="subpage page-checkout">
+  <div class="mesh-gradient" aria-hidden="true"></div>
+  <div class="tone-shift" aria-hidden="true"></div>
+  <div class="animated-backdrop" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="grid-lines" aria-hidden="true"></div>
+
+  <header class="site-top site-top--fx">
+    <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
+      <img class="brand__logo-img" src="media/brand-craftguru.png" width="360" height="108" alt="Craftguru" decoding="async" />
+    </a>
+    <nav class="nav-dock nav-dock--fx" aria-label="Main">
+      <a href="index.html" class="nav-dock-link">Home</a>
+      <a href="index.html#categories" class="nav-dock-link">Shop</a>
+      <a href="checkout.html" class="nav-dock-link">Checkout</a>
+    </nav>
+    <div class="site-top-end">
+      <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
+        <span class="btn-cart-label">Cart</span>
+        <span class="cart-count" id="cartCount">0</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="sub-main">
+    <div class="account-shell">
+      <p id="accountPaidBanner" class="account-paid-banner" role="status" hidden></p>
+
+      <div id="accountSessionBar" class="account-session-bar" hidden>
+        <p class="account-session-bar__text">
+          Signed in as <strong id="acctSessionEmail"></strong>
+        </p>
+        <button type="button" class="checkout-back-link" id="acctSignOut">Sign out</button>
+      </div>
+
+      <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading">
+        <div class="auth-modal__head checkout-auth-sheet__head">
+          <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
+        </div>
+        <div class="auth-tabs">
+          <button type="button" class="auth-tab is-active" id="acctTabSu">Sign up</button>
+          <button type="button" class="auth-tab" id="acctTabLo">Log in</button>
+        </div>
+        <div id="acctPanelSu">
+          <div class="auth-field">
+            <label for="acctNameSu">Name (optional)</label>
+            <input id="acctNameSu" type="text" autocomplete="name" placeholder="Your name" />
+          </div>
+          <div class="auth-field">
+            <label for="acctEmailSu">Email</label>
+            <input id="acctEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+          </div>
+          <button type="button" class="checkout-pay-secondary" id="acctSendSu">Send OTP</button>
+          <div class="auth-field">
+            <label for="acctOtpSu">Enter OTP</label>
+            <input id="acctOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+          </div>
+          <p class="auth-msg" id="acctMsgSu" style="display: none"></p>
+          <button type="button" class="auth-submit" id="acctVerifySu">Verify</button>
+        </div>
+        <div id="acctPanelLo" class="is-hidden">
+          <div class="auth-field">
+            <label for="acctEmailLo">Email</label>
+            <input id="acctEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+          </div>
+          <button type="button" class="checkout-pay-secondary" id="acctSendLo">Send OTP</button>
+          <div class="auth-field">
+            <label for="acctOtpLo">Enter OTP</label>
+            <input id="acctOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+          </div>
+          <p class="auth-msg" id="acctMsgLo" style="display: none"></p>
+          <button type="button" class="auth-submit" id="acctVerifyLo">Verify</button>
+        </div>
+      </div>
+
+      <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountOrdersCard" hidden>
+        <div class="auth-modal__head checkout-auth-sheet__head">
+          <h2 style="margin: 0; font-size: 1.1rem">Your orders</h2>
+        </div>
+        <p style="margin: 0 0 0.35rem; font-size: 0.84rem; color: rgba(26, 32, 44, 0.55)">
+          Parcel tag and packing status match what the vendor sets on the orders board.
+        </p>
+        <p class="account-order-hint">Cancel is available only before payment, while the order is still new.</p>
+        <ul class="auth-progress-list account-orders-list" id="accountOrdersList"></ul>
+      </div>
+    </div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="cart.js"></script>
+  <script src="auth-db.js"></script>
+  <script src="shell.js"></script>
+  <script src="account.js"></script>
+</body>
+</html>
