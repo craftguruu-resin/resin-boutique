@@ -6,6 +6,16 @@
 
   var STATIC_DEV_PORTS = { "5500": 1, "5501": 1, "8080": 1, "8888": 1, "3001": 1, "5173": 1, "5174": 1, "4173": 1 };
 
+  function isPrivateLanHost(hostname) {
+    var h = String(hostname || "").toLowerCase();
+    if (!/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(h)) return false;
+    var p = h.split(".").map(Number);
+    if (p[0] === 10) return true;
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true;
+    if (p[0] === 192 && p[1] === 168) return true;
+    return false;
+  }
+
   function billApiPortOverride() {
     try {
       var v = document.documentElement.getAttribute("data-bill-api-port");
@@ -29,7 +39,20 @@
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
-        if (t.length) return t;
+        if (t.length) {
+          try {
+            if (window.location && window.location.protocol !== "file:") {
+              var ph = String(window.location.hostname || "").toLowerCase();
+              var tl = t.toLowerCase();
+              var cfgLocal = tl.indexOf("127.0.0.1") >= 0 || tl.indexOf("localhost") >= 0;
+              var loop = ph === "localhost" || ph === "127.0.0.1" || ph === "[::1]";
+              if (cfgLocal && !loop && !isPrivateLanHost(ph)) {
+                t = "";
+              }
+            }
+          } catch (_) {}
+          if (t.length) return t;
+        }
       }
     } catch (_) {}
     try {

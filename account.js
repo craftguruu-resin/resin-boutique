@@ -23,12 +23,37 @@
     return "";
   }
 
+  function billIsPrivateLanHost(hostname) {
+    var h = String(hostname || "").toLowerCase();
+    if (!/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(h)) return false;
+    var p = h.split(".").map(function (x) {
+      return Number(x);
+    });
+    if (p[0] === 10) return true;
+    if (p[0] === 172 && p[1] >= 16 && p[1] <= 31) return true;
+    if (p[0] === 192 && p[1] === 168) return true;
+    return false;
+  }
+
   function billApiBase() {
     try {
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
-        if (t.length) return t;
+        if (t.length) {
+          try {
+            if (window.location && window.location.protocol !== "file:") {
+              var ph = String(window.location.hostname || "").toLowerCase();
+              var tl = t.toLowerCase();
+              var cfgLocal = tl.indexOf("127.0.0.1") >= 0 || tl.indexOf("localhost") >= 0;
+              var loop = ph === "localhost" || ph === "127.0.0.1" || ph === "[::1]";
+              if (cfgLocal && !loop && !billIsPrivateLanHost(ph)) {
+                t = "";
+              }
+            }
+          } catch (_) {}
+          if (t.length) return t;
+        }
       }
     } catch (_) {}
     var po = billApiPortOverride() || "3847";

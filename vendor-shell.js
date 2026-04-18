@@ -77,6 +77,17 @@
       var v0 = document.documentElement.getAttribute("data-bill-api-base");
       if (v0 != null) configuredBase = String(v0).trim().replace(/\/+$/, "");
     } catch (_) {}
+    /** Shipped HTML defaults to localhost API; on Render/production use this page's origin instead. */
+    try {
+      if (configuredBase.length && window.location && window.location.protocol !== "file:") {
+        var cb = configuredBase.toLowerCase();
+        var cfgLocal = cb.indexOf("127.0.0.1") >= 0 || cb.indexOf("localhost") >= 0;
+        var pageHost = String(window.location.hostname || "").toLowerCase();
+        if (cfgLocal && !isLoopbackHost(pageHost) && !isPrivateLanHost(pageHost)) {
+          configuredBase = "";
+        }
+      }
+    } catch (_) {}
 
     var po = apiPortOverride() || "3847";
     try {

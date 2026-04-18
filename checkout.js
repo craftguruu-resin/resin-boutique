@@ -515,7 +515,19 @@
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
-        if (t.length) return t;
+        if (t.length) {
+          try {
+            if (window.location && window.location.protocol !== "file:") {
+              var ph = String(window.location.hostname || "").toLowerCase();
+              var tl = t.toLowerCase();
+              var cfgLocal = tl.indexOf("127.0.0.1") >= 0 || tl.indexOf("localhost") >= 0;
+              if (cfgLocal && !billIsLoopbackHost(ph) && !billIsPrivateLanHost(ph)) {
+                t = "";
+              }
+            }
+          } catch (_) {}
+          if (t.length) return t;
+        }
       }
     } catch (_) {}
     var po = billApiPortOverride() || "3847";
