@@ -287,9 +287,47 @@
       } else {
         delete p.listed;
       }
+      if (o.returnGift === true) {
+        p.returnGift = true;
+        n++;
+      } else if (Object.prototype.hasOwnProperty.call(o, "returnGift")) {
+        delete p.returnGift;
+        n++;
+      }
       BY_ID[p.id] = p;
     });
     return n;
+  }
+
+  function partialTokenMatchCatalog(haystack, queryRaw) {
+    var h = String(haystack || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    var q = String(queryRaw || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!q) return true;
+    var parts = q.split(" ").filter(Boolean);
+    for (var i = 0; i < parts.length; i++) {
+      if (h.indexOf(parts[i]) === -1) return false;
+    }
+    return true;
+  }
+
+  /** Guest search: partial token match across listed catalog products (name, id, category label). */
+  function searchCatalogPartial(queryRaw, limit) {
+    var cap = Math.min(40, Math.max(1, limit || 12));
+    var q = String(queryRaw || "").trim();
+    if (!q) return [];
+    var out = [];
+    for (var i = 0; i < PRODUCTS.length && out.length < cap; i++) {
+      var p = PRODUCTS[i];
+      if (!isListedProduct(p)) continue;
+      var hay = (p.name + " " + p.id + " " + getCategoryLabel(p.category)).toLowerCase();
+      if (partialTokenMatchCatalog(hay, q)) out.push(p);
+    }
+    return out;
   }
 
   var PLACEHOLDER_PRODUCT_IMAGE = "media/placeholder-product.svg";
@@ -338,6 +376,9 @@
       if (row.listingOutOfStock === true || row.outOfStock === true) {
         p.outOfStock = true;
       }
+      if (row.returnGift === true) {
+        p.returnGift = true;
+      }
       n++;
     });
     return n;
@@ -368,5 +409,6 @@
     imageUrl: imageUrl,
     applyPriceOverrides: applyPriceOverrides,
     applyVendorProductsMerge: applyVendorProductsMerge,
+    searchCatalogPartial: searchCatalogPartial,
   };
 })(typeof window !== 'undefined' ? window : this);

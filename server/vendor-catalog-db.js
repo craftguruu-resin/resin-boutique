@@ -3,7 +3,7 @@
 var poolMod = require("./db/pool.js");
 var catalogFromData = require("./catalog-from-data.js");
 
-/** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, outOfStock, listed } */
+/** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, outOfStock, listed, returnGift } */
 function listOverridesMap(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -13,7 +13,7 @@ function listOverridesMap(cb) {
   }
   pool
     .query(
-      "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed FROM catalog_price_overrides ORDER BY product_id"
+      "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift FROM catalog_price_overrides ORDER BY product_id"
     )
     .then(function (r) {
       var m = {};
@@ -29,6 +29,7 @@ function listOverridesMap(cb) {
           stockL: row.stock_l != null ? Number(row.stock_l) : null,
           outOfStock: row.out_of_stock === true,
           listed: row.listed !== false,
+          returnGift: row.return_gift === true,
         };
       });
       cb(null, m);
@@ -113,7 +114,7 @@ function mergeStockPatch(cur, patch) {
 
 /**
  * @param {string} productId
- * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, outOfStock?: boolean, listed?: boolean }} patch
+ * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, outOfStock?: boolean, listed?: boolean, returnGift?: boolean }} patch
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function upsertOverride(productId, patch, cb) {
@@ -153,14 +154,18 @@ function upsertOverride(productId, patch, cb) {
       if (patch && Object.prototype.hasOwnProperty.call(patch, "listed")) {
         listed = !!patch.listed;
       }
+      var rg = cur.returnGift === true;
+      if (patch && Object.prototype.hasOwnProperty.call(patch, "returnGift")) {
+        rg = !!patch.returnGift;
+      }
       pool
         .query(
-          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) " +
+          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
-            "out_of_stock = EXCLUDED.out_of_stock, listed = EXCLUDED.listed, " +
-            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, oos, listed]
+            "out_of_stock = EXCLUDED.out_of_stock, listed = EXCLUDED.listed, return_gift = EXCLUDED.return_gift, " +
+            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, updated_at",
+          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, oos, listed, rg]
         )
         .then(function (r) {
           var row = r.rows[0];
@@ -178,6 +183,7 @@ function upsertOverride(productId, patch, cb) {
             },
             outOfStock: row.out_of_stock === true,
             listed: row.listed !== false,
+            returnGift: row.return_gift === true,
             updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
           });
         })

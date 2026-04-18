@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
+  <link rel="stylesheet" href="guest-layout.css" />
 </head>
 <body class="subpage page-product">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -33,7 +34,9 @@
     </a>
     <nav class="nav-dock nav-dock--fx" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
-      <a href="index.html#categories" class="nav-dock-link">Shop</a>
+      <a href="raw-material.html" class="nav-dock-link">Resin raw material</a>
+      <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
+      <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
     <div class="site-top-end">
@@ -109,6 +112,11 @@
               <p class="qty-dock__sub" id="qtyTierHint">1 piece — list price</p>
             </div>
             <div class="qty-options" id="qtyOptions" role="radiogroup" aria-label="Quantity"></div>
+            <div class="product-qty-stepper" id="productQtyStepper" aria-label="Adjust quantity">
+              <button type="button" id="productQtyMinus" aria-label="Decrease quantity">−</button>
+              <span class="product-qty-stepper__val" id="productQtyStepperVal">1</span>
+              <button type="button" id="productQtyPlus" aria-label="Increase quantity">+</button>
+            </div>
             <p class="qty-bulk-note">
               Need <strong>4 or more</strong> of the same piece?
               <a href="about.html">Contact us</a> for bulk pricing and studio timelines.
@@ -135,6 +143,8 @@
             </button>
             <p class="product-cta-early__hint">Uses the size and quantity you set below (defaults to Classic, 1 pc).</p>
           </div>
+
+          <div class="product-share-bar" id="productShareHost" aria-label="Share this piece"></div>
 
           <section class="product-overview glass-panel" aria-labelledby="overview-h">
             <h2 class="product-overview__h" id="overview-h">About this piece</h2>
@@ -289,6 +299,8 @@
   <script src="data.js"></script>
   <script src="catalog-merge.js"></script>
   <script src="cart.js"></script>
+  <script src="guest-layout.js"></script>
+  <script src="craftguru-share.js"></script>
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>

@@ -361,6 +361,10 @@
         '"></a>' +
         '<div class="product-card__shine" aria-hidden="true"></div>' +
         '<div class="product-card-image">' +
+        '<div class="product-card-share">' +
+        '<button type="button" class="product-card-share__btn">Share</button>' +
+        '<div class="product-card-share__pop" hidden aria-hidden="true"></div>' +
+        "</div>" +
         '<span class="product-badge">' +
         escapeHtml(D.getCategoryLabel(p.category)) +
         "</span>" +
@@ -392,6 +396,10 @@
         "</div>" +
         "</div>";
       els.productGrid.appendChild(card);
+      var sbtn = card.querySelector(".product-card-share__btn");
+      if (sbtn && window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountCardShare) {
+        window.CRAFTGURU_SHARE.mountCardShare(sbtn, { id: p.id, name: p.name });
+      }
     });
 
     bindCardTilt(Array.prototype.slice.call(els.productGrid.querySelectorAll(".product-card")));

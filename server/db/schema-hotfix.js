@@ -58,6 +58,36 @@ function ensureVendorInventoryColumns() {
       );
     })
     .then(function () {
+      return p.query(
+        "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false"
+      );
+    })
+    .then(function () {
+      return p.query(
+        "CREATE TABLE IF NOT EXISTS storefront_hero_slides (" +
+          "id SERIAL PRIMARY KEY," +
+          "image_path VARCHAR(500) NOT NULL," +
+          "animation VARCHAR(40) NOT NULL DEFAULT 'orbit'," +
+          "sort_order INT NOT NULL DEFAULT 0," +
+          "created_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+          ")"
+      );
+    })
+    .then(function () {
+      return p.query(
+        "CREATE TABLE IF NOT EXISTS raw_materials (" +
+          "id VARCHAR(120) PRIMARY KEY," +
+          "name VARCHAR(500) NOT NULL," +
+          "description TEXT NOT NULL DEFAULT ''," +
+          "image_path VARCHAR(500) NOT NULL DEFAULT ''," +
+          "note VARCHAR(300) NOT NULL DEFAULT ''," +
+          "is_active BOOLEAN NOT NULL DEFAULT true," +
+          "created_at TIMESTAMPTZ NOT NULL DEFAULT now()," +
+          "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+          ")"
+      );
+    })
+    .then(function () {
       return p.query("ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''");
     })
     .then(function () {

@@ -148,6 +148,14 @@
         b.setAttribute("aria-disabled", oos ? "true" : "false");
       });
     }
+    var qm = document.getElementById("productQtyMinus");
+    var qp = document.getElementById("productQtyPlus");
+    if (qm) {
+      qm.disabled = oos || selectedQty <= 1;
+    }
+    if (qp) {
+      qp.disabled = oos || selectedQty >= maxSelectableQty();
+    }
   }
 
   function onCatalogPricesMerged() {
@@ -192,13 +200,50 @@
   }
 
   function qtyDiscountMeta(q) {
-    if (q <= 1) {
+    var qq = Math.max(1, Math.floor(Number(q) || 1));
+    if (qq <= 1) {
       return { mult: 1, hint: "1 piece — list price" };
     }
-    if (q === 2) {
+    if (qq === 2) {
       return { mult: 0.9, hint: "2 pieces — 10% off each" };
     }
-    return { mult: 0.8, hint: "3 pieces — 20% off each" };
+    return {
+      mult: 0.8,
+      hint: qq + " pieces — 20% off each (bundle rate for 3+)",
+    };
+  }
+
+  function maxSelectableQty() {
+    if (!product || !selected) return 99;
+    var stk = product.stock && product.stock[selected];
+    if (stk != null && Number.isFinite(Number(stk))) {
+      return Math.max(1, Math.min(99, Math.floor(Number(stk))));
+    }
+    return 99;
+  }
+
+  function refreshQtyUi() {
+    if (!product) return;
+    var mx = maxSelectableQty();
+    selectedQty = Math.max(1, Math.min(mx, Math.floor(Number(selectedQty) || 1)));
+    var v = document.getElementById("productQtyStepperVal");
+    var m = document.getElementById("productQtyMinus");
+    var p = document.getElementById("productQtyPlus");
+    if (v) v.textContent = String(selectedQty);
+    var oos = !!product.outOfStock;
+    if (m) m.disabled = oos || selectedQty <= 1;
+    if (p) p.disabled = oos || selectedQty >= mx;
+    if (els.qtyOptions) {
+      els.qtyOptions.querySelectorAll(".qty-pick").forEach(function (b) {
+        var n = parseInt(b.dataset.qty, 10) || 1;
+        var on = n === selectedQty;
+        b.classList.toggle("is-selected", on);
+        b.setAttribute("aria-checked", on ? "true" : "false");
+      });
+    }
+    var meta = qtyDiscountMeta(selectedQty);
+    if (els.qtyTierHint) els.qtyTierHint.textContent = meta.hint;
+    updatePrice();
   }
 
   function effectiveUnitPrice(base, q) {
@@ -278,15 +323,7 @@
         "</span>";
       btn.addEventListener("click", function () {
         selectedQty = q;
-        els.qtyOptions.querySelectorAll(".qty-pick").forEach(function (b) {
-          var n = parseInt(b.dataset.qty, 10) || 1;
-          var on = n === selectedQty;
-          b.classList.toggle("is-selected", on);
-          b.setAttribute("aria-checked", on ? "true" : "false");
-        });
-        var m = qtyDiscountMeta(selectedQty);
-        if (els.qtyTierHint) els.qtyTierHint.textContent = m.hint;
-        updatePrice();
+        refreshQtyUi();
         if (els.qtyDock) {
           els.qtyDock.classList.remove("qty-dock--pulse");
           void els.qtyDock.offsetWidth;
@@ -295,8 +332,7 @@
       });
       els.qtyOptions.appendChild(btn);
     });
-    var init = qtyDiscountMeta(selectedQty);
-    if (els.qtyTierHint) els.qtyTierHint.textContent = init.hint;
+    refreshQtyUi();
   }
 
   function updatePrice() {
@@ -355,7 +391,7 @@
       els.sizeScale.setAttribute("data-sel", selected);
     }
     if (els.qtyTierHint) {
-      els.qtyTierHint.textContent = meta.hint;
+      els.qtyTierHint.textContent = qtyDiscountMeta(selectedQty).hint;
     }
   }
 
@@ -444,7 +480,7 @@
             b.classList.toggle("is-selected", on);
             b.setAttribute("aria-checked", on ? "true" : "false");
           });
-          updatePrice();
+          refreshQtyUi();
           if (els.sizeDock) {
             els.sizeDock.classList.remove("size-dock--pulse");
             void els.sizeDock.offsetWidth;
@@ -469,7 +505,7 @@
       });
     }
 
-    updatePrice();
+    refreshQtyUi();
 
     function pulseAddButtons() {
       [els.addBtn, els.addBtnTop].forEach(function (b) {
@@ -537,6 +573,29 @@
     wireAddToCart(els.addBtnTop);
 
     applyOutOfStockUi();
+
+    var sh = document.getElementById("productShareHost");
+    if (sh && window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
+      window.CRAFTGURU_SHARE.mountProductShare(sh, { id: product.id, name: product.name });
+    }
+  }
+
+  var productRootEl = document.getElementById("productRoot");
+  if (productRootEl && !productRootEl.dataset.cgQtyStep) {
+    productRootEl.dataset.cgQtyStep = "1";
+    productRootEl.addEventListener("click", function (e) {
+      var t = e.target;
+      if (!t || !product) return;
+      if (t.id === "productQtyMinus") {
+        e.preventDefault();
+        selectedQty -= 1;
+        refreshQtyUi();
+      } else if (t.id === "productQtyPlus") {
+        e.preventDefault();
+        selectedQty += 1;
+        refreshQtyUi();
+      }
+    });
   }
 
   var gfIn = document.getElementById("globalFindQuery");

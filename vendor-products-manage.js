@@ -74,7 +74,7 @@
     var rows = filteredProducts();
     if (!rows.length) {
       tb.innerHTML =
-        "<tr><td colspan=\"4\" class=\"vs-muted\">No products match this status filter.</td></tr>";
+        "<tr><td colspan=\"5\" class=\"vs-muted\">No products match this status filter.</td></tr>";
       if (empty) empty.style.display = "none";
       return;
     }
@@ -100,6 +100,9 @@
           ? "<img src=\"" + esc(imgSrc(p.image)) + "\" alt=\"\" width=\"56\" height=\"56\" style=\"object-fit:cover;border-radius:6px\" />"
           : "—";
         var skuCell = p.sku ? esc(p.sku) : "<span class=\"vs-muted\">—</span>";
+        var flags = p.returnGift
+          ? "<span class=\"vs-pill vs-pill--active\" title=\"Listed on Return gifts page\">Return gift</span>"
+          : "<span class=\"vs-muted\">—</span>";
         var actions =
           "<div class=\"vpm-actions\"><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-edit\" data-id=\"" +
           esc(p.id) +
@@ -128,6 +131,8 @@
           esc(p.id) +
           "</small></td><td>" +
           skuCell +
+          "</td><td>" +
+          flags +
           "</td><td>" +
           actions +
           "</td></tr>"
@@ -162,6 +167,15 @@
     if (fi) fi.value = "";
     var oos = document.getElementById("vpmOos");
     if (oos) oos.checked = !!p.listingOutOfStock;
+    var rgY = document.getElementById("vpmReturnGiftYes");
+    var rgN = document.getElementById("vpmReturnGiftNo");
+    if (rgY && rgN) {
+      if (p.returnGift) {
+        rgY.checked = true;
+      } else {
+        rgN.checked = true;
+      }
+    }
     var note = document.getElementById("vpmCatalogNote");
     if (note) note.style.display = editingSource === "catalog" ? "block" : "none";
     setCatalogFormDisabled(editingSource === "catalog");
@@ -259,12 +273,15 @@
     var pm = Number(document.getElementById("vpmPriceM").value);
     var pl = Number(document.getElementById("vpmPriceL").value);
 
+    var returnGift = !!(document.getElementById("vpmReturnGiftYes") && document.getElementById("vpmReturnGiftYes").checked);
+
     if (editingSource === "catalog") {
       putCatalogPrices(editingId, {
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
         outOfStock: oos,
+        returnGift: returnGift,
       })
         .then(function () {
           showMsg("Saved.", false);
@@ -287,6 +304,7 @@
     fd.set("sizeLabelS", document.getElementById("vpmLblS").value.trim());
     fd.set("sizeLabelM", document.getElementById("vpmLblM").value.trim());
     fd.set("sizeLabelL", document.getElementById("vpmLblL").value.trim());
+    fd.set("returnGift", returnGift ? "true" : "false");
     var file = document.getElementById("vpmImage").files && document.getElementById("vpmImage").files[0];
     if (file) fd.set("image", file, file.name);
 
@@ -311,7 +329,7 @@
         });
       })
       .then(function () {
-        return putCatalogPrices(editingId, { outOfStock: oos });
+        return putCatalogPrices(editingId, { outOfStock: oos, returnGift: returnGift });
       })
       .then(function () {
         showMsg("Saved.", false);

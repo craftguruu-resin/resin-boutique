@@ -58,6 +58,7 @@
                   <th>Image</th>
                   <th>Name</th>
                   <th>SKU</th>
+                  <th>Flags</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -109,6 +110,17 @@
             <label for="vpmImage">New image (optional)</label>
             <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
           </div>
+          <fieldset class="vs-field" style="margin-top: 0.75rem; border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 0.65rem; padding: 0.65rem 0.85rem">
+            <legend class="vs-muted" style="padding: 0 0.25rem">Return gifts page</legend>
+            <label style="display: flex; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem; cursor: pointer">
+              <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
+              <span>Standard listing only</span>
+            </label>
+            <label style="display: flex; gap: 0.45rem; align-items: center; cursor: pointer">
+              <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
+              <span>Mark as return gift (appears on guest “Return gifts” page)</span>
+            </label>
+          </fieldset>
           <div class="vs-field" style="margin-top: 0.75rem">
             <label class="vi-oos-inline vi-oos-inline--minimal" style="cursor: pointer; display: inline-flex; gap: 0.4rem; align-items: center">
               <input type="checkbox" id="vpmOos" />

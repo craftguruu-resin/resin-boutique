@@ -17,7 +17,10 @@ var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorProductsDb = require("./vendor-products-db.js");
+var storefrontHeroDb = require("./storefront-hero-db.js");
+var rawMaterialsDb = require("./raw-materials-db.js");
 var multer = require("multer");
+var sharp = require("sharp");
 
 var productImageUpload = multer({
   storage: multer.memoryStorage(),
@@ -1577,6 +1580,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
       o.outOfStock = !!x.outOfStock;
+      o.returnGift = !!x.returnGift;
       if (x.listed === false) {
         o.listed = false;
       }
@@ -1596,6 +1600,28 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
     }
     res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, products: list || [] });
+  });
+});
+
+/** Public: configurable hero slides (empty = storefront uses defaults). */
+app.get("/api/catalog/hero-slides", function (_req, res) {
+  storefrontHeroDb.listSlides(function (e, slides) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, slides: slides || [] });
+  });
+});
+
+/** Public: resin raw materials (vendor-managed). */
+app.get("/api/catalog/raw-materials", function (_req, res) {
+  rawMaterialsDb.listActive(function (e, list) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, materials: list || [] });
   });
 });
 
@@ -1692,6 +1718,12 @@ app.put(
           sizeLabelL: firstField(b.sizeLabelL),
           imageBuffer: req.file && req.file.buffer,
           mime: req.file && req.file.mimetype,
+          returnGift:
+            b.returnGift !== undefined
+              ? String(b.returnGift) === "true" || b.returnGift === true
+              : b.return_gift !== undefined
+                ? String(b.return_gift) === "true" || b.return_gift === true
+                : undefined,
         },
         function (e2, row) {
           if (e2) {
@@ -1726,6 +1758,152 @@ app.post("/api/vendor/products/:productId/active", function (req, res) {
         var msg = String((e2 && e2.message) || e2);
         var code = msg.indexOf("Built-in") >= 0 || msg.indexOf("not found") >= 0 ? 400 : 500;
         return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+/** Vendor: add hero slide (image + animation preset for guest homepage). */
+app.post(
+  "/api/vendor/hero-slides",
+  productImageUpload.single("image"),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      if (!req.file || !req.file.buffer || req.file.buffer.length < 32) {
+        return res.status(400).json({ ok: false, error: "Image file is required" });
+      }
+      var anim = String((req.body && req.body.animation) || "orbit").trim().slice(0, 40);
+      var siteRoot = path.join(__dirname, "..");
+      var dir = path.join(siteRoot, "media", "hero");
+      fs.mkdir(dir, { recursive: true }, function (mkErr) {
+        if (mkErr) {
+          return res.status(500).json({ ok: false, error: String(mkErr.message || mkErr) });
+        }
+        var base = crypto.randomBytes(10).toString("hex");
+        var rel = "media/hero/" + base + ".jpg";
+        var abs = path.join(siteRoot, rel);
+        sharp(req.file.buffer)
+          .rotate()
+          .jpeg({ quality: 88, mozjpeg: true })
+          .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+          .toFile(abs, function (wErr) {
+            if (wErr) {
+              return res.status(500).json({ ok: false, error: String(wErr.message || wErr) });
+            }
+            storefrontHeroDb.insertSlide({ imagePath: rel, animation: anim }, function (e2, row) {
+              if (e2) {
+                try {
+                  fs.unlinkSync(abs);
+                } catch (_) {}
+                return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+              }
+              res.setHeader("Cache-Control", "no-store");
+              res.json({ ok: true, slide: row });
+            });
+          });
+      });
+    });
+  }
+);
+
+app.delete("/api/vendor/hero-slides/:id", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    storefrontHeroDb.deleteSlide(req.params.id, function (e2) {
+      if (e2) {
+        return res.status(400).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.get("/api/vendor/raw-materials", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    rawMaterialsDb.listAll(function (e2, list) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, materials: list || [] });
+    });
+  });
+});
+
+app.post(
+  "/api/vendor/raw-materials",
+  productImageUpload.single("image"),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      var b = req.body || {};
+      function firstField(v) {
+        if (v == null) return null;
+        return Array.isArray(v) ? v[0] : v;
+      }
+      rawMaterialsDb.createRow(
+        {
+          name: firstField(b.name),
+          description: firstField(b.description),
+          note: firstField(b.note),
+          imageBuffer: req.file && req.file.buffer,
+          mime: req.file && req.file.mimetype,
+        },
+        function (e2, row) {
+          if (e2) {
+            var msg = String((e2 && e2.message) || e2);
+            var code = msg.indexOf("required") >= 0 ? 400 : 500;
+            return res.status(code).json({ ok: false, error: msg });
+          }
+          res.setHeader("Cache-Control", "no-store");
+          res.json({ ok: true, material: row });
+        }
+      );
+    });
+  }
+);
+
+app.post("/api/vendor/raw-materials/:id/active", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+    var active = req.body && req.body.active;
+    if (typeof active !== "boolean") {
+      return res.status(400).json({ ok: false, error: "Body must include active: true or false" });
+    }
+    rawMaterialsDb.setActive(id, active, function (e2) {
+      if (e2) {
+        return res.status(400).json({ ok: false, error: String(e2.message || e2) });
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true });
@@ -1893,6 +2071,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
         outOfStock: b.outOfStock !== undefined ? !!b.outOfStock : b.out_of_stock !== undefined ? !!b.out_of_stock : undefined,
         listed: b.listed !== undefined ? !!b.listed : undefined,
+        returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
       },
       function (e2, row) {
         if (e2) {

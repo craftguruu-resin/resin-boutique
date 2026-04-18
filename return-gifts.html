@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Category — Craft guru</title>
+  <title>Return gifts — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -36,7 +36,7 @@
       <a href="index.html" class="nav-dock-link">Home</a>
       <a href="raw-material.html" class="nav-dock-link">Resin raw material</a>
       <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
-      <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
+      <a href="return-gifts.html" class="nav-dock-link is-active">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
     <div class="site-top-end">
@@ -94,20 +94,15 @@
     <section class="band-shop band-shop--flush">
       <div class="band-shop-inner">
         <p class="crumb crumb--fx">
-          <a href="index.html">Home</a> <span aria-hidden="true">/</span>
-          <a id="crumbCatLink" href="#"><span id="crumbCat">Category</span></a>
-          <span id="crumbSubWrap" hidden> <span aria-hidden="true">/</span> <span id="crumbSubLabel">—</span></span>
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span> Return gifts
         </p>
-        <p class="flow-step flow-step--on-dark" id="categoryFlowStep">Step 1 · Choose a product below — Step 2 is size &amp; cart on the next page</p>
         <div class="section-head section-head--solo">
           <div>
-            <h1 class="band-title band-title--fx" id="categoryHeading">Browse</h1>
-            <p class="band-sub" id="categorySub">Loading…</p>
+            <h1 class="band-title band-title--fx">Return gifts</h1>
+            <p class="band-sub">Pieces flagged as return gifts in the vendor catalog — open any card for sizes and MRP.</p>
           </div>
         </div>
-        <div class="product-grid" id="subcategoryGrid" hidden></div>
-        <div class="product-grid" id="productGrid"></div>
-        <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+        <div class="product-grid" id="rgGrid"></div>
       </div>
     </section>
   </main>
@@ -207,7 +202,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
-  <script src="category.js"></script>
+  <script src="return-gifts.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>

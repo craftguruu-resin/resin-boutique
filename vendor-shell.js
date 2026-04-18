@@ -44,7 +44,16 @@
       var p = (window.location.pathname || "").replace(/\\/g, "/").split("/").pop() || "";
       p = String(p).split("?")[0].toLowerCase();
       if (!p) return false;
-      if (p === "checkout.html" || p === "vendororder.html" || p === "vendor-portal.html" || p === "vendor-products-manage.html") return true;
+      if (
+        p === "checkout.html" ||
+        p === "vendororder.html" ||
+        p === "vendor-portal.html" ||
+        p === "vendor-products-manage.html" ||
+        p === "vendor-hero.html" ||
+        p === "vendor-raw-materials.html"
+      ) {
+        return true;
+      }
       if (p.indexOf("vendor-") !== 0) return false;
       if (p.slice(-5) === ".html") return true;
       return p.indexOf(".") === -1 && p.length > 7;
@@ -334,6 +343,8 @@
       link("tags", vendorPageHref("vendor-tags.html"), "Orders &amp; tags", "◇") +
       link("inventory", vendorPageHref("vendor-inventory.html"), "Inventory", "◫") +
       link("products", vendorPageHref("vendor-products-manage.html"), "Products", "✎") +
+      link("hero", vendorPageHref("vendor-hero.html"), "Hero images", "◎") +
+      link("raw", vendorPageHref("vendor-raw-materials.html"), "Raw materials", "◆") +
       link("returns", vendorPageHref("vendor-returns.html"), "Returns", "↩") +
       "</ul>" +
       "<div class='vs-sidebar__foot'>" +

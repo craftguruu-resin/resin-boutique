@@ -105,7 +105,7 @@
     runMerge();
   }
 
-  window.CraftguruCatalogMerge = { refresh: runMerge };
+  window.CraftguruCatalogMerge = { refresh: runMerge, getApiBase: billApiBase };
 
   function wireCatalogRefreshControl() {
     var cartEl = document.getElementById("cartToggle");

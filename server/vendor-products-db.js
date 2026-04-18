@@ -187,6 +187,9 @@ function mapRowToClient(row) {
   if (row.listing_out_of_stock === true || row.listingOutOfStock === true) {
     out.listingOutOfStock = true;
   }
+  if (row.listing_return_gift === true || row.listingReturnGift === true || row.returnGift === true) {
+    out.returnGift = true;
+  }
   return out;
 }
 
@@ -211,7 +214,8 @@ function listExtraProductsForStorefront(cb) {
   pool
     .query(
       "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
-        "COALESCE(co.out_of_stock, false) AS listing_out_of_stock " +
+        "COALESCE(co.out_of_stock, false) AS listing_out_of_stock, " +
+        "COALESCE(co.return_gift, false) AS listing_return_gift " +
         "FROM products p " +
         "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
         "WHERE p.is_active = true ORDER BY p.updated_at DESC"
@@ -453,6 +457,7 @@ function listAllProductsForManage(opts, cb) {
             },
             sku: skuMap[p.id] || "",
             listingOutOfStock: !!(ov && ov.outOfStock),
+            returnGift: !!(ov && ov.returnGift),
             source: "catalog",
             isActive: listed,
           });
@@ -468,6 +473,7 @@ function listAllProductsForManage(opts, cb) {
             },
             sku: skuMap[row.id] || "",
             listingOutOfStock: !!(ov && ov.outOfStock),
+            returnGift: !!(ov && ov.returnGift),
             source: "vendor",
           });
           out.push(merged);
@@ -572,7 +578,7 @@ function setVendorProductActive(productId, isActive, cb) {
 
 /**
  * @param {string} productId
- * @param {{ name?: string, priceS?: number, priceM?: number, priceL?: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string }} opts
+ * @param {{ name?: string, priceS?: number, priceM?: number, priceL?: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, returnGift?: boolean }} opts
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function updateVendorProductById(productId, opts, cb) {
@@ -699,7 +705,15 @@ function updateVendorProductById(productId, opts, cb) {
                   client.release();
                   catalogFromData.invalidateCache();
                   var row0 = upd && upd.rows && upd.rows[0];
-                  cb(null, row0 ? mapRowToClient(row0) : null);
+                  var outRow = row0 ? mapRowToClient(row0) : null;
+                  if (opts && Object.prototype.hasOwnProperty.call(opts, "returnGift")) {
+                    vendorCatalogDb.upsertOverride(id, { returnGift: !!opts.returnGift }, function (eR) {
+                      if (eR) return cb(eR);
+                      cb(null, outRow);
+                    });
+                    return;
+                  }
+                  cb(null, outRow);
                 })
                 .catch(function (err) {
                   return client

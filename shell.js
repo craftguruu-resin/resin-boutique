@@ -63,16 +63,30 @@
         " · " +
         CART.formatMoney(line.price) +
         " ea</span></div>" +
-        '<span class="cart-item-qty">×' +
+        '<div class="cart-item__side">' +
+        '<div class="cart-item-qty-wrap">' +
+        '<button type="button" class="cart-item__qty cart-item__qty--minus" data-qty-delta="-1" data-line-id="' +
+        escapeAttr(line.id) +
+        '" data-line-size="' +
+        escapeAttr(line.size) +
+        '" aria-label="Decrease quantity">−</button>' +
+        '<span class="cart-item-qty-num">' +
         line.qty +
         "</span>" +
+        '<button type="button" class="cart-item__qty cart-item__qty--plus" data-qty-delta="1" data-line-id="' +
+        escapeAttr(line.id) +
+        '" data-line-size="' +
+        escapeAttr(line.size) +
+        '" aria-label="Increase quantity">+</button>' +
+        "</div>" +
         '<button type="button" class="cart-item__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
         '" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
-        '">×</button>';
+        '">×</button>' +
+        "</div>";
       list.appendChild(li);
     });
   }
@@ -119,11 +133,23 @@
     if (list && !list.dataset.removeBound) {
       list.dataset.removeBound = "1";
       list.addEventListener("click", function (e) {
-        var btn = e.target && e.target.closest ? e.target.closest(".cart-item__remove") : null;
-        if (!btn) return;
+        var rm = e.target && e.target.closest ? e.target.closest(".cart-item__remove") : null;
+        if (rm) {
+          e.preventDefault();
+          e.stopPropagation();
+          CART.removeLine(rm.getAttribute("data-remove-id"), rm.getAttribute("data-remove-size"));
+          updateBadge();
+          renderDrawer();
+          return;
+        }
+        var q = e.target && e.target.closest ? e.target.closest(".cart-item__qty") : null;
+        if (!q) return;
         e.preventDefault();
         e.stopPropagation();
-        CART.removeLine(btn.getAttribute("data-remove-id"), btn.getAttribute("data-remove-size"));
+        var id = q.getAttribute("data-line-id");
+        var size = q.getAttribute("data-line-size");
+        var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
+        CART.incrementLine(id, size, d);
         updateBadge();
         renderDrawer();
       });

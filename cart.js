@@ -171,6 +171,36 @@
     return lines;
   }
 
+  function setLineQty(id, size, qty) {
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var q = Math.max(0, Math.floor(safeNumber(qty, 0)));
+    var lines = load();
+    var changed = false;
+    lines = lines
+      .map(function (l) {
+        if (l.id !== sid || l.size !== ss) return l;
+        changed = true;
+        if (q <= 0) return null;
+        var n = normalizeLine(Object.assign({}, l, { qty: q }));
+        return n;
+      })
+      .filter(Boolean);
+    if (changed) save(lines);
+    return lines;
+  }
+
+  function incrementLine(id, size, delta) {
+    var d = Math.floor(safeNumber(delta, 1));
+    var lines = load();
+    var hit = null;
+    lines.forEach(function (l) {
+      if (l.id === String(id || "") && l.size === String(size || "")) hit = l;
+    });
+    if (!hit) return lines;
+    return setLineQty(id, size, Math.max(0, Math.floor(safeNumber(hit.qty, 1)) + d));
+  }
+
   function clearCart() {
     save([]);
   }
@@ -209,6 +239,8 @@
     save: save,
     addItem: addItem,
     removeLine: removeLine,
+    setLineQty: setLineQty,
+    incrementLine: incrementLine,
     clear: clearCart,
     clearCart: clearCart,
     countItems: countItems,
