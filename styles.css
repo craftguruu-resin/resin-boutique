@@ -1207,6 +1207,16 @@ main {
   border-radius: var(--radius-xl);
 }
 
+.product-card--out-of-stock .product-card__link {
+  pointer-events: none;
+  cursor: default;
+}
+
+.product-card--out-of-stock .product-card-share {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
 .product-card-image,
 .product-card-body {
   position: relative;
@@ -1270,8 +1280,26 @@ main {
   gap: 0.35rem;
   padding: 0.75rem;
   text-align: center;
-  pointer-events: none;
+  pointer-events: auto;
   background: linear-gradient(180deg, rgba(10, 14, 22, 0.05), rgba(10, 14, 22, 0.62));
+}
+
+.product-card--out-of-stock .product-card-image::after {
+  content: "OUT OF STOCK";
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(0.7rem, 2.4vw, 1.05rem);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.18);
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
+  transform: rotate(-14deg);
+  pointer-events: none;
 }
 
 .product-card__oos-title {
@@ -1610,7 +1638,7 @@ body.product-page--oos .btn-add-lg {
   font-size: 0.88rem;
 }
 
-/* Connect — Instagram + WhatsApp (homepage) */
+/* Connect — Instagram + YouTube + WhatsApp (homepage) */
 .connect-strip {
   position: relative;
   z-index: 1;
@@ -1648,14 +1676,13 @@ body.product-page--oos .btn-add-lg {
 
 .connect-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 1.75rem;
   align-items: start;
 }
 
 @media (min-width: 720px) {
   .connect-grid {
-    grid-template-columns: 1fr 1fr;
     gap: 2rem;
   }
 }
@@ -1719,6 +1746,11 @@ body.product-page--oos .btn-add-lg {
 .connect-wa:hover {
   border-color: rgba(37, 160, 95, 0.45);
   color: #126b3d;
+}
+
+.connect-wa--yt:hover {
+  border-color: rgba(179, 18, 23, 0.45);
+  color: #b31217;
 }
 
 /* Mega footer */
@@ -6650,6 +6682,10 @@ a.home-auth-btn {
   position: relative;
   z-index: 4;
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
   border: none;
   border-radius: 999px;
   padding: 0.52rem 1rem;

@@ -150,10 +150,9 @@ function upsertOverride(productId, patch, cb) {
       if (patch && Object.prototype.hasOwnProperty.call(patch, "outOfStock")) {
         oos = !!patch.outOfStock;
       }
-      var listed = cur.listed !== false;
-      if (patch && Object.prototype.hasOwnProperty.call(patch, "listed")) {
-        listed = !!patch.listed;
-      }
+      var patchListed = !!(patch && Object.prototype.hasOwnProperty.call(patch, "listed"));
+      var listedInsert = patchListed ? !!patch.listed : cur.listed !== false;
+      var listedUpdateParam = patchListed ? !!patch.listed : null;
       var rg = cur.returnGift === true;
       if (patch && Object.prototype.hasOwnProperty.call(patch, "returnGift")) {
         rg = !!patch.returnGift;
@@ -163,9 +162,11 @@ function upsertOverride(productId, patch, cb) {
           "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
-            "out_of_stock = EXCLUDED.out_of_stock, listed = EXCLUDED.listed, return_gift = EXCLUDED.return_gift, " +
+            "out_of_stock = EXCLUDED.out_of_stock, " +
+            "listed = COALESCE($11::boolean, catalog_price_overrides.listed), " +
+            "return_gift = EXCLUDED.return_gift, " +
             "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, oos, listed, rg]
+          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, oos, listedInsert, rg, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];

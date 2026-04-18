@@ -800,39 +800,6 @@ body.guest-site .global-find {
   gap: 0.65rem 1rem;
 }
 
-.page-product .product-rg-seg {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.page-product .product-rg-seg__lab {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.28rem;
-  margin: 0;
-  padding: 0.32rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.72);
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: rgba(15, 23, 42, 0.82);
-  cursor: default;
-}
-
-.page-product .product-rg-seg__lab:has(input:checked) {
-  border-color: rgba(13, 148, 136, 0.5);
-  background: rgba(13, 148, 136, 0.09);
-  color: #0f766e;
-}
-
-.page-product .product-rg-seg__lab input {
-  margin: 0;
-  accent-color: #0d9488;
-}
-
 .page-product .qty-dock--strip {
   display: flex;
   flex-direction: row;

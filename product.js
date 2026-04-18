@@ -339,12 +339,6 @@
     if (rgb) {
       rgb.hidden = !product.returnGift;
     }
-    var rN = document.getElementById("productRgNo");
-    var rY = document.getElementById("productRgYes");
-    if (rN && rY) {
-      rN.checked = !product.returnGift;
-      rY.checked = !!product.returnGift;
-    }
 
     if (els.img) {
       els.img.src = D.imageUrl ? D.imageUrl(product.image) : product.image;

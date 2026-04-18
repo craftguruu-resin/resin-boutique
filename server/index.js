@@ -2079,6 +2079,9 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
           var code = msg.indexOf("not configured") >= 0 ? 503 : msg.indexOf("required") >= 0 ? 400 : 500;
           return res.status(code).json({ ok: false, error: msg });
         }
+        try {
+          catalogFromData.invalidateCache();
+        } catch (_) {}
         res.setHeader("Cache-Control", "no-store");
         res.json({ ok: true, row: row });
       }

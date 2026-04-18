@@ -355,7 +355,9 @@
       card.innerHTML =
         '<a class="product-card__link" href="product.html?id=' +
         encodeURIComponent(p.id) +
-        '" aria-label="View ' +
+        '"' +
+        (oos ? ' tabindex="-1" aria-disabled="true"' : "") +
+        ' aria-label="View ' +
         escapeAttr(p.name) +
         (oos ? " (out of stock)" : "") +
         '"></a>' +

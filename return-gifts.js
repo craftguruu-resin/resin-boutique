@@ -64,8 +64,11 @@
       card.innerHTML =
         '<a class="product-card__link" href="product.html?id=' +
         encodeURIComponent(p.id) +
-        '" aria-label="View ' +
+        '"' +
+        (oos ? ' tabindex="-1" aria-disabled="true"' : "") +
+        ' aria-label="View ' +
         escAttr(p.name) +
+        (oos ? " (out of stock)" : "") +
         '"></a>' +
         '<div class="product-card__shine" aria-hidden="true"></div>' +
         '<div class="product-card-image">' +

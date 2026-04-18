@@ -318,56 +318,6 @@
     return null;
   }
 
-  function firstInStockListedProduct(catId) {
-    var ids = D.byCategory && D.byCategory[catId];
-    if (!ids || !ids.length) return null;
-    for (var i = 0; i < ids.length; i++) {
-      var p = D.getProduct(ids[i]);
-      if (!p || p.listed === false || p.outOfStock) continue;
-      return p;
-    }
-    return null;
-  }
-
-  function quickAddFromCategory(catId) {
-    var p = firstInStockListedProduct(catId);
-    if (!p) {
-      try {
-        window.alert(
-          "No in-stock piece is available to add from this line right now. Open the collection to pick a piece."
-        );
-      } catch (_) {}
-      return;
-    }
-    var keys = D.getOfferedSizeKeysForProduct ? D.getOfferedSizeKeysForProduct(p) : ["m"];
-    var size = keys.indexOf("m") >= 0 ? "m" : keys[0];
-    var base = p.prices && p.prices[size];
-    if (base == null || !Number.isFinite(Number(base)) || Number(base) <= 0) {
-      try {
-        window.alert("Pricing is not available for this piece yet.");
-      } catch (_) {}
-      return;
-    }
-    CART.addItem({
-      id: p.id,
-      size: size,
-      name: p.name,
-      price: Number(base),
-      image: p.image || "",
-      qty: 1,
-    });
-    updateCartUI();
-    if (window.RESIN_SHELL) {
-      window.RESIN_SHELL.updateBadge();
-      window.RESIN_SHELL.renderDrawer();
-    }
-    if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) {
-      window.RESIN_SHELL.openDrawer();
-    } else if (els.cartToggle) {
-      els.cartToggle.click();
-    }
-  }
-
   function renderFeatured() {
     if (!els.productGrid) return;
     els.productGrid.className = "featured-cat-grid";
@@ -389,7 +339,7 @@
       card.className = "featured-cat-card reveal-tile";
       card.style.setProperty("--stagger", String(i));
       card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
-      var bits = [(cat.label || "").toLowerCase(), (cat.id || "").toLowerCase(), String(count), "pieces"];
+      var bits = [(cat.label || "").toLowerCase(), (cat.id || "").toLowerCase(), String(count), "products", "category"];
       if (minFrom != null) {
         bits.push(String(minFrom));
         if (CART.formatMoney) bits.push(CART.formatMoney(minFrom).toLowerCase().replace(/\s/g, ""));
@@ -421,14 +371,15 @@
         "</a></h3>" +
         "<p>" +
         String(count) +
-        " pieces in this line</p>" +
+        (count === 1 ? " product in this category" : " products in this category") +
+        "</p>" +
         '<div class="featured-cat-card__row">' +
         '<a class="featured-cat-card__cta" href="' +
         catHref +
         '">View collection →</a>' +
-        '<button type="button" class="featured-cat-card__quick-add" data-quick-cat="' +
-        escapeAttr(cat.id) +
-        '">Add to cart</button>' +
+        '<a class="featured-cat-card__quick-add" href="' +
+        catHref +
+        '">Choose product</a>' +
         "</div>" +
         "</div>";
       els.productGrid.appendChild(card);
@@ -716,18 +667,6 @@
   window.addEventListener("resinCartChanged", function () {
     updateCartUI();
   });
-
-  if (els.productGrid) {
-    els.productGrid.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest(".featured-cat-card__quick-add") : null;
-      if (!btn || !els.productGrid.contains(btn)) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      var cid = btn.getAttribute("data-quick-cat");
-      if (!cid) return;
-      quickAddFromCategory(cid);
-    });
-  }
 
   window.addEventListener("craftguruCatalogPricesMerged", function () {
     renderCategories();

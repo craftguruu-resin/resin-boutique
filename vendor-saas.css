@@ -1117,11 +1117,6 @@ a.vd-kpi-card--link:focus-visible {
   line-height: 1.35;
 }
 
-.vendor-saas .vpm-oos-field {
-  margin-top: 0.85rem;
-  max-width: 100%;
-}
-
 .vendor-saas .vpm-oos-label {
   display: flex;
   flex-direction: row;
@@ -1137,16 +1132,100 @@ a.vd-kpi-card--link:focus-visible {
   flex-shrink: 0;
 }
 
-.vendor-saas .vpm-oos-label--one-line {
+.vendor-saas .vpm-listing-oos-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1.25rem;
+  margin-top: 0.85rem;
+}
+
+.vendor-saas .vpm-return-gift-block--toolbar {
+  margin-top: 0;
+  flex: 1 1 14rem;
+  min-width: 0;
+  max-width: 26rem;
+  padding: 0.5rem 0.65rem;
+}
+
+.vendor-saas .vpm-return-gift-block--toolbar .vpm-return-gift-block__title {
+  margin: 0 0 0.3rem;
+}
+
+.vendor-saas .vpm-return-gift-row--toolbar {
+  flex-wrap: nowrap;
+  gap: 0.4rem;
+}
+
+.vendor-saas .vpm-return-gift-row__opt--toolbar {
+  flex: 0 1 auto;
+  min-width: 0;
+  padding: 0.3rem 0.5rem;
+  align-items: center;
+}
+
+.vendor-saas .vpm-return-gift-row__opt--toolbar > span {
+  flex-direction: row;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.vendor-saas .vpm-return-gift-row__opt--toolbar input {
+  margin-top: 0;
+}
+
+.vendor-saas .vpm-oos-label--toolbar {
+  margin: 0;
+  flex: 0 0 auto;
   align-items: center;
   flex-wrap: nowrap;
   white-space: nowrap;
-  gap: 0.4rem;
-  max-width: 100%;
+  max-width: none;
+  gap: 0.35rem;
 }
 
-.vendor-saas .vpm-oos-label--one-line span {
+.vendor-saas .vpm-oos-label--toolbar input {
+  margin-top: 0;
+}
+
+.vendor-saas #vpmTable .vpm-rg-cell {
+  vertical-align: middle;
   white-space: nowrap;
+  min-width: 9rem;
+}
+
+.vendor-saas .vpm-rg-inline {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.3rem;
+  flex-wrap: nowrap;
+}
+
+.vendor-saas .vpm-rg-inline__lab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  margin: 0;
+  padding: 0.2rem 0.42rem;
+  border-radius: 999px;
+  border: 1px solid var(--vs-border);
+  background: #f8fafc;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--vs-muted);
+}
+
+.vendor-saas .vpm-rg-inline__lab--on {
+  border-color: rgba(22, 163, 74, 0.5);
+  background: rgba(22, 163, 74, 0.14);
+  color: #166534;
+}
+
+.vendor-saas .vpm-rg-inline__lab input {
+  margin: 0;
+  flex-shrink: 0;
 }
 
 .vendor-saas .vs-card--vpm-filters {
@@ -1167,14 +1246,8 @@ a.vd-kpi-card--link:focus-visible {
   max-width: 100%;
 }
 
-.vendor-saas .vpm-actions--inline .vpm-state-inline {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--vs-muted);
+.vendor-saas .vpm-actions--inline .vs-pill {
+  flex-shrink: 0;
 }
 
 .vendor-saas .vpm-actions--inline .vs-btn {

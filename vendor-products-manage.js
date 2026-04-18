@@ -38,6 +38,14 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
+  function refreshGuestCatalogMerge() {
+    try {
+      if (window.CraftguruCatalogMerge && typeof window.CraftguruCatalogMerge.refresh === "function") {
+        window.CraftguruCatalogMerge.refresh();
+      }
+    } catch (_) {}
+  }
+
   function filteredProducts() {
     return rawProducts.filter(function (p) {
       var src = p.source === "catalog" ? "catalog" : "vendor";
@@ -58,6 +66,10 @@
     return null;
   }
 
+  function returnGiftRadioGroupName(productId) {
+    return "vpmrg_" + String(productId || "x").replace(/[^a-zA-Z0-9_-]/g, "_");
+  }
+
   function renderTable() {
     var tb = document.getElementById("vpmTbody");
     var empty = document.getElementById("vpmEmpty");
@@ -75,7 +87,7 @@
     var rows = filteredProducts();
     if (!rows.length) {
       tb.innerHTML =
-        "<tr><td colspan=\"4\" class=\"vs-muted\">No products match this status filter.</td></tr>";
+        "<tr><td colspan=\"5\" class=\"vs-muted\">No products match this status filter.</td></tr>";
       if (empty) empty.style.display = "none";
       return;
     }
@@ -85,26 +97,45 @@
         var src = p.source === "catalog" ? "catalog" : "vendor";
         var active = p.isActive !== false;
         var oos = !!p.listingOutOfStock;
-        var bits = [];
-        if (!active) bits.push("Discontinued");
-        else bits.push("Active");
-        if (oos) bits.push("Out of stock");
-        if (p.returnGift) bits.push("Return gift");
-        var stateLine =
-          "<span class=\"vpm-state-inline\" title=\"" +
-          esc(src === "catalog" ? "Guest storefront" : "Vendor listing") +
-          "\">" +
-          esc(bits.join(" · ")) +
-          "</span>";
+        var rg = !!p.returnGift;
+        var rgNm = returnGiftRadioGroupName(p.id);
+        var pills = "";
+        if (!active) {
+          pills += "<span class=\"vs-pill vs-pill--inactive\">Discontinued</span>";
+        } else {
+          pills += "<span class=\"vs-pill vs-pill--active\">Active</span>";
+        }
+        if (oos) {
+          pills += "<span class=\"vs-pill vs-pill--oos\">Out of stock</span>";
+        }
         var img = p.image
           ? "<img src=\"" + esc(imgSrc(p.image)) + "\" alt=\"\" width=\"56\" height=\"56\" style=\"object-fit:cover;border-radius:6px\" />"
           : "—";
         var skuCell = p.sku ? esc(p.sku) : "<span class=\"vs-muted\">—</span>";
+        var rgCell =
+          "<div class=\"vpm-rg-inline\" role=\"radiogroup\" aria-label=\"Return gift listing\" title=\"" +
+          esc(src === "catalog" ? "Catalog row — edit to change" : "Vendor row — edit to change") +
+          "\">" +
+          "<label class=\"vpm-rg-inline__lab" +
+          (rg ? "" : " vpm-rg-inline__lab--on") +
+          "\"><input type=\"radio\" tabindex=\"-1\" disabled name=\"" +
+          esc(rgNm) +
+          "\" value=\"0\"" +
+          (rg ? "" : " checked") +
+          " /><span>Shop</span></label>" +
+          "<label class=\"vpm-rg-inline__lab" +
+          (rg ? " vpm-rg-inline__lab--on" : "") +
+          "\"><input type=\"radio\" tabindex=\"-1\" disabled name=\"" +
+          esc(rgNm) +
+          "\" value=\"1\"" +
+          (rg ? " checked" : "") +
+          " /><span>Return gift</span></label>" +
+          "</div>";
         var actions =
           "<div class=\"vpm-actions vpm-actions--inline\"><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-edit\" data-id=\"" +
           esc(p.id) +
           "\">Edit</button>" +
-          stateLine;
+          pills;
         if (active) {
           actions +=
             "<button type=\"button\" class=\"vs-btn vs-btn--ghost vs-btn--danger vpm-disc\" data-id=\"" +
@@ -128,6 +159,8 @@
           esc(p.id) +
           "</small></td><td>" +
           skuCell +
+          "</td><td class=\"vpm-rg-cell\">" +
+          rgCell +
           "</td><td>" +
           actions +
           "</td></tr>"
@@ -222,6 +255,7 @@
           }
           rawProducts = j.products || [];
           renderTable();
+          refreshGuestCatalogMerge();
         });
       })
       .catch(function (e) {
