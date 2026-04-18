@@ -58,7 +58,6 @@
                   <th>Image</th>
                   <th>Name</th>
                   <th>SKU</th>
-                  <th>Flags</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -110,19 +109,21 @@
             <label for="vpmImage">New image (optional)</label>
             <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
           </div>
-          <fieldset class="vs-field" style="margin-top: 0.75rem; border: 1px solid rgba(15, 23, 42, 0.12); border-radius: 0.65rem; padding: 0.65rem 0.85rem">
-            <legend class="vs-muted" style="padding: 0 0.25rem">Return gifts page</legend>
-            <label style="display: flex; gap: 0.45rem; align-items: center; margin-bottom: 0.35rem; cursor: pointer">
-              <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
-              <span>Standard listing only</span>
-            </label>
-            <label style="display: flex; gap: 0.45rem; align-items: center; cursor: pointer">
-              <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
-              <span>Mark as return gift (appears on guest “Return gifts” page)</span>
-            </label>
-          </fieldset>
-          <div class="vs-field" style="margin-top: 0.75rem">
-            <label class="vi-oos-inline vi-oos-inline--minimal" style="cursor: pointer; display: inline-flex; gap: 0.4rem; align-items: center">
+          <div class="vpm-return-gift-block">
+            <p class="vpm-return-gift-block__title">Return gifts (guest site)</p>
+            <div class="vpm-return-gift-row" role="radiogroup" aria-label="Return gifts listing">
+              <label class="vpm-return-gift-row__opt">
+                <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
+                <span><strong>Shop listing only</strong><span class="vpm-return-gift-row__sub">Shown in catalog &amp; categories — not on Return gifts page</span></span>
+              </label>
+              <label class="vpm-return-gift-row__opt">
+                <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
+                <span><strong>Listing + Return gifts</strong><span class="vpm-return-gift-row__sub">Same shop listing, also appears on the Return gifts page</span></span>
+              </label>
+            </div>
+          </div>
+          <div class="vs-field vpm-oos-field">
+            <label class="vpm-oos-label">
               <input type="checkbox" id="vpmOos" />
               <span>Out of stock on shop (piece stays visible, greyed — guests cannot buy)</span>
             </label>

@@ -101,39 +101,39 @@
 
       <div class="product-layout product-layout--split">
         <div class="product-visual product-visual--fx">
-          <div class="product-hero-img product-hero-img--fx">
+          <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
             <div class="product-hero-img__glow" aria-hidden="true"></div>
             <img id="productImage" src="" alt="" width="800" height="900" />
+            <div class="product-hero-img__lens" id="productZoomLens" aria-hidden="true"></div>
+            <p class="product-hero-img__zoom-hint" id="productZoomHint">Hover to inspect detail — magnifier follows your cursor.</p>
           </div>
 
           <div class="qty-dock glass-panel qty-dock--animate qty-dock--under-photo" id="qtyDock">
             <div class="qty-dock__head">
               <h2 class="qty-dock__title">Quantity</h2>
-              <p class="qty-dock__sub" id="qtyTierHint">1 piece — list price</p>
+              <p class="qty-dock__sub" id="qtyTierHint">Same MRP per piece — set how many to add to the cart.</p>
             </div>
-            <div class="qty-options" id="qtyOptions" role="radiogroup" aria-label="Quantity"></div>
             <div class="product-qty-stepper" id="productQtyStepper" aria-label="Adjust quantity">
               <button type="button" id="productQtyMinus" aria-label="Decrease quantity">−</button>
               <span class="product-qty-stepper__val" id="productQtyStepperVal">1</span>
               <button type="button" id="productQtyPlus" aria-label="Increase quantity">+</button>
             </div>
-            <p class="qty-bulk-note">
-              Need <strong>4 or more</strong> of the same piece?
-              <a href="about.html">Contact us</a> for bulk pricing and studio timelines.
-            </p>
           </div>
         </div>
 
         <div class="product-detail product-detail--purchase">
           <h1 class="product-title product-title--fx" id="productTitle">Loading…</h1>
           <p class="product-meta-line"><span id="productCategoryBadge">—</span></p>
+          <p class="product-return-gift-badge" id="productReturnGiftBadge" hidden>
+            Return gift · <a href="return-gifts.html">View return-gifts collection</a>
+          </p>
 
           <div class="product-cta-early" id="productCtaEarly">
             <button type="button" class="btn-add-lg btn-add-lg--fx btn-add-premium" id="addToCartTopBtn" aria-label="Add to cart">
               <span class="btn-add-premium__glow" aria-hidden="true"></span>
               <span class="btn-add-premium__inner">
                 <span class="btn-add-premium__icon" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 11V6a3 3 0 1 1 6 0v5M5 9h14l-1.2 12.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 9Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
                   </svg>
                 </span>
@@ -141,7 +141,6 @@
                 <span class="btn-add-premium__chev" aria-hidden="true">→</span>
               </span>
             </button>
-            <p class="product-cta-early__hint">Uses the size and quantity you set below (defaults to Classic, 1 pc).</p>
           </div>
 
           <div class="product-share-bar" id="productShareHost" aria-label="Share this piece"></div>
@@ -150,7 +149,7 @@
             <h2 class="product-overview__h" id="overview-h">About this piece</h2>
             <p class="product-overview__copy" id="productIntroText"></p>
             <p class="product-overview__hint">
-              <a href="#qtyDock" class="overview-jump">Quantity under photo</a>
+              <a href="#qtyDock" class="overview-jump">Quantity</a>
               <span class="overview-jump-sep" aria-hidden="true"> · </span>
               <a href="#sizeDock" class="overview-jump">Sizes &amp; MRP →</a>
             </p>
@@ -158,7 +157,7 @@
 
           <h2 class="product-section-h">Size &amp; pricing</h2>
           <p class="product-section-lead">
-            Quantity and bundle savings are under the product photo (left). Choose a format here. Amounts in Indian rupees (₹), indicative MRP.
+            Quantity is under the photo (left). Choose a format below. Amounts in Indian rupees (₹), indicative MRP — same unit price for every quantity.
           </p>
 
           <div class="size-dock glass-panel size-dock--primary size-dock--animate" id="sizeDock">
@@ -195,7 +194,7 @@
             <span class="btn-add-premium__glow" aria-hidden="true"></span>
             <span class="btn-add-premium__inner">
               <span class="btn-add-premium__icon" aria-hidden="true">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <path d="M9 11V6a3 3 0 1 1 6 0v5M5 9h14l-1.2 12.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 9Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
                 </svg>
               </span>
@@ -204,6 +203,10 @@
             </span>
           </button>
           <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
+          <p class="product-reseller-note" id="productResellerNote">
+            For orders of more than 50 units of the same piece, please
+            <a href="about.html">contact us</a> for reseller pricing and timelines.
+          </p>
         </div>
       </div>
     </div>

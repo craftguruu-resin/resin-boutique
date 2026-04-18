@@ -44,7 +44,6 @@
     priceSizeLabel: document.getElementById("priceSizeLabel"),
     priceBreakdown: document.getElementById("priceBreakdown"),
     sizes: document.getElementById("sizeOptions"),
-    qtyOptions: document.getElementById("qtyOptions"),
     qtyTierHint: document.getElementById("qtyTierHint"),
     hint: document.getElementById("sizeHint"),
     addBtn: document.getElementById("addToCartBtn"),
@@ -80,7 +79,6 @@
     els.priceSizeLabel = document.getElementById("priceSizeLabel");
     els.priceBreakdown = document.getElementById("priceBreakdown");
     els.sizes = document.getElementById("sizeOptions");
-    els.qtyOptions = document.getElementById("qtyOptions");
     els.qtyTierHint = document.getElementById("qtyTierHint");
     els.hint = document.getElementById("sizeHint");
     els.addBtn = document.getElementById("addToCartBtn");
@@ -135,13 +133,6 @@
       els.addBtnTop.disabled = oos;
       els.addBtnTop.setAttribute("aria-disabled", oos ? "true" : "false");
     }
-    var qtyRoot = document.getElementById("qtyOptions");
-    if (qtyRoot) {
-      qtyRoot.querySelectorAll("button").forEach(function (b) {
-        b.disabled = oos;
-        b.setAttribute("aria-disabled", oos ? "true" : "false");
-      });
-    }
     if (els.sizes) {
       els.sizes.querySelectorAll(".size-pick").forEach(function (b) {
         b.disabled = oos;
@@ -173,9 +164,7 @@
       }
       return;
     }
-    refreshSizePickPrices();
-    updatePrice();
-    applyOutOfStockUi();
+    render();
   }
 
   var selected = "m";
@@ -199,20 +188,6 @@
     return String(s).replace(/[^a-zA-Z0-9_-]/g, "");
   }
 
-  function qtyDiscountMeta(q) {
-    var qq = Math.max(1, Math.floor(Number(q) || 1));
-    if (qq <= 1) {
-      return { mult: 1, hint: "1 piece — list price" };
-    }
-    if (qq === 2) {
-      return { mult: 0.9, hint: "2 pieces — 10% off each" };
-    }
-    return {
-      mult: 0.8,
-      hint: qq + " pieces — 20% off each (bundle rate for 3+)",
-    };
-  }
-
   function maxSelectableQty() {
     if (!product || !selected) return 99;
     var stk = product.stock && product.stock[selected];
@@ -233,22 +208,7 @@
     var oos = !!product.outOfStock;
     if (m) m.disabled = oos || selectedQty <= 1;
     if (p) p.disabled = oos || selectedQty >= mx;
-    if (els.qtyOptions) {
-      els.qtyOptions.querySelectorAll(".qty-pick").forEach(function (b) {
-        var n = parseInt(b.dataset.qty, 10) || 1;
-        var on = n === selectedQty;
-        b.classList.toggle("is-selected", on);
-        b.setAttribute("aria-checked", on ? "true" : "false");
-      });
-    }
-    var meta = qtyDiscountMeta(selectedQty);
-    if (els.qtyTierHint) els.qtyTierHint.textContent = meta.hint;
     updatePrice();
-  }
-
-  function effectiveUnitPrice(base, q) {
-    var m = qtyDiscountMeta(q).mult;
-    return Math.round(base * m * 100) / 100;
   }
 
   /** Isometric resin “slab” — unique SVG defs per option (no gradient collisions). */
@@ -302,61 +262,19 @@
       '<div class="product-missing"><h1>Not found</h1><p>This piece is not in the catalog.</p><a class="btn-glass-dome" href="index.html">Back home</a></div>';
   }
 
-  function renderQtyOptions() {
-    if (!els.qtyOptions) return;
-    els.qtyOptions.innerHTML = "";
-    [1, 2, 3].forEach(function (q) {
-      var meta = qtyDiscountMeta(q);
-      var btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "qty-pick" + (q === selectedQty ? " is-selected" : "");
-      btn.dataset.qty = String(q);
-      btn.setAttribute("role", "radio");
-      btn.setAttribute("aria-checked", q === selectedQty ? "true" : "false");
-      var sub = q === 1 ? "List price" : q === 2 ? "10% off" : "20% off";
-      btn.innerHTML =
-        '<span class="qty-pick__n">' +
-        String(q) +
-        "</span>" +
-        '<span class="qty-pick__lbl">' +
-        escapeHtml(sub) +
-        "</span>";
-      btn.addEventListener("click", function () {
-        selectedQty = q;
-        refreshQtyUi();
-        if (els.qtyDock) {
-          els.qtyDock.classList.remove("qty-dock--pulse");
-          void els.qtyDock.offsetWidth;
-          els.qtyDock.classList.add("qty-dock--pulse");
-        }
-      });
-      els.qtyOptions.appendChild(btn);
-    });
-    refreshQtyUi();
-  }
-
   function updatePrice() {
     if (!product || !els.price) return;
     var base = product.prices[selected];
     var q = selectedQty;
-    var meta = qtyDiscountMeta(q);
-    var eff = effectiveUnitPrice(base, q);
-    var total = Math.round(eff * q * 100) / 100;
-    var listTotal = Math.round(base * q * 100) / 100;
+    var unit = Math.round(Number(base) * 100) / 100;
+    var total = Math.round(unit * q * 100) / 100;
 
     els.price.textContent = fmt(total);
     if (els.priceBreakdown) {
       if (q === 1) {
-        els.priceBreakdown.textContent = "1 × " + fmt(base) + " · list price";
+        els.priceBreakdown.textContent = "1 × " + fmt(unit) + " · MRP per piece";
       } else {
-        els.priceBreakdown.innerHTML =
-          String(q) +
-          " × " +
-          fmt(eff) +
-          " ea · <span class=\"price-block__save\">" +
-          (q === 2 ? "10% off" : "20% off") +
-          "</span> · list would be " +
-          fmt(listTotal);
+        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " ea · same MRP per piece";
       }
     }
     if (els.priceSizeLabel) {
@@ -390,9 +308,6 @@
     if (els.sizeScale) {
       els.sizeScale.setAttribute("data-sel", selected);
     }
-    if (els.qtyTierHint) {
-      els.qtyTierHint.textContent = qtyDiscountMeta(selectedQty).hint;
-    }
   }
 
   function render() {
@@ -417,7 +332,12 @@
         product.name +
         " sits in our " +
         catLabel +
-        " line from the Jaipur bench. Choose quantity (bundles save 10–20%), pick a size, then add to cart. For four or more of the same piece, use Contact us for bulk pricing.";
+        " line from the Jaipur bench. Pick a size, set quantity, and add to cart — every piece is the same MRP per unit.";
+    }
+
+    var rgb = document.getElementById("productReturnGiftBadge");
+    if (rgb) {
+      rgb.hidden = !product.returnGift;
     }
 
     if (els.img) {
@@ -431,8 +351,6 @@
     if (els.crumbSub && els.crumbSubBack) {
       els.crumbSub.hidden = true;
     }
-
-    renderQtyOptions();
 
     var offered = offeredSizeKeys();
     if (offered.indexOf(selected) < 0) {
@@ -528,12 +446,12 @@
         }
         var base = product.prices[selected];
         var q = selectedQty;
-        var eff = effectiveUnitPrice(base, q);
+        var unit = Math.round(Number(base) * 100) / 100;
         CART.addItem({
           id: product.id,
           size: selected,
           name: product.name,
-          price: eff,
+          price: unit,
           image: product.image,
           qty: q,
         });
@@ -578,6 +496,49 @@
     if (sh && window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       window.CRAFTGURU_SHARE.mountProductShare(sh, { id: product.id, name: product.name });
     }
+
+    bindProductImageZoom();
+  }
+
+  function bindProductImageZoom() {
+    var host = document.getElementById("productZoomHost");
+    var img = document.getElementById("productImage");
+    var lens = document.getElementById("productZoomLens");
+    if (!host || !img || !lens) return;
+    if (host.dataset.cgZoomBound === "1") return;
+    host.dataset.cgZoomBound = "1";
+    var Z = 2.35;
+    var lensR = 70;
+    function hide() {
+      lens.style.opacity = "0";
+      lens.style.visibility = "hidden";
+    }
+    function onMove(e) {
+      if (!img.naturalWidth || !img.naturalHeight) return;
+      var r = host.getBoundingClientRect();
+      var x = e.clientX - r.left;
+      var y = e.clientY - r.top;
+      if (x < 0 || y < 0 || x > r.width || y > r.height) {
+        hide();
+        return;
+      }
+      var url = img.currentSrc || img.src;
+      lens.style.width = lensR * 2 + "px";
+      lens.style.height = lensR * 2 + "px";
+      lens.style.left = Math.max(0, Math.min(r.width - lensR * 2, x - lensR)) + "px";
+      lens.style.top = Math.max(0, Math.min(r.height - lensR * 2, y - lensR)) + "px";
+      lens.style.backgroundImage = "url(" + JSON.stringify(String(url)) + ")";
+      lens.style.backgroundRepeat = "no-repeat";
+      lens.style.backgroundSize = r.width * Z + "px " + r.height * Z + "px";
+      var bx = (x / r.width) * (r.width * Z) - lensR;
+      var by = (y / r.height) * (r.height * Z) - lensR;
+      lens.style.backgroundPosition = -bx + "px " + -by + "px";
+      lens.style.opacity = "1";
+      lens.style.visibility = "visible";
+    }
+    host.addEventListener("mousemove", onMove);
+    host.addEventListener("mouseleave", hide);
+    hide();
   }
 
   var productRootEl = document.getElementById("productRoot");

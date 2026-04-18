@@ -35,7 +35,7 @@
     var out = [];
     var seen = {};
     (D.categories || []).forEach(function (c) {
-      if (!c || c.id === "craftguru-details") return;
+      if (!c) return;
       D.listProductsAll(c.id, null).forEach(function (p) {
         if (!p || !p.returnGift || seen[p.id]) return;
         seen[p.id] = 1;

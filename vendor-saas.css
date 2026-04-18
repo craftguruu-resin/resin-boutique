@@ -1051,3 +1051,88 @@ a.vd-kpi-card--link:focus-visible {
   font-weight: 500;
   color: var(--vs-sidebar-muted);
 }
+
+/* Products manage: return gift radios + OOS label */
+.vendor-saas .vpm-return-gift-block {
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid var(--vs-border);
+  border-radius: var(--vs-radius);
+  background: var(--vs-surface);
+}
+
+.vendor-saas .vpm-return-gift-block__title {
+  margin: 0 0 0.5rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vs-muted);
+}
+
+.vendor-saas .vpm-return-gift-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 0.65rem 1rem;
+}
+
+.vendor-saas .vpm-return-gift-row__opt {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0.5rem 0.55rem;
+  border-radius: 10px;
+  border: 1px solid var(--vs-border);
+  cursor: pointer;
+  background: rgba(241, 245, 249, 0.65);
+}
+
+.vendor-saas .vpm-return-gift-row__opt.is-selected {
+  border-color: rgba(15, 118, 110, 0.45);
+  background: rgba(15, 118, 110, 0.06);
+}
+
+.vendor-saas .vpm-return-gift-row__opt input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
+
+.vendor-saas .vpm-return-gift-row__opt > span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.vendor-saas .vpm-return-gift-row__sub {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--vs-muted);
+  line-height: 1.35;
+}
+
+.vendor-saas .vpm-oos-field {
+  margin-top: 0.85rem;
+  max-width: 100%;
+}
+
+.vendor-saas .vpm-oos-label {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 0.45rem;
+  cursor: pointer;
+  line-height: 1.4;
+  max-width: 48rem;
+}
+
+.vendor-saas .vpm-oos-label input {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+}
