@@ -89,6 +89,12 @@
       <h1 id="hero-heading" class="visually-hidden">
         Craftguru handmade resin — wall clocks, spiritual frames, coasters, and personalized gifts
       </h1>
+      <div class="home-landing-layout">
+        <aside class="home-category-rail home-category-rail--split" id="categories" aria-labelledby="cat-heading">
+          <p class="home-category-rail__label" id="cat-heading">Shop by category</p>
+          <div class="category-grid category-grid--rail" id="categoryGrid" role="navigation" aria-label="Product categories"></div>
+        </aside>
+        <div class="home-landing-main">
       <div class="hero-atelier" id="heroStage">
         <div class="hero-atelier__shell">
           <div class="hero-atelier__light">
@@ -175,24 +181,25 @@
               </div>
             </div>
             <div class="hero-atelier__glow" aria-hidden="true"></div>
-            <div class="hero-atelier__photo-ring">
+            <div class="hero-atelier__photo-ring hero-atelier__photo-ring--showcase">
               <div class="hero-atelier__ring-pulse" aria-hidden="true"></div>
-              <img
-                src="media/home-showcase/01-geode-clock.png"
-                alt="Geode resin wall clock in emerald, black, and gold"
-                width="920"
-                height="920"
-                loading="eager"
-                decoding="async"
-              />
+              <div class="hero-atelier__photo-disc">
+                <img
+                  class="hero-atelier__photo-img"
+                  src="media/home-showcase/01-geode-clock.png"
+                  alt="Geode resin wall clock in emerald, black, and gold"
+                  width="920"
+                  height="920"
+                  loading="eager"
+                  decoding="async"
+                />
+              </div>
             </div>
           </div>
         </div>
       </div>
-
-      <div class="hero-tags reveal" id="categories" aria-labelledby="cat-heading">
-        <p class="hero-tags-label" id="cat-heading">Shop by category</p>
-        <div class="category-grid" id="categoryGrid" role="navigation" aria-label="Product categories"></div>
+      <div class="hero-spotlight reveal" id="heroSpotlightStrip" hidden aria-label="Our best sellers from the catalog"></div>
+        </div>
       </div>
     </section>
 
@@ -207,46 +214,6 @@
           <p class="band-tagline">Clocks, keychains, coasters &amp; more</p>
         </header>
         <div class="product-grid" id="productGrid"></div>
-      </div>
-    </section>
-
-    <section class="section-about section-about--signal reveal" id="about" style="--delay: 0.05s">
-      <div class="about-glass about-glass--signal">
-        <p class="about-signal-kicker">Bench · Jaipur · 2026</p>
-        <h2 class="about-title about-title--signal">Material intelligence, not mass resin</h2>
-        <p class="about-signal-lead">
-          We treat epoxy as a living interface between pigment, light, and time—poured in controlled layers so depth reads clean from every angle. What you hold is the outcome of temperature curves, cure windows, and colour chemistry tuned for Indian light and shelf life, not a single-shot mould rush.
-        </p>
-        <ul class="about-signal-grid" role="list">
-          <li class="about-signal-card">
-            <h3 class="about-signal-card__h">Optical clarity that keeps its edge</h3>
-            <p class="about-signal-card__p">
-              Low-bubble pulls, filtered mixes, and slow-build pours reduce haze and “fog creep” after months on a windowsill. We chase a refractive read that still feels liquid years later.
-            </p>
-          </li>
-          <li class="about-signal-card">
-            <h3 class="about-signal-card__h">Pigment that remembers its brief</h3>
-            <p class="about-signal-card__p">
-              Micas, alcohol inks, and mineral suspensions are staged so metallics stay dimensional—not muddy—under warm LEDs and daylight. Each line has a colour map, not a random pour.
-            </p>
-          </li>
-          <li class="about-signal-card">
-            <h3 class="about-signal-card__h">Thermal honesty in the cure</h3>
-            <p class="about-signal-card__p">
-              Exotherm is managed so large faces don’t yellow prematurely and thin edges don’t craze. That discipline is what lets coasters survive heat cups and wall pieces stay flat on plaster.
-            </p>
-          </li>
-          <li class="about-signal-card">
-            <h3 class="about-signal-card__h">Finish as the final instrument</h3>
-            <p class="about-signal-card__p">
-              Hand-levelled surfaces, controlled gloss bands, and edge radii that catch rim-light are part of the object—not an afterthought. If it doesn’t pass our bench lamp and fingertip test, it doesn’t ship.
-            </p>
-          </li>
-        </ul>
-        <p class="about-signal-foot">
-          Wholesale and retail batches share the same spec sheet: predictable thickness, stable hardware seating for clocks, and packaging that assumes monsoon logistics. When you order a size on the product page, you are buying the pour that survived that spec—not a near-miss.
-        </p>
-        <p class="about-more"><a href="about.html">Read our full story →</a></p>
       </div>
     </section>
 

@@ -65,9 +65,18 @@
       var pick = "";
       for (var ii = 0; ii < ids.length; ii++) {
         var cand = D.getProduct(ids[ii]);
-        if (cand && cand.listed !== false && cand.image) {
+        if (cand && cand.listed !== false && cand.image && !cand.outOfStock) {
           pick = ids[ii];
           break;
+        }
+      }
+      if (!pick) {
+        for (var jj = 0; jj < ids.length; jj++) {
+          var c2 = D.getProduct(ids[jj]);
+          if (c2 && c2.listed !== false && c2.image) {
+            pick = ids[jj];
+            break;
+          }
         }
       }
       if (!pick) return;
@@ -94,6 +103,38 @@
     root.querySelectorAll(".hero-float-polar").forEach(function (fig, idx) {
       fig.hidden = idx >= n;
     });
+  }
+
+  function renderHeroSpotlight() {
+    var host = document.getElementById("heroSpotlightStrip");
+    if (!host) return;
+    var pool = firstShopProductPerCategory().slice(0, 6);
+    if (!pool.length) {
+      host.innerHTML = "";
+      host.setAttribute("hidden", "");
+      return;
+    }
+    host.removeAttribute("hidden");
+    var parts = pool.map(function (p) {
+      var href = "product.html?id=" + encodeURIComponent(p.id);
+      var nm = String(p.name || "Piece").trim();
+      var short = nm.length > 44 ? nm.slice(0, 44) + "…" : nm;
+      return (
+        '<a class="hero-spot-card reveal-tile" href="' +
+        href +
+        '"><span class="hero-spot-card__glow" aria-hidden="true"></span><span class="hero-spot-card__media"><img src="' +
+        escapeAttr(imgUrl(p.image)) +
+        '" alt="" loading="lazy" width="240" height="240" /></span><span class="hero-spot-card__meta"><span class="hero-spot-card__name">' +
+        escapeHtml(short) +
+        '</span><span class="hero-spot-card__hint">Open piece →</span></span></a>'
+      );
+    });
+    host.innerHTML =
+      '<p class="hero-spotlight__kicker">Our best sellers</p>' +
+      '<div class="hero-spotlight__track">' +
+      parts.join("") +
+      "</div>";
+    observeTiles();
   }
 
   function minPriceInCategory(catId) {
@@ -186,10 +227,14 @@
   function renderCategories() {
     if (!els.categoryGrid) return;
     els.categoryGrid.innerHTML = "";
+    var rail = els.categoryGrid.classList && els.categoryGrid.classList.contains("category-grid--rail");
     D.categories.forEach(function (cat, i) {
       var a = document.createElement("a");
-      a.className = "category-pill reveal-pill";
-      a.style.setProperty("--delay", (0.035 * i).toFixed(3) + "s");
+      /* Rail sits in a narrow column: reveal-pill starts at opacity 0 and often never gets is-inview — keep links always visible. */
+      a.className = rail ? "category-pill category-pill--rail" : "category-pill reveal-pill";
+      if (!rail) {
+        a.style.setProperty("--delay", (0.035 * i).toFixed(3) + "s");
+      }
       a.href = "category.html?cat=" + encodeURIComponent(cat.id);
       a.textContent = cat.label;
       a.setAttribute("data-search-text", (cat.label + " " + cat.id).toLowerCase());
@@ -205,7 +250,66 @@
   function firstProductInCategory(catId) {
     var ids = D.byCategory && D.byCategory[catId];
     if (!ids || !ids.length) return null;
-    return D.getProduct(ids[0]);
+    var pass;
+    for (pass = 0; pass < 2; pass++) {
+      for (var i = 0; i < ids.length; i++) {
+        var p = D.getProduct(ids[i]);
+        if (!p || p.listed === false) continue;
+        if (pass === 0 && p.outOfStock) continue;
+        return p;
+      }
+    }
+    return null;
+  }
+
+  function firstInStockListedProduct(catId) {
+    var ids = D.byCategory && D.byCategory[catId];
+    if (!ids || !ids.length) return null;
+    for (var i = 0; i < ids.length; i++) {
+      var p = D.getProduct(ids[i]);
+      if (!p || p.listed === false || p.outOfStock) continue;
+      return p;
+    }
+    return null;
+  }
+
+  function quickAddFromCategory(catId) {
+    var p = firstInStockListedProduct(catId);
+    if (!p) {
+      try {
+        window.alert(
+          "No in-stock piece is available to add from this line right now. Open the collection to pick a piece."
+        );
+      } catch (_) {}
+      return;
+    }
+    var keys = D.getOfferedSizeKeysForProduct ? D.getOfferedSizeKeysForProduct(p) : ["m"];
+    var size = keys.indexOf("m") >= 0 ? "m" : keys[0];
+    var base = p.prices && p.prices[size];
+    if (base == null || !Number.isFinite(Number(base)) || Number(base) <= 0) {
+      try {
+        window.alert("Pricing is not available for this piece yet.");
+      } catch (_) {}
+      return;
+    }
+    CART.addItem({
+      id: p.id,
+      size: size,
+      name: p.name,
+      price: Number(base),
+      image: p.image || "",
+      qty: 1,
+    });
+    updateCartUI();
+    if (window.RESIN_SHELL) {
+      window.RESIN_SHELL.updateBadge();
+      window.RESIN_SHELL.renderDrawer();
+    }
+    if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) {
+      window.RESIN_SHELL.openDrawer();
+    } else if (els.cartToggle) {
+      els.cartToggle.click();
+    }
   }
 
   function renderFeatured() {
@@ -236,27 +340,40 @@
       }
       card.setAttribute("data-search-text", bits.join(" "));
       var imgRel = preview && preview.image ? preview.image : "";
+      var catHref = "category.html?cat=" + encodeURIComponent(cat.id);
       var imgBlock = imgRel
-        ? '<div class="featured-cat-card__media"><img src="' +
+        ? '<a class="featured-cat-card__media-hit" href="' +
+          catHref +
+          '" aria-label="Browse ' +
+          escapeAttr(cat.label) +
+          ' — photos"><div class="featured-cat-card__media"><img src="' +
           escapeAttr(imgUrl(imgRel)) +
-          '" alt="" loading="lazy" width="640" height="480" /></div>'
-        : '<div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div>';
+          '" alt="" loading="lazy" width="640" height="480" /></div></a>'
+        : '<a class="featured-cat-card__media-hit" href="' +
+          catHref +
+          '" aria-label="Browse ' +
+          escapeAttr(cat.label) +
+          '"><div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div></a>';
       card.innerHTML =
-        '<a class="featured-cat-card__link" href="category.html?cat=' +
-        encodeURIComponent(cat.id) +
-        '" aria-label="Browse ' +
-        escapeAttr(cat.label) +
-        '"></a>' +
         '<div class="featured-cat-card__shine" aria-hidden="true"></div>' +
         imgBlock +
         '<div class="featured-cat-card__body">' +
-        "<h3>" +
+        "<h3><a href=\"" +
+        catHref +
+        "\">" +
         escapeHtml(cat.label) +
-        "</h3>" +
+        "</a></h3>" +
         "<p>" +
         String(count) +
         " pieces in this line</p>" +
-        '<span class="featured-cat-card__cta">View collection →</span>' +
+        '<div class="featured-cat-card__row">' +
+        '<a class="featured-cat-card__cta" href="' +
+        catHref +
+        '">View collection →</a>' +
+        '<button type="button" class="featured-cat-card__quick-add" data-quick-cat="' +
+        escapeAttr(cat.id) +
+        '">Add to cart</button>' +
+        "</div>" +
         "</div>";
       els.productGrid.appendChild(card);
     });
@@ -499,6 +616,7 @@
   renderCategories();
   renderFeatured();
   paintHeroFloatCatalog();
+  renderHeroSpotlight();
   if (gq) {
     gq.addEventListener("input", applyHomeCatalogFilter);
   }
@@ -517,8 +635,22 @@
     updateCartUI();
   });
 
+  if (els.productGrid) {
+    els.productGrid.addEventListener("click", function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest(".featured-cat-card__quick-add") : null;
+      if (!btn || !els.productGrid.contains(btn)) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var cid = btn.getAttribute("data-quick-cat");
+      if (!cid) return;
+      quickAddFromCategory(cid);
+    });
+  }
+
   window.addEventListener("craftguruCatalogPricesMerged", function () {
+    renderCategories();
     renderFeatured();
     paintHeroFloatCatalog();
+    renderHeroSpotlight();
   });
 })();

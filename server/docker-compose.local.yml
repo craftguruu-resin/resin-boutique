@@ -1,0 +1,27 @@
+# Local Postgres only — not used in production.
+# From the server/ directory:
+#   docker compose -f docker-compose.local.yml up -d
+# Then in server/.env set DATABASE_URL (see .env.example).
+# Stop: docker compose -f docker-compose.local.yml down
+# Data persists in the named volume until you docker compose ... down -v
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: craftguru-postgres-local
+    environment:
+      POSTGRES_USER: craftguru
+      POSTGRES_PASSWORD: craftguru_local_dev
+      POSTGRES_DB: craftguru
+    ports:
+      - "5432:5432"
+    volumes:
+      - craftguru_local_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U craftguru -d craftguru"]
+      interval: 3s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  craftguru_local_pgdata:

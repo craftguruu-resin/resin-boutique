@@ -73,7 +73,7 @@
   function runMerge() {
     var base = billApiBase();
     if (!base) return Promise.resolve();
-    return fetch(base + "/api/catalog/price-overrides")
+    return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" })
       .then(function (res) {
         return res.json();
       })
@@ -81,7 +81,7 @@
         if (j && j.ok && j.overrides) {
           D.applyPriceOverrides(j.overrides);
         }
-        return fetch(base + "/api/catalog/vendor-products")
+        return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" })
           .then(function (r2) {
             return r2.json();
           })

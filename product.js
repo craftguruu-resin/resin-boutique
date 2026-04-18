@@ -48,6 +48,7 @@
     qtyTierHint: document.getElementById("qtyTierHint"),
     hint: document.getElementById("sizeHint"),
     addBtn: document.getElementById("addToCartBtn"),
+    addBtnTop: document.getElementById("addToCartTopBtn"),
     back: document.getElementById("backLink"),
     crumbSub: document.getElementById("productCrumbSub"),
     crumbSubBack: document.getElementById("crumbSubBack"),
@@ -83,6 +84,7 @@
     els.qtyTierHint = document.getElementById("qtyTierHint");
     els.hint = document.getElementById("sizeHint");
     els.addBtn = document.getElementById("addToCartBtn");
+    els.addBtnTop = document.getElementById("addToCartTopBtn");
     els.back = document.getElementById("backLink");
     els.crumbSub = document.getElementById("productCrumbSub");
     els.crumbSubBack = document.getElementById("crumbSubBack");
@@ -128,6 +130,10 @@
     if (els.addBtn) {
       els.addBtn.disabled = oos;
       els.addBtn.setAttribute("aria-disabled", oos ? "true" : "false");
+    }
+    if (els.addBtnTop) {
+      els.addBtnTop.disabled = oos;
+      els.addBtnTop.setAttribute("aria-disabled", oos ? "true" : "false");
     }
     var qtyRoot = document.getElementById("qtyOptions");
     if (qtyRoot) {
@@ -465,9 +471,19 @@
 
     updatePrice();
 
-    if (els.addBtn) {
-      els.addLabel = els.addBtn.querySelector(".btn-add-premium__text");
-      els.addBtn.addEventListener("click", function () {
+    function pulseAddButtons() {
+      [els.addBtn, els.addBtnTop].forEach(function (b) {
+        if (!b) return;
+        b.classList.remove("btn-add-lg--burst");
+        void b.offsetWidth;
+        b.classList.add("btn-add-lg--burst");
+      });
+    }
+
+    function wireAddToCart(btn) {
+      if (!btn || btn.dataset.cgAddBound) return;
+      btn.dataset.cgAddBound = "1";
+      btn.addEventListener("click", function () {
         if (product.outOfStock) return;
         var stk = product.stock && product.stock[selected];
         if (stk != null && Number.isFinite(Number(stk)) && Number(stk) < selectedQty) {
@@ -495,18 +511,30 @@
           var t = document.getElementById("cartToggle");
           if (t) t.click();
         }
-        var lab = els.addLabel || els.addBtn;
-        lab.textContent = "Added ✓";
-        els.addBtn.classList.add("btn-add-lg--success");
-        els.addBtn.classList.remove("btn-add-lg--burst");
-        void els.addBtn.offsetWidth;
-        els.addBtn.classList.add("btn-add-lg--burst");
+        [els.addBtn, els.addBtnTop].forEach(function (b) {
+          if (!b) return;
+          var lab = b.querySelector(".btn-add-premium__text");
+          if (lab) lab.textContent = "Added ✓";
+          b.classList.add("btn-add-lg--success");
+          b.classList.remove("btn-add-lg--burst");
+        });
+        pulseAddButtons();
         setTimeout(function () {
-          lab.textContent = "Add to cart";
-          els.addBtn.classList.remove("btn-add-lg--success");
+          [els.addBtn, els.addBtnTop].forEach(function (b) {
+            if (!b) return;
+            var lab = b.querySelector(".btn-add-premium__text");
+            if (lab) lab.textContent = "Add to cart";
+            b.classList.remove("btn-add-lg--success");
+          });
         }, 1600);
       });
     }
+
+    if (els.addBtn) {
+      els.addLabel = els.addBtn.querySelector(".btn-add-premium__text");
+    }
+    wireAddToCart(els.addBtn);
+    wireAddToCart(els.addBtnTop);
 
     applyOutOfStockUi();
   }

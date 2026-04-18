@@ -1625,7 +1625,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
         o.listed === false;
       if (hasAny) out[k] = o;
     });
-    res.setHeader("Cache-Control", "public, max-age=8");
+    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, overrides: out });
   });
 });
@@ -1636,7 +1636,7 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "public, max-age=15");
+    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, products: list || [] });
   });
 });

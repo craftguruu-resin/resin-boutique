@@ -6,7 +6,7 @@ I cannot log into your accounts or click Deploy for you. Follow the steps below;
 
 | Part | Where | Role |
 |------|--------|------|
-| Postgres | **Neon** (existing) | `DATABASE_URL` — only on Render |
+| Postgres | **Neon** (or any Postgres) | `DATABASE_URL` — set on **Render** for prod; on your **Mac** use `server/.env` (gitignored). Same variable name, two places. See **`server/LOCAL-AND-PROD-DATABASE.md`**. |
 | Node API + same-origin fallback | **Render** Web Service (`server/`) | REST, Razorpay, vendor auth, serves repo static files if you open the Render URL |
 | Public shop + fast CDN | **Cloudflare Pages** | Static HTML/JS/CSS/media from Git |
 
