@@ -18,6 +18,31 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
+  function showBatchMsg(text, isErr) {
+    var el = document.getElementById("vhBatchMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
+    el.style.color = isErr ? "#b42318" : "";
+  }
+
+  function syncCustomHeroUi(settings) {
+    var togg = document.getElementById("vhCustomToggle");
+    if (!togg || !settings) return;
+    togg.checked = settings.customHeroEnabled !== false;
+    var hint = document.getElementById("vhCustomHint");
+    if (hint) {
+      if (!togg.checked) {
+        hint.hidden = false;
+        hint.textContent =
+          "Guests currently see the built-in Craftguru homepage hero. Turn “Custom hero on homepage” on to publish your slides again.";
+      } else {
+        hint.hidden = true;
+        hint.textContent = "";
+      }
+    }
+  }
+
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -111,6 +136,7 @@
     var sec = (Number(settings.carouselIntervalMs) || 2000) / 1000;
     if (!Number.isFinite(sec)) sec = 2;
     inp.value = String(Math.round(sec * 10) / 10);
+    syncCustomHeroUi(settings);
   }
 
   function putHeroSettings(body) {
@@ -148,6 +174,7 @@
     empty.style.display = "none";
     var pinId = settings && settings.singleSlideId != null ? Number(settings.singleSlideId) : NaN;
     var mode = settings && String(settings.displayMode || "").toLowerCase() === "single" ? "single" : "carousel";
+    var customOff = settings && settings.customHeroEnabled === false;
     slides.forEach(function (s) {
       var li = document.createElement("li");
       li.style.display = "flex";
@@ -162,6 +189,7 @@
         "<div style=\"flex:1;min-width:8rem\"><strong>#" +
         esc(String(s.id)) +
         "</strong>" +
+        (customOff ? ' <span class="vs-pill" style="margin-left:0.35rem;opacity:0.85">Saved (off air)</span>' : "") +
         (isPinned ? ' <span class="vs-pill" style="margin-left:0.35rem">Fixed hero</span>' : "") +
         "<br /><span class=\"vs-muted\">" +
         esc(s.animation || "orbit") +
@@ -179,7 +207,10 @@
 
   function loadSlides(opts) {
     if (!opts || !opts.quiet) showMsg("", false);
-    return fetch(base() + "/api/catalog/hero-slides", { cache: "no-store" })
+    return fetch(base() + "/api/vendor/hero-slides", {
+      cache: "no-store",
+      headers: Object.assign({}, V.authHeaders()),
+    })
       .then(function (res) {
         return res.json();
       })
@@ -198,6 +229,102 @@
 
   function boot() {
     wireHeroPreview();
+
+    var customTog = document.getElementById("vhCustomToggle");
+    if (customTog) {
+      customTog.addEventListener("change", function () {
+        showMsg("Saving…", false);
+        putHeroSettings({ customHeroEnabled: customTog.checked })
+          .then(function () {
+            return loadSlides({ quiet: true });
+          })
+          .then(function () {
+            showMsg(customTog.checked ? "Custom hero is live on the guest site." : "Guest site now uses the built-in hero.", false);
+          })
+          .catch(function (e) {
+            showMsg(String((e && e.message) || e), true);
+            return loadSlides({ quiet: true });
+          });
+      });
+    }
+
+    var builtinBtn = document.getElementById("vhBuiltinBtn");
+    if (builtinBtn) {
+      builtinBtn.addEventListener("click", function () {
+        showMsg("Switching to built-in hero…", false);
+        putHeroSettings({ customHeroEnabled: false, displayMode: "carousel" })
+          .then(function () {
+            return loadSlides({ quiet: true });
+          })
+          .then(function () {
+            showMsg("Guest homepage now uses the default Craftguru hero. Your slides remain listed below.", false);
+            var top = document.getElementById("vhTop");
+            if (top && top.scrollIntoView) {
+              top.scrollIntoView({ behavior: "smooth", block: "start" });
+            } else {
+              try {
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              } catch (_) {
+                window.scrollTo(0, 0);
+              }
+            }
+          })
+          .catch(function (e) {
+            showMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
+
+    var batchForm = document.getElementById("vhBatchForm");
+    if (batchForm) {
+      batchForm.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var fi = document.getElementById("vhBatchImages");
+        var files = fi && fi.files ? fi.files : null;
+        if (!files || files.length < 5) {
+          showBatchMsg("Choose at least 5 images (up to 20) for a batch upload.", true);
+          return;
+        }
+        if (files.length > 20) {
+          showBatchMsg("Maximum 20 images per batch.", true);
+          return;
+        }
+        var fd = new FormData();
+        for (var bi = 0; bi < files.length; bi++) {
+          fd.append("images", files[bi], files[bi].name);
+        }
+        fd.set("animation", (document.getElementById("vhBatchAnim") && document.getElementById("vhBatchAnim").value) || "slide");
+        var headers = V.authHeaders();
+        delete headers["Content-Type"];
+        showBatchMsg("Uploading " + files.length + " images…", false);
+        fetch(base() + "/api/vendor/hero-slides/batch", {
+          method: "POST",
+          headers: headers,
+          body: fd,
+          cache: "no-store",
+        })
+          .then(function (res) {
+            return res.text().then(function (text) {
+              var j = {};
+              try {
+                j = text ? JSON.parse(text) : {};
+              } catch (_) {}
+              if (!res.ok || !j.ok) {
+                throw new Error((j && j.error) || res.statusText || "Batch upload failed");
+              }
+              return j;
+            });
+          })
+          .then(function () {
+            if (fi) fi.value = "";
+            showBatchMsg("Uploaded successfully.", false);
+            return loadSlides();
+          })
+          .catch(function (e) {
+            showBatchMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
 
     document.getElementById("vhAddForm").addEventListener("submit", function (ev) {
       ev.preventDefault();

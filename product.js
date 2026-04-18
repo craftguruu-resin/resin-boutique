@@ -68,7 +68,6 @@
     priceBreakdown: document.getElementById("priceBreakdown"),
     sizes: document.getElementById("sizeOptions"),
     qtyTierHint: document.getElementById("qtyTierHint"),
-    hint: document.getElementById("sizeHint"),
     addBtn: document.getElementById("addToCartBtn"),
     back: document.getElementById("backLink"),
     crumbSub: document.getElementById("productCrumbSub"),
@@ -102,7 +101,6 @@
     els.priceBreakdown = document.getElementById("priceBreakdown");
     els.sizes = document.getElementById("sizeOptions");
     els.qtyTierHint = document.getElementById("qtyTierHint");
-    els.hint = document.getElementById("sizeHint");
     els.addBtn = document.getElementById("addToCartBtn");
     els.back = document.getElementById("backLink");
     els.crumbSub = document.getElementById("productCrumbSub");
@@ -301,27 +299,6 @@
           ? D.sizeLabels[selected].name
           : selected;
     }
-    if (els.hint) {
-      var pr = D.getSizeProfileForProduct
-        ? D.getSizeProfileForProduct(product, product.category, selected)
-        : D.getSizeProfile
-          ? D.getSizeProfile(product.category, selected)
-          : { dim: "", pour: "", viz: 1 };
-      var labNm = D.getSizeLabelNameForProduct ? D.getSizeLabelNameForProduct(product, selected) : String(selected || "");
-      var pourT = pr.pour ? String(pr.pour).trim() : "";
-      if (pr.dim || pourT) {
-        var sep = pr.dim && pourT ? '<span class="size-dock__hint-sep"> · </span>' : "";
-        els.hint.innerHTML =
-          (pr.dim ? "<strong>" + escapeHtml(pr.dim) + "</strong>" : "") +
-          sep +
-          (pourT ? escapeHtml(pourT) : "") +
-          " — tap another tile to compare.";
-      } else if (labNm) {
-        els.hint.textContent = labNm + " — tap another tile to compare.";
-      } else {
-        els.hint.textContent = "Tap another tile to compare.";
-      }
-    }
     if (els.sizeScale) {
       els.sizeScale.setAttribute("data-sel", selected);
     }
@@ -372,22 +349,6 @@
     var offered = offeredSizeKeys();
     if (!selected || offered.indexOf(selected) < 0) {
       selected = pickDefaultSizeKey(product, offered);
-    }
-
-    var multiHint = document.getElementById("productSizeMultiHint");
-    if (multiHint) {
-      if (offered.length > 1) {
-        var curNm = D.getSizeLabelNameForProduct
-          ? D.getSizeLabelNameForProduct(product, selected)
-          : String(selected || "").toUpperCase();
-        multiHint.hidden = false;
-        multiHint.textContent =
-          curNm +
-          " is selected (lowest MRP for this piece). For other formats and prices — tap a size below.";
-      } else {
-        multiHint.hidden = true;
-        multiHint.textContent = "";
-      }
     }
 
     if (els.sizes) {

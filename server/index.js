@@ -17,6 +17,7 @@ var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorProductsDb = require("./vendor-products-db.js");
+var catalogMediaPath = require("./media-path.js");
 var storefrontHeroDb = require("./storefront-hero-db.js");
 var rawMaterialsDb = require("./raw-materials-db.js");
 var multer = require("multer");
@@ -26,6 +27,30 @@ var productImageUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 12 * 1024 * 1024, files: 1 },
 });
+
+var heroBatchUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024, files: 20 },
+});
+
+/** Write one hero JPEG under media/hero/. @param {(err: Error|null, rel?: string, abs?: string) => void} cb */
+function writeVendorHeroJpegToDisk(buf, siteRoot, cb) {
+  var dir = path.join(siteRoot, "media", "hero");
+  fs.mkdir(dir, { recursive: true }, function (mkErr) {
+    if (mkErr) return cb(mkErr);
+    var base = crypto.randomBytes(10).toString("hex");
+    var rel = "media/hero/" + base + ".jpg";
+    var abs = path.join(siteRoot, rel);
+    sharp(buf)
+      .rotate()
+      .jpeg({ quality: 88, mozjpeg: true })
+      .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
+      .toFile(abs, function (wErr) {
+        if (wErr) return cb(wErr);
+        cb(null, rel, abs);
+      });
+  });
+}
 var poolMod = require("./db/pool.js");
 var schemaHotfix = require("./db/schema-hotfix.js");
 var vendorAuth = require("./vendor-auth.js");
@@ -1602,17 +1627,27 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
   });
 });
 
-/** Public: configurable hero slides (empty = storefront uses defaults). */
+/** Public: configurable hero slides (empty = storefront uses defaults). When custom hero is off, slides are hidden but settings are still returned. */
 app.get("/api/catalog/hero-slides", function (_req, res) {
   storefrontHeroDb.listSlidesWithSettings(function (e, pack) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
+    var settings = (pack && pack.heroSettings) || {
+      displayMode: "carousel",
+      carouselIntervalMs: 2000,
+      singleSlideId: null,
+      customHeroEnabled: true,
+    };
+    var slides = (pack && pack.slides) || [];
+    if (settings.customHeroEnabled === false) {
+      slides = [];
+    }
     res.setHeader("Cache-Control", "no-store");
     res.json({
       ok: true,
-      slides: (pack && pack.slides) || [],
-      heroSettings: (pack && pack.heroSettings) || { displayMode: "carousel", carouselIntervalMs: 2000, singleSlideId: null },
+      slides: slides,
+      heroSettings: settings,
     });
   });
 });
@@ -1768,6 +1803,29 @@ app.post("/api/vendor/products/:productId/active", function (req, res) {
   });
 });
 
+/** Vendor: list hero slides + settings (always includes full slide list for the dashboard, even when guest custom hero is off). */
+app.get("/api/vendor/hero-slides", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    storefrontHeroDb.listSlidesWithSettings(function (e2, pack) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        ok: true,
+        slides: (pack && pack.slides) || [],
+        heroSettings: (pack && pack.heroSettings) || null,
+      });
+    });
+  });
+});
+
 /** Vendor: add hero slide (image + animation preset for guest homepage). */
 app.post(
   "/api/vendor/hero-slides",
@@ -1785,33 +1843,84 @@ app.post(
       }
       var anim = String((req.body && req.body.animation) || "orbit").trim().slice(0, 40);
       var siteRoot = path.join(__dirname, "..");
-      var dir = path.join(siteRoot, "media", "hero");
-      fs.mkdir(dir, { recursive: true }, function (mkErr) {
-        if (mkErr) {
-          return res.status(500).json({ ok: false, error: String(mkErr.message || mkErr) });
+      writeVendorHeroJpegToDisk(req.file.buffer, siteRoot, function (wErr, rel, abs) {
+        if (wErr) {
+          return res.status(500).json({ ok: false, error: String(wErr.message || wErr) });
         }
-        var base = crypto.randomBytes(10).toString("hex");
-        var rel = "media/hero/" + base + ".jpg";
-        var abs = path.join(siteRoot, rel);
-        sharp(req.file.buffer)
-          .rotate()
-          .jpeg({ quality: 88, mozjpeg: true })
-          .resize({ width: 2000, height: 2000, fit: "inside", withoutEnlargement: true })
-          .toFile(abs, function (wErr) {
+        storefrontHeroDb.insertSlide({ imagePath: rel, animation: anim }, function (e2, row) {
+          if (e2) {
+            try {
+              fs.unlinkSync(abs);
+            } catch (_) {}
+            return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+          }
+          res.setHeader("Cache-Control", "no-store");
+          res.json({ ok: true, slide: row });
+        });
+      });
+    });
+  }
+);
+
+/** Vendor: upload 5–20 hero images in one request (same animation for all). */
+app.post(
+  "/api/vendor/hero-slides/batch",
+  heroBatchUpload.array("images", 20),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      var files = req.files || [];
+      if (files.length < 5) {
+        return res.status(400).json({
+          ok: false,
+          error: "Select at least 5 images for a batch upload (up to 20). Use \"Add one slide\" below for a single image.",
+        });
+      }
+      if (files.length > 20) {
+        return res.status(400).json({ ok: false, error: "Too many images (maximum 20 per batch)." });
+      }
+      var anim = String((req.body && req.body.animation) || "orbit").trim().slice(0, 40);
+      var siteRoot = path.join(__dirname, "..");
+      storefrontHeroDb.nextHeroSortStart(function (eSort, sort0) {
+        if (eSort) {
+          return res.status(500).json({ ok: false, error: String(eSort.message || eSort) });
+        }
+        var idx = 0;
+        var order = sort0;
+        var created = [];
+        function step() {
+          if (idx >= files.length) {
+            res.setHeader("Cache-Control", "no-store");
+            return res.json({ ok: true, count: created.length, slides: created });
+          }
+          var f = files[idx];
+          if (!f || !f.buffer || f.buffer.length < 32) {
+            return res.status(400).json({ ok: false, error: "Invalid or empty image at position " + (idx + 1) });
+          }
+          writeVendorHeroJpegToDisk(f.buffer, siteRoot, function (wErr, rel, abs) {
             if (wErr) {
               return res.status(500).json({ ok: false, error: String(wErr.message || wErr) });
             }
-            storefrontHeroDb.insertSlide({ imagePath: rel, animation: anim }, function (e2, row) {
-              if (e2) {
+            storefrontHeroDb.insertSlide({ imagePath: rel, animation: anim, sortOrder: order }, function (insErr, row) {
+              if (insErr) {
                 try {
                   fs.unlinkSync(abs);
                 } catch (_) {}
-                return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+                return res.status(500).json({ ok: false, error: String(insErr.message || insErr) });
               }
-              res.setHeader("Cache-Control", "no-store");
-              res.json({ ok: true, slide: row });
+              created.push(row);
+              idx += 1;
+              order += 1;
+              step();
             });
           });
+        }
+        step();
       });
     });
   }
@@ -2314,6 +2423,7 @@ app.get("/vendor/returns", function (_req, res) {
 app.get("/vendororder", function (_req, res) {
   res.redirect(302, "/vendor-tags.html");
 });
+app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot()));
 app.use(express.static(siteRoot));
 
 function onServerListen() {
@@ -2324,6 +2434,9 @@ function onServerListen() {
     console.log("Postgres: DATABASE_URL set — run npm run db:migrate && npm run db:seed (from server/) once.");
   } else {
     console.log("Postgres: not configured — orders use server/data/orders.json (file mode).");
+  }
+  if (process.env.CATALOG_MEDIA_ROOT && String(process.env.CATALOG_MEDIA_ROOT).trim()) {
+    console.log("Catalog images: CATALOG_MEDIA_ROOT=" + catalogMediaPath.catalogMediaFsRoot());
   }
 }
 

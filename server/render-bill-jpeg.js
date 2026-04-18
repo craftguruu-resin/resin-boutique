@@ -4,7 +4,7 @@ var sharp = require("sharp");
 var fs = require("fs");
 var pathMod = require("path");
 
-var ROOT = pathMod.join(__dirname, "..");
+var mediaPathMod = require("./media-path.js");
 
 function esc(s) {
   return String(s == null ? "" : s)
@@ -37,7 +37,8 @@ function safeMediaRel(rel) {
 function thumbJpegCropDataUri(it) {
   var s = safeMediaRel(it && it.image);
   if (!s) return Promise.resolve(null);
-  var abs = pathMod.join(ROOT, s);
+  var abs = mediaPathMod.absoluteMediaPath(s);
+  if (!abs) return Promise.resolve(null);
   if (!fs.existsSync(abs)) return Promise.resolve(null);
   return sharp(abs)
     .rotate()

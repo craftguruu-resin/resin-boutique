@@ -8,6 +8,7 @@ var sharp = require("sharp");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
+var catalogMediaPath = require("./media-path.js");
 
 function slugify(s) {
   return String(s || "")
@@ -272,8 +273,7 @@ function createVendorProduct(opts, cb) {
       .trim();
     if (!folderLabel) folderLabel = categoryId;
 
-    var siteRoot = path.join(__dirname, "..");
-    var catalogDir = path.join(siteRoot, "media", "catalog", folderLabel);
+    var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
     var baseSlug = slugify(name) || "product";
     var suffix = crypto.randomBytes(4).toString("hex");
     var fileStem = (baseSlug + "-" + suffix).slice(0, 120);
@@ -465,6 +465,7 @@ function listAllProductsForManage(opts, cb) {
 
         vendorList.forEach(function (row) {
           var ov = omap[row.id] || {};
+          var listed = ov.listed !== false;
           var merged = Object.assign({}, row, {
             prices: {
               s: ov.s != null ? Number(ov.s) : row.prices.s,
@@ -475,6 +476,7 @@ function listAllProductsForManage(opts, cb) {
             listingOutOfStock: !!(ov && ov.outOfStock),
             returnGift: !!(ov && ov.returnGift),
             source: "vendor",
+            isActive: row.is_active !== false && listed,
           });
           out.push(merged);
         });
@@ -644,8 +646,7 @@ function updateVendorProductById(productId, opts, cb) {
               .replace(/[/\\]/g, "")
               .trim();
             if (!folderLabel) folderLabel = String(row.category_id || "misc");
-            var siteRoot = path.join(__dirname, "..");
-            var catalogDir = path.join(siteRoot, "media", "catalog", folderLabel);
+            var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
             var baseSlug = slugify(name) || "product";
             var suffix = crypto.randomBytes(4).toString("hex");
             var fileStem = (baseSlug + "-" + suffix).slice(0, 120);

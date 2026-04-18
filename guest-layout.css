@@ -810,6 +810,18 @@ body.guest-site .global-find {
   margin: 0.5rem 0 0.15rem;
 }
 
+.page-product .product-visual--fx .product-hero-img--fx {
+  max-width: min(100%, 26rem);
+  margin-left: 0;
+  margin-right: auto;
+}
+
+@media (min-width: 900px) {
+  .page-product .product-visual--fx .product-hero-img--fx {
+    max-width: min(100%, 24rem);
+  }
+}
+
 .page-product .qty-dock--strip {
   display: flex;
   flex-direction: row;

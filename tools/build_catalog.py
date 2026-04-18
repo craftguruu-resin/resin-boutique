@@ -225,15 +225,9 @@ def main() -> int:
     lines.append("  });")
     lines.append("")
     lines.append("  var SIZE_DEFAULT = {")
-    lines.append(
-        '    s: { dim: "Compact silhouette · studio proof", pour: "", viz: 0.78 },'
-    )
-    lines.append(
-        '    m: { dim: "Classic balance · everyday scale", pour: "", viz: 1 },'
-    )
-    lines.append(
-        '    l: { dim: "Grand statement · room anchor", pour: "", viz: 1.26 },'
-    )
+    lines.append('    s: { dim: "", pour: "", viz: 0.78 },')
+    lines.append('    m: { dim: "", pour: "", viz: 1 },')
+    lines.append('    l: { dim: "", pour: "", viz: 1.26 },')
     lines.append("  };")
     lines.append("")
     lines.append("  var SIZE_BY_CAT = {};")

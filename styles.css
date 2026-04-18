@@ -2494,6 +2494,53 @@ body.product-page--oos .btn-add-lg {
   width: 100%;
 }
 
+.size-scale.size-scale--compact {
+  margin: 0 0 0.65rem;
+  padding: 0.35rem 0.5rem 0.4rem;
+}
+
+.size-scale.size-scale--compact .size-scale__labels {
+  font-size: 0.5rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.28rem;
+}
+
+.size-scale.size-scale--compact .size-scale__track {
+  height: 4px;
+}
+
+.size-dock.size-dock--compact {
+  padding: 0.85rem 1rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.size-dock.size-dock--compact .size-dock__head {
+  margin-bottom: 0.55rem;
+}
+
+.size-dock.size-dock--compact .size-dock__title {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.size-pick__dim:empty {
+  display: none;
+}
+
+.page-product .size-pick {
+  padding: 0.65rem 0.45rem 0.75rem;
+  gap: 0.28rem;
+}
+
+.page-product .size-pick__figure {
+  min-height: 72px;
+  margin-bottom: 0;
+}
+
+.page-product .size-pick__svg {
+  width: calc(52px * var(--viz));
+}
+
 /* Luxury size tiles — isometric figure + specs */
 .size-options--lux {
   display: grid;

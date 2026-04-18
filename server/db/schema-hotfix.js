@@ -80,8 +80,14 @@ function ensureVendorInventoryColumns() {
           "display_mode VARCHAR(20) NOT NULL DEFAULT 'carousel'," +
           "carousel_interval_ms INT NOT NULL DEFAULT 2000," +
           "single_slide_id INT NULL REFERENCES storefront_hero_slides(id) ON DELETE SET NULL," +
+          "custom_hero_enabled BOOLEAN NOT NULL DEFAULT true," +
           "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
           ")"
+      );
+    })
+    .then(function () {
+      return p.query(
+        "ALTER TABLE storefront_hero_settings ADD COLUMN IF NOT EXISTS custom_hero_enabled BOOLEAN NOT NULL DEFAULT true"
       );
     })
     .then(function () {

@@ -30,9 +30,9 @@
   });
 
   var SIZE_DEFAULT = {
-    s: { dim: "Compact silhouette · studio proof", pour: "", viz: 0.78 },
-    m: { dim: "Classic balance · everyday scale", pour: "", viz: 1 },
-    l: { dim: "Grand statement · room anchor", pour: "", viz: 1.26 },
+    s: { dim: "", pour: "", viz: 0.78 },
+    m: { dim: "", pour: "", viz: 1 },
+    l: { dim: "", pour: "", viz: 1.26 },
   };
 
   var SIZE_BY_CAT = {};
@@ -228,9 +228,46 @@
     return out.slice(0, n);
   }
 
+  /** Live Server / Vite dev: HTML is not on the API port, so load /media/... from the Node server where uploads live. */
+  var STATIC_DEV_PORTS = { "5500": 1, "5501": 1, "8080": 1, "8888": 1, "3001": 1, "5173": 1, "5174": 1, "4173": 1 };
+
+  function storefrontApiBaseForMedia() {
+    try {
+      if (typeof window === "undefined" || !window.location) return "";
+      if (window.location.protocol === "file:") return "";
+      var port = String(window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
+      if (!STATIC_DEV_PORTS[port]) return "";
+      var override = "";
+      try {
+        var v = document.documentElement.getAttribute("data-bill-api-port");
+        if (v != null && String(v).trim()) {
+          var n = parseInt(String(v).trim(), 10);
+          if (Number.isFinite(n) && n > 0 && n < 65536) override = String(n);
+        }
+      } catch (_) {}
+      if (!override) {
+        try {
+          var ls = localStorage.getItem("craftguruBillApiPort");
+          if (ls != null && String(ls).trim()) {
+            var n2 = parseInt(String(ls).trim(), 10);
+            if (Number.isFinite(n2) && n2 > 0 && n2 < 65536) override = String(n2);
+          }
+        } catch (_) {}
+      }
+      return "http://127.0.0.1:" + (override || "3847");
+    } catch (_) {
+      return "";
+    }
+  }
+
   function imageUrl(relPath) {
-    if (!relPath) return '';
-    return relPath.split('/').map(function (seg) { return encodeURIComponent(seg); }).join('/');
+    if (!relPath) return "";
+    var enc = relPath.split("/").map(function (seg) { return encodeURIComponent(seg); }).join("/");
+    var base = storefrontApiBaseForMedia();
+    if (base && relPath.indexOf("media/") === 0) {
+      return base.replace(/\/+$/, "") + "/" + enc;
+    }
+    return enc;
   }
 
   /** Merge server-saved prices and optional per-size stock (see /api/catalog/price-overrides). Mutates catalog in memory. */

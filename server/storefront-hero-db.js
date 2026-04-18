@@ -7,6 +7,7 @@ function defaultHeroSettings() {
     displayMode: "carousel",
     carouselIntervalMs: 2000,
     singleSlideId: null,
+    customHeroEnabled: true,
   };
 }
 
@@ -58,7 +59,7 @@ function getHeroSettings(cb) {
   }
   pool
     .query(
-      "SELECT display_mode, carousel_interval_ms, single_slide_id FROM storefront_hero_settings WHERE id = 1 LIMIT 1"
+      "SELECT display_mode, carousel_interval_ms, single_slide_id, custom_hero_enabled FROM storefront_hero_settings WHERE id = 1 LIMIT 1"
     )
     .then(function (r) {
       if (!r.rows || !r.rows.length) {
@@ -66,10 +67,13 @@ function getHeroSettings(cb) {
       }
       var row = r.rows[0];
       var mode = String(row.display_mode || "carousel").toLowerCase();
+      var che = row.custom_hero_enabled;
+      var customOn = che !== false && che !== 0 && String(che).toLowerCase() !== "false";
       cb(null, {
         displayMode: mode === "single" ? "single" : "carousel",
         carouselIntervalMs: clampIntervalMs(row.carousel_interval_ms),
         singleSlideId: row.single_slide_id != null ? Number(row.single_slide_id) : null,
+        customHeroEnabled: customOn,
       });
     })
     .catch(function (e) {
@@ -131,17 +135,20 @@ function saveHeroSettings(patch, cb) {
       singleSlideId = null;
     }
 
+    var customHeroEnabled = patchCustomHeroEnabled(cur, patch);
+
     function upsert(finalSlideId) {
       pool
         .query(
-          "INSERT INTO storefront_hero_settings (id, display_mode, carousel_interval_ms, single_slide_id) " +
-            "VALUES (1, $1, $2, $3) " +
+          "INSERT INTO storefront_hero_settings (id, display_mode, carousel_interval_ms, single_slide_id, custom_hero_enabled) " +
+            "VALUES (1, $1, $2, $3, $4) " +
             "ON CONFLICT (id) DO UPDATE SET " +
             "display_mode = EXCLUDED.display_mode, " +
             "carousel_interval_ms = EXCLUDED.carousel_interval_ms, " +
             "single_slide_id = EXCLUDED.single_slide_id, " +
+            "custom_hero_enabled = EXCLUDED.custom_hero_enabled, " +
             "updated_at = now()",
-          [displayMode, carouselIntervalMs, finalSlideId]
+          [displayMode, carouselIntervalMs, finalSlideId, customHeroEnabled]
         )
         .then(function () {
           getHeroSettings(cb);
@@ -200,6 +207,22 @@ function insertSlide(opts, cb) {
     .catch(cb);
 }
 
+function nextHeroSortStart(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null, 0);
+    });
+  }
+  pool
+    .query("SELECT COALESCE(MAX(sort_order), -1) + 1 AS n FROM storefront_hero_slides")
+    .then(function (r) {
+      var n = Math.floor(Number((r.rows[0] && r.rows[0].n) || 0));
+      cb(null, n);
+    })
+    .catch(cb);
+}
+
 function deleteSlide(id, cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -230,5 +253,6 @@ module.exports = {
   getHeroSettings: getHeroSettings,
   saveHeroSettings: saveHeroSettings,
   insertSlide: insertSlide,
+  nextHeroSortStart: nextHeroSortStart,
   deleteSlide: deleteSlide,
 };

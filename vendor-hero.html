@@ -15,15 +15,31 @@
   <div class="vs-app">
     <div id="vsSidebarMount"></div>
     <div class="vs-main">
-      <header class="vs-topbar">
+      <header class="vs-topbar" id="vhTop">
         <div>
           <h1 class="vs-topbar__title">Homepage hero</h1>
           <p class="vs-topbar__sub">
-            Upload multiple offer images for the guest homepage disc, set how fast they rotate, or pin one slide as a fixed hero while a promotion runs.
+            Control what guests see on the homepage ring: upload slides, run a carousel, pin one image, or turn everything off and fall back to the built-in Craftguru hero.
           </p>
         </div>
       </header>
       <div class="vs-content">
+        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
+          <h2 class="vs-card__title" style="margin-top: 0">Guest site: custom hero</h2>
+          <p class="vs-muted" style="margin-top: 0">
+            When <strong>Custom hero on homepage</strong> is off, the storefront ignores your uploaded slides and uses the same default hero you see before any uploads. Your slides stay saved here so you can turn them back on anytime.
+          </p>
+          <div class="vs-row-actions" style="flex-wrap: wrap; gap: 0.75rem; align-items: center; margin-bottom: 0.65rem">
+            <label class="vs-field" style="margin: 0; display: flex; align-items: center; gap: 0.5rem; cursor: pointer">
+              <input type="checkbox" id="vhCustomToggle" checked />
+              <span>Custom hero on homepage</span>
+            </label>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vhBuiltinBtn" title="Same as turning the toggle off">
+              Use built-in hero (default)
+            </button>
+          </div>
+          <p id="vhCustomHint" class="vs-muted" style="margin: 0; font-size: 0.82rem" hidden></p>
+        </div>
         <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
           <h2 class="vs-card__title" style="margin-top: 0">Homepage playback</h2>
           <p class="vs-muted" style="margin-top: 0">
@@ -40,7 +56,29 @@
           </div>
         </div>
         <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
-          <h2 class="vs-card__title" style="margin-top: 0">Add hero slide</h2>
+          <h2 class="vs-card__title" style="margin-top: 0">Upload many slides (5–20 images)</h2>
+          <p class="vs-muted" style="margin-top: 0">
+            One batch adds at least <strong>five</strong> images (up to twenty) with the same motion preset. They appear in order after your existing slides.
+          </p>
+          <form id="vhBatchForm" class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.75rem">
+            <div class="vs-field" style="margin: 0">
+              <label for="vhBatchImages">Images</label>
+              <input type="file" id="vhBatchImages" name="images" accept="image/jpeg,image/png,image/webp" multiple required />
+            </div>
+            <div class="vs-field" style="margin: 0; min-width: 13rem">
+              <label for="vhBatchAnim">Motion for all in this batch</label>
+              <select id="vhBatchAnim" name="animation">
+                <option value="slide" selected>Slide — new photo from the right</option>
+                <option value="none">Static (no ring motion)</option>
+                <option value="orbit">Slow orbit (single-slide / fixed hero only)</option>
+              </select>
+            </div>
+            <button type="submit" class="vs-btn vs-btn--primary" id="vhBatchSubmit">Upload batch</button>
+          </form>
+          <p id="vhBatchMsg" class="vs-muted" style="display: none; margin-top: 0.65rem"></p>
+        </div>
+        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
+          <h2 class="vs-card__title" style="margin-top: 0">Add one slide</h2>
           <form id="vhAddForm" class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.75rem">
             <div class="vs-field" style="margin: 0">
               <label for="vhImage">Image</label>

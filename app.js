@@ -313,13 +313,18 @@
     observeTiles();
   }
 
+  /** Same set as category.html: listed on storefront (not delisted via catalog overrides). */
+  function listedProductsInCategory(catId) {
+    if (!D || !D.listProductsAll) return [];
+    return D.listProductsAll(catId, null) || [];
+  }
+
   function minPriceInCategory(catId) {
-    var ids = D.byCategory && D.byCategory[catId];
-    if (!ids || !ids.length) return null;
+    var list = listedProductsInCategory(catId);
+    if (!list.length) return null;
     var m = null;
-    for (var i = 0; i < ids.length; i++) {
-      var p = D.getProduct(ids[i]);
-      var c = minCompactPrice(p);
+    for (var i = 0; i < list.length; i++) {
+      var c = minCompactPrice(list[i]);
       if (c != null && (m === null || c < m)) m = c;
     }
     return m;
@@ -424,13 +429,13 @@
   };
 
   function firstProductInCategory(catId) {
-    var ids = D.byCategory && D.byCategory[catId];
-    if (!ids || !ids.length) return null;
+    var list = listedProductsInCategory(catId);
+    if (!list.length) return null;
     var pass;
     for (pass = 0; pass < 2; pass++) {
-      for (var i = 0; i < ids.length; i++) {
-        var p = D.getProduct(ids[i]);
-        if (!p || p.listed === false) continue;
+      for (var i = 0; i < list.length; i++) {
+        var p = list[i];
+        if (!p) continue;
         if (pass === 0 && p.outOfStock) continue;
         return p;
       }
@@ -448,12 +453,11 @@
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
-      var ids = D.byCategory && D.byCategory[c.id];
-      return ids && ids.length > 0;
+      return listedProductsInCategory(c.id).length > 0;
     });
     cats.forEach(function (cat, i) {
       var preview = firstProductInCategory(cat.id);
-      var count = (D.byCategory[cat.id] || []).length;
+      var count = listedProductsInCategory(cat.id).length;
       var minFrom = minPriceInCategory(cat.id);
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile";

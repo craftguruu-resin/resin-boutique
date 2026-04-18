@@ -5,7 +5,7 @@ var sharp = require("sharp");
 var fs = require("fs");
 var pathMod = require("path");
 
-var ROOT = pathMod.join(__dirname, "..");
+var mediaPathMod = require("./media-path.js");
 
 var INK = "#12141a";
 var MUTED = "#5c6578";
@@ -52,7 +52,8 @@ function billItemTitle(it) {
 function loadThumbPng(rel, px) {
   var s = safeMediaRel(rel);
   if (!s) return Promise.resolve(null);
-  var abs = pathMod.join(ROOT, s);
+  var abs = mediaPathMod.absoluteMediaPath(s);
+  if (!abs) return Promise.resolve(null);
   if (!fs.existsSync(abs)) return Promise.resolve(null);
   return sharp(abs)
     .rotate()
