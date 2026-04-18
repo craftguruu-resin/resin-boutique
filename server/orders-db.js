@@ -703,6 +703,36 @@ function listOrdersByGuestId(guestId, cb) {
     .catch(cb);
 }
 
+/** Paid order owned by guest — for PDF bill download on My orders. */
+function loadPaidOrderForGuestBill(guestId, orderId, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null, null);
+    });
+  }
+  var gid = Number(guestId);
+  var oid = Number(orderId);
+  if (!Number.isFinite(gid) || !Number.isFinite(oid)) {
+    return process.nextTick(function () {
+      cb(null, null);
+    });
+  }
+  pool
+    .query(
+      "SELECT o.id FROM orders o WHERE o.id = $1 AND o.guest_id = $2 AND o.payment_status = 'paid'",
+      [oid, gid]
+    )
+    .then(function (r) {
+      if (!r.rows.length) {
+        cb(null, null);
+        return;
+      }
+      getOrderById(oid, cb);
+    })
+    .catch(cb);
+}
+
 /** Guest may cancel only unpaid orders still in "new" fulfillment. */
 function cancelGuestOrder(guestId, orderId, cb) {
   var pool = poolMod.getPool();
@@ -743,6 +773,7 @@ module.exports = {
   getVendorDashboardSummary,
   updateOrderFulfillment,
   listOrdersByGuestId,
+  loadPaidOrderForGuestBill,
   cancelGuestOrder,
   resolveSkuMapPool: resolveSkuMapPool,
 };

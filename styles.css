@@ -3798,37 +3798,6 @@ body.product-page--oos .btn-add-lg {
   margin-bottom: 0.35rem;
 }
 
-.checkout-bill-download {
-  margin-top: 1.25rem;
-  padding: 1rem 1.05rem 1.1rem;
-  border-radius: var(--radius-xl);
-  border: 1px solid rgba(59, 111, 217, 0.2);
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(240, 246, 255, 0.92));
-  box-shadow: 0 12px 36px rgba(59, 111, 217, 0.08);
-}
-
-.checkout-bill-download__h {
-  margin: 0 0 0.35rem;
-  font-family: var(--font-display);
-  font-size: 0.98rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--ink);
-}
-
-.checkout-bill-download__lead {
-  margin: 0 0 0.85rem;
-  font-size: 0.78rem;
-  line-height: 1.45;
-  color: rgba(26, 32, 44, 0.55);
-}
-
-.checkout-bill-download__btn {
-  width: 100%;
-  text-align: center;
-  box-shadow: 0 8px 24px rgba(59, 111, 217, 0.22);
-}
-
 .checkout-panel h2 {
   margin: 0 0 1rem;
   font-family: var(--font-display);
@@ -4886,21 +4855,6 @@ body.product-page--oos .btn-add-lg {
   font-size: 1.15rem;
   line-height: 1;
   opacity: 0.95;
-}
-
-.checkout-razor-panel__cta--test {
-  margin-top: 0.65rem;
-  background: linear-gradient(135deg, #475569 0%, #334155 50%, #1e293b 100%);
-  box-shadow:
-    0 4px 0 rgba(15, 23, 42, 0.35),
-    0 14px 36px rgba(30, 41, 59, 0.4);
-  font-size: 0.82rem;
-}
-
-.checkout-razor-panel__cta--test:hover {
-  box-shadow:
-    0 6px 0 rgba(15, 23, 42, 0.3),
-    0 18px 44px rgba(30, 41, 59, 0.48);
 }
 
 .checkout-razor-panel__fine {

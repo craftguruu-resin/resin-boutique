@@ -331,8 +331,54 @@
           escapeAttr(String(o.orderId)) +
           '">Cancel order</button>'
         : "") +
+      (o.paymentStatus === "paid" && items.length
+        ? '<button type="button" class="checkout-submit account-order-dl-bill" data-dl-bill-order="' +
+          escapeAttr(String(o.orderId)) +
+          '">Download PDF bill</button>'
+        : "") +
       "</div>"
     );
+  }
+
+  function downloadGuestOrderBillPdf(orderId) {
+    var base = billApiBase();
+    if (!base) {
+      window.alert("API URL missing. Set data-bill-api-base on this page.");
+      return;
+    }
+    var oid = String(orderId || "").trim();
+    if (!oid) return;
+    var url = base + "/api/guest/order/" + encodeURIComponent(oid) + "/bill-pdf";
+    fetch(url, { method: "GET", headers: guestAuthHeaders() })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (t) {
+            throw new Error((t && t.slice(0, 200)) || res.statusText || "Download failed");
+          });
+        }
+        return res.blob();
+      })
+      .then(function (blob) {
+        if (!blob || blob.size < 100) {
+          throw new Error("Empty PDF from server.");
+        }
+        var a = document.createElement("a");
+        var u = URL.createObjectURL(blob);
+        a.href = u;
+        a.download = "Craftguru-order-" + oid + "-bill.pdf";
+        a.rel = "noopener";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          try {
+            document.body.removeChild(a);
+          } catch (_) {}
+          URL.revokeObjectURL(u);
+        }, 2000);
+      })
+      .catch(function (err) {
+        window.alert(String((err && err.message) || err || "Could not download bill."));
+      });
   }
 
   /** Read ?paid=1&orderId=&tag= from checkout redirect; show banner and return order id to highlight. */
@@ -717,6 +763,12 @@
     var list = document.getElementById("accountOrdersList");
     if (list) {
       list.addEventListener("click", function (ev) {
+        var dlBtn = ev.target && ev.target.closest ? ev.target.closest("[data-dl-bill-order]") : null;
+        if (dlBtn) {
+          ev.preventDefault();
+          downloadGuestOrderBillPdf(dlBtn.getAttribute("data-dl-bill-order"));
+          return;
+        }
         var btn = ev.target && ev.target.closest ? ev.target.closest("[data-cancel-id]") : null;
         if (!btn) return;
         var id = btn.getAttribute("data-cancel-id");

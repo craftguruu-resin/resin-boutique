@@ -87,13 +87,6 @@
               </div>
             </div>
 
-            <div class="checkout-bill-download" id="checkoutBillDownload" aria-labelledby="checkoutBillDlHeading">
-              <h3 class="checkout-bill-download__h" id="checkoutBillDlHeading">Download bill</h3>
-              <p class="checkout-bill-download__lead">Save a PDF that matches this order summary, including product photos.</p>
-              <button type="button" class="checkout-submit checkout-bill-download__btn" id="btnDownloadBillPdf">
-                Download PDF bill
-              </button>
-            </div>
           </aside>
 
           <div class="checkout-layout__main">
@@ -251,13 +244,6 @@
                 </div>
               </details>
 
-              <fieldset class="checkout-fieldset checkout-fieldset--upi-teaser">
-                <legend>Payment</legend>
-                <p class="checkout-upi-teaser__text">
-                  Add your address first — we create an <strong>order from #10001</strong> and a <strong>vendor parcel tag</strong> (studio email when SMTP is set). Then use <strong>Pay now</strong> for Razorpay when enabled. Prefer opening checkout from the same URL as <code>npm start</code> (Express), or set <code>data-bill-api-port</code> on <code>&lt;html&gt;</code> to match your API <code>PORT</code>.
-                </p>
-              </fieldset>
-
               <div class="checkout-actions-row" id="checkoutActionsRow">
                 <button type="submit" class="checkout-submit checkout-actions-row__primary" id="checkoutAddAddressBtn">
                   Add guest address
@@ -283,7 +269,7 @@
       <div class="checkout-panel checkout-success">
         <p class="checkout-success__order" id="orderIdDisplay">RA-······</p>
         <h2>Order received</h2>
-        <p>Thank you — we have your order reference. Our studio will confirm payment and message you on WhatsApp shortly to confirm dispatch.</p>
+        <p>Thank you — we have your order reference. After Razorpay confirms your payment, our studio will message you on WhatsApp to confirm dispatch.</p>
         <a class="btn-glass-dome" href="index.html#categories"><span>Continue shopping</span></a>
       </div>
     </div>
@@ -369,12 +355,6 @@
                 <span class="checkout-razor-panel__cta-text">Pay securely now</span>
                 <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
               </button>
-              <button type="button" class="checkout-razor-panel__cta checkout-razor-panel__cta--test" id="btnCheckoutTestPay">
-                Pay without Razorpay (testing)
-              </button>
-              <p class="checkout-razor-panel__fine">
-                Test button creates a real order in your database when <code>ALLOW_TEST_CHECKOUT=1</code> is set on the server. Remove for production.
-              </p>
               <p class="checkout-razor-panel__trust">We never see your UPI PIN or full card number.</p>
               <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtn">Cancel and close</button>
             </div>

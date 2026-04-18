@@ -48,11 +48,9 @@
     modalTax: document.getElementById("checkoutModalTax"),
     modalGrand: document.getElementById("checkoutModalGrand"),
     btnRazorpayCheckout: document.getElementById("btnRazorpayCheckout"),
-    btnCheckoutTestPay: document.getElementById("btnCheckoutTestPay"),
     paymentCancelBtn: document.getElementById("checkoutPaymentCancelBtn"),
     guestPhone: document.getElementById("guestPhone"),
     guestName: document.getElementById("guestName"),
-    btnDownloadBillPdf: document.getElementById("btnDownloadBillPdf"),
   };
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
@@ -661,66 +659,6 @@
       });
   }
 
-  function postCheckoutTestComplete() {
-    var base = billApiBase();
-    if (!base) return Promise.reject(new Error("Bill API URL missing."));
-    var headers = guestAuthHeaders();
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
-    return fetch(base + "/api/checkout-test-complete", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify({
-        guest: buildGuestPayloadFromForm(),
-        items: buildBillItemsForApi(),
-      }),
-    }).then(function (res) {
-      return parseApiJson(res).then(function (x) {
-        var j = x.json;
-        if (!x.okHttp || !j.ok) {
-          throw new Error((j && j.error) || res.statusText || "Test checkout failed");
-        }
-        return j;
-      });
-    });
-  }
-
-  function triggerFileDownload(blob, filename) {
-    filename = filename || "Craftguru-order-bill.pdf";
-    if (!blob || blob.size < 1) {
-      window.alert("Could not create the file. Try another browser or disable strict download blocking.");
-      return;
-    }
-    try {
-      if (typeof navigator !== "undefined" && navigator.msSaveOrOpenBlob) {
-        navigator.msSaveOrOpenBlob(blob, filename);
-        return;
-      }
-    } catch (_) {}
-
-    var url = URL.createObjectURL(blob);
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    a.target = "_blank";
-    a.rel = "noopener noreferrer";
-    a.style.cssText = "position:fixed;left:0;top:0;width:1px;height:1px;opacity:0.01;pointer-events:none;";
-    document.body.appendChild(a);
-    requestAnimationFrame(function () {
-      try {
-        a.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true, view: window }));
-      } catch (_) {
-        a.click();
-      }
-      setTimeout(function () {
-        try {
-          document.body.removeChild(a);
-        } catch (_) {}
-        URL.revokeObjectURL(url);
-      }, 4500);
-    });
-  }
-
   function closeResultPopup() {
     var pop = document.getElementById("checkoutResultPopup");
     if (pop) pop.setAttribute("hidden", "hidden");
@@ -742,12 +680,12 @@
       msg.textContent =
         outcome === "success"
           ? "Your payment was verified with Razorpay. We will confirm your order on WhatsApp +91-8824350056."
-          : "Payment did not complete. You can try Pay now again or confirm your order and pay later.";
+          : "Payment did not complete. Tap Pay now to try Razorpay again, or WhatsApp +91-8824350056 for help.";
     }
     pop.removeAttribute("hidden");
   }
 
-  /** Paid test or Razorpay: persist guest session from server, clear cart, open My orders. */
+  /** After successful Razorpay verify: persist guest session from server, clear cart, open My orders. */
   function afterPaidCheckoutNavigate(j) {
     var ge = document.getElementById("guestEmail");
     var emailNorm = normalizeCheckoutEmail(ge && ge.value);
@@ -796,33 +734,6 @@
 
   function fmt(n) {
     return CART.formatMoney(n);
-  }
-
-  function postPreviewPdfBlob(url, body) {
-    var headers = { "Content-Type": "application/json" };
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
-    return fetch(url, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(body),
-    }).then(function (res) {
-      if (!res.ok) {
-        return res.text().then(function (t) {
-          var s = String(t || "").trim();
-          if (s.charAt(0) === "<") {
-            throw new Error(
-              "PDF API returned a web page, not a file. Set data-bill-api-base or data-bill-api-port on <html> so checkout hits your Node server."
-            );
-          }
-          throw new Error(s ? s.slice(0, 240) : res.statusText || "PDF preview failed");
-        });
-      }
-      return res.blob().then(function (blob) {
-        if (blob && blob.size > 400) return blob;
-        throw new Error("Server returned an empty PDF.");
-      });
-    });
   }
 
   function postRazorpayOrder(items) {
@@ -875,35 +786,6 @@
         return j;
       });
     });
-  }
-
-  function downloadBillPdfNow() {
-    var items = buildBillItemsForApi();
-    if (!items.length) {
-      window.alert("Your cart is empty.");
-      return;
-    }
-    var base = billApiBase();
-    if (!base) {
-      window.alert(
-        "Bill server URL is missing. Run npm start in server/ and open checkout over http:// (same host and port as the API), or set data-bill-api-base on <html>."
-      );
-      return;
-    }
-    var ten = normalizeIndiaMobile10(els.guestPhone && els.guestPhone.value);
-    var payload = { items: items };
-    if (ten) payload.phone = ten;
-    postPreviewPdfBlob(base + "/api/preview-bill-pdf", payload)
-      .then(function (blob) {
-        triggerFileDownload(blob, "Craftguru-order-bill.pdf");
-      })
-      .catch(function (err) {
-        var m = String((err && err.message) || "PDF download failed.");
-        window.alert(
-          m +
-            "\n\nTip: keep npm start running in server/, open checkout over http:// (not file://), and use the same machine if the API is 127.0.0.1."
-        );
-      });
   }
 
   function imgUrl(rel) {
@@ -1170,7 +1052,7 @@
       st.setAttribute("data-state", "idle");
       label.textContent = "Ready";
       msg.textContent =
-        "When you tap Pay now, your total is shown here. Razorpay keys must be set in server .env for the Pay button to work.";
+        "Tap Pay now to see your total here, then use Pay securely now — checkout is completed only through Razorpay.";
       return;
     }
     if (mode === "ready") {
@@ -1263,33 +1145,6 @@
     if (els.payModalClose) {
       els.payModalClose.addEventListener("click", function () {
         closePayModal();
-      });
-    }
-    if (els.btnCheckoutTestPay) {
-      els.btnCheckoutTestPay.addEventListener("click", function () {
-        if (!els.form || !els.form.checkValidity()) {
-          window.alert("Please fill guest name, email, phone, and full shipping address on the checkout form first.");
-          return;
-        }
-        var items = buildBillItemsForApi();
-        if (!items.length) {
-          window.alert("Your cart is empty.");
-          return;
-        }
-        els.btnCheckoutTestPay.disabled = true;
-        postCheckoutTestComplete()
-          .then(function (j) {
-            if (!j || !j.orderId) {
-              throw new Error("Test checkout did not return an order.");
-            }
-            afterPaidCheckoutNavigate(j);
-          })
-          .catch(function (err) {
-            window.alert(String((err && err.message) || "Test checkout failed."));
-          })
-          .then(function () {
-            els.btnCheckoutTestPay.disabled = false;
-          });
       });
     }
     if (els.btnRazorpayCheckout) {
@@ -1437,9 +1292,7 @@
             if (addrMsg) {
               var gid = j.guestId != null ? "Guest id " + j.guestId + ". " : j.fileMode ? "File mode (no DB). " : "";
               addrMsg.textContent =
-                "Shipping address saved. " +
-                gid +
-                "Complete payment with Pay now to create an order (use “Pay without Razorpay” while testing).";
+                "Shipping address saved. " + gid + "Open Pay with Razorpay and use Pay securely now to complete your order.";
               addrMsg.removeAttribute("hidden");
             }
             window.scrollTo({ top: addrMsg ? addrMsg.offsetTop : 0, behavior: "smooth" });
@@ -1495,12 +1348,6 @@
     }
     if (gs) {
       gs.addEventListener("change", refreshCheckout);
-    }
-
-    if (els.btnDownloadBillPdf) {
-      els.btnDownloadBillPdf.addEventListener("click", function () {
-        downloadBillPdfNow();
-      });
     }
 
     refreshCheckout();

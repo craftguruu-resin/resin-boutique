@@ -40,7 +40,6 @@ var NODE_ENV = String(process.env.NODE_ENV || "").trim();
 var BILL_API_SECRET = process.env.BILL_API_SECRET || "";
 var RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 var RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
-var ALLOW_TEST_CHECKOUT = String(process.env.ALLOW_TEST_CHECKOUT || "").trim() === "1";
 
 var Razorpay = null;
 try {
@@ -788,97 +787,6 @@ app.post("/api/send-vendor-parcel-tag", function (req, res) {
   handleSaveGuestAddress(req, res);
 });
 
-/**
- * Test-only: create a paid order without Razorpay. Requires ALLOW_TEST_CHECKOUT=1 in server .env.
- */
-app.post("/api/checkout-test-complete", function (req, res) {
-  var ip = req.ip || req.connection.remoteAddress || "unknown";
-  if (!rateOk(ip)) {
-    return res.status(429).json({ ok: false, error: "Too many requests." });
-  }
-  if (!billSecretOk(req)) return rejectBillApiSecret(res);
-  if (!ALLOW_TEST_CHECKOUT) {
-    return res.status(403).json({
-      ok: false,
-      error: "Test checkout is disabled. Set ALLOW_TEST_CHECKOUT=1 in server .env for local testing.",
-    });
-  }
-
-  var body = req.body || {};
-  var gErr = validateGuestParcel(body.guest);
-  if (gErr) {
-    return res.status(400).json({ ok: false, error: gErr });
-  }
-  var itemsErr = validateItems(body.items);
-  if (itemsErr) {
-    return res.status(400).json({ ok: false, error: itemsErr });
-  }
-  var items = body.items.map(sanitizeBillItem);
-  var totals = computeTotals(items);
-  var guest = normalizeGuestParcel(body.guest);
-  var tagRef =
-    "CG-" +
-    Date.now().toString(36).toUpperCase() +
-    "-" +
-    crypto.randomBytes(3).toString("hex").toUpperCase();
-  var orderType = "Checkout · Paid (test, Razorpay skipped)";
-
-  function sendTestOrderResponse() {
-    ordersRepo.createCheckoutParcelOrder(
-      {
-        guest: guest,
-        items: items,
-        totals: totals,
-        orderType: orderType,
-        tagRef: tagRef,
-        paymentStatus: "paid",
-        paymentMethod: "test_skip",
-      },
-      function (err, orderRecord) {
-        if (err) {
-          return res.status(500).json({ ok: false, error: String((err && err.message) || err || "Could not create order") });
-        }
-        var payload = {
-          ok: true,
-          orderCreated: true,
-          orderId: orderRecord.orderId,
-          tagRef: orderRecord.tagRef,
-          paymentStatus: orderRecord.paymentStatus,
-          paymentMethod: orderRecord.paymentMethod,
-        };
-        jsonWithOptionalGuestSession(res, payload, orderRecord.guestId);
-      }
-    );
-  }
-
-  var tokenTc = readGuestBearer(req);
-  if (!tokenTc) {
-    return sendTestOrderResponse();
-  }
-  guestSessions.verifyGuestToken(tokenTc, function (vErr, row) {
-    if (vErr) {
-      return res.status(500).json({ ok: false, error: String(vErr.message || vErr) });
-    }
-    if (!row) {
-      return sendTestOrderResponse();
-    }
-    var emGuest = String(guest.email || "")
-      .trim()
-      .toLowerCase();
-    var emSess = String(row.email || "")
-      .trim()
-      .toLowerCase();
-    if (!emGuest || emGuest !== emSess) {
-      return res.status(403).json({
-        ok: false,
-        code: "EMAIL_MISMATCH",
-        error: "Checkout email must match the account you signed in with.",
-      });
-    }
-    sendTestOrderResponse();
-  });
-});
-
 /** Public: whether vendor APIs require a session (no secrets). Helps the browser show the right error. */
 app.get("/api/vendor/status", function (_req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -1130,6 +1038,62 @@ app.get("/api/guest/orders", function (req, res) {
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, orders: list || [] });
+    });
+  });
+});
+
+/** PDF bill for a paid order (guest session only; order must belong to guest). */
+app.get("/api/guest/order/:orderId/bill-pdf", function (req, res) {
+  var ip = req.ip || req.connection.remoteAddress || "unknown";
+  if (!rateOk(ip)) {
+    return res.status(429).type("text/plain").send("Too many requests.");
+  }
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) {
+      return res.status(500).type("text/plain").send(String(err.message || err));
+    }
+    if (!row) {
+      return res.status(401).type("text/plain").send("Sign in required");
+    }
+    var oid = Number(req.params.orderId);
+    if (!Number.isFinite(oid)) {
+      return res.status(400).type("text/plain").send("Invalid order");
+    }
+    ordersRepo.loadPaidOrderForGuestBill(row.guestId, oid, function (e2, order) {
+      if (e2) {
+        return res.status(500).type("text/plain").send(String(e2.message || e2));
+      }
+      if (!order) {
+        return res.status(404).type("text/plain").send("Bill not available");
+      }
+      var rawItems = order.items || [];
+      var itemsErr = validateItems(rawItems);
+      if (itemsErr) {
+        return res.status(400).json({ ok: false, error: itemsErr });
+      }
+      var items = rawItems.map(sanitizeBillItem);
+      withResolvedSkus(items, function (skuErr, itemsWithSku) {
+        if (skuErr) {
+          return res.status(500).type("text/plain").send(String(skuErr.message || skuErr));
+        }
+        var totals = computeTotals(itemsWithSku);
+        renderOrderBillPdf({
+          items: itemsWithSku,
+          subtotal: totals.subtotal,
+          taxableValue: totals.taxableValue,
+          shipping: totals.shipping,
+          tax: totals.tax,
+          total: totals.total,
+        })
+          .then(function (buf) {
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader("Content-Disposition", 'attachment; filename="Craftguru-order-' + oid + '-bill.pdf"');
+            res.send(buf);
+          })
+          .catch(function (er) {
+            res.status(500).type("text/plain").send(er && er.message ? er.message : "PDF render failed");
+          });
+      });
     });
   });
 });
@@ -2155,9 +2119,7 @@ app.use(express.static(siteRoot));
 function onServerListen() {
   console.log("Craftguru server on http://127.0.0.1:" + PORT);
   console.log("Storefront + API: open http://127.0.0.1:" + PORT + "/checkout.html (same origin fixes PDF POST).");
-  console.log(
-    "API: GET /api/health  ·  POST /api/save-guest-address  ·  POST /api/checkout-test-complete (ALLOW_TEST_CHECKOUT=1)  ·  vendor/*"
-  );
+  console.log("API: GET /api/health  ·  POST /api/save-guest-address  ·  POST /api/razorpay-order  ·  POST /api/razorpay-verify  ·  vendor/*");
   if (poolMod.isEnabled()) {
     console.log("Postgres: DATABASE_URL set — run npm run db:migrate && npm run db:seed (from server/) once.");
   } else {

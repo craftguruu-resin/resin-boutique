@@ -73,24 +73,23 @@
   function runMerge() {
     var base = billApiBase();
     if (!base) return Promise.resolve();
-    return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" })
+    // Vendor-only catalog rows must exist in PRODUCTS before price_overrides (OOS, prices) can apply to their ids.
+    return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" })
       .then(function (res) {
         return res.json();
+      })
+      .then(function (j2) {
+        if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
+          D.applyVendorProductsMerge(j2.products);
+        }
+        return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" }).then(function (res) {
+          return res.json();
+        });
       })
       .then(function (j) {
         if (j && j.ok && j.overrides) {
           D.applyPriceOverrides(j.overrides);
         }
-        return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" })
-          .then(function (r2) {
-            return r2.json();
-          })
-          .then(function (j2) {
-            if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
-              D.applyVendorProductsMerge(j2.products);
-            }
-          })
-          .catch(function () {});
       })
       .then(function () {
         try {

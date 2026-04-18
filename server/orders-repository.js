@@ -465,6 +465,15 @@ function listOrdersByGuestId(guestId, cb) {
   });
 }
 
+function loadPaidOrderForGuestBill(guestId, orderId, cb) {
+  if (poolMod.isEnabled()) {
+    return ordersDb.loadPaidOrderForGuestBill(guestId, orderId, cb);
+  }
+  process.nextTick(function () {
+    cb(null, null);
+  });
+}
+
 function cancelGuestOrder(guestId, orderId, cb) {
   if (poolMod.isEnabled()) {
     return ordersDb.cancelGuestOrder(guestId, orderId, cb);
@@ -494,6 +503,7 @@ module.exports = {
   getVendorOrderInsights,
   updateOrderFulfillment,
   listOrdersByGuestId,
+  loadPaidOrderForGuestBill,
   cancelGuestOrder,
   resolveSkuMapPool: resolveSkuMapPool,
 };

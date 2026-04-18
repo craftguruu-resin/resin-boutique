@@ -266,3 +266,12 @@
   margin-top: 0.35rem;
   align-self: flex-start;
 }
+
+.account-order-dl-bill {
+  margin-top: 0.65rem;
+  width: 100%;
+  max-width: 16rem;
+  text-align: center;
+  font-size: 0.82rem;
+  padding: 0.55rem 0.85rem;
+}
