@@ -1580,16 +1580,8 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (x.listed === false) {
         o.listed = false;
       }
-      var hasAny =
-        o.s != null ||
-        o.m != null ||
-        o.l != null ||
-        o.stockS != null ||
-        o.stockM != null ||
-        o.stockL != null ||
-        o.outOfStock ||
-        o.listed === false;
-      if (hasAny) out[key] = o;
+      /* Row exists in catalog_price_overrides — always expose flags so the storefront can clear OOS/prices when toggled off. */
+      out[key] = o;
     });
     res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, overrides: out });

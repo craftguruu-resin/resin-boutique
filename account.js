@@ -4,6 +4,8 @@
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var SESSION_EMAIL_KEY = "cg_session_email";
   var pendingHighlightOrderId = "";
+  var ordersCache = [];
+  var activeOrderTab = "current";
 
   function billApiPortOverride() {
     try {
@@ -212,28 +214,39 @@
 
     var canCancel = o.paymentStatus === "pending_payment" && o.fulfillmentStatus === "new";
     var stLabel = fulfillmentDisplay(o.fulfillmentStatus);
+    var stClass = fulfillmentStatusClass(o.fulfillmentStatus);
     var g = o.guest && typeof o.guest === "object" ? o.guest : {};
     var T = o.totals && typeof o.totals === "object" ? o.totals : {};
     var items = Array.isArray(o.items) ? o.items : [];
-    var shipRows = [];
-    if (g.name) shipRows.push(escapeHtml(String(g.name).trim()));
+    var shipLines = [];
+    if (g.name) shipLines.push(escapeHtml(String(g.name).trim()));
     var addrMid = [g.addrLine1, g.addrLine2]
       .map(function (x) {
         return String(x || "").trim();
       })
       .filter(Boolean)
       .join(", ");
-    if (addrMid) shipRows.push(escapeHtml(addrMid));
+    if (addrMid) shipLines.push(escapeHtml(addrMid));
     var cityLine = [g.city, g.state, g.zip]
       .map(function (x) {
         return String(x || "").trim();
       })
       .filter(Boolean)
       .join(", ");
-    if (cityLine) shipRows.push(escapeHtml(cityLine));
-    if (g.country && String(g.country).trim()) shipRows.push(escapeHtml(String(g.country).trim()));
-    if (g.phone && String(g.phone).trim()) shipRows.push(escapeHtml(String(g.phone).trim()));
-    if (g.email && String(g.email).trim()) shipRows.push(escapeHtml(String(g.email).trim()));
+    if (cityLine) shipLines.push(escapeHtml(cityLine));
+    if (g.country && String(g.country).trim()) shipLines.push(escapeHtml(String(g.country).trim()));
+
+    var shipToBlock = shipLines.length
+      ? shipLines.join('<span class="account-order-card__ship-sep"> · </span>')
+      : "—";
+
+    var fs = String(o.fulfillmentStatus || "").toLowerCase();
+    var deliveryLine =
+      fs === "delivered"
+        ? formatLongDate(o.createdAt)
+        : fs === "cancelled"
+          ? "—"
+          : "Not delivered yet";
 
     var linesHtml = "";
     if (!items.length) {
@@ -244,8 +257,7 @@
         var lineTot = (Number(it.unitPrice) || 0) * (Number(it.qty) || 0);
         var meta = [];
         if (it.sizeLabel) meta.push(String(it.sizeLabel));
-        meta.push("Qty " + String(Number(it.qty) || 0));
-        meta.push(fmtMoney(it.unitPrice) + " each");
+        meta.push(String(Number(it.qty) || 0) + "× @ " + fmtMoney(it.unitPrice));
         if (it.sku) meta.push("SKU " + String(it.sku));
         var imgCell = src
           ? '<div class="account-order-line__img"><img src="' +
@@ -270,20 +282,9 @@
       });
     }
 
-    var shipBlock =
-      shipRows.length > 0
-        ? '<div class="account-order-bill__ship"><div class="account-order-bill__label">Ship to</div>' +
-          shipRows
-            .map(function (row) {
-              return '<div class="account-order-bill__ship-line">' + row + "</div>";
-            })
-            .join("") +
-          "</div>"
-        : "";
-
     var typeBit =
       o.orderType && String(o.orderType).trim()
-        ? ' <span class="account-order-bill__type">' + escapeHtml(String(o.orderType).trim()) + "</span>"
+        ? '<span class="account-order-bill__type">' + escapeHtml(String(o.orderType).trim()) + "</span>"
         : "";
 
     var grand =
@@ -291,27 +292,64 @@
         ? Number(T.total)
         : Number(o.total) || 0;
 
-    var billInner =
-      '<div class="account-order-bill__head">' +
-      "<div><strong>" +
-      escapeHtml("#" + String(o.orderId)) +
-      "</strong> · " +
-      escapeHtml(String(o.tagRef || "")) +
-      typeBit +
+    var summaryBits = [];
+    summaryBits.push(items.length + " product" + (items.length === 1 ? "" : "s"));
+    if (g.name && String(g.name).trim()) summaryBits.push(String(g.name).trim());
+    summaryBits.push(formatLongDate(o.createdAt));
+
+    var showDl = o.paymentStatus === "paid" && items.length > 0;
+    var actionsHtml = "";
+    if (showDl) {
+      actionsHtml +=
+        '<button type="button" class="account-order-card__dl checkout-submit account-order-dl-bill" data-dl-bill-order="' +
+        escapeAttr(String(o.orderId)) +
+        '"><span class="account-order-card__dl-icon" aria-hidden="true">↓</span> Download invoice</button>';
+    }
+    actionsHtml += '<span class="account-order-card__kebab" aria-hidden="true">⋮</span>';
+    if (canCancel) {
+      actionsHtml +=
+        '<button type="button" class="account-order-card__cancel checkout-pay-secondary account-order-cancel" data-cancel-id="' +
+        escapeAttr(String(o.orderId)) +
+        '">Cancel order</button>';
+    }
+
+    return (
+      '<div class="account-order-card">' +
+      '<div class="account-order-card__header">' +
+      '<div class="account-order-card__header-left">' +
+      '<strong class="account-order-card__order-no">Order #: ' +
+      escapeHtml(String(o.orderId)) +
+      "</strong>" +
+      (o.tagRef ? '<span class="account-order-card__tag">' + escapeHtml(String(o.tagRef)) + "</span>" : "") +
+      (typeBit ? " " + typeBit : "") +
       "</div>" +
-      '<div class="account-order-bill__meta">' +
-      escapeHtml(String(o.createdAt || "").slice(0, 19)) +
-      " · " +
-      escapeHtml(String(o.paymentStatus || "")) +
-      (o.paymentMethod && String(o.paymentMethod).trim()
-        ? " · " + escapeHtml(String(o.paymentMethod).trim())
-        : "") +
+      '<div class="account-order-card__actions">' +
+      actionsHtml +
       "</div>" +
-      '<span class="account-order-status">' +
+      "</div>" +
+      '<p class="account-order-card__summary">' +
+      escapeHtml(summaryBits.join(" · ")) +
+      "</p>" +
+      '<div class="account-order-card__grid">' +
+      '<div class="account-order-card__cell"><span class="account-order-card__cell-label">Status</span><span class="account-order-card__status ' +
+      escapeAttr(stClass) +
+      '">' +
       escapeHtml(stLabel) +
-      "</span>" +
+      "</span></div>" +
+      '<div class="account-order-card__cell"><span class="account-order-card__cell-label">Delivery</span><span class="account-order-card__cell-value">' +
+      escapeHtml(deliveryLine) +
+      "</span></div>" +
+      '<div class="account-order-card__cell account-order-card__cell--wide"><span class="account-order-card__cell-label">Delivered to</span><span class="account-order-card__cell-value">' +
+      shipToBlock +
+      "</span></div>" +
+      '<div class="account-order-card__cell"><span class="account-order-card__cell-label">Payment</span><span class="account-order-card__cell-value">' +
+      escapeHtml(paymentLabel(o.paymentStatus)) +
+      (o.paymentMethod && String(o.paymentMethod).trim()
+        ? '<span class="account-order-card__pay-sub">' + escapeHtml(String(o.paymentMethod).trim()) + "</span>"
+        : "") +
+      "</span></div>" +
       "</div>" +
-      shipBlock +
+      '<div class="account-order-bill">' +
       '<div class="account-order-bill__lines">' +
       linesHtml +
       "</div>" +
@@ -324,33 +362,8 @@
       "</span><span>" +
       escapeHtml(fmtMoney(grand)) +
       "</span></div>" +
-      "</div>";
-
-    var showDl = o.paymentStatus === "paid" && items.length > 0;
-    var asideHtml = "";
-    if (showDl) {
-      asideHtml +=
-        '<button type="button" class="checkout-submit account-order-dl-bill" data-dl-bill-order="' +
-        escapeAttr(String(o.orderId)) +
-        '">Download PDF bill</button>';
-    }
-    if (canCancel) {
-      asideHtml +=
-        '<button type="button" class="checkout-pay-secondary account-order-cancel" data-cancel-id="' +
-        escapeAttr(String(o.orderId)) +
-        '">Cancel order</button>';
-    }
-
-    var rowClass = asideHtml ? "account-order-row" : "account-order-row account-order-row--single";
-    return (
-      '<div class="' +
-      rowClass +
-      '">' +
-      '<div class="account-order-row__main">' +
-      '<div class="account-order-bill">' +
-      billInner +
-      "</div></div>" +
-      (asideHtml ? '<div class="account-order-row__aside">' + asideHtml + "</div>" : "") +
+      "</div>" +
+      "</div>" +
       "</div>"
     );
   }
@@ -429,12 +442,86 @@
     var map = {
       new: "Preparing",
       packed: "Packed",
-      shipping: "Out for delivery",
-      shipped: "Shipped",
+      shipping: "On the way",
+      shipped: "Shipped to customer",
       delivered: "Delivered",
       cancelled: "Cancelled",
     };
     return map[s] || s;
+  }
+
+  function fulfillmentStatusClass(st) {
+    var s = String(st || "new").toLowerCase();
+    if (s === "delivered" || s === "shipped") return "account-order-card__status--ok";
+    if (s === "shipping" || s === "packed") return "account-order-card__status--progress";
+    if (s === "cancelled") return "account-order-card__status--muted";
+    return "";
+  }
+
+  function formatLongDate(iso) {
+    try {
+      var d = new Date(iso);
+      if (Number.isNaN(d.getTime())) return "—";
+      return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+    } catch (_) {
+      return "—";
+    }
+  }
+
+  function paymentLabel(ps) {
+    var s = String(ps || "").toLowerCase();
+    if (s === "paid") return "Paid";
+    if (s === "pending_payment") return "Unpaid";
+    return ps || "—";
+  }
+
+  function orderMatchesTab(tab, o) {
+    var fs = String(o.fulfillmentStatus || "").toLowerCase();
+    var ps = String(o.paymentStatus || "").toLowerCase();
+    if (tab === "all") return true;
+    if (fs === "cancelled") return false;
+    if (tab === "unpaid") return ps === "pending_payment";
+    /* current — open orders (awaiting pay or in flight, not delivered) */
+    if (ps === "pending_payment") return true;
+    if (ps === "paid" && fs !== "delivered") return true;
+    return false;
+  }
+
+  function filteredOrdersForTab(tab, list) {
+    return (list || []).filter(function (o) {
+      return orderMatchesTab(tab, o);
+    });
+  }
+
+  function setOrderTab(tab) {
+    activeOrderTab = tab || "current";
+    var host = document.getElementById("accountOrderTabs");
+    if (host) {
+      host.querySelectorAll(".account-order-tab").forEach(function (b) {
+        var t = b.getAttribute("data-order-tab") || "";
+        var on = t === activeOrderTab;
+        b.classList.toggle("is-active", on);
+        b.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
+  }
+
+  function refreshAccountHeroName(emailNorm, immediateName) {
+    var nameEl = document.getElementById("accountHeroName");
+    if (!nameEl) return;
+    var im = String(immediateName || "").trim();
+    if (im) {
+      nameEl.textContent = im;
+      return;
+    }
+    nameEl.textContent = "";
+    if (!window.CRAFT_AUTH_DB || !window.CRAFT_AUTH_DB.getUser) return;
+    try {
+      window.CRAFT_AUTH_DB.getUser(emailNorm, function (_e, user) {
+        var nm = user && String(user.name || "").trim();
+        if (nm) nameEl.textContent = nm;
+      });
+    } catch (_) {}
   }
 
   function showOrdersCard(show) {
@@ -445,6 +532,22 @@
     } else {
       card.setAttribute("hidden", "hidden");
     }
+  }
+
+  function showAccountStoreChrome(show, emailText) {
+    var side = document.getElementById("accountSidebar");
+    var hero = document.getElementById("accountHero");
+    var emH = document.getElementById("accountHeroEmail");
+    if (side) {
+      if (show) side.removeAttribute("hidden");
+      else side.setAttribute("hidden", "hidden");
+    }
+    if (hero) {
+      if (show) hero.removeAttribute("hidden");
+      else hero.setAttribute("hidden", "hidden");
+    }
+    if (emH) emH.textContent = emailText != null ? String(emailText) : "";
+    if (show && emailText) refreshAccountHeroName(String(emailText).trim().toLowerCase(), "");
   }
 
   function showAccountAuth(show) {
@@ -477,6 +580,44 @@
     }
   }
 
+  function renderOrdersFromCache() {
+    var list = document.getElementById("accountOrdersList");
+    if (!list) return;
+    var slice = filteredOrdersForTab(activeOrderTab, ordersCache);
+    list.innerHTML = "";
+    if (!slice.length) {
+      var emptyMsg =
+        activeOrderTab === "unpaid"
+          ? "No unpaid orders right now."
+          : activeOrderTab === "current"
+            ? "No open orders in this tab."
+            : "No orders yet.";
+      list.innerHTML =
+        '<li class="account-orders-empty"><p class="account-orders-empty__text">' + escapeHtml(emptyMsg) + "</p></li>";
+      return;
+    }
+    slice.forEach(function (o) {
+      var li = document.createElement("li");
+      li.className = "account-orders-list__card-wrap";
+      li.setAttribute("data-order-id", String(o.orderId));
+      li.innerHTML = buildOrderBillHtml(o);
+      list.appendChild(li);
+    });
+    if (pendingHighlightOrderId) {
+      var sel = '[data-order-id="' + String(pendingHighlightOrderId).replace(/"/g, "") + '"]';
+      var hi = list.querySelector(sel);
+      if (hi) {
+        hi.classList.add("account-order-li--hi");
+        try {
+          hi.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        } catch (_) {
+          hi.scrollIntoView();
+        }
+      }
+      pendingHighlightOrderId = "";
+    }
+  }
+
   function loadOrders() {
     var base = billApiBase();
     var list = document.getElementById("accountOrdersList");
@@ -501,38 +642,27 @@
             }
             showAccountAuth(true);
             showSessionBar(false);
+            showAccountStoreChrome(false);
           }
           showOrdersCard(false);
+          ordersCache = [];
           list.innerHTML = "";
           return;
         }
         showAccountAuth(false);
         var disp = sessionEmailDisplay();
-        if (disp) showSessionBar(true, disp);
-        showOrdersCard(true);
-        list.innerHTML = "";
-        (j.orders || []).forEach(function (o) {
-          var li = document.createElement("li");
-          li.setAttribute("data-order-id", String(o.orderId));
-          li.innerHTML = buildOrderBillHtml(o);
-          list.appendChild(li);
-        });
-        if (pendingHighlightOrderId) {
-          var sel = '[data-order-id="' + String(pendingHighlightOrderId).replace(/"/g, "") + '"]';
-          var hi = list.querySelector(sel);
-          if (hi) {
-            hi.classList.add("account-order-li--hi");
-            try {
-              hi.scrollIntoView({ behavior: "smooth", block: "nearest" });
-            } catch (_) {
-              hi.scrollIntoView();
-            }
-          }
-          pendingHighlightOrderId = "";
+        if (disp) {
+          showSessionBar(true, disp);
+          showAccountStoreChrome(true, disp);
         }
+        showOrdersCard(true);
+        ordersCache = j.orders || [];
+        setOrderTab(activeOrderTab);
+        renderOrdersFromCache();
       })
       .catch(function (e) {
         showOrdersCard(false);
+        ordersCache = [];
         list.innerHTML = "";
         try {
           console.error("loadOrders", e);
@@ -550,10 +680,15 @@
     }
     var nm = String(nameHint != null ? nameHint : "").trim();
     if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
-      window.CRAFT_AUTH_DB.putUser({ email: emailNorm, name: nm, createdAt: Date.now() }, function () {});
+      window.CRAFT_AUTH_DB.putUser({ email: emailNorm, name: nm, createdAt: Date.now() }, function () {
+        refreshAccountHeroName(emailNorm, nm);
+      });
+    } else {
+      refreshAccountHeroName(emailNorm, nm);
     }
     showAccountAuth(false);
     showSessionBar(true, emailNorm);
+    showAccountStoreChrome(true, emailNorm);
     loadOrders();
   }
 
@@ -566,11 +701,13 @@
     if (!token) {
       showAccountAuth(true);
       showSessionBar(false);
+      showAccountStoreChrome(false);
       showOrdersCard(false);
       return Promise.resolve();
     }
     showAccountAuth(false);
     showSessionBar(true, sessionEmailDisplay() || "…");
+    showAccountStoreChrome(true, sessionEmailDisplay() || "");
     var base = billApiBase();
     return fetch(base + "/api/guest/me", { headers: guestAuthHeaders() })
       .then(function (res) {
@@ -588,11 +725,14 @@
           setSessionEmail("");
           showAccountAuth(true);
           showSessionBar(false);
+          showAccountStoreChrome(false);
           showOrdersCard(false);
           return;
         }
         if (j.email) setSessionEmail(j.email);
-        showSessionBar(true, j.email || sessionEmailDisplay() || "");
+        var em2 = j.email || sessionEmailDisplay() || "";
+        showSessionBar(true, em2);
+        showAccountStoreChrome(true, em2);
         loadOrders();
       })
       .catch(function () {
@@ -601,6 +741,7 @@
         } catch (_) {}
         showAccountAuth(true);
         showSessionBar(false);
+        showAccountStoreChrome(false);
         showOrdersCard(false);
       });
   }
@@ -765,6 +906,7 @@
         showOrdersCard(false);
         showAccountAuth(true);
         showSessionBar(false);
+        showAccountStoreChrome(false);
         var list = document.getElementById("accountOrdersList");
         if (list) list.innerHTML = "";
         var ban = document.getElementById("accountPaidBanner");
@@ -772,6 +914,27 @@
           ban.textContent = "";
           ban.setAttribute("hidden", "hidden");
         }
+      });
+    }
+
+    var tabs = document.getElementById("accountOrderTabs");
+    if (tabs) {
+      tabs.addEventListener("click", function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest(".account-order-tab") : null;
+        if (!b || !tabs.contains(b)) return;
+        var t = b.getAttribute("data-order-tab");
+        if (!t) return;
+        activeOrderTab = t;
+        setOrderTab(t);
+        renderOrdersFromCache();
+      });
+    }
+
+    var outSide = document.getElementById("acctSignOutSidebar");
+    if (outSide) {
+      outSide.addEventListener("click", function () {
+        var top = document.getElementById("acctSignOut");
+        if (top) top.click();
       });
     }
 

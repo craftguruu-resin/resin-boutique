@@ -292,6 +292,8 @@
     return n;
   }
 
+  var PLACEHOLDER_PRODUCT_IMAGE = "media/placeholder-product.svg";
+
   /** Merge vendor-created catalog rows from Postgres (see /api/catalog/vendor-products). */
   function applyVendorProductsMerge(rows) {
     if (!rows || !rows.length) return 0;
@@ -301,8 +303,8 @@
       if (!id || BY_ID[id]) return;
       var cat = String(row.category || "").trim();
       var sub = String(row.subcategory || "all").trim();
-      var img = String(row.image || "").trim();
-      if (!cat || !img) return;
+      var img = String(row.image || "").trim() || PLACEHOLDER_PRODUCT_IMAGE;
+      if (!cat) return;
       var rawSl = row.sizeLabels || row.size_labels;
       if (typeof rawSl === "string") {
         try {

@@ -667,7 +667,7 @@
                 "<input type='checkbox' class='vi-cat-oos' " +
                 (it.listingOutOfStock ? "checked " : "") +
                 "/>" +
-                "<span>Hide on site (OOS)</span></label></td><td><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
+                "<span>Out of stock on shop (still visible, greyed)</span></label></td><td><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
                 bid +
                 "'>Save</button></td></tr>"
               );

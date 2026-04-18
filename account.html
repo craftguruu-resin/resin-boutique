@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="account-page.css" />
 </head>
-<body class="subpage page-checkout">
+<body class="subpage page-checkout page-account">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -21,14 +21,15 @@
   </div>
   <div class="grid-lines" aria-hidden="true"></div>
 
-  <header class="site-top site-top--fx">
+  <header class="site-top site-top--fx account-store-header">
     <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
       <img class="brand__logo-img" src="media/brand-craftguru.png" width="360" height="108" alt="Craftguru" decoding="async" />
     </a>
-    <nav class="nav-dock nav-dock--fx" aria-label="Main">
+    <nav class="nav-dock nav-dock--fx account-store-nav" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
       <a href="index.html#categories" class="nav-dock-link">Shop</a>
       <a href="checkout.html" class="nav-dock-link">Checkout</a>
+      <a href="account.html" class="nav-dock-link nav-dock-link--active">Account</a>
     </nav>
     <div class="site-top-end">
       <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
@@ -38,71 +39,100 @@
     </div>
   </header>
 
-  <main class="sub-main">
-    <div class="account-shell">
+  <main class="sub-main account-store-main">
+    <div class="account-shell account-shell--store">
       <p id="accountPaidBanner" class="account-paid-banner" role="status" hidden></p>
 
-      <div id="accountSessionBar" class="account-session-bar" hidden>
-        <p class="account-session-bar__text">
-          Signed in as <strong id="acctSessionEmail"></strong>
-        </p>
-        <button type="button" class="checkout-back-link" id="acctSignOut">Sign out</button>
-      </div>
+      <div class="account-layout">
+        <aside class="account-sidebar" id="accountSidebar" hidden aria-label="Account sections">
+          <nav class="account-side-nav">
+            <a class="account-side-nav__link account-side-nav__link--active" href="account.html">My orders</a>
+            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Your addresses</span>
+            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Login &amp; security</span>
+            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Payments</span>
+            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Archived orders</span>
+            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Saved items</span>
+            <div class="account-side-nav__rule" role="presentation"></div>
+            <a class="account-side-nav__link" href="index.html">Continue shopping</a>
+            <button type="button" class="account-side-nav__link account-side-nav__link--btn" id="acctSignOutSidebar">Log out</button>
+          </nav>
+        </aside>
 
-      <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading">
-        <div class="auth-modal__head checkout-auth-sheet__head">
-          <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
-        </div>
-        <div class="auth-tabs">
-          <button type="button" class="auth-tab is-active" id="acctTabSu">Sign up</button>
-          <button type="button" class="auth-tab" id="acctTabLo">Log in</button>
-        </div>
-        <div id="acctPanelSu">
-          <div class="auth-field">
-            <label for="acctNameSu">Name (optional)</label>
-            <input id="acctNameSu" type="text" autocomplete="name" placeholder="Your name" />
+        <div class="account-layout__main">
+          <div id="accountSessionBar" class="account-session-bar" hidden>
+            <p class="account-session-bar__text">
+              Signed in as <strong id="acctSessionEmail"></strong>
+            </p>
+            <button type="button" class="checkout-back-link" id="acctSignOut">Sign out</button>
           </div>
-          <div class="auth-field">
-            <label for="acctEmailSu">Email</label>
-            <input id="acctEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
-          </div>
-          <button type="button" class="checkout-pay-secondary" id="acctSendSu">Send OTP</button>
-          <div class="auth-field">
-            <label for="acctOtpSu">Enter OTP</label>
-            <input id="acctOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
-          </div>
-          <p class="auth-msg" id="acctMsgSu" style="display: none"></p>
-          <button type="button" class="auth-submit" id="acctVerifySu">Verify</button>
-        </div>
-        <div id="acctPanelLo" class="is-hidden">
-          <div class="auth-field">
-            <label for="acctEmailLo">Email</label>
-            <input id="acctEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
-          </div>
-          <button type="button" class="checkout-pay-secondary" id="acctSendLo">Send OTP</button>
-          <div class="auth-field">
-            <label for="acctOtpLo">Enter OTP</label>
-            <input id="acctOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
-          </div>
-          <p class="auth-msg" id="acctMsgLo" style="display: none"></p>
-          <button type="button" class="auth-submit" id="acctVerifyLo">Verify</button>
-        </div>
-      </div>
 
-      <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountOrdersCard" hidden>
-        <div class="auth-modal__head checkout-auth-sheet__head">
-          <h2 style="margin: 0; font-size: 1.1rem">Your orders</h2>
+          <div id="accountHero" class="account-hero" hidden>
+            <h1 class="account-hero__title">Your account</h1>
+            <p class="account-hero__line" id="accountHeroName"></p>
+            <p class="account-hero__email" id="accountHeroEmail"></p>
+          </div>
+
+          <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading">
+            <div class="auth-modal__head checkout-auth-sheet__head">
+              <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
+            </div>
+            <div class="auth-tabs">
+              <button type="button" class="auth-tab is-active" id="acctTabSu">Sign up</button>
+              <button type="button" class="auth-tab" id="acctTabLo">Log in</button>
+            </div>
+            <div id="acctPanelSu">
+              <div class="auth-field">
+                <label for="acctNameSu">Name (optional)</label>
+                <input id="acctNameSu" type="text" autocomplete="name" placeholder="Your name" />
+              </div>
+              <div class="auth-field">
+                <label for="acctEmailSu">Email</label>
+                <input id="acctEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+              </div>
+              <button type="button" class="checkout-pay-secondary" id="acctSendSu">Send OTP</button>
+              <div class="auth-field">
+                <label for="acctOtpSu">Enter OTP</label>
+                <input id="acctOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+              </div>
+              <p class="auth-msg" id="acctMsgSu" style="display: none"></p>
+              <button type="button" class="auth-submit" id="acctVerifySu">Verify</button>
+            </div>
+            <div id="acctPanelLo" class="is-hidden">
+              <div class="auth-field">
+                <label for="acctEmailLo">Email</label>
+                <input id="acctEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+              </div>
+              <button type="button" class="checkout-pay-secondary" id="acctSendLo">Send OTP</button>
+              <div class="auth-field">
+                <label for="acctOtpLo">Enter OTP</label>
+                <input id="acctOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+              </div>
+              <p class="auth-msg" id="acctMsgLo" style="display: none"></p>
+              <button type="button" class="auth-submit" id="acctVerifyLo">Verify</button>
+            </div>
+          </div>
+
+          <div class="auth-modal__sheet checkout-auth-sheet account-dock account-orders-panel" id="accountOrdersCard" hidden>
+            <div class="account-orders-panel__head">
+              <h2 class="account-orders-panel__h">My orders</h2>
+              <p class="account-order-hint account-orders-panel__hint">
+                Parcel tag and status match the vendor board. Cancel is only available before payment.
+              </p>
+            </div>
+            <div class="account-order-tabs" id="accountOrderTabs" role="tablist" aria-label="Order filters">
+              <button type="button" class="account-order-tab is-active" role="tab" aria-selected="true" data-order-tab="current">Current</button>
+              <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="unpaid">Unpaid</button>
+              <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="all">All orders</button>
+            </div>
+            <ul class="account-orders-list" id="accountOrdersList"></ul>
+          </div>
         </div>
-        <p style="margin: 0 0 0.35rem; font-size: 0.84rem; color: rgba(26, 32, 44, 0.55)">
-          Parcel tag and packing status match what the vendor sets on the orders board.
-        </p>
-        <p class="account-order-hint">Cancel is available only before payment, while the order is still new.</p>
-        <ul class="account-orders-list" id="accountOrdersList"></ul>
       </div>
     </div>
   </main>
 
   <script src="data.js"></script>
+  <script src="catalog-merge.js"></script>
   <script src="cart.js"></script>
   <script src="auth-db.js"></script>
   <script src="shell.js"></script>
