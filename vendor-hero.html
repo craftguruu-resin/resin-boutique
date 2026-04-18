@@ -9,6 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="vendor-saas.css" />
+  <link rel="stylesheet" href="guest-layout.css" />
 </head>
 <body class="vendor-saas" data-vendor-nav="hero">
   <div class="vs-app">
@@ -30,19 +31,37 @@
               <label for="vhImage">Image</label>
               <input type="file" id="vhImage" name="image" accept="image/jpeg,image/png,image/webp" required />
             </div>
-            <div class="vs-field" style="margin: 0; min-width: 12rem">
+            <div class="vs-field" style="margin: 0; min-width: 13rem">
               <label for="vhAnim">Animation</label>
               <select id="vhAnim" name="animation">
-                <option value="orbit">Orbit 3D</option>
+                <option value="orbit" selected>Site default — Orbit 3D</option>
+                <option value="none">Static (no motion)</option>
                 <option value="drift">Drift parallax</option>
                 <option value="prism">Prism tone</option>
                 <option value="glide">Glide float</option>
                 <option value="bloom">Bloom pulse</option>
+                <option value="sway">Sway tilt</option>
+                <option value="breathe">Breathe scale</option>
+                <option value="tilt">Tilt perspective</option>
+                <option value="pulse-soft">Soft pulse</option>
               </select>
             </div>
             <button type="submit" class="vs-btn vs-btn--primary" id="vhSubmit">Upload slide</button>
           </form>
           <p id="vhMsg" class="vs-muted" style="display: none; margin-top: 0.65rem"></p>
+          <div class="vs-card vh-hero-preview-card" style="margin-top: 0.85rem; padding: 0.85rem 1rem">
+            <h2 class="vs-card__title" style="margin-top: 0">Live motion preview</h2>
+            <p class="vs-muted" style="margin-top: 0">
+              Matches the guest homepage hero ring. Choose an animation, optionally pick an image above — the disc updates before upload.
+            </p>
+            <div class="vh-hero-preview">
+              <div class="vh-hero-preview__frame">
+                <div class="hero-atelier__photo-ring vh-hero-preview__ring" id="vhPreviewRing" data-hero-anim="orbit">
+                  <img class="hero-atelier__photo-img" id="vhPreviewImg" src="media/brand-craftguru.png" alt="" width="200" height="200" />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         <div class="vs-card" style="padding: 0.85rem 1rem">
           <h2 class="vs-card__title" style="margin-top: 0">Current slides</h2>

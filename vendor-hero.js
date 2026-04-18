@@ -32,6 +32,77 @@
     return V.vendorPageHref(u);
   }
 
+  function setPreviewAnim(raw) {
+    var ring = document.getElementById("vhPreviewRing");
+    if (!ring) return;
+    var a = String(raw || "orbit")
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, "");
+    if (!a) a = "orbit";
+    if (a === "none" || a === "static") {
+      ring.removeAttribute("data-hero-anim");
+    } else {
+      ring.setAttribute("data-hero-anim", a);
+    }
+  }
+
+  function wireHeroPreview() {
+    var sel = document.getElementById("vhAnim");
+    var img = document.getElementById("vhPreviewImg");
+    var fileIn = document.getElementById("vhImage");
+    if (sel) {
+      sel.addEventListener("change", function () {
+        setPreviewAnim(sel.value);
+      });
+      setPreviewAnim(sel.value);
+    }
+    if (fileIn && img) {
+      fileIn.addEventListener("change", function () {
+        var f = fileIn.files && fileIn.files[0];
+        if (!f || String(f.type || "").indexOf("image") !== 0) return;
+        try {
+          var prev = img.getAttribute("data-cg-preview-url");
+          if (prev) URL.revokeObjectURL(prev);
+          var u = URL.createObjectURL(f);
+          img.setAttribute("data-cg-preview-url", u);
+          img.src = u;
+        } catch (_) {}
+      });
+    }
+  }
+
+  function resetHeroPreviewPlaceholder() {
+    var img = document.getElementById("vhPreviewImg");
+    if (!img) return;
+    var prev = img.getAttribute("data-cg-preview-url");
+    if (prev) {
+      try {
+        URL.revokeObjectURL(prev);
+      } catch (_) {}
+      img.removeAttribute("data-cg-preview-url");
+    }
+    img.src = V.vendorPageHref("media/brand-craftguru.png");
+    setPreviewAnim("orbit");
+  }
+
+  function syncPreviewFromFirstSlide(slides) {
+    var img = document.getElementById("vhPreviewImg");
+    if (!img || !slides || !slides.length) {
+      resetHeroPreviewPlaceholder();
+      return;
+    }
+    var prev = img.getAttribute("data-cg-preview-url");
+    if (prev) {
+      try {
+        URL.revokeObjectURL(prev);
+      } catch (_) {}
+      img.removeAttribute("data-cg-preview-url");
+    }
+    var s0 = slides[0];
+    img.src = imgHref(s0.image);
+    setPreviewAnim(s0.animation || "orbit");
+  }
+
   function renderList(slides) {
     var ul = document.getElementById("vhList");
     var empty = document.getElementById("vhEmpty");
@@ -40,6 +111,7 @@
     if (!slides || !slides.length) {
       empty.style.display = "block";
       empty.textContent = "No custom slides — storefront uses the default hero.";
+      resetHeroPreviewPlaceholder();
       return;
     }
     empty.style.display = "none";
@@ -63,6 +135,7 @@
         '">Remove</button>';
       ul.appendChild(li);
     });
+    syncPreviewFromFirstSlide(slides);
   }
 
   function loadSlides() {
@@ -83,6 +156,8 @@
   }
 
   function boot() {
+    wireHeroPreview();
+
     document.getElementById("vhAddForm").addEventListener("submit", function (ev) {
       ev.preventDefault();
       var fi = document.getElementById("vhImage");

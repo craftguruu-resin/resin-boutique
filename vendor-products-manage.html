@@ -30,15 +30,16 @@
       </header>
 
       <div class="vs-content">
-        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
+        <div class="vs-card vs-card--vpm-filters" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
           <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
-            <div class="vs-field" style="margin: 0; min-width: 10rem">
+            <div class="vs-field vs-field--vpm-status" style="margin: 0; min-width: 10rem">
               <label for="vpmStatus">Status</label>
               <select id="vpmStatus">
                 <option value="all">All</option>
                 <option value="active">Active (not OOS)</option>
                 <option value="oos">Out of stock</option>
                 <option value="disc">Discontinued</option>
+                <option value="return_gift">Return gift listings</option>
               </select>
             </div>
             <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem; max-width: 28rem">
@@ -123,9 +124,9 @@
             </div>
           </div>
           <div class="vs-field vpm-oos-field">
-            <label class="vpm-oos-label">
+            <label class="vpm-oos-label vpm-oos-label--one-line">
               <input type="checkbox" id="vpmOos" />
-              <span>Out of stock on shop (piece stays visible, greyed — guests cannot buy)</span>
+              <span>Out of stock <span class="vs-muted">(visible, not buyable)</span></span>
             </label>
           </div>
           <p class="vs-muted" id="vpmMsg" style="display: none; margin-top: 0.5rem"></p>

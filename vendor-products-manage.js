@@ -46,6 +46,7 @@
       if (statusFilter === "active") return active && !oos;
       if (statusFilter === "oos") return oos;
       if (statusFilter === "disc") return !active;
+      if (statusFilter === "return_gift") return !!p.returnGift;
       return true;
     });
   }
@@ -84,27 +85,26 @@
         var src = p.source === "catalog" ? "catalog" : "vendor";
         var active = p.isActive !== false;
         var oos = !!p.listingOutOfStock;
-        var statePills = "";
-        if (oos) {
-          statePills += "<span class=\"vs-pill vs-pill--oos\">OOS</span>";
-        }
-        if (active) {
-          statePills +=
-            "<span class=\"vs-pill vs-pill--active\" title=\"" +
-            esc(src === "catalog" ? "Listed on the guest site" : "Vendor product is live") +
-            "\">Active</span>";
-        } else {
-          statePills += "<span class=\"vs-pill vs-pill--inactive\">Discontinued</span>";
-        }
+        var bits = [];
+        if (!active) bits.push("Discontinued");
+        else bits.push("Active");
+        if (oos) bits.push("Out of stock");
+        if (p.returnGift) bits.push("Return gift");
+        var stateLine =
+          "<span class=\"vpm-state-inline\" title=\"" +
+          esc(src === "catalog" ? "Guest storefront" : "Vendor listing") +
+          "\">" +
+          esc(bits.join(" · ")) +
+          "</span>";
         var img = p.image
           ? "<img src=\"" + esc(imgSrc(p.image)) + "\" alt=\"\" width=\"56\" height=\"56\" style=\"object-fit:cover;border-radius:6px\" />"
           : "—";
         var skuCell = p.sku ? esc(p.sku) : "<span class=\"vs-muted\">—</span>";
         var actions =
-          "<div class=\"vpm-actions\"><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-edit\" data-id=\"" +
+          "<div class=\"vpm-actions vpm-actions--inline\"><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-edit\" data-id=\"" +
           esc(p.id) +
           "\">Edit</button>" +
-          statePills;
+          stateLine;
         if (active) {
           actions +=
             "<button type=\"button\" class=\"vs-btn vs-btn--ghost vs-btn--danger vpm-disc\" data-id=\"" +

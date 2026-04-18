@@ -21,54 +21,68 @@
   }
 
   function injectCategoryRail() {
-    if (document.getElementById("guestCatRail")) return;
-    if (currentPageName() === "index.html") return;
+    if (document.getElementById("guestPageCategoryRail")) return;
+    var pn = currentPageName();
+    if (pn === "index.html") return;
+    if (pn === "account.html" || pn === "checkout.html") return;
+    var main = document.querySelector("main.sub-main");
+    if (!main) return;
     var D = window.RESIN_DATA;
     if (!D || !D.categories) return;
+
+    var wrap = document.createElement("div");
+    wrap.className = "guest-main-with-rail-inner";
+    while (main.firstChild) {
+      wrap.appendChild(main.firstChild);
+    }
+
     var aside = document.createElement("aside");
-    aside.id = "guestCatRail";
-    aside.className = "guest-cat-rail";
-    aside.setAttribute("aria-label", "Shop categories");
-    var inner = document.createElement("div");
-    inner.className = "guest-cat-rail__inner";
-    var h = document.createElement("p");
-    h.className = "guest-cat-rail__title";
-    h.textContent = "Categories";
-    inner.appendChild(h);
-    var nav = document.createElement("nav");
-    nav.className = "guest-cat-rail__nav";
+    aside.id = "guestPageCategoryRail";
+    aside.className = "home-category-rail home-category-rail--split guest-page-category-rail";
+    aside.setAttribute("aria-labelledby", "guest-cat-rail-heading");
+
+    var label = document.createElement("p");
+    label.className = "home-category-rail__label";
+    label.id = "guest-cat-rail-heading";
+    label.textContent = "Shop by category";
+
+    var grid = document.createElement("div");
+    grid.className = "category-grid category-grid--rail";
+    grid.setAttribute("role", "navigation");
+    grid.setAttribute("aria-label", "Product categories");
+
     D.categories.forEach(function (c) {
-      if (!c || c.id === "craftguru-details") return;
+      if (!c) return;
       var a = document.createElement("a");
-      a.className = "guest-cat-rail__link";
+      a.className = "category-pill category-pill--rail";
       a.href = "category.html?cat=" + encodeURIComponent(c.id);
       a.textContent = c.label || c.id;
-      var page = currentPageName();
-      if (page === "category.html") {
+      if (pn === "category.html") {
         try {
           var u = new URLSearchParams(window.location.search);
           if (u.get("cat") === c.id) a.classList.add("is-active");
         } catch (_) {}
       }
-      nav.appendChild(a);
+      grid.appendChild(a);
     });
-    inner.appendChild(nav);
-    var extra = document.createElement("div");
-    extra.className = "guest-cat-rail__extra";
-    var pn = currentPageName();
-    extra.innerHTML =
-      '<a class="guest-cat-rail__link guest-cat-rail__link--sub' +
-      (pn === "raw-material.html" ? " is-active" : "") +
-      '" href="raw-material.html">Resin raw material</a>' +
-      '<a class="guest-cat-rail__link guest-cat-rail__link--sub' +
-      (pn === "photo-frames.html" ? " is-active" : "") +
-      '" href="photo-frames.html">Photo frames</a>' +
-      '<a class="guest-cat-rail__link guest-cat-rail__link--sub' +
-      (pn === "return-gifts.html" ? " is-active" : "") +
-      '" href="return-gifts.html">Return gifts</a>';
-    inner.appendChild(extra);
-    aside.appendChild(inner);
-    document.body.insertBefore(aside, document.body.firstChild);
+
+    [
+      ["raw-material.html", "Resin raw material"],
+      ["photo-frames.html", "Photo frames"],
+      ["return-gifts.html", "Return gifts"],
+    ].forEach(function (pair) {
+      var a2 = document.createElement("a");
+      a2.className = "category-pill category-pill--rail guest-page-category-rail__extra-pill";
+      a2.href = pair[0];
+      a2.textContent = pair[1];
+      if (pn === pair[0]) a2.classList.add("is-active");
+      grid.appendChild(a2);
+    });
+
+    aside.appendChild(label);
+    aside.appendChild(grid);
+    main.appendChild(aside);
+    main.appendChild(wrap);
   }
 
   function injectHeaderSearch() {
@@ -84,6 +98,11 @@
     wrap.id = "guestHeaderSearch";
     wrap.className = "guest-header-search";
     wrap.innerHTML =
+      '<span class="guest-header-search__icon" aria-hidden="true">' +
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<circle cx="10.5" cy="10.5" r="6.25" stroke="currentColor" stroke-width="1.6" />' +
+      '<path d="M14.6 14.6L20 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />' +
+      "</svg></span>" +
       '<label class="guest-header-search__lbl visually-hidden" for="guestCatalogSearchInput">Search catalog</label>' +
       '<input type="search" id="guestCatalogSearchInput" class="guest-header-search__input" placeholder="Search pieces…" autocomplete="off" />' +
       '<div id="guestCatalogSearchResults" class="guest-header-search__results" hidden></div>';

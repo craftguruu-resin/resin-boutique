@@ -1136,3 +1136,81 @@ a.vd-kpi-card--link:focus-visible {
   margin-top: 0.2rem;
   flex-shrink: 0;
 }
+
+.vendor-saas .vpm-oos-label--one-line {
+  align-items: center;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+  gap: 0.4rem;
+  max-width: 100%;
+}
+
+.vendor-saas .vpm-oos-label--one-line span {
+  white-space: nowrap;
+}
+
+.vendor-saas .vs-card--vpm-filters {
+  overflow: visible;
+}
+
+.vendor-saas .vs-field--vpm-status {
+  position: relative;
+  z-index: 40;
+}
+
+.vendor-saas .vpm-actions--inline {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.4rem;
+  max-width: 100%;
+}
+
+.vendor-saas .vpm-actions--inline .vpm-state-inline {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--vs-muted);
+}
+
+.vendor-saas .vpm-actions--inline .vs-btn {
+  flex-shrink: 0;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.74rem;
+}
+
+/* Vendor hero: mini homepage-style preview */
+.vendor-saas .vh-hero-preview {
+  display: flex;
+  justify-content: center;
+  padding: 0.35rem 0 0.15rem;
+}
+
+.vendor-saas .vh-hero-preview__frame {
+  width: min(220px, 48vw);
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 1rem;
+  border: 1px solid var(--vs-border);
+  background:
+    radial-gradient(ellipse 90% 80% at 40% 20%, rgba(120, 175, 255, 0.2), transparent 55%),
+    linear-gradient(165deg, #f8fafc, #e2e8f0);
+}
+
+.vendor-saas .vh-hero-preview__ring.hero-atelier__photo-ring {
+  width: min(160px, 70%);
+  max-height: 70%;
+  transform: none;
+  padding: 8px;
+  margin: 0;
+}
+
+.vendor-saas .vh-hero-preview__ring .hero-atelier__photo-img {
+  animation: none !important;
+}

@@ -123,7 +123,11 @@
             .toLowerCase()
             .replace(/[^a-z0-9-]/g, "");
           if (!anim) anim = "orbit";
-          ring.setAttribute("data-hero-anim", anim);
+          if (anim === "none" || anim === "static") {
+            ring.removeAttribute("data-hero-anim");
+          } else {
+            ring.setAttribute("data-hero-anim", anim);
+          }
           img.src = encodedSrc(s.image);
         }
         applySlide();
