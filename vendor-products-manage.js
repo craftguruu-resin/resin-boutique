@@ -48,11 +48,8 @@
 
   function filteredProducts() {
     return rawProducts.filter(function (p) {
-      var src = p.source === "catalog" ? "catalog" : "vendor";
       var active = p.isActive !== false;
-      var oos = !!p.listingOutOfStock;
-      if (statusFilter === "active") return active && !oos;
-      if (statusFilter === "oos") return oos;
+      if (statusFilter === "active") return active;
       if (statusFilter === "disc") return !active;
       if (statusFilter === "return_gift") return !!p.returnGift;
       return true;
@@ -96,7 +93,6 @@
       .map(function (p) {
         var src = p.source === "catalog" ? "catalog" : "vendor";
         var active = p.isActive !== false;
-        var oos = !!p.listingOutOfStock;
         var rg = !!p.returnGift;
         var rgNm = returnGiftRadioGroupName(p.id);
         var pills = "";
@@ -104,9 +100,6 @@
           pills += "<span class=\"vs-pill vs-pill--inactive\">Discontinued</span>";
         } else {
           pills += "<span class=\"vs-pill vs-pill--active\">Active</span>";
-        }
-        if (oos) {
-          pills += "<span class=\"vs-pill vs-pill--oos\">Out of stock</span>";
         }
         var img = p.image
           ? "<img src=\"" + esc(imgSrc(p.image)) + "\" alt=\"\" width=\"56\" height=\"56\" style=\"object-fit:cover;border-radius:6px\" />"
@@ -146,6 +139,12 @@
             "<button type=\"button\" class=\"vs-btn vs-btn--primary vpm-react\" data-id=\"" +
             esc(p.id) +
             "\">Set active</button>";
+        }
+        if (src === "vendor") {
+          actions +=
+            "<button type=\"button\" class=\"vs-btn vs-btn--ghost vs-btn--danger vpm-del\" data-id=\"" +
+            esc(p.id) +
+            "\">Delete</button>";
         }
         actions += "</div>";
         return (
@@ -200,8 +199,6 @@
     document.getElementById("vpmLblL").value = (sl.l && sl.l.name) || "";
     var fi = document.getElementById("vpmImage");
     if (fi) fi.value = "";
-    var oos = document.getElementById("vpmOos");
-    if (oos) oos.checked = !!p.listingOutOfStock;
     var rgY = document.getElementById("vpmReturnGiftYes");
     var rgN = document.getElementById("vpmReturnGiftNo");
     if (rgY && rgN) {
@@ -263,6 +260,24 @@
       });
   }
 
+  function deleteProduct(id) {
+    return fetch(base() + "/api/vendor/products/" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: V.authHeaders(),
+      cache: "no-store",
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var j = {};
+        try {
+          j = text ? JSON.parse(text) : {};
+        } catch (_) {}
+        if (!res.ok || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "Delete failed");
+        }
+      });
+    });
+  }
+
   function setActive(id, active) {
     return fetch(base() + "/api/vendor/products/" + encodeURIComponent(id) + "/active", {
       method: "POST",
@@ -304,8 +319,6 @@
   function saveEdit() {
     if (!editingId) return;
     showMsg("", false);
-    var oosEl = document.getElementById("vpmOos");
-    var oos = !!(oosEl && oosEl.checked);
     var ps = Number(document.getElementById("vpmPriceS").value);
     var pm = Number(document.getElementById("vpmPriceM").value);
     var pl = Number(document.getElementById("vpmPriceL").value);
@@ -317,7 +330,6 @@
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
-        outOfStock: oos,
         returnGift: returnGift,
       })
         .then(function () {
@@ -366,7 +378,7 @@
         });
       })
       .then(function () {
-        return putCatalogPrices(editingId, { outOfStock: oos, returnGift: returnGift });
+        return putCatalogPrices(editingId, { returnGift: returnGift });
       })
       .then(function () {
         showMsg("Saved.", false);
@@ -441,6 +453,19 @@
       if (t.classList.contains("vpm-react")) {
         setActive(id, true)
           .then(function () {
+            return loadList();
+          })
+          .catch(function (e) {
+            window.alert(String((e && e.message) || e));
+          });
+      }
+      if (t.classList.contains("vpm-del")) {
+        if (!window.confirm("Permanently delete this product from the database? This cannot be undone.")) {
+          return;
+        }
+        deleteProduct(id)
+          .then(function () {
+            if (editingId === id) closeEdit();
             return loadList();
           })
           .catch(function (e) {

@@ -14,8 +14,7 @@ var INVENTORY_SELECT =
   "SELECT v.id, v.name, v.sku, v.category_id, v.product_id, v.quantity, v.qty_s, v.qty_m, v.qty_l, v.reorder_point, v.unit_cost, v.supplier, v.notes, v.updated_at, " +
   "c.label AS category_label, p.name AS product_name, " +
   "co.price_s AS catalog_price_s, co.price_m AS catalog_price_m, co.price_l AS catalog_price_l, " +
-  "co.stock_s AS catalog_stock_s, co.stock_m AS catalog_stock_m, co.stock_l AS catalog_stock_l, " +
-  "co.out_of_stock AS catalog_out_of_stock " +
+  "co.stock_s AS catalog_stock_s, co.stock_m AS catalog_stock_m, co.stock_l AS catalog_stock_l " +
   INVENTORY_JOINED_FROM;
 
 function withVendorInventorySchema(cb) {
@@ -150,22 +149,16 @@ function rowInventory(r) {
       l: r.catalog_stock_l != null ? Number(r.catalog_stock_l) : null,
     };
   }
-  if (r.catalog_out_of_stock === true) {
-    out.outOfStock = true;
-  }
   return out;
 }
 
 /**
  * Build upsertOverride patch from PATCH body + current joined row.
- * Body keys: catalogPriceS/M/L, catalogStockS/M/L (absolute), catalogStockAddS/M/L (delta), outOfStock (boolean).
+ * Body keys: catalogPriceS/M/L, catalogStockS/M/L (absolute), catalogStockAddS/M/L (delta).
  */
 function catalogPatchFromBody(body, row) {
   var b = body || {};
   var patch = {};
-  if (Object.prototype.hasOwnProperty.call(b, "outOfStock")) {
-    patch.outOfStock = !!b.outOfStock;
-  }
   if (b.catalogPriceS !== undefined && b.catalogPriceS !== null && String(b.catalogPriceS).trim() !== "") {
     patch.s = Math.max(0, Number(b.catalogPriceS) || 0);
   }
@@ -371,18 +364,14 @@ function createInventory(body, cb) {
               })
               .catch(cb);
           }
-          if (!st && !Object.prototype.hasOwnProperty.call(body, "outOfStock")) {
+          if (!st) {
             return finishRow();
           }
-          var patch = {};
-          if (st) {
-            patch.stockS = st.s;
-            patch.stockM = st.m;
-            patch.stockL = st.l;
-          }
-          if (Object.prototype.hasOwnProperty.call(body, "outOfStock")) {
-            patch.outOfStock = !!body.outOfStock;
-          }
+          var patch = {
+            stockS: st.s,
+            stockM: st.m,
+            stockL: st.l,
+          };
           vendorCatalogDb.upsertOverride(pidStr, patch, function (e2) {
             if (e2) return cb(e2);
             finishRow();

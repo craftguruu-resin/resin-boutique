@@ -663,11 +663,7 @@
                 bid +
                 "' type='number' min='0' step='0.01' value='" +
                 esc(catalogStockFieldValue(st.l)) +
-                "' style='width:4.5rem'/></td><td><label class='vi-oos-inline vi-oos-inline--compact' style='font-size:0.82rem;margin:0;cursor:pointer;display:flex;gap:0.35rem;align-items:flex-start;max-width:10rem'>" +
-                "<input type='checkbox' class='vi-cat-oos' " +
-                (it.listingOutOfStock ? "checked " : "") +
-                "/>" +
-                "<span>Out of stock on shop (still visible, greyed)</span></label></td><td><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
+                "' style='width:4.5rem'/></td><td><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
                 bid +
                 "'>Save</button></td></tr>"
               );
@@ -862,8 +858,6 @@
         if (k === "m") body.priceM = Number(inp.value);
         if (k === "l") body.priceL = Number(inp.value);
       });
-      var catOos = tr.querySelector(".vi-cat-oos");
-      if (catOos) body.outOfStock = !!catOos.checked;
       tr.querySelectorAll(".vi-cat-stock").forEach(function (inp) {
         var k = inp.getAttribute("data-k");
         var n = Number(inp.value);

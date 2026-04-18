@@ -21,7 +21,7 @@
         <div>
           <h1 class="vs-topbar__title">Update or discontinue products</h1>
           <p class="vs-topbar__sub">
-            Full guest storefront list (built-in catalog + products you added). Search by name, id, or studio SKU. Mark out-of-stock to grey listings on the guest site (they stay visible); turn a vendor product inactive to remove it from the shop. Names and photos only for products you added.
+            Full guest storefront list (built-in catalog + products you added). Search by name, id, or studio SKU. Use <strong>Discontinue</strong> or <strong>Set active</strong> to control whether a piece appears on the guest shop; vendor-only rows can be <strong>deleted</strong> permanently. Names and photos only for products you added.
           </p>
         </div>
         <div class="vs-topbar__actions">
@@ -36,8 +36,7 @@
               <label for="vpmStatus">Status</label>
               <select id="vpmStatus">
                 <option value="all">All</option>
-                <option value="active">Active (not OOS)</option>
-                <option value="oos">Out of stock</option>
+                <option value="active">Active</option>
                 <option value="disc">Discontinued</option>
                 <option value="return_gift">Return gift listings</option>
               </select>
@@ -73,7 +72,7 @@
           <h2 class="vs-card__title" style="margin-top: 0">Edit product</h2>
           <p class="vs-muted" style="margin-top: 0">Product id: <code id="vpmEditId"></code></p>
           <p id="vpmCatalogNote" class="vs-muted" style="margin-top: 0; display: none">
-            Catalog listing: change <strong>prices</strong>, <strong>OOS</strong>, or <strong>discontinue / set active</strong> (syncs with Inventory product pickers). Name and image stay on the bundled site catalog.
+            Catalog listing: change <strong>prices</strong> or <strong>discontinue / set active</strong> (syncs with Inventory product pickers). Name and image stay on the bundled site catalog.
           </p>
           <div class="vs-field">
             <label for="vpmName">Name</label>
@@ -111,24 +110,18 @@
             <label for="vpmImage">New image (optional)</label>
             <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
           </div>
-          <div class="vpm-listing-oos-row">
-            <div class="vpm-return-gift-block vpm-return-gift-block--toolbar">
-              <p class="vpm-return-gift-block__title">Return gift (guest)</p>
-              <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Return gifts listing">
-                <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
-                  <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
-                  <span>Shop only</span>
-                </label>
-                <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
-                  <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
-                  <span>Return gift</span>
-                </label>
-              </div>
+          <div class="vpm-return-gift-block vpm-return-gift-block--toolbar" style="margin-top: 0.75rem">
+            <p class="vpm-return-gift-block__title">Return gift (guest)</p>
+            <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Return gifts listing">
+              <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
+                <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
+                <span>Shop only</span>
+              </label>
+              <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
+                <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
+                <span>Return gift</span>
+              </label>
             </div>
-            <label class="vpm-oos-label vpm-oos-label--toolbar">
-              <input type="checkbox" id="vpmOos" />
-              <span>Out of stock <span class="vs-muted">(visible, not buyable)</span></span>
-            </label>
           </div>
           <p class="vs-muted" id="vpmMsg" style="display: none; margin-top: 0.5rem"></p>
           <div class="vs-row-actions" style="margin-top: 1rem; flex-wrap: wrap; gap: 0.5rem">

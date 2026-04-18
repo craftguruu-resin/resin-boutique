@@ -57,18 +57,14 @@
     }
     items.forEach(function (p, i) {
       var minP = minPrice(p);
-      var oos = !!p.outOfStock;
       var card = document.createElement("article");
-      card.className = "product-card reveal-tile is-inview" + (oos ? " product-card--out-of-stock" : "");
+      card.className = "product-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(i));
       card.innerHTML =
         '<a class="product-card__link" href="product.html?id=' +
         encodeURIComponent(p.id) +
-        '"' +
-        (oos ? ' tabindex="-1" aria-disabled="true"' : "") +
-        ' aria-label="View ' +
+        '" aria-label="View ' +
         escAttr(p.name) +
-        (oos ? " (out of stock)" : "") +
         '"></a>' +
         '<div class="product-card__shine" aria-hidden="true"></div>' +
         '<div class="product-card-image">' +
@@ -82,9 +78,6 @@
         escAttr(imgSrc(p.image)) +
         '" alt="" loading="lazy" width="600" height="450" />' +
         "</div>" +
-        (oos
-          ? '<div class="product-card__oos-overlay" role="status"><span class="product-card__oos-title">Out of stock</span><span class="product-card__oos-note">Contact the seller to order.</span></div>'
-          : "") +
         "</div>" +
         '<div class="product-card-body">' +
         "<h3>" +
@@ -94,11 +87,9 @@
         CART.formatMoney(minP) +
         "</p>" +
         '<div class="product-meta">' +
-        (oos
-          ? '<span class="add-btn add-btn--mini add-btn--mini--disabled" aria-disabled="true">Out of stock</span>'
-          : '<a class="add-btn add-btn--mini" href="product.html?id=' +
-            encodeURIComponent(p.id) +
-            '">Open piece →</a>') +
+        '<a class="add-btn add-btn--mini" href="product.html?id=' +
+        encodeURIComponent(p.id) +
+        '">Open piece →</a>' +
         "</div>" +
         "</div>";
       grid.appendChild(card);

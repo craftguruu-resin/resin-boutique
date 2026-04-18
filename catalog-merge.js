@@ -73,7 +73,7 @@
   function runMerge() {
     var base = billApiBase();
     if (!base) return Promise.resolve();
-    // Vendor-only catalog rows must exist in PRODUCTS before price_overrides (OOS, prices) can apply to their ids.
+    // Vendor-only catalog rows must exist in PRODUCTS before price_overrides (prices, etc.) can apply to their ids.
     return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" })
       .then(function (res) {
         return res.json();

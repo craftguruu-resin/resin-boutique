@@ -140,27 +140,26 @@
   }
 
   function applyOutOfStockUi() {
-    var oos = !!(product && product.outOfStock);
     var ban = document.getElementById("productOosBanner");
-    if (ban) ban.hidden = !oos;
-    document.body.classList.toggle("product-page--oos", oos);
+    if (ban) ban.hidden = true;
+    document.body.classList.remove("product-page--oos");
     if (els.addBtn) {
-      els.addBtn.disabled = oos;
-      els.addBtn.setAttribute("aria-disabled", oos ? "true" : "false");
+      els.addBtn.disabled = false;
+      els.addBtn.setAttribute("aria-disabled", "false");
     }
     if (els.sizes) {
       els.sizes.querySelectorAll(".size-pick").forEach(function (b) {
-        b.disabled = oos;
-        b.setAttribute("aria-disabled", oos ? "true" : "false");
+        b.disabled = false;
+        b.setAttribute("aria-disabled", "false");
       });
     }
     var qm = document.getElementById("productQtyMinus");
     var qp = document.getElementById("productQtyPlus");
     if (qm) {
-      qm.disabled = oos || selectedQty <= 1;
+      qm.disabled = selectedQty <= 1;
     }
     if (qp) {
-      qp.disabled = oos || selectedQty >= maxSelectableQty();
+      qp.disabled = selectedQty >= maxSelectableQty();
     }
   }
 
@@ -220,9 +219,8 @@
     var m = document.getElementById("productQtyMinus");
     var p = document.getElementById("productQtyPlus");
     if (v) v.textContent = String(selectedQty);
-    var oos = !!product.outOfStock;
-    if (m) m.disabled = oos || selectedQty <= 1;
-    if (p) p.disabled = oos || selectedQty >= mx;
+    if (m) m.disabled = selectedQty <= 1;
+    if (p) p.disabled = selectedQty >= mx;
     updatePrice();
   }
 
@@ -430,7 +428,6 @@
       if (!btn || btn.dataset.cgAddBound) return;
       btn.dataset.cgAddBound = "1";
       btn.addEventListener("click", function () {
-        if (product.outOfStock) return;
         var stk = product.stock && product.stock[selected];
         if (stk != null && Number.isFinite(Number(stk)) && Number(stk) < selectedQty) {
           window.alert("Only " + stk + " left in stock for this size. Lower the quantity or pick another size.");

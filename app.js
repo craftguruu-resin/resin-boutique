@@ -67,7 +67,7 @@
       var pick = "";
       for (var ii = 0; ii < ids.length; ii++) {
         var cand = D.getProduct(ids[ii]);
-        if (cand && cand.listed !== false && cand.image && !cand.outOfStock) {
+        if (cand && cand.listed !== false && cand.image) {
           pick = ids[ii];
           break;
         }
@@ -431,14 +431,8 @@
   function firstProductInCategory(catId) {
     var list = listedProductsInCategory(catId);
     if (!list.length) return null;
-    var pass;
-    for (pass = 0; pass < 2; pass++) {
-      for (var i = 0; i < list.length; i++) {
-        var p = list[i];
-        if (!p) continue;
-        if (pass === 0 && p.outOfStock) continue;
-        return p;
-      }
+    for (var i = 0; i < list.length; i++) {
+      if (list[i]) return list[i];
     }
     return null;
   }

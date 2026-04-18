@@ -1604,11 +1604,9 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (x.stockS != null && Number.isFinite(Number(x.stockS))) o.stockS = Number(x.stockS);
       if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
-      o.outOfStock = !!x.outOfStock;
       o.returnGift = !!x.returnGift;
       /* Always send listed so the guest merge never confuses “missing key” with delisting. */
       o.listed = x.listed !== false;
-      /* Row exists in catalog_price_overrides — always expose flags so the storefront can clear OOS/prices when toggled off. */
       out[key] = o;
     });
     res.setHeader("Cache-Control", "no-store");
@@ -1707,7 +1705,7 @@ app.post(
   }
 );
 
-/** Vendor: full storefront catalog for Products admin (data.js + vendor rows, prices/OOS merged; optional q = name, id, SKU). */
+/** Vendor: full storefront catalog for Products admin (data.js + vendor rows, prices merged; optional q = name, id, SKU). */
 app.get("/api/vendor/products/manage", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
     if (err) {
@@ -1795,6 +1793,28 @@ app.post("/api/vendor/products/:productId/active", function (req, res) {
       if (e2) {
         var msg = String((e2 && e2.message) || e2);
         var code = msg.indexOf("Built-in") >= 0 || msg.indexOf("not found") >= 0 ? 400 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.delete("/api/vendor/products/:productId", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var productId = decodeURIComponent(String(req.params.productId || "").trim());
+    vendorProductsDb.deleteVendorManagedProduct(productId, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code =
+          msg.indexOf("Built-in") >= 0 || msg.indexOf("not found") >= 0 || msg.indexOf("required") >= 0 ? 400 : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
       res.setHeader("Cache-Control", "no-store");
@@ -2162,13 +2182,11 @@ app.get("/api/vendor/catalog-products", function (req, res) {
                   basePrices: p.prices,
                   effectivePrices: eff,
                   effectiveStock: st,
-                  listingOutOfStock: !!(ov && ov.outOfStock),
                   hasOverride: !!(
                     ov &&
                     (ov.s != null ||
                       ov.m != null ||
                       ov.l != null ||
-                      ov.outOfStock === true ||
                       ov.listed === false)
                   ),
                   hasStockOverride: !!(ovHasStock || hasAggStock),
@@ -2202,7 +2220,6 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         stockS: b.stockS !== undefined ? b.stockS : b.stock_s !== undefined ? b.stock_s : undefined,
         stockM: b.stockM !== undefined ? b.stockM : b.stock_m !== undefined ? b.stock_m : undefined,
         stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
-        outOfStock: b.outOfStock !== undefined ? !!b.outOfStock : b.out_of_stock !== undefined ? !!b.out_of_stock : undefined,
         listed: b.listed !== undefined ? !!b.listed : undefined,
         returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
       },

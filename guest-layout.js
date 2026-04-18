@@ -130,30 +130,7 @@
         .map(function (p) {
           var href = "product.html?id=" + encodeURIComponent(p.id);
           var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
-          var oos = !!p.outOfStock;
-          var rowCls = "guest-header-search__hit" + (oos ? " guest-header-search__hit--oos" : "");
-          var oosNote = oos ? '<span class="guest-header-search__oos-pill">Out of stock</span>' : "";
-          if (oos) {
-            return (
-              '<div class="' +
-              rowCls +
-              '" role="group" aria-label="' +
-              escapeAttr(p.name + " — out of stock") +
-              '">' +
-              (img
-                ? '<span class="guest-header-search__hit-img"><img src="' +
-                  escapeAttr(img) +
-                  '" alt="" width="40" height="40" loading="lazy" /></span>'
-                : "") +
-              '<span class="guest-header-search__hit-txt"><strong>' +
-              escapeHtml(p.name) +
-              "</strong>" +
-              oosNote +
-              '<span class="guest-header-search__hit-sub">' +
-              escapeHtml(D2.getCategoryLabel ? D2.getCategoryLabel(p.category) : p.category) +
-              "</span></span></div>"
-            );
-          }
+          var rowCls = "guest-header-search__hit";
           return (
             '<a class="' +
             rowCls +

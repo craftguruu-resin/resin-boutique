@@ -185,9 +185,6 @@ function mapRowToClient(row) {
     out.sizeLabels = sizeLabels;
   }
   out.isActive = row.is_active !== false;
-  if (row.listing_out_of_stock === true || row.listingOutOfStock === true) {
-    out.listingOutOfStock = true;
-  }
   if (row.listing_return_gift === true || row.listingReturnGift === true || row.returnGift === true) {
     out.returnGift = true;
   }
@@ -215,7 +212,6 @@ function listExtraProductsForStorefront(cb) {
   pool
     .query(
       "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
-        "COALESCE(co.out_of_stock, false) AS listing_out_of_stock, " +
         "COALESCE(co.return_gift, false) AS listing_return_gift " +
         "FROM products p " +
         "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
@@ -405,7 +401,7 @@ function assertVendorManagedProductId(productId, cb) {
 
 /**
  * Full storefront list for the Products admin page: data.js catalog + vendor-only DB rows,
- * merged with effective prices / OOS from overrides and optional inventory SKU hints.
+ * merged with effective prices from overrides and optional inventory SKU hints.
  * @param {{ q?: string }|null} opts
  * @param {(err: Error|null, list?: object[]) => void} cb
  */
@@ -456,7 +452,6 @@ function listAllProductsForManage(opts, cb) {
               l: ov.l != null ? Number(ov.l) : p.prices.l,
             },
             sku: skuMap[p.id] || "",
-            listingOutOfStock: !!(ov && ov.outOfStock),
             returnGift: !!(ov && ov.returnGift),
             source: "catalog",
             isActive: listed,
@@ -473,7 +468,6 @@ function listAllProductsForManage(opts, cb) {
               l: ov.l != null ? Number(ov.l) : row.prices.l,
             },
             sku: skuMap[row.id] || "",
-            listingOutOfStock: !!(ov && ov.outOfStock),
             returnGift: !!(ov && ov.returnGift),
             source: "vendor",
             isActive: row.is_active !== false && listed,
@@ -536,6 +530,62 @@ function listVendorManagedProducts(cb) {
  * @param {boolean} isActive
  * @param {(err: Error|null) => void} cb
  */
+/**
+ * Permanently remove a vendor-created product (not in bundled data.js catalog).
+ * Clears storefront overrides and unlinks studio inventory rows.
+ * @param {string} productId
+ * @param {(err: Error|null) => void} cb
+ */
+function deleteVendorManagedProduct(productId, cb) {
+  assertVendorManagedProductId(productId, function (e0, id) {
+    if (e0) return cb(e0);
+    var pool = poolMod.getPool();
+    if (!pool) {
+      return process.nextTick(function () {
+        cb(new Error("Database not configured"));
+      });
+    }
+    pool
+      .connect()
+      .then(function (client) {
+        return client
+          .query("BEGIN")
+          .then(function () {
+            return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
+          })
+          .then(function () {
+            return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
+          })
+          .then(function () {
+            return client.query("DELETE FROM products WHERE id = $1", [id]);
+          })
+          .then(function (r) {
+            if (!r.rowCount) {
+              throw new Error("Product not found");
+            }
+            return client.query("COMMIT");
+          })
+          .then(function () {
+            client.release();
+            try {
+              catalogFromData.invalidateCache();
+            } catch (_) {}
+            cb(null);
+          })
+          .catch(function (err) {
+            return client
+              .query("ROLLBACK")
+              .catch(function () {})
+              .then(function () {
+                client.release();
+                cb(err);
+              });
+          });
+      })
+      .catch(cb);
+  });
+}
+
 function setVendorProductActive(productId, isActive, cb) {
   var id = String(productId || "").trim().slice(0, 220);
   if (!id) {
@@ -572,8 +622,19 @@ function setVendorProductActive(productId, isActive, cb) {
       if (!r.rowCount) {
         throw new Error("Product not found");
       }
-      catalogFromData.invalidateCache();
-      cb(null);
+      if (!isActive) {
+        try {
+          catalogFromData.invalidateCache();
+        } catch (_) {}
+        return cb(null);
+      }
+      vendorCatalogDb.upsertOverride(id, { listed: true }, function (e3) {
+        if (e3) return cb(e3);
+        try {
+          catalogFromData.invalidateCache();
+        } catch (_) {}
+        cb(null);
+      });
     })
     .catch(cb);
 }
@@ -740,4 +801,5 @@ module.exports = {
   listAllProductsForManage: listAllProductsForManage,
   updateVendorProductById: updateVendorProductById,
   setVendorProductActive: setVendorProductActive,
+  deleteVendorManagedProduct: deleteVendorManagedProduct,
 };

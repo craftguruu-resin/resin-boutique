@@ -133,16 +133,6 @@
   function addItem(item) {
     var n = normalizeLine(item);
     if (!n) return load();
-    var D = global.RESIN_DATA;
-    if (D && typeof D.getProduct === "function") {
-      var p = D.getProduct(n.id);
-      if (p && p.outOfStock) {
-        try {
-          window.alert("This piece is out of stock — contact the seller to order.");
-        } catch (_) {}
-        return load();
-      }
-    }
     var lines = load();
     var k = lineKey(n);
     var hit = null;
