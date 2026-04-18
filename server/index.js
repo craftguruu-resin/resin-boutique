@@ -1566,6 +1566,8 @@ app.get("/api/catalog/price-overrides", function (req, res) {
     }
     var out = {};
     Object.keys(map).forEach(function (k) {
+      var key = String(k != null ? k : "").trim();
+      if (!key) return;
       var x = map[k];
       var o = {};
       if (x.s != null && Number.isFinite(Number(x.s))) o.s = Number(x.s);
@@ -1587,7 +1589,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
         o.stockL != null ||
         o.outOfStock ||
         o.listed === false;
-      if (hasAny) out[k] = o;
+      if (hasAny) out[key] = o;
     });
     res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, overrides: out });

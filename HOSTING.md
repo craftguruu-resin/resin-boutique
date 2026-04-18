@@ -39,8 +39,7 @@ You will paste this as `DATABASE_URL` on Render.
    | `DATABASE_URL` | Neon connection string |
    | `ALLOWED_ORIGIN` | After Pages exists: `https://YOUR.pages.dev,https://yourdomain.com` (comma-separated, no spaces). Until then you may use `*` for a quick test. |
    | `BILL_API_SECRET` | Optional; if set, checkout/vendor HTML must send the same secret (see Cloudflare step). |
-   | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | For real payments |
-   | `ALLOW_TEST_CHECKOUT` | `1` only on a private test service, never on production with real customers |
+   | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | **Live** keys from Razorpay Dashboard (Live mode) — see §4 below |
    | SMTP / Gmail vars | For guest OTP email (see `.env.example`) |
 
 5. **Save environment variables**  
@@ -141,10 +140,34 @@ After **7**, guest orders, OTP tables, and vendor tables expected by this codeba
 
 ---
 
-## 4) Razorpay / webhooks (when you go live)
+## 4) Razorpay (live payments on your domain)
 
-- Razorpay Dashboard → Webhooks → URL must be **public HTTPS** on your API host, e.g. `https://YOUR-SERVICE.onrender.com/...` (use whatever path your server exposes).
-- Use **Live** keys only on production services.
+Checkout uses **Razorpay Standard Checkout** (`checkout.js` + `https://checkout.razorpay.com/v1/checkout.js`). The server creates an order (`POST /api/razorpay-order`), the customer pays in Razorpay’s widget, then the browser calls `POST /api/razorpay-verify` with the payment signature so the server can create the paid order. No test “skip payment” path is shipped in the app.
+
+1. **Activate Razorpay for live money**  
+   In [Razorpay Dashboard](https://dashboard.razorpay.com/), complete **KYC / business activation** so **Live** mode is enabled (not only Test).
+
+2. **Create Live API keys**  
+   Toggle **Live** (top of dashboard) → **Account & Settings** → **API Keys** → **Generate Key**. Copy **Key ID** (`rzp_live_…`) and **Key Secret** once (secret is shown only at creation; regenerate if lost).
+
+3. **Put keys on Render** (same Web Service as `server/`)  
+   **Environment** → add `RAZORPAY_KEY_ID` and `RAZORPAY_KEY_SECRET` (Live values) → save / redeploy.  
+   Do **not** commit secrets to Git.
+
+4. **CORS / origin**  
+   Set `ALLOWED_ORIGIN` to your real storefront origins (comma-separated, no spaces), e.g. `https://www.craftguruindia.com,https://craftguruindia.com` so the browser on your domain can call `/api/razorpay-order` and `/api/razorpay-verify`.
+
+5. **Same host vs split host**  
+   If the storefront is opened from the **same** URL as the API (e.g. only Render: `https://your-service.onrender.com/checkout.html`), same-origin avoids CORS issues. If you use a static host + API host, ensure `data-bill-api-base` on checkout matches the API origin and `ALLOWED_ORIGIN` includes the static site origin.
+
+6. **`BILL_API_SECRET`** (optional)  
+   If set on the server, `checkout.html` must have the same value on `data-bill-api-secret` on the `<html>` element (and rebuild Pages if you inject it at build time).
+
+7. **Webhooks (optional for this codebase)**  
+   This repo does **not** expose a Razorpay webhook URL; orders are recorded when `/api/razorpay-verify` succeeds in the browser. For extra reliability (e.g. if the user closes the tab before verify completes), you could add a webhook handler later in the server and register its **HTTPS** URL under Razorpay → **Webhooks** → use your public API base (e.g. `https://www.craftguruindia.com/api/...` once implemented).
+
+8. **Smoke test**  
+   After deploy: open checkout on **HTTPS**, use a **small real** UPI/card payment, confirm order appears in your DB / vendor flow. Use Razorpay Dashboard → **Payments** to reconcile.
 
 ---
 

@@ -18,7 +18,9 @@ function listOverridesMap(cb) {
     .then(function (r) {
       var m = {};
       r.rows.forEach(function (row) {
-        m[row.product_id] = {
+        var pid = String(row.product_id != null ? row.product_id : "").trim();
+        if (!pid) return;
+        m[pid] = {
           s: row.price_s != null ? Number(row.price_s) : null,
           m: row.price_m != null ? Number(row.price_m) : null,
           l: row.price_l != null ? Number(row.price_l) : null,

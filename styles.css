@@ -1241,9 +1241,22 @@ main {
   display: block;
 }
 
+/* Grey the whole photo area (image + badge read as one muted block). */
+.product-card--out-of-stock .product-card-image {
+  filter: grayscale(1) brightness(0.65) contrast(0.95);
+}
+
 .product-card--out-of-stock .product-card__media img {
-  filter: grayscale(0.95) brightness(0.78);
-  opacity: 0.62;
+  filter: none;
+  opacity: 0.92;
+}
+
+.product-card--out-of-stock .product-card-body {
+  opacity: 0.9;
+}
+
+.product-card--out-of-stock .product-card__from {
+  color: rgba(255, 255, 255, 0.42);
 }
 
 .product-card__oos-overlay {

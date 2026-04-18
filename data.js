@@ -268,11 +268,18 @@
         p.stock.l = Number(o.stockL);
         n++;
       }
-      if (o.outOfStock === true) {
+      var oosFlag =
+        o.outOfStock === true ||
+        o.outOfStock === 1 ||
+        String(o.outOfStock || "")
+          .toLowerCase()
+          .trim() === "true";
+      if (oosFlag) {
         p.outOfStock = true;
         n++;
-      } else {
+      } else if (Object.prototype.hasOwnProperty.call(o, "outOfStock")) {
         delete p.outOfStock;
+        n++;
       }
       if (o.listed === false) {
         p.listed = false;
@@ -326,6 +333,9 @@
       if (!BY_CAT_SUB[cat]) BY_CAT_SUB[cat] = {};
       if (!BY_CAT_SUB[cat][sub]) BY_CAT_SUB[cat][sub] = [];
       if (BY_CAT_SUB[cat][sub].indexOf(id) === -1) BY_CAT_SUB[cat][sub].push(id);
+      if (row.listingOutOfStock === true || row.outOfStock === true) {
+        p.outOfStock = true;
+      }
       n++;
     });
     return n;

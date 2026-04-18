@@ -291,8 +291,7 @@
         ? Number(T.total)
         : Number(o.total) || 0;
 
-    return (
-      '<div class="account-order-bill">' +
+    var billInner =
       '<div class="account-order-bill__head">' +
       "<div><strong>" +
       escapeHtml("#" + String(o.orderId)) +
@@ -325,17 +324,33 @@
       "</span><span>" +
       escapeHtml(fmtMoney(grand)) +
       "</span></div>" +
-      "</div>" +
-      (canCancel
-        ? '<button type="button" class="checkout-pay-secondary account-order-cancel" data-cancel-id="' +
-          escapeAttr(String(o.orderId)) +
-          '">Cancel order</button>'
-        : "") +
-      (o.paymentStatus === "paid" && items.length
-        ? '<button type="button" class="checkout-submit account-order-dl-bill" data-dl-bill-order="' +
-          escapeAttr(String(o.orderId)) +
-          '">Download PDF bill</button>'
-        : "") +
+      "</div>";
+
+    var showDl = o.paymentStatus === "paid" && items.length > 0;
+    var asideHtml = "";
+    if (showDl) {
+      asideHtml +=
+        '<button type="button" class="checkout-submit account-order-dl-bill" data-dl-bill-order="' +
+        escapeAttr(String(o.orderId)) +
+        '">Download PDF bill</button>';
+    }
+    if (canCancel) {
+      asideHtml +=
+        '<button type="button" class="checkout-pay-secondary account-order-cancel" data-cancel-id="' +
+        escapeAttr(String(o.orderId)) +
+        '">Cancel order</button>';
+    }
+
+    var rowClass = asideHtml ? "account-order-row" : "account-order-row account-order-row--single";
+    return (
+      '<div class="' +
+      rowClass +
+      '">' +
+      '<div class="account-order-row__main">' +
+      '<div class="account-order-bill">' +
+      billInner +
+      "</div></div>" +
+      (asideHtml ? '<div class="account-order-row__aside">' + asideHtml + "</div>" : "") +
       "</div>"
     );
   }

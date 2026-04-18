@@ -1,6 +1,6 @@
 /* My orders — elevated layout (works with existing checkout auth tokens) */
 .account-shell {
-  max-width: 960px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 3vw, 1.5rem) 3.5rem;
 }
@@ -18,15 +18,17 @@
 
 .account-orders-list {
   list-style: none;
-  margin: 0;
+  margin: 0.75rem 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
+  max-height: none;
+  overflow: visible;
 }
 
 .account-orders-list li {
-  padding: 1rem 1.1rem;
+  padding: 1rem 1.15rem;
   border-radius: 0.85rem;
   border: 1px solid rgba(15, 23, 42, 0.06);
   background: linear-gradient(180deg, #fff 0%, #f8fafc 100%);
@@ -101,6 +103,45 @@
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: rgba(30, 58, 95, 0.88);
+}
+
+/* One order: main bill (left) + actions (right). Page scrolls naturally — no inner scroll box. */
+.account-order-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(9.5rem, 12.5rem);
+  gap: 1rem 1.35rem;
+  align-items: start;
+}
+
+.account-order-row--single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.account-order-row__main {
+  min-width: 0;
+}
+
+.account-order-row__aside {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding-top: 0.15rem;
+}
+
+@media (max-width: 720px) {
+  .account-order-row {
+    grid-template-columns: 1fr;
+  }
+
+  .account-order-row__aside {
+    padding-top: 0;
+    padding-left: 0;
+    border-top: 1px solid rgba(15, 23, 42, 0.08);
+    margin-top: 0.25rem;
+    padding-top: 0.85rem;
+  }
 }
 
 /* Bill-style order detail (syncs with same fulfillment + tag as vendor board) */
@@ -263,15 +304,16 @@
 }
 
 .account-order-cancel {
-  margin-top: 0.35rem;
-  align-self: flex-start;
+  margin-top: 0;
+  width: 100%;
+  text-align: center;
+  justify-content: center;
 }
 
 .account-order-dl-bill {
-  margin-top: 0.65rem;
+  margin-top: 0;
   width: 100%;
-  max-width: 16rem;
   text-align: center;
-  font-size: 0.82rem;
-  padding: 0.55rem 0.85rem;
+  font-size: 0.78rem;
+  padding: 0.55rem 0.75rem;
 }

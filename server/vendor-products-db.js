@@ -184,6 +184,9 @@ function mapRowToClient(row) {
     out.sizeLabels = sizeLabels;
   }
   out.isActive = row.is_active !== false;
+  if (row.listing_out_of_stock === true || row.listingOutOfStock === true) {
+    out.listingOutOfStock = true;
+  }
   return out;
 }
 
@@ -207,7 +210,11 @@ function listExtraProductsForStorefront(cb) {
   }
   pool
     .query(
-      "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products WHERE is_active = true ORDER BY updated_at DESC"
+      "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
+        "COALESCE(co.out_of_stock, false) AS listing_out_of_stock " +
+        "FROM products p " +
+        "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
+        "WHERE p.is_active = true ORDER BY p.updated_at DESC"
     )
     .then(function (r) {
       var out = [];
