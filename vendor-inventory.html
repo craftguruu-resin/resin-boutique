@@ -226,6 +226,13 @@
                   <input type="text" id="viApSizeL" maxlength="120" placeholder="e.g. 10 inch or 44×23×34 cm" />
                 </div>
                 <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApImageUrl">Image URL (optional — use instead of file for Cloudinary, etc.)</label>
+                  <input type="url" id="viApImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                    Must start with <code>https://</code>. If you paste a URL, you can leave the file empty. If you choose a file, the file wins over the URL.
+                  </p>
+                </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
                   <label for="viApImage">Product photo (JPEG or PNG)</label>
                   <input type="file" id="viApImage" accept="image/jpeg,image/png,image/webp" />
                 </div>

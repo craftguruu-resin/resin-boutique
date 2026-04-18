@@ -110,6 +110,13 @@
             <label for="vpmImage">New image (optional)</label>
             <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
           </div>
+          <div class="vs-field" style="margin-top: 0.75rem">
+            <label for="vpmImageUrl">Image URL (optional — vendor products)</label>
+            <input type="url" id="vpmImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
+            <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
+              Paste an HTTPS link from Cloudinary (or similar) to avoid storing the file on Render. If you also choose a file above, the file wins.
+            </p>
+          </div>
           <div class="vpm-return-gift-block vpm-return-gift-block--toolbar" style="margin-top: 0.75rem">
             <p class="vpm-return-gift-block__title">Return gift (guest)</p>
             <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Return gifts listing">

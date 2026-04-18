@@ -33,14 +33,14 @@ var heroBatchUpload = multer({
   limits: { fileSize: 12 * 1024 * 1024, files: 20 },
 });
 
-/** Write one hero JPEG under media/hero/. @param {(err: Error|null, rel?: string, abs?: string) => void} cb */
-function writeVendorHeroJpegToDisk(buf, siteRoot, cb) {
-  var dir = path.join(siteRoot, "media", "hero");
+/** Write one hero JPEG under the configured hero root (see UPLOADED_MEDIA_ROOT / HERO_MEDIA_ROOT). */
+function writeVendorHeroJpegToDisk(buf, cb) {
+  var dir = catalogMediaPath.heroMediaFsRoot();
   fs.mkdir(dir, { recursive: true }, function (mkErr) {
     if (mkErr) return cb(mkErr);
     var base = crypto.randomBytes(10).toString("hex");
     var rel = "media/hero/" + base + ".jpg";
-    var abs = path.join(siteRoot, rel);
+    var abs = path.join(dir, base + ".jpg");
     sharp(buf)
       .rotate()
       .jpeg({ quality: 88, mozjpeg: true })
@@ -1661,7 +1661,7 @@ app.get("/api/catalog/raw-materials", function (_req, res) {
   });
 });
 
-/** Vendor: create storefront product + save image under media/catalog/{category folder}/ */
+/** Vendor: create storefront product — image file under media/catalog/ or optional HTTPS imageUrl (CDN). */
 app.post(
   "/api/vendor/products",
   productImageUpload.single("image"),
@@ -1690,6 +1690,7 @@ app.post(
           sizeLabelL: firstField(b.sizeLabelL),
           imageBuffer: req.file && req.file.buffer,
           mime: req.file && req.file.mimetype,
+          imageUrl: firstField(b.imageUrl),
         },
         function (e2, row) {
           if (e2) {
@@ -1754,6 +1755,7 @@ app.put(
           sizeLabelL: firstField(b.sizeLabelL),
           imageBuffer: req.file && req.file.buffer,
           mime: req.file && req.file.mimetype,
+          imageUrl: firstField(b.imageUrl),
           returnGift:
             b.returnGift !== undefined
               ? String(b.returnGift) === "true" || b.returnGift === true
@@ -1862,8 +1864,7 @@ app.post(
         return res.status(400).json({ ok: false, error: "Image file is required" });
       }
       var anim = String((req.body && req.body.animation) || "orbit").trim().slice(0, 40);
-      var siteRoot = path.join(__dirname, "..");
-      writeVendorHeroJpegToDisk(req.file.buffer, siteRoot, function (wErr, rel, abs) {
+      writeVendorHeroJpegToDisk(req.file.buffer, function (wErr, rel, abs) {
         if (wErr) {
           return res.status(500).json({ ok: false, error: String(wErr.message || wErr) });
         }
@@ -1905,7 +1906,6 @@ app.post(
         return res.status(400).json({ ok: false, error: "Too many images (maximum 20 per batch)." });
       }
       var anim = String((req.body && req.body.animation) || "orbit").trim().slice(0, 40);
-      var siteRoot = path.join(__dirname, "..");
       storefrontHeroDb.nextHeroSortStart(function (eSort, sort0) {
         if (eSort) {
           return res.status(500).json({ ok: false, error: String(eSort.message || eSort) });
@@ -1922,7 +1922,7 @@ app.post(
           if (!f || !f.buffer || f.buffer.length < 32) {
             return res.status(400).json({ ok: false, error: "Invalid or empty image at position " + (idx + 1) });
           }
-          writeVendorHeroJpegToDisk(f.buffer, siteRoot, function (wErr, rel, abs) {
+          writeVendorHeroJpegToDisk(f.buffer, function (wErr, rel, abs) {
             if (wErr) {
               return res.status(500).json({ ok: false, error: String(wErr.message || wErr) });
             }
@@ -2441,6 +2441,8 @@ app.get("/vendororder", function (_req, res) {
   res.redirect(302, "/vendor-tags.html");
 });
 app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot()));
+app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot()));
+app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot()));
 app.use(express.static(siteRoot));
 
 function onServerListen() {
@@ -2452,8 +2454,21 @@ function onServerListen() {
   } else {
     console.log("Postgres: not configured — orders use server/data/orders.json (file mode).");
   }
-  if (process.env.CATALOG_MEDIA_ROOT && String(process.env.CATALOG_MEDIA_ROOT).trim()) {
-    console.log("Catalog images: CATALOG_MEDIA_ROOT=" + catalogMediaPath.catalogMediaFsRoot());
+  if (catalogMediaPath.hasExternalUploadRoot()) {
+    console.log(
+      "Persistent media: catalog=" +
+        catalogMediaPath.catalogMediaFsRoot() +
+        " | hero=" +
+        catalogMediaPath.heroMediaFsRoot() +
+        " | raw-materials=" +
+        catalogMediaPath.rawMaterialsMediaFsRoot()
+    );
+  } else if (poolMod.isEnabled() && String(process.env.NODE_ENV || "").toLowerCase() === "production") {
+    console.warn(
+      "[media] Production + Postgres but no UPLOADED_MEDIA_ROOT or CATALOG_MEDIA_ROOT — " +
+        "uploaded catalog/hero/raw images live on the app disk and can disappear after redeploy. " +
+        "See server/.env.example (Persistent uploads)."
+    );
   }
 }
 

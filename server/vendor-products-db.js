@@ -3,12 +3,28 @@
 var crypto = require("crypto");
 var fs = require("fs");
 var path = require("path");
+var { URL } = require("url");
 var poolMod = require("./db/pool.js");
 var sharp = require("sharp");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogMediaPath = require("./media-path.js");
+
+/** Accepts CDN URLs (Cloudinary, R2, etc.). Rejects non-HTTPS and obvious SSRF targets. */
+function normalizeHttpsImageUrl(raw) {
+  var u = String(raw || "").trim().slice(0, 2000);
+  if (!/^https:\/\//i.test(u)) return "";
+  try {
+    var parsed = new URL(u);
+    if (parsed.username || parsed.password) return "";
+    var h = String(parsed.hostname || "").toLowerCase();
+    if (!h || h === "localhost" || h === "127.0.0.1" || h === "[::1]") return "";
+    return u;
+  } catch (_) {
+    return "";
+  }
+}
 
 function slugify(s) {
   return String(s || "")
@@ -228,7 +244,7 @@ function listExtraProductsForStorefront(cb) {
 }
 
 /**
- * @param {{ name: string, categoryId: string, priceS: number, priceM: number, priceL: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer: Buffer, mime: string }} opts
+ * @param {{ name: string, categoryId: string, priceS: number, priceM: number, priceL: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, imageUrl?: string }} opts
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function createVendorProduct(opts, cb) {
@@ -244,19 +260,27 @@ function createVendorProduct(opts, cb) {
   var priceM = Math.max(0, Number(opts && opts.priceM) || 0);
   var priceL = Math.max(0, Number(opts && opts.priceL) || 0);
   var buf = opts && opts.imageBuffer;
+  var extUrl = normalizeHttpsImageUrl(opts && opts.imageUrl);
   if (!name || !categoryId) {
     return process.nextTick(function () {
       cb(new Error("Name and category are required"));
     });
   }
-  if (!buf || !Buffer.isBuffer(buf) || buf.length < 32) {
-    return process.nextTick(function () {
-      cb(new Error("Image file is required"));
-    });
-  }
-  if (buf.length > 12 * 1024 * 1024) {
+  var hasFile = buf && Buffer.isBuffer(buf) && buf.length >= 32;
+  if (hasFile && buf.length > 12 * 1024 * 1024) {
     return process.nextTick(function () {
       cb(new Error("Image too large (max 12 MB)"));
+    });
+  }
+  var urlTry = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : "";
+  if (!hasFile && urlTry && !extUrl) {
+    return process.nextTick(function () {
+      cb(new Error("Invalid image URL. Use a full https:// link (e.g. from Cloudinary)."));
+    });
+  }
+  if (!hasFile && !extUrl) {
+    return process.nextTick(function () {
+      cb(new Error("Provide a product image file or an HTTPS image URL (e.g. from Cloudinary)."));
     });
   }
 
@@ -269,37 +293,15 @@ function createVendorProduct(opts, cb) {
       .trim();
     if (!folderLabel) folderLabel = categoryId;
 
-    var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
     var baseSlug = slugify(name) || "product";
     var suffix = crypto.randomBytes(4).toString("hex");
     var fileStem = (baseSlug + "-" + suffix).slice(0, 120);
-    var mime = String((opts && opts.mime) || "").toLowerCase();
-    var usePng = mime.indexOf("png") !== -1;
-    var ext = usePng ? "png" : "jpg";
-    var fileName = fileStem + "." + ext;
-    var relImage = "media/catalog/" + folderLabel + "/" + fileName;
-    var absImage = path.join(catalogDir, fileName);
-
     var productId = categoryId + "--" + subDb + "--" + fileStem;
-
-    function writeImage(done) {
-      fs.mkdir(catalogDir, { recursive: true }, function (mkErr) {
-        if (mkErr) return done(mkErr);
-        var img = sharp(buf).rotate();
-        var chain = usePng ? img.png({ compressionLevel: 9 }) : img.jpeg({ quality: 88, mozjpeg: true });
-        chain
-          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
-          .toFile(absImage, function (err) {
-            done(err);
-          });
-      });
-    }
 
     var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
     var sizeLabelsJson = JSON.stringify(buildSizeLabelsObject(opts));
 
-    writeImage(function (wErr) {
-      if (wErr) return cb(wErr);
+    function commitInsert(imagePathVal, absImageForRollback, cbOut) {
       pool
         .connect()
         .then(function (client) {
@@ -313,16 +315,16 @@ function createVendorProduct(opts, cb) {
                   "subcategory_id = EXCLUDED.subcategory_id, image_path = EXCLUDED.image_path, prices = EXCLUDED.prices, " +
                   "size_labels = EXCLUDED.size_labels, " +
                   "is_active = true, updated_at = now() RETURNING id, name, category_id, subcategory_id, image_path, prices, size_labels",
-                [productId, name, categoryId, subDb, relImage, pricesJson, sizeLabelsJson]
+                [productId, name, categoryId, subDb, imagePathVal, pricesJson, sizeLabelsJson]
               );
             })
             .then(function (insRes) {
               return client
                 .query(
                   "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, out_of_stock) VALUES ($1, $2, $3, $4, false) " +
-                  "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
-                  "price_l = EXCLUDED.price_l, updated_at = now()",
-                [productId, priceS, priceM, priceL]
+                    "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
+                    "price_l = EXCLUDED.price_l, updated_at = now()",
+                  [productId, priceS, priceM, priceL]
                 )
                 .then(function () {
                   return insRes;
@@ -338,12 +340,12 @@ function createVendorProduct(opts, cb) {
               catalogFromData.invalidateCache();
               var row0 = insRes && insRes.rows && insRes.rows[0];
               var mapped = row0 ? mapRowToClient(row0) : null;
-              cb(null, {
+              cbOut(null, {
                 id: productId,
                 name: name,
                 category: categoryId,
                 subcategory: subDb,
-                image: relImage,
+                image: imagePathVal,
                 prices: { s: priceS, m: priceM, l: priceL },
                 sizeLabels: (mapped && mapped.sizeLabels) || buildSizeLabelsObject(opts),
               });
@@ -354,15 +356,41 @@ function createVendorProduct(opts, cb) {
                 .catch(function () {})
                 .then(function () {
                   client.release();
-                  try {
-                    fs.unlinkSync(absImage);
-                  } catch (_) {}
-                  cb(err);
+                  if (absImageForRollback) {
+                    try {
+                      fs.unlinkSync(absImageForRollback);
+                    } catch (_) {}
+                  }
+                  cbOut(err);
                 });
             });
         })
-        .catch(cb);
-    });
+        .catch(cbOut);
+    }
+
+    if (hasFile) {
+      var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
+      var mime = String((opts && opts.mime) || "").toLowerCase();
+      var usePng = mime.indexOf("png") !== -1;
+      var ext = usePng ? "png" : "jpg";
+      var fileName = fileStem + "." + ext;
+      var relImage = "media/catalog/" + folderLabel + "/" + fileName;
+      var absImage = path.join(catalogDir, fileName);
+      fs.mkdir(catalogDir, { recursive: true }, function (mkErr) {
+        if (mkErr) return cb(mkErr);
+        var img = sharp(buf).rotate();
+        var chain = usePng ? img.png({ compressionLevel: 9 }) : img.jpeg({ quality: 88, mozjpeg: true });
+        chain
+          .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+          .toFile(absImage, function (wErr) {
+            if (wErr) return cb(wErr);
+            commitInsert(relImage, absImage, cb);
+          });
+      });
+      return;
+    }
+
+    commitInsert(extUrl, null, cb);
   });
 }
 
@@ -641,7 +669,7 @@ function setVendorProductActive(productId, isActive, cb) {
 
 /**
  * @param {string} productId
- * @param {{ name?: string, priceS?: number, priceM?: number, priceL?: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, returnGift?: boolean }} opts
+ * @param {{ name?: string, priceS?: number, priceM?: number, priceL?: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, imageUrl?: string, returnGift?: boolean }} opts
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function updateVendorProductById(productId, opts, cb) {
@@ -697,6 +725,11 @@ function updateVendorProductById(productId, opts, cb) {
         );
         var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
         var buf = opts && opts.imageBuffer;
+        var extUrl = normalizeHttpsImageUrl(opts && opts.imageUrl);
+        var imageUrlRaw = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : "";
+        if (imageUrlRaw && !extUrl && !(buf && Buffer.isBuffer(buf) && buf.length >= 32)) {
+          throw new Error("Invalid image URL. Use a full https:// link (e.g. from Cloudinary).");
+        }
         if (buf && Buffer.isBuffer(buf) && buf.length >= 32) {
           if (buf.length > 12 * 1024 * 1024) {
             throw new Error("Image too large (max 12 MB)");
@@ -729,6 +762,9 @@ function updateVendorProductById(productId, opts, cb) {
                 });
             });
           });
+        }
+        if (extUrl) {
+          return finishUpdate(extUrl);
         }
         finishUpdate(String(row.image_path || "").trim());
 

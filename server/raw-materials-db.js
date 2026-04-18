@@ -6,6 +6,7 @@ var fs = require("fs");
 var poolMod = require("./db/pool.js");
 var sharp = require("sharp");
 var catalogFromData = require("./catalog-from-data.js");
+var mediaPath = require("./media-path.js");
 
 function slugify(s) {
   return String(s || "")
@@ -89,8 +90,7 @@ function createRow(opts, cb) {
     });
   }
   var id = "raw-mat--" + crypto.randomBytes(6).toString("hex");
-  var siteRoot = path.join(__dirname, "..");
-  var heroDir = path.join(siteRoot, "media", "raw-materials");
+  var heroDir = mediaPath.rawMaterialsMediaFsRoot();
   var baseSlug = slugify(name) || "material";
   var fileStem = (baseSlug + "-" + crypto.randomBytes(3).toString("hex")).slice(0, 100);
   var mime = String((opts && opts.mime) || "").toLowerCase();

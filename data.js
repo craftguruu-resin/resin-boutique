@@ -262,9 +262,13 @@
 
   function imageUrl(relPath) {
     if (!relPath) return "";
-    var enc = relPath.split("/").map(function (seg) { return encodeURIComponent(seg); }).join("/");
+    var s = String(relPath).trim();
+    /* Absolute URLs (e.g. Cloudinary, R2, Imgur) — use as-is; no Render disk needed. */
+    if (/^https?:\/\//i.test(s)) return s;
+    if (s.indexOf("//") === 0) return s;
+    var enc = s.split("/").map(function (seg) { return encodeURIComponent(seg); }).join("/");
     var base = storefrontApiBaseForMedia();
-    if (base && relPath.indexOf("media/") === 0) {
+    if (base && s.indexOf("media/") === 0) {
       return base.replace(/\/+$/, "") + "/" + enc;
     }
     return enc;

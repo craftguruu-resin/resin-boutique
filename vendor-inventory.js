@@ -774,12 +774,18 @@
     var name = document.getElementById("viApName") && document.getElementById("viApName").value.trim();
     var fileInp = document.getElementById("viApImage");
     var file = fileInp && fileInp.files && fileInp.files[0];
+    var urlEl = document.getElementById("viApImageUrl");
+    var imageUrl = urlEl ? String(urlEl.value || "").trim() : "";
     if (!catId || !name) {
       window.alert("Category and name are required.");
       return;
     }
-    if (!file) {
-      window.alert("Please choose a product photo.");
+    if (!file && !imageUrl) {
+      window.alert("Choose a product photo file or paste an HTTPS image URL.");
+      return;
+    }
+    if (imageUrl && !/^https:\/\//i.test(imageUrl)) {
+      window.alert("Image URL must start with https://");
       return;
     }
     var fd = new FormData();
@@ -791,7 +797,8 @@
     fd.append("sizeLabelS", String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim());
     fd.append("sizeLabelM", String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim());
     fd.append("sizeLabelL", String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim());
-    fd.append("image", file, file.name);
+    if (imageUrl) fd.append("imageUrl", imageUrl);
+    if (file) fd.append("image", file, file.name);
     var base = V.apiBase();
     vf(V.vendorApiUrl("/api/vendor/products"), {
       method: "POST",
@@ -821,6 +828,7 @@
           if (el) el.value = "";
         });
         if (fileInp) fileInp.value = "";
+        if (urlEl) urlEl.value = "";
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));

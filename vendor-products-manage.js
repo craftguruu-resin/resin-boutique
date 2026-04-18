@@ -169,7 +169,7 @@
   }
 
   function setCatalogFormDisabled(on) {
-    ["vpmName", "vpmLblS", "vpmLblM", "vpmLblL", "vpmImage"].forEach(function (id) {
+    ["vpmName", "vpmLblS", "vpmLblM", "vpmLblL", "vpmImage", "vpmImageUrl"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !!on;
     });
@@ -199,6 +199,11 @@
     document.getElementById("vpmLblL").value = (sl.l && sl.l.name) || "";
     var fi = document.getElementById("vpmImage");
     if (fi) fi.value = "";
+    var iu = document.getElementById("vpmImageUrl");
+    if (iu) {
+      var im = String((p && p.image) || "").trim();
+      iu.value = /^https:\/\//i.test(im) ? im : "";
+    }
     var rgY = document.getElementById("vpmReturnGiftYes");
     var rgN = document.getElementById("vpmReturnGiftNo");
     if (rgY && rgN) {
@@ -354,6 +359,14 @@
     fd.set("sizeLabelM", document.getElementById("vpmLblM").value.trim());
     fd.set("sizeLabelL", document.getElementById("vpmLblL").value.trim());
     fd.set("returnGift", returnGift ? "true" : "false");
+    var imageUrl = String((document.getElementById("vpmImageUrl") && document.getElementById("vpmImageUrl").value) || "").trim();
+    if (imageUrl) {
+      if (!/^https:\/\//i.test(imageUrl)) {
+        showMsg("Image URL must start with https://", true);
+        return;
+      }
+      fd.set("imageUrl", imageUrl);
+    }
     var file = document.getElementById("vpmImage").files && document.getElementById("vpmImage").files[0];
     if (file) fd.set("image", file, file.name);
 

@@ -4,18 +4,49 @@ var path = require("path");
 
 var REPO_ROOT = path.join(__dirname, "..");
 
+function envResolved(name) {
+  var v = process.env[name] && String(process.env[name]).trim();
+  return v ? path.resolve(v) : "";
+}
+
+/** When set, catalog/hero/raw-materials uploads all live under this tree (see subdirs below). */
+function uploadedMediaBase() {
+  return envResolved("UPLOADED_MEDIA_ROOT");
+}
+
 /**
- * Filesystem root for vendor + catalog product photos (URL path still /media/catalog/...).
- * Set CATALOG_MEDIA_ROOT on hosts with ephemeral app disks (e.g. Render) to a persistent mount.
+ * Vendor + catalog product photos. URL path remains /media/catalog/...
+ * Priority: CATALOG_MEDIA_ROOT, else UPLOADED_MEDIA_ROOT/catalog, else default folder under the repo.
  */
 function catalogMediaFsRoot() {
-  var e = process.env.CATALOG_MEDIA_ROOT && String(process.env.CATALOG_MEDIA_ROOT).trim();
-  return e ? path.resolve(e) : path.join(REPO_ROOT, "media", "catalog");
+  var only = envResolved("CATALOG_MEDIA_ROOT");
+  if (only) return only;
+  var base = uploadedMediaBase();
+  if (base) return path.join(base, "catalog");
+  return path.join(REPO_ROOT, "media", "catalog");
+}
+
+/** Homepage hero JPEGs: /media/hero/... Priority: HERO_MEDIA_ROOT → UPLOADED_MEDIA_ROOT/hero → repo. */
+function heroMediaFsRoot() {
+  var only = envResolved("HERO_MEDIA_ROOT");
+  if (only) return only;
+  var base = uploadedMediaBase();
+  if (base) return path.join(base, "hero");
+  return path.join(REPO_ROOT, "media", "hero");
+}
+
+/** Raw materials images: /media/raw-materials/... */
+function rawMaterialsMediaFsRoot() {
+  var only = envResolved("RAW_MATERIALS_MEDIA_ROOT");
+  if (only) return only;
+  var base = uploadedMediaBase();
+  if (base) return path.join(base, "raw-materials");
+  return path.join(REPO_ROOT, "media", "raw-materials");
 }
 
 /**
  * Resolve repo-relative media paths to absolute paths for sharp/fs reads.
- * Paths under media/catalog/ use CATALOG_MEDIA_ROOT when set; other media/ paths stay under the repo.
+ * Catalog, hero, and raw-materials honor UPLOADED_MEDIA_ROOT / per-type *_ROOT env vars.
  */
 function absoluteMediaPath(rel) {
   if (!rel || typeof rel !== "string") return null;
@@ -23,14 +54,36 @@ function absoluteMediaPath(rel) {
   if (n.indexOf("..") >= 0) return null;
   if (n.indexOf("media/") !== 0) return null;
   if (n.indexOf("media/catalog/") === 0) {
-    var sub = n.slice("media/catalog/".length);
-    return path.join(catalogMediaFsRoot(), sub);
+    var csub = n.slice("media/catalog/".length);
+    return path.join(catalogMediaFsRoot(), csub);
+  }
+  if (n.indexOf("media/hero/") === 0) {
+    var hsub = n.slice("media/hero/".length);
+    return path.join(heroMediaFsRoot(), hsub);
+  }
+  if (n.indexOf("media/raw-materials/") === 0) {
+    var rsub = n.slice("media/raw-materials/".length);
+    return path.join(rawMaterialsMediaFsRoot(), rsub);
   }
   return path.join(REPO_ROOT, n);
 }
 
+/** True if any upload root is outside the repo (production persistence). */
+function hasExternalUploadRoot() {
+  return !!(
+    envResolved("CATALOG_MEDIA_ROOT") ||
+    envResolved("UPLOADED_MEDIA_ROOT") ||
+    envResolved("HERO_MEDIA_ROOT") ||
+    envResolved("RAW_MATERIALS_MEDIA_ROOT")
+  );
+}
+
 module.exports = {
   REPO_ROOT: REPO_ROOT,
+  uploadedMediaBase: uploadedMediaBase,
   catalogMediaFsRoot: catalogMediaFsRoot,
+  heroMediaFsRoot: heroMediaFsRoot,
+  rawMaterialsMediaFsRoot: rawMaterialsMediaFsRoot,
   absoluteMediaPath: absoluteMediaPath,
+  hasExternalUploadRoot: hasExternalUploadRoot,
 };
