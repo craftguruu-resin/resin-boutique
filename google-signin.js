@@ -69,20 +69,23 @@
       var opts = pair[1] || {};
       if (!el || !el.parentNode) return;
       try {
-        global.google.accounts.id.renderButton(
-          el,
-          Object.assign(
-            {
-              type: "standard",
-              theme: "outline",
-              size: "large",
-              text: "continue_with",
-              width: typeof opts.width === "number" ? opts.width : 280,
-              locale: "en",
-            },
-            opts
-          )
+        var merged = Object.assign(
+          {
+            type: "standard",
+            theme: "outline",
+            size: "large",
+            text: "continue_with",
+            width: typeof opts.width === "number" ? opts.width : 280,
+            locale: "en",
+          },
+          opts
         );
+        if (merged.type === "icon") {
+          delete merged.text;
+          delete merged.width;
+          if (!merged.shape) merged.shape = "circle";
+        }
+        global.google.accounts.id.renderButton(el, merged);
       } catch (_) {}
     });
     pendingButtons = [];

@@ -1099,8 +1099,9 @@
           if (msgLo) setMsg(msgLo, "Signed in with Google.", "ok");
         });
       });
-      if (gSu) CRAFT_GOOGLE_SIGNIN.renderButton(gSu, { width: 280 });
-      if (gLo) CRAFT_GOOGLE_SIGNIN.renderButton(gLo, { width: 280 });
+      var googleIconOpts = { type: "icon", shape: "circle", theme: "outline", size: "large" };
+      if (gSu) CRAFT_GOOGLE_SIGNIN.renderButton(gSu, googleIconOpts);
+      if (gLo) CRAFT_GOOGLE_SIGNIN.renderButton(gLo, googleIconOpts);
     }
 
     var outBtn = document.getElementById("acctSignOut");

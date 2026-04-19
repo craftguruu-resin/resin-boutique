@@ -867,7 +867,7 @@ html.auth-google-ui-off .auth-or-divider {
 
 .auth-google-hint--panel {
   margin: 0.65rem 0 0.35rem;
-  text-align: left;
+  text-align: center;
 }
 
 .auth-google-hint {
@@ -880,8 +880,20 @@ html.auth-google-ui-off .auth-or-divider {
 .auth-google-slot {
   display: flex;
   justify-content: flex-start;
+  align-items: center;
   margin: 0 0 0.65rem;
   min-height: 2.5rem;
+}
+
+/* Account (sign up / log in): circular Google icon, centered in the row */
+.auth-google-slot--circle {
+  justify-content: center;
+  min-height: 3rem;
+}
+
+.auth-google-slot--circle > div {
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .auth-or-divider {
