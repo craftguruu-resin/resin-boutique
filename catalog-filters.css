@@ -108,7 +108,8 @@
   position: relative;
   flex: 1 1 7rem;
   min-width: 0;
-  height: 1.4rem;
+  /* Taller box so range thumbs center on the same axis as the visible track */
+  height: 1.85rem;
   align-self: center;
 }
 
@@ -141,14 +142,15 @@
   position: absolute;
   left: 0;
   width: 100%;
-  top: 50%;
-  transform: translateY(-50%);
-  height: 1.35rem;
+  top: 0;
+  height: 100%;
   margin: 0;
+  padding: 0;
   background: transparent;
   pointer-events: none;
   -webkit-appearance: none;
   appearance: none;
+  box-sizing: border-box;
 }
 
 .cg-dual-range input[type="range"].cg-dual-range__hi {
@@ -189,12 +191,18 @@
 }
 
 .cg-dual-range input[type="range"]::-moz-range-track {
+  height: 0.45rem;
   background: transparent;
+  margin-top: calc((1.85rem - 0.45rem) / 2);
+  margin-bottom: calc((1.85rem - 0.45rem) / 2);
 }
 
 .cg-dual-range input[type="range"]::-webkit-slider-runnable-track {
   height: 0.45rem;
   background: transparent;
+  /* Center the hit track vertically inside the slider = same axis as .cg-dual-range__track */
+  margin-top: calc((1.85rem - 0.45rem) / 2);
+  margin-bottom: calc((1.85rem - 0.45rem) / 2);
 }
 
 .home-featured-toolbar {

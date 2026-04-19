@@ -76,9 +76,6 @@
             <div class="auth-modal__head checkout-auth-sheet__head">
               <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
             </div>
-            <p class="auth-google-hint">Optional: sign in with Google (same session as email code).</p>
-            <div class="auth-google-slot" id="acctGoogleSignIn" aria-label="Sign in with Google"></div>
-            <p class="auth-or-divider"><span>or use email code</span></p>
             <div class="auth-tabs">
               <button type="button" class="auth-tab is-active" id="acctTabSu">Sign up</button>
               <button type="button" class="auth-tab" id="acctTabLo">Log in</button>
@@ -97,8 +94,10 @@
                 <label for="acctOtpSu">Enter OTP</label>
                 <input id="acctOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
               </div>
+              <p class="auth-google-hint auth-google-hint--panel">Or sign up with Google</p>
+              <div class="auth-google-slot" id="acctGoogleSignInSu" aria-label="Sign up with Google"></div>
               <p class="auth-msg" id="acctMsgSu" style="display: none"></p>
-              <button type="button" class="auth-submit" id="acctVerifySu">Verify</button>
+              <button type="button" class="auth-submit" id="acctVerifySu">Create account</button>
             </div>
             <div id="acctPanelLo" class="is-hidden">
               <div class="auth-field">
@@ -110,6 +109,8 @@
                 <label for="acctOtpLo">Enter OTP</label>
                 <input id="acctOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
               </div>
+              <p class="auth-google-hint auth-google-hint--panel">Or sign in with Google</p>
+              <div class="auth-google-slot" id="acctGoogleSignInLo" aria-label="Sign in with Google"></div>
               <p class="auth-msg" id="acctMsgLo" style="display: none"></p>
               <button type="button" class="auth-submit" id="acctVerifyLo">Verify</button>
             </div>

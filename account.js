@@ -1081,8 +1081,9 @@
       });
     }
 
-    var acctGoogle = document.getElementById("acctGoogleSignIn");
-    if (acctGoogle && window.CRAFT_GOOGLE_SIGNIN && CRAFT_GOOGLE_SIGNIN.isConfigured()) {
+    var gSu = document.getElementById("acctGoogleSignInSu");
+    var gLo = document.getElementById("acctGoogleSignInLo");
+    if ((gSu || gLo) && window.CRAFT_GOOGLE_SIGNIN && CRAFT_GOOGLE_SIGNIN.isConfigured()) {
       CRAFT_GOOGLE_SIGNIN.bootstrap(function (cred) {
         postJson(base + "/api/guest-auth/google/session", { credential: cred }, function (err, json) {
           var msgSu = document.getElementById("acctMsgSu");
@@ -1095,9 +1096,11 @@
           var em = json && json.email ? normalizeEmail(json.email) : "";
           afterAuthSuccess(em, json, "");
           if (msgSu) setMsg(msgSu, "Signed in with Google.", "ok");
+          if (msgLo) setMsg(msgLo, "Signed in with Google.", "ok");
         });
       });
-      CRAFT_GOOGLE_SIGNIN.renderButton(acctGoogle, { width: 280 });
+      if (gSu) CRAFT_GOOGLE_SIGNIN.renderButton(gSu, { width: 280 });
+      if (gLo) CRAFT_GOOGLE_SIGNIN.renderButton(gLo, { width: 280 });
     }
 
     var outBtn = document.getElementById("acctSignOut");

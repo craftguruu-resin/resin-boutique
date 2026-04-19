@@ -865,6 +865,11 @@ html.auth-google-ui-off .auth-or-divider {
   display: none !important;
 }
 
+.auth-google-hint--panel {
+  margin: 0.65rem 0 0.35rem;
+  text-align: left;
+}
+
 .auth-google-hint {
   margin: 0 0 0.5rem;
   font-size: 0.82rem;

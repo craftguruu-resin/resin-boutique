@@ -325,6 +325,12 @@ body.page-account .nav-dock-link--active {
   font-weight: 600;
 }
 
+/* My orders: use full main column width (auth sheet default max-width is too narrow). */
+body.page-account .account-orders-panel.checkout-auth-sheet {
+  max-width: none;
+  width: 100%;
+}
+
 .account-shell--store {
   max-width: min(1600px, 98vw);
 }
