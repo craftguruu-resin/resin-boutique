@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="catalog-filters.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
 </head>
@@ -99,6 +100,7 @@
         </aside>
         <div class="home-landing-main">
       <div class="hero-atelier" id="heroStage">
+        <div class="hero-atelier__builtin-wrap" id="heroAtelierBuiltin">
         <div class="hero-atelier__shell">
           <div class="hero-atelier__light">
             <p class="hero-atelier__kicker">From the Jaipur bench</p>
@@ -200,6 +202,27 @@
             </div>
           </div>
         </div>
+        </div>
+        <div
+          class="hero-promo-carousel"
+          id="heroPromoCarousel"
+          hidden
+          aria-roledescription="carousel"
+          aria-label="Featured offers and announcements"
+        >
+          <div class="hero-promo-carousel__frame">
+            <img
+              class="hero-promo-carousel__img"
+              id="heroPromoImg"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+              alt=""
+              width="1200"
+              height="640"
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
       </div>
       <div class="hero-spotlight reveal" id="heroSpotlightStrip" hidden aria-label="Our best sellers from the catalog"></div>
         </div>
@@ -216,15 +239,39 @@
           </div>
           <p class="band-tagline">Clocks, keychains, coasters &amp; more</p>
         </header>
-        <div class="category-toolbar home-featured-toolbar" id="homeFeaturedToolbar" aria-label="Sort featured catalog lines">
-          <div class="category-toolbar__group">
-            <label class="category-toolbar__label" for="homeFeaturedSort">Sort lines</label>
-            <select id="homeFeaturedSort" class="category-toolbar__select">
-              <option value="name-asc">Name · A → Z</option>
-              <option value="name-desc">Name · Z → A</option>
-              <option value="price-asc">From price · low → high</option>
-              <option value="price-desc">From price · high → low</option>
-            </select>
+        <div class="cg-filter-panel cg-filter-panel--light home-featured-toolbar" id="homeFeaturedToolbar" aria-label="Filter and sort featured lines">
+          <div class="cg-filter-panel__glow" aria-hidden="true"></div>
+          <div class="cg-filter-panel__inner">
+            <div class="category-toolbar__group">
+              <label class="category-toolbar__label" for="homeFeaturedView">Filter</label>
+              <select id="homeFeaturedView" class="category-toolbar__select">
+                <option value="all">All lines</option>
+                <option value="photo">With preview photo</option>
+              </select>
+            </div>
+            <div class="category-toolbar__group">
+              <label class="category-toolbar__label" for="homeFeaturedSort">Sort lines</label>
+              <select id="homeFeaturedSort" class="category-toolbar__select">
+                <option value="name-asc">Name · A → Z</option>
+                <option value="name-desc">Name · Z → A</option>
+                <option value="price-asc">From price · low → high</option>
+                <option value="price-desc">From price · high → low</option>
+              </select>
+            </div>
+            <div class="category-toolbar__group cg-filter-panel__group--range">
+              <div class="cg-dual-range" id="homePriceDualWrap">
+                <div class="cg-dual-range__label-row">
+                  <span class="cg-dual-range__label">“From” price (₹)</span>
+                  <span class="cg-dual-range__value" id="homePriceRangeLabel">Any price</span>
+                </div>
+                <div class="cg-dual-range__track" aria-hidden="true"></div>
+                <input type="range" class="cg-dual-range__lo" id="homePriceRangeLo" aria-label="Minimum from-price for a line" />
+                <input type="range" class="cg-dual-range__hi" id="homePriceRangeHi" aria-label="Maximum from-price for a line" />
+              </div>
+              <input type="hidden" id="homePriceMin" value="" />
+              <input type="hidden" id="homePriceMax" value="" />
+            </div>
+            <button type="button" class="category-toolbar__clear" id="homeFeaturedFilterClear">Clear filters</button>
           </div>
         </div>
         <div class="product-grid" id="productGrid"></div>
@@ -475,6 +522,7 @@
     window.CRAFT_AUTH = window.CRAFT_AUTH || {};
   </script>
   <script src="auth-home.js"></script>
+  <script src="catalog-filter-ui.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

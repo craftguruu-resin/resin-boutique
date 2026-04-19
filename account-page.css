@@ -1,6 +1,6 @@
 /* My orders — elevated layout (works with existing checkout auth tokens) */
 .account-shell {
-  max-width: 1120px;
+  max-width: min(1480px, 96vw);
   margin: 0 auto;
   padding: clamp(1.25rem, 4vw, 2.5rem) clamp(1rem, 3vw, 1.5rem) 3.5rem;
 }
@@ -326,18 +326,19 @@ body.page-account .nav-dock-link--active {
 }
 
 .account-shell--store {
-  max-width: min(1540px, 96vw);
+  max-width: min(1600px, 98vw);
 }
 
 .account-layout {
-  display: grid;
-  grid-template-columns: minmax(11rem, 15rem) minmax(0, 1fr);
-  gap: clamp(1rem, 3vw, 2.75rem);
-  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+  align-items: stretch;
 }
 
 .account-layout__main {
   min-width: 0;
+  width: 100%;
 }
 
 .account-sidebar[hidden] {
@@ -345,27 +346,33 @@ body.page-account .nav-dock-link--active {
 }
 
 .account-sidebar {
-  position: sticky;
-  top: 5.5rem;
-  align-self: start;
-  border-radius: 0.85rem;
+  position: static;
+  top: auto;
+  align-self: stretch;
+  width: 100%;
+  border-radius: 1rem;
   border: 1px solid rgba(15, 23, 42, 0.08);
   background: #fff;
-  padding: 0.65rem 0;
+  padding: 0.5rem 0.65rem;
   box-shadow: 0 8px 28px rgba(15, 23, 42, 0.05);
 }
 
 .account-side-nav {
   display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  padding: 0 0.5rem;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  padding: 0 0.25rem;
 }
 
 .account-side-nav__rule {
-  height: 1px;
-  margin: 0.5rem 0.35rem;
-  background: rgba(15, 23, 42, 0.08);
+  width: 1px;
+  height: 1.35rem;
+  margin: 0 0.15rem;
+  flex-shrink: 0;
+  align-self: center;
+  background: rgba(15, 23, 42, 0.1);
 }
 
 .account-side-nav__link {
@@ -762,12 +769,8 @@ body.page-account .nav-dock-link--active {
 }
 
 @media (max-width: 880px) {
-  .account-layout {
-    grid-template-columns: 1fr;
-  }
-
-  .account-sidebar {
-    position: relative;
-    top: auto;
+  .account-side-nav__link {
+    font-size: 0.82rem;
+    padding: 0.5rem 0.65rem;
   }
 }

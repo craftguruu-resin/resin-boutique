@@ -3681,9 +3681,9 @@ body.product-page--oos .btn-add-lg {
 
 /* Checkout */
 .checkout-page {
-  max-width: 1080px;
+  max-width: min(1480px, 96vw);
   margin: 0 auto;
-  padding: 0 clamp(1.25rem, 4vw, 2rem) 3.5rem;
+  padding: 0 clamp(1.25rem, 3vw, 2rem) 3.5rem;
 }
 
 .checkout-page__head {
@@ -3932,13 +3932,19 @@ body.product-page--oos .btn-add-lg {
   min-width: 0;
 }
 
-@media (min-width: 900px) {
+@media (min-width: 860px) {
   .checkout-layout {
-    grid-template-columns: minmax(280px, 1.08fr) minmax(0, 1.12fr);
-    gap: 2.5rem;
+    grid-template-columns: minmax(340px, 1.55fr) minmax(280px, 1fr);
+    gap: 2rem 2.75rem;
     align-items: start;
   }
+}
 
+@media (min-width: 1200px) {
+  .checkout-layout {
+    grid-template-columns: minmax(420px, 1.65fr) minmax(300px, 0.95fr);
+    gap: 2.5rem 3rem;
+  }
 }
 
 .checkout-panel {
@@ -3959,7 +3965,7 @@ body.product-page--oos .btn-add-lg {
 .checkout-auth-sheet {
   position: relative;
   margin-bottom: 1.35rem;
-  max-width: 28rem;
+  max-width: min(40rem, 100%);
 }
 
 .checkout-auth-sheet__head {
@@ -5629,6 +5635,10 @@ a.home-auth-btn {
   padding: 0.75rem clamp(0.75rem, 3vw, 1.5rem) 0.25rem;
 }
 
+.hero-atelier__builtin-wrap {
+  width: 100%;
+}
+
 .hero-atelier__shell {
   position: relative;
   display: grid;
@@ -5639,6 +5649,75 @@ a.home-auth-btn {
   box-shadow:
     0 24px 80px rgba(15, 20, 35, 0.08),
     0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+}
+
+/* Vendor-published hero: replaces the entire split hero (copy + ring) with full-width images */
+.hero-promo-carousel {
+  display: none;
+  width: 100%;
+  max-width: min(1200px, 100%);
+  margin-inline: auto;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.hero-atelier--promo .hero-atelier__builtin-wrap {
+  display: none;
+}
+
+.hero-atelier--promo .hero-promo-carousel {
+  display: flex;
+  flex-direction: column;
+}
+
+.hero-promo-carousel__frame {
+  position: relative;
+  width: 100%;
+  min-height: min(72vh, 640px);
+  border-radius: clamp(1.5rem, 4vw, 2.75rem);
+  overflow: hidden;
+  background: #0f1218;
+  box-shadow:
+    0 24px 80px rgba(15, 20, 35, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+}
+
+@media (min-width: 900px) {
+  .hero-promo-carousel__frame {
+    min-height: min(68vh, 600px);
+  }
+}
+
+.hero-promo-carousel__img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
+  object-position: center;
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.hero-promo-carousel--slide .hero-promo-carousel__img {
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.38s ease;
+}
+
+.hero-promo-carousel__img.hero-promo-carousel__img--leave {
+  transform: translateX(-108%);
+  opacity: 0.35;
+}
+
+.hero-promo-carousel__img.hero-promo-carousel__img--enter-start {
+  transform: translateX(108%);
+  opacity: 0.96;
+  transition: none !important;
+}
+
+.hero-promo-carousel__img.hero-promo-carousel__img--enter-run {
+  transform: translateX(0);
+  opacity: 1;
+  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.38s ease;
 }
 
 @media (min-width: 900px) {
@@ -6224,6 +6303,18 @@ a.home-auth-btn {
   }
 
   .page-home .home-landing-main .hero-atelier__shell {
+    flex: 1 1 auto;
+    min-height: min(64vh, 640px);
+  }
+
+  .page-home .home-landing-main .hero-atelier--promo .hero-promo-carousel {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-width: 100%;
+    padding-bottom: 0.25rem;
+  }
+
+  .page-home .home-landing-main .hero-atelier--promo .hero-promo-carousel__frame {
     flex: 1 1 auto;
     min-height: min(64vh, 640px);
   }

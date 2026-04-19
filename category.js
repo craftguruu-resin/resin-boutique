@@ -99,6 +99,12 @@
   var gfInputWired = false;
   var categoryToolbarWired = false;
   var filterInputTimer = null;
+  var categoryPriceDualApi = null;
+  var categoryPriceDualWired = false;
+
+  function categoryFilterViewEl() {
+    return document.getElementById("categoryFilterView");
+  }
   function escapeHtml(s) {
     var d = document.createElement("div");
     d.textContent = s;
@@ -217,6 +223,12 @@
         return partialTokenMatch(productSearchHaystack(p), q);
       });
     }
+    var fv = categoryFilterViewEl();
+    if (fv && fv.value === "photo") {
+      arr = arr.filter(function (p) {
+        return !!(p && String(p.image || "").trim());
+      });
+    }
     var minEl = categoryPriceMinEl();
     var maxEl = categoryPriceMaxEl();
     var lo = minEl && String(minEl.value || "").trim() !== "" ? parseFloat(minEl.value, 10) : NaN;
@@ -276,9 +288,10 @@
     var maxEl = categoryPriceMaxEl();
     var rangeOn =
       (minEl && String(minEl.value || "").trim() !== "") || (maxEl && String(maxEl.value || "").trim() !== "");
+    var viewOn = !!(categoryFilterViewEl() && categoryFilterViewEl().value === "photo");
     var qOn = !!(q && String(q).trim());
     var totalInCat = liveCatalogList().length;
-    if (!qOn && !rangeOn && result.total === totalInCat) {
+    if (!qOn && !rangeOn && !viewOn && result.total === totalInCat) {
       h.textContent =
         "Showing all " + result.total + " piece(s). Use search in the header, or sort and price range above.";
     } else if (result.total === 0) {
@@ -331,38 +344,30 @@
         applyCatalogFilters(true);
       });
     }
+    var fv = categoryFilterViewEl();
+    if (fv) {
+      fv.addEventListener("change", function () {
+        applyCatalogFilters(true);
+      });
+    }
   }
 
   function wireCategoryToolbarOnce() {
     if (categoryToolbarWired) return;
     var minEl = categoryPriceMinEl();
     var maxEl = categoryPriceMaxEl();
-    if (!minEl && !maxEl) return;
+    if (!minEl || !maxEl) return;
     categoryToolbarWired = true;
-    function onRangeChange() {
-      if (filterInputTimer) clearTimeout(filterInputTimer);
-      filterInputTimer = setTimeout(function () {
-        filterInputTimer = null;
-        applyCatalogFilters(true);
-      }, 280);
-    }
-    if (minEl) {
-      minEl.addEventListener("change", function () {
-        applyCatalogFilters(true);
-      });
-      minEl.addEventListener("input", onRangeChange);
-    }
-    if (maxEl) {
-      maxEl.addEventListener("change", function () {
-        applyCatalogFilters(true);
-      });
-      maxEl.addEventListener("input", onRangeChange);
-    }
     var clr = document.getElementById("categoryFilterClear");
     if (clr) {
       clr.addEventListener("click", function () {
-        if (minEl) minEl.value = "";
-        if (maxEl) maxEl.value = "";
+        minEl.value = "";
+        maxEl.value = "";
+        if (categoryPriceDualApi && typeof categoryPriceDualApi.reset === "function") {
+          categoryPriceDualApi.reset();
+        }
+        var fv = categoryFilterViewEl();
+        if (fv) fv.value = "all";
         var s = categorySortEl();
         if (s) s.value = DEFAULT_SORT;
         syncHeaderSortFromToolbar();
@@ -587,6 +592,27 @@
       }
     }
     syncHeaderSortFromToolbar();
+
+    if (window.CraftguruCatalogFilterUi) {
+      if (!categoryPriceDualWired) {
+        categoryPriceDualWired = true;
+        categoryPriceDualApi = window.CraftguruCatalogFilterUi.wireDualPriceRange({
+          rootId: "categoryToolbar",
+          rangeMinId: "categoryPriceRangeLo",
+          rangeMaxId: "categoryPriceRangeHi",
+          inputMinId: "categoryPriceMin",
+          inputMaxId: "categoryPriceMax",
+          labelId: "categoryPriceRangeLabel",
+          absMax: 8000,
+          step: 25,
+          onCommit: function () {
+            applyCatalogFilters(true);
+          },
+        });
+      } else if (categoryPriceDualApi && categoryPriceDualApi.syncFromInputs) {
+        categoryPriceDualApi.syncFromInputs();
+      }
+    }
 
     var fs = getFilteredSortedItems();
     var pages = Math.max(1, Math.ceil(fs.items.length / (D.pageSize || 48)));

@@ -154,6 +154,8 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category_id);
 
+ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb;
+
 -- Storefront live prices (merged over data.js in the browser). One row per catalog product id.
 CREATE TABLE IF NOT EXISTS catalog_price_overrides (
   product_id VARCHAR(220) PRIMARY KEY,

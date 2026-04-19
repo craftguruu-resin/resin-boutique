@@ -90,25 +90,55 @@
     return out;
   }
 
-  function bootConfigurableHero() {
+  function stopHeroCarouselTimer() {
     if (cgHeroTimer) {
       clearInterval(cgHeroTimer);
       cgHeroTimer = null;
     }
+  }
+
+  function hidePromoHero() {
+    stopHeroCarouselTimer();
+    var stage = document.getElementById("heroStage");
+    var promo = document.getElementById("heroPromoCarousel");
+    var img = document.getElementById("heroPromoImg");
+    if (stage) {
+      stage.classList.remove("hero-atelier--promo");
+    }
+    if (promo) {
+      promo.setAttribute("hidden", "");
+      promo.classList.remove("hero-promo-carousel--slide");
+    }
+    if (img) {
+      img.classList.remove(
+        "hero-promo-carousel__img--leave",
+        "hero-promo-carousel__img--enter-start",
+        "hero-promo-carousel__img--enter-run"
+      );
+    }
+  }
+
+  function bootConfigurableHero() {
+    stopHeroCarouselTimer();
     var M = window.CraftguruCatalogMerge;
     var base = M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
-    if (!base) return;
+    if (!base) {
+      hidePromoHero();
+      return;
+    }
     fetch(base + "/api/catalog/hero-slides", { cache: "no-store" })
       .then(function (res) {
         return res.json();
       })
       .then(function (j) {
+        hidePromoHero();
         if (!j || !j.ok || !j.slides || !j.slides.length) return;
+
         var settings = j.heroSettings || {};
         var mode = String(settings.displayMode || "carousel").toLowerCase();
         var pinId = settings.singleSlideId != null ? Number(settings.singleSlideId) : NaN;
-        var intervalMs = Math.round(Number(settings.carouselIntervalMs) || 2000);
-        if (!Number.isFinite(intervalMs) || intervalMs < 1500) intervalMs = 2000;
+        var intervalMs = Math.round(Number(settings.carouselIntervalMs) || 5000);
+        if (!Number.isFinite(intervalMs) || intervalMs < 1500) intervalMs = 5000;
         if (intervalMs > 60000) intervalMs = 60000;
 
         var slides = j.slides.slice();
@@ -119,21 +149,22 @@
           if (pinned.length) slides = pinned;
         }
 
-        var img = document.querySelector(".hero-atelier__photo-img");
-        var ring = document.querySelector(".hero-atelier__photo-ring");
-        var floatscape = document.getElementById("heroFloatscape");
-        if (!img || !ring) return;
+        var stage = document.getElementById("heroStage");
+        var promo = document.getElementById("heroPromoCarousel");
+        var img = document.getElementById("heroPromoImg");
+        if (!stage || !promo || !img) return;
+
         function encodedSrc(rel) {
           var r = String(rel || "").trim();
           if (!r) return "";
           if (r.indexOf("http") === 0 || r.indexOf("//") === 0) return r;
           return D.imageUrl ? D.imageUrl(r) : r;
         }
-        function stripHeroMotionClasses() {
+        function stripPromoMotionClasses() {
           img.classList.remove(
-            "hero-atelier__photo-img--hero-leave",
-            "hero-atelier__photo-img--hero-enter-start",
-            "hero-atelier__photo-img--hero-enter-run"
+            "hero-promo-carousel__img--leave",
+            "hero-promo-carousel__img--enter-start",
+            "hero-promo-carousel__img--enter-run"
           );
         }
         function sameHeroSrc(a, b) {
@@ -147,52 +178,49 @@
             return false;
           }
         }
+
+        var useSlideMotion = slides.length > 1 && mode !== "single";
+        if (useSlideMotion) {
+          promo.classList.add("hero-promo-carousel--slide");
+        } else {
+          promo.classList.remove("hero-promo-carousel--slide");
+        }
+
+        stage.classList.add("hero-atelier--promo");
+        promo.removeAttribute("hidden");
+
         var idx = 0;
         var firstHeroGo = true;
         var heroBusy = false;
-        function applyRingAnimForSlide(s) {
-          var anim = String((s && s.animation) || "slide")
-            .toLowerCase()
-            .replace(/[^a-z0-9-]/g, "");
-          if (!anim) anim = "slide";
-          if (mode === "single" || anim === "none" || anim === "static") {
-            ring.removeAttribute("data-hero-anim");
-          } else if (anim === "slide") {
-            ring.removeAttribute("data-hero-anim");
-          } else {
-            ring.setAttribute("data-hero-anim", anim);
-          }
-        }
+
         function applySlide() {
           if (heroBusy) return;
 
-          if (slides.length <= 1 || mode === "single") {
-            ring.classList.remove("hero-atelier__photo-ring--slide-hero");
+          if (slides.length <= 1 || mode === "single" || !useSlideMotion) {
             var s0 = slides[idx % slides.length];
             idx += 1;
-            stripHeroMotionClasses();
-            applyRingAnimForSlide(s0);
-            img.src = encodedSrc(s0.image);
+            stripPromoMotionClasses();
+            img.alt = "Homepage promotion";
+            img.src = encodedSrc(s0 && s0.image);
             firstHeroGo = false;
             return;
           }
 
-          ring.classList.add("hero-atelier__photo-ring--slide-hero");
-          ring.removeAttribute("data-hero-anim");
-
           var s = slides[idx % slides.length];
-          var nextSrc = encodedSrc(s.image);
+          var nextSrc = encodedSrc(s && s.image);
           idx += 1;
 
           if (firstHeroGo) {
             firstHeroGo = false;
-            stripHeroMotionClasses();
+            stripPromoMotionClasses();
+            img.alt = "Homepage promotion";
             img.src = nextSrc;
             return;
           }
 
           if (prefersReducedMotion() || sameHeroSrc(img.getAttribute("src") || "", nextSrc)) {
-            stripHeroMotionClasses();
+            stripPromoMotionClasses();
+            img.alt = "Homepage promotion";
             img.src = nextSrc;
             return;
           }
@@ -208,18 +236,19 @@
             leaveConsumed = true;
             window.clearTimeout(leaveSafety);
             img.removeEventListener("transitionend", onLeaveEnd);
-            stripHeroMotionClasses();
+            stripPromoMotionClasses();
+            img.alt = "Homepage promotion";
             img.src = nextSrc;
-            img.classList.add("hero-atelier__photo-img--hero-enter-start");
+            img.classList.add("hero-promo-carousel__img--enter-start");
             void img.offsetWidth;
-            img.classList.remove("hero-atelier__photo-img--hero-enter-start");
-            img.classList.add("hero-atelier__photo-img--hero-enter-run");
+            img.classList.remove("hero-promo-carousel__img--enter-start");
+            img.classList.add("hero-promo-carousel__img--enter-run");
             var enterDone = false;
             var enterSafety = window.setTimeout(function () {
               img.removeEventListener("transitionend", onEnterEnd);
               if (!enterDone) {
                 enterDone = true;
-                img.classList.remove("hero-atelier__photo-img--hero-enter-run");
+                img.classList.remove("hero-promo-carousel__img--enter-run");
                 heroBusy = false;
               }
             }, 750);
@@ -229,7 +258,7 @@
               enterDone = true;
               window.clearTimeout(enterSafety);
               img.removeEventListener("transitionend", onEnterEnd);
-              img.classList.remove("hero-atelier__photo-img--hero-enter-run");
+              img.classList.remove("hero-promo-carousel__img--enter-run");
               heroBusy = false;
             }
             img.addEventListener("transitionend", onEnterEnd, { once: true });
@@ -248,20 +277,16 @@
             pre.src = nextSrc;
           }
           img.addEventListener("transitionend", onLeaveEnd, { once: true });
-          img.classList.add("hero-atelier__photo-img--hero-leave");
+          img.classList.add("hero-promo-carousel__img--leave");
         }
         applySlide();
-        if (slides.length > 1 && mode !== "single") {
+        if (useSlideMotion) {
           cgHeroTimer = setInterval(applySlide, intervalMs);
         }
-        if (floatscape) {
-          floatscape.classList.add("hero-floatscape--from-api");
-          requestAnimationFrame(function () {
-            floatscape.classList.add("hero-floatscape--burst-in");
-          });
-        }
       })
-      .catch(function () {});
+      .catch(function () {
+        hidePromoHero();
+      });
   }
 
   function paintHeroFloatCatalog() {
@@ -396,18 +421,79 @@
     });
   }
 
+  var homeExtraFilterWired = false;
+  var homeDualApi = null;
+
+  function wireHomeFiltersOnce() {
+    wireHomeFeaturedSortOnce();
+    var tb = document.getElementById("homeFeaturedToolbar");
+    if (!tb) return;
+    if (!homeExtraFilterWired) {
+      homeExtraFilterWired = true;
+      var v = document.getElementById("homeFeaturedView");
+      if (v) {
+        v.addEventListener("change", function () {
+          applyHomeCatalogFilter();
+          syncHomeFindUrl();
+        });
+      }
+      var clr = document.getElementById("homeFeaturedFilterClear");
+      if (clr) {
+        clr.addEventListener("click", function () {
+          if (v) v.value = "all";
+          var s = homeFeaturedSortEl();
+          if (s) s.value = DEFAULT_HOME_SORT;
+          var gq = document.getElementById("globalFindQuery");
+          if (gq) gq.value = "";
+          var minE = document.getElementById("homePriceMin");
+          var maxE = document.getElementById("homePriceMax");
+          if (minE) minE.value = "";
+          if (maxE) maxE.value = "";
+          var cap = document.getElementById("globalFindHomePriceCap");
+          if (cap) cap.value = "";
+          if (homeDualApi && typeof homeDualApi.reset === "function") homeDualApi.reset();
+          renderFeatured();
+          applyHomeCatalogFilter();
+          syncHomeFindUrl();
+        });
+      }
+      if (window.CraftguruCatalogFilterUi) {
+        homeDualApi = window.CraftguruCatalogFilterUi.wireDualPriceRange({
+          rootId: "homeFeaturedToolbar",
+          rangeMinId: "homePriceRangeLo",
+          rangeMaxId: "homePriceRangeHi",
+          inputMinId: "homePriceMin",
+          inputMaxId: "homePriceMax",
+          labelId: "homePriceRangeLabel",
+          absMax: 12000,
+          step: 50,
+          onCommit: function () {
+            applyHomeCatalogFilter();
+            syncHomeFindUrl();
+          },
+        });
+      }
+    } else if (homeDualApi && homeDualApi.syncFromInputs) {
+      homeDualApi.syncFromInputs();
+    }
+  }
+
   function syncHomeFindUrl() {
     try {
       var u = new URL(window.location.href);
       var inp = document.getElementById("globalFindQuery");
-      var cap = document.getElementById("globalFindHomePriceCap");
       var sortEl = document.getElementById("homeFeaturedSort");
+      var minE = document.getElementById("homePriceMin");
+      var maxE = document.getElementById("homePriceMax");
       var q = inp && inp.value.trim();
-      var m = cap && cap.value;
       var sort = sortEl && sortEl.value;
+      var lo = minE && String(minE.value || "").trim();
+      var hi = maxE && String(maxE.value || "").trim();
       if (q) u.searchParams.set("q", q);
       else u.searchParams.delete("q");
-      if (m) u.searchParams.set("maxp", m);
+      if (lo && /^[0-9]+(\.[0-9]+)?$/.test(lo)) u.searchParams.set("minp", lo);
+      else u.searchParams.delete("minp");
+      if (hi && /^[0-9]+(\.[0-9]+)?$/.test(hi)) u.searchParams.set("maxp", hi);
       else u.searchParams.delete("maxp");
       if (sort && sort !== DEFAULT_HOME_SORT) u.searchParams.set("sort", sort);
       else u.searchParams.delete("sort");
@@ -425,7 +511,14 @@
     var capEl = document.getElementById("globalFindHomePriceCap");
     var q = inp ? inp.value.trim() : "";
     var hint = document.getElementById("globalFindHint");
+    var minE = document.getElementById("homePriceMin");
+    var maxE = document.getElementById("homePriceMax");
+    var lo = minE && String(minE.value || "").trim() !== "" ? parseFloat(minE.value, 10) : NaN;
+    var hi = maxE && String(maxE.value || "").trim() !== "" ? parseFloat(maxE.value, 10) : NaN;
     var cap = capEl && capEl.value ? parseFloat(capEl.value, 10) : NaN;
+    if (!Number.isFinite(hi) && Number.isFinite(cap)) hi = cap;
+    var viewEl = document.getElementById("homeFeaturedView");
+    var viewPhoto = viewEl && viewEl.value === "photo";
 
     if (els.categoryGrid) {
       els.categoryGrid.querySelectorAll(".category-pill").forEach(function (pill) {
@@ -441,8 +534,11 @@
         var t = (card.getAttribute("data-search-text") || "").toLowerCase();
         var nameOk = partialTokenMatch(t, q);
         var mp = parseFloat(card.getAttribute("data-min-price") || "", 10);
-        var priceOk = isNaN(cap) ? true : !isNaN(mp) && mp <= cap;
-        var match = nameOk && priceOk;
+        var priceOk = true;
+        if (Number.isFinite(lo)) priceOk = priceOk && !isNaN(mp) && mp >= lo;
+        if (Number.isFinite(hi)) priceOk = priceOk && !isNaN(mp) && mp <= hi;
+        var previewOk = !viewPhoto || card.getAttribute("data-has-preview") === "1";
+        var match = nameOk && priceOk && previewOk;
         card.classList.toggle("is-catalog-hidden", !match);
         if (match) n++;
       });
@@ -451,7 +547,14 @@
         else {
           var parts = [];
           if (q) parts.push(n + "/" + total + " name matches");
-          if (!isNaN(cap)) parts.push("≤ ₹" + cap + " “from”");
+          if (Number.isFinite(lo) || Number.isFinite(hi)) {
+            var pr =
+              (Number.isFinite(lo) ? "from ₹" + lo : "") +
+              (Number.isFinite(lo) && Number.isFinite(hi) ? " – " : "") +
+              (Number.isFinite(hi) ? "₹" + hi : "");
+            parts.push(pr);
+          }
+          if (viewPhoto) parts.push("preview photo");
           hint.textContent = parts.length ? "Showing " + parts.join(" · ") + "." : "";
         }
       }
@@ -493,12 +596,12 @@
 
   function renderFeatured() {
     if (!els.productGrid) return;
-    wireHomeFeaturedSortOnce();
+    wireHomeFiltersOnce();
     els.productGrid.className = "featured-cat-grid";
     els.productGrid.innerHTML = "";
     if (els.filterLabel) {
       els.filterLabel.textContent =
-        "Sort lines below (default A→Z). Use search and max price in the header to narrow cards, then open a category—full MRP on each product page.";
+        "Use the toolbar: filter type, sort, and drag the price range. Header search still narrows names. Open a line for full MRP on each product.";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
@@ -520,6 +623,7 @@
       }
       card.setAttribute("data-search-text", bits.join(" "));
       var imgRel = preview && preview.image ? preview.image : "";
+      card.setAttribute("data-has-preview", imgRel ? "1" : "0");
       var catHref = "category.html?cat=" + encodeURIComponent(cat.id);
       var imgBlock = imgRel
         ? '<a class="featured-cat-card__media-hit" href="' +
@@ -813,14 +917,23 @@
   var hp = new URLSearchParams(window.location.search);
   var bootQ = (hp.get("q") || "").trim();
   var bootMaxp = (hp.get("maxp") || "").trim();
+  var bootMinp = (hp.get("minp") || "").trim();
   var bootSort = hp.get("sort") || DEFAULT_HOME_SORT;
   var gq = document.getElementById("globalFindQuery");
   var gCap = document.getElementById("globalFindHomePriceCap");
   var gSort = document.getElementById("homeFeaturedSort");
+  var hMin = document.getElementById("homePriceMin");
+  var hMax = document.getElementById("homePriceMax");
   if (bootQ && gq) gq.value = bootQ;
-  if (bootMaxp && gCap) {
-    var ok = { "35": 1, "50": 1, "75": 1, "100": 1, "150": 1, "250": 1, "500": 1, "1000": 1 };
-    if (ok[bootMaxp]) gCap.value = bootMaxp;
+  var capOk = { "35": 1, "50": 1, "75": 1, "100": 1, "150": 1, "250": 1, "500": 1, "1000": 1 };
+  if (bootMinp && hMin && /^[0-9]+(\.[0-9]+)?$/.test(bootMinp)) hMin.value = bootMinp;
+  if (bootMaxp && hMax) {
+    if (capOk[bootMaxp]) {
+      hMax.value = bootMaxp;
+      if (gCap) gCap.value = bootMaxp;
+    } else if (/^[0-9]+(\.[0-9]+)?$/.test(bootMaxp)) {
+      hMax.value = bootMaxp;
+    }
   }
   if (gSort) {
     var sortOk = { "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 };
@@ -834,9 +947,6 @@
   renderHeroSpotlight();
   if (gq) {
     gq.addEventListener("input", applyHomeCatalogFilter);
-  }
-  if (gCap) {
-    gCap.addEventListener("change", applyHomeCatalogFilter);
   }
   observeReveals();
   bindHeroTilt();

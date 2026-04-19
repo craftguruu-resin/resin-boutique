@@ -5,7 +5,7 @@ var poolMod = require("./db/pool.js");
 function defaultHeroSettings() {
   return {
     displayMode: "carousel",
-    carouselIntervalMs: 2000,
+    carouselIntervalMs: 5000,
     singleSlideId: null,
     customHeroEnabled: true,
   };
@@ -13,7 +13,7 @@ function defaultHeroSettings() {
 
 function clampIntervalMs(v) {
   var n = Math.round(Number(v));
-  if (!Number.isFinite(n)) return 2000;
+  if (!Number.isFinite(n)) return 5000;
   return Math.min(60000, Math.max(1500, n));
 }
 
@@ -192,6 +192,11 @@ function insertSlide(opts, cb) {
       cb(new Error("imagePath required"));
     });
   }
+  if (img.length > 8192) {
+    return process.nextTick(function () {
+      cb(new Error("image path or URL is too long"));
+    });
+  }
   var anim = String((opts && opts.animation) || "orbit")
     .trim()
     .slice(0, 40);
@@ -221,6 +226,52 @@ function nextHeroSortStart(cb) {
       cb(null, n);
     })
     .catch(cb);
+}
+
+/**
+ * @param {string[]} urls
+ * @param {string} animation
+ * @param {(err: Error|null, rows?: object[]) => void} cb
+ */
+function insertSlidesFromUrls(urls, animation, cb) {
+  var list = (urls || [])
+    .map(function (u) {
+      return String(u || "").trim();
+    })
+    .filter(Boolean);
+  if (!list.length) {
+    return process.nextTick(function () {
+      cb(new Error("At least one image URL is required"));
+    });
+  }
+  if (list.length > 25) {
+    return process.nextTick(function () {
+      cb(new Error("Maximum 25 URLs per request"));
+    });
+  }
+  var anim = String(animation || "slide")
+    .trim()
+    .slice(0, 40);
+  nextHeroSortStart(function (eSort, sort0) {
+    if (eSort) return cb(eSort);
+    var created = [];
+    var order = sort0;
+    var i = 0;
+    function step() {
+      if (i >= list.length) {
+        return cb(null, created);
+      }
+      var u = list[i];
+      i += 1;
+      insertSlide({ imagePath: u, animation: anim, sortOrder: order }, function (insErr, row) {
+        if (insErr) return cb(insErr);
+        created.push(row);
+        order += 1;
+        step();
+      });
+    }
+    step();
+  });
 }
 
 function deleteSlide(id, cb) {
@@ -253,6 +304,7 @@ module.exports = {
   getHeroSettings: getHeroSettings,
   saveHeroSettings: saveHeroSettings,
   insertSlide: insertSlide,
+  insertSlidesFromUrls: insertSlidesFromUrls,
   nextHeroSortStart: nextHeroSortStart,
   deleteSlide: deleteSlide,
 };

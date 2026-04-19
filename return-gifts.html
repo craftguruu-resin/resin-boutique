@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="catalog-filters.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
 </head>
@@ -102,15 +103,39 @@
             <p class="band-sub">Pieces flagged as return gifts in the vendor catalog — open any card for sizes and MRP.</p>
           </div>
         </div>
-        <div class="category-toolbar" id="rgToolbar" aria-label="Sort return gifts">
-          <div class="category-toolbar__group">
-            <label class="category-toolbar__label" for="rgSortSelect">Sort</label>
-            <select id="rgSortSelect" class="category-toolbar__select">
-              <option value="name-asc">Name · A → Z</option>
-              <option value="name-desc">Name · Z → A</option>
-              <option value="price-asc">From price · low → high</option>
-              <option value="price-desc">From price · high → low</option>
-            </select>
+        <div class="cg-filter-panel cg-filter-panel--light" id="rgToolbar" aria-label="Filter and sort return gifts">
+          <div class="cg-filter-panel__glow" aria-hidden="true"></div>
+          <div class="cg-filter-panel__inner">
+            <div class="category-toolbar__group">
+              <label class="category-toolbar__label" for="rgFilterView">Filter</label>
+              <select id="rgFilterView" class="category-toolbar__select">
+                <option value="all">All return gifts</option>
+                <option value="photo">With product photo</option>
+              </select>
+            </div>
+            <div class="category-toolbar__group">
+              <label class="category-toolbar__label" for="rgSortSelect">Sort</label>
+              <select id="rgSortSelect" class="category-toolbar__select">
+                <option value="name-asc">Name · A → Z</option>
+                <option value="name-desc">Name · Z → A</option>
+                <option value="price-asc">From price · low → high</option>
+                <option value="price-desc">From price · high → low</option>
+              </select>
+            </div>
+            <div class="category-toolbar__group cg-filter-panel__group--range">
+              <div class="cg-dual-range" id="rgPriceDualWrap">
+                <div class="cg-dual-range__label-row">
+                  <span class="cg-dual-range__label">Price range (₹)</span>
+                  <span class="cg-dual-range__value" id="rgPriceRangeLabel">Any price</span>
+                </div>
+                <div class="cg-dual-range__track" aria-hidden="true"></div>
+                <input type="range" class="cg-dual-range__lo" id="rgPriceRangeLo" aria-label="Minimum from-price" />
+                <input type="range" class="cg-dual-range__hi" id="rgPriceRangeHi" aria-label="Maximum from-price" />
+              </div>
+              <input type="hidden" id="rgPriceMin" value="" />
+              <input type="hidden" id="rgPriceMax" value="" />
+            </div>
+            <button type="button" class="category-toolbar__clear" id="rgFilterClear">Clear filters</button>
           </div>
         </div>
         <div class="product-grid" id="rgGrid"></div>
@@ -213,6 +238,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
+  <script src="catalog-filter-ui.js"></script>
   <script src="return-gifts.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

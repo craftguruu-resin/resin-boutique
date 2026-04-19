@@ -26,6 +26,14 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
+  function showUrlMsg(text, isErr) {
+    var el = document.getElementById("vhUrlMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
+    el.style.color = isErr ? "#b42318" : "";
+  }
+
   function syncCustomHeroUi(settings) {
     var togg = document.getElementById("vhCustomToggle");
     if (!togg || !settings) return;
@@ -133,7 +141,7 @@
   function applyPlaybackForm(settings) {
     var inp = document.getElementById("vhIntervalSec");
     if (!inp || !settings) return;
-    var sec = (Number(settings.carouselIntervalMs) || 2000) / 1000;
+    var sec = (Number(settings.carouselIntervalMs) || 5000) / 1000;
     if (!Number.isFinite(sec)) sec = 2;
     inp.value = String(Math.round(sec * 10) / 10);
     syncCustomHeroUi(settings);
@@ -193,7 +201,14 @@
         (isPinned ? ' <span class="vs-pill" style="margin-left:0.35rem">Fixed hero</span>' : "") +
         "<br /><span class=\"vs-muted\">" +
         esc(s.animation || "orbit") +
-        "</span></div>" +
+        "</span>" +
+        (String(s.image || "").indexOf("http") === 0
+          ? "<br /><span class=\"vs-muted\" style=\"word-break:break-all;font-size:0.78rem;opacity:0.9\">" +
+            esc(String(s.image).slice(0, 140)) +
+            (String(s.image).length > 140 ? "…" : "") +
+            "</span>"
+          : "") +
+        "</div>" +
         '<button type="button" class="vs-btn vs-btn--ghost vh-pin" data-id="' +
         esc(String(s.id)) +
         '">Set fixed hero</button>' +
@@ -206,7 +221,10 @@
   }
 
   function loadSlides(opts) {
-    if (!opts || !opts.quiet) showMsg("", false);
+    if (!opts || !opts.quiet) {
+      showMsg("", false);
+      showUrlMsg("", false);
+    }
     return fetch(base() + "/api/vendor/hero-slides", {
       cache: "no-store",
       headers: Object.assign({}, V.authHeaders()),
@@ -271,6 +289,57 @@
           })
           .catch(function (e) {
             showMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
+
+    var urlForm = document.getElementById("vhUrlForm");
+    if (urlForm) {
+      urlForm.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var ta = document.getElementById("vhUrlBulk");
+        var raw = String((ta && ta.value) || "");
+        var lines = raw
+          .split(/[\n\r,]+/)
+          .map(function (x) {
+            return x.trim();
+          })
+          .filter(Boolean);
+        if (!lines.length) {
+          showUrlMsg("Paste at least one full image URL (https://…).", true);
+          return;
+        }
+        if (lines.length > 25) {
+          showUrlMsg("Maximum 25 URLs per save. Remove extras and try again.", true);
+          return;
+        }
+        var animU = (document.getElementById("vhUrlAnim") && document.getElementById("vhUrlAnim").value) || "slide";
+        showUrlMsg("Saving…", false);
+        fetch(base() + "/api/vendor/hero-slides", {
+          method: "POST",
+          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+          body: JSON.stringify({ imageUrls: lines, animation: animU }),
+          cache: "no-store",
+        })
+          .then(function (res) {
+            return res.text().then(function (text) {
+              var j = {};
+              try {
+                j = text ? JSON.parse(text) : {};
+              } catch (_) {}
+              if (!res.ok || !j.ok) {
+                throw new Error((j && j.error) || res.statusText || "Save failed");
+              }
+              return j;
+            });
+          })
+          .then(function () {
+            if (ta) ta.value = "";
+            showUrlMsg("Added " + lines.length + " slide(s) from URL(s).", false);
+            return loadSlides();
+          })
+          .catch(function (e) {
+            showUrlMsg(String((e && e.message) || e), true);
           });
       });
     }
