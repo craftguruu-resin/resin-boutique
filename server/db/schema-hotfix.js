@@ -28,6 +28,11 @@ function ensureVendorInventoryColumns() {
   var statements = [
     /* Run early: vendor catalog/inventory queries SELECT products.size_labels immediately after listen. */
     "ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
+    /* listOverridesMap() reads these before products — was missing and caused column "size_labels" does not exist on prod */
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_s NUMERIC(14, 2)",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_m NUMERIC(14, 2)",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_l NUMERIC(14, 2)",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS category_id VARCHAR(80) NOT NULL DEFAULT ''",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT ''",
     "CREATE INDEX IF NOT EXISTS idx_vendor_inventory_category ON vendor_inventory_items (category_id)",

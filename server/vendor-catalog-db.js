@@ -3,6 +3,47 @@
 var poolMod = require("./db/pool.js");
 var catalogFromData = require("./catalog-from-data.js");
 
+/**
+ * listOverridesMap SELECTs size_labels + stock_* from catalog_price_overrides before products.* runs.
+ * Older DBs often had overrides without these columns — same PG error text as products.size_labels.
+ */
+var catalogOverridesSchemaPromise = null;
+function ensureCatalogOverridesColumns(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null);
+    });
+  }
+  if (!catalogOverridesSchemaPromise) {
+    var chain = Promise.resolve();
+    [
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_s NUMERIC(14, 2)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_m NUMERIC(14, 2)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_l NUMERIC(14, 2)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS out_of_stock BOOLEAN NOT NULL DEFAULT false",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
+    ].forEach(function (sql) {
+      chain = chain.then(function () {
+        return pool.query(sql);
+      });
+    });
+    catalogOverridesSchemaPromise = chain.catch(function (err) {
+      catalogOverridesSchemaPromise = null;
+      return Promise.reject(err);
+    });
+  }
+  catalogOverridesSchemaPromise
+    .then(function () {
+      cb(null);
+    })
+    .catch(function (e) {
+      cb(e);
+    });
+}
+
 function parseSizeLabelsCell(raw) {
   if (raw == null) return {};
   if (typeof raw === "string") {
@@ -73,32 +114,35 @@ function listOverridesMap(cb) {
       cb(null, {});
     });
   }
-  pool
-    .query(
-      "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels " +
-        "FROM catalog_price_overrides ORDER BY product_id"
-    )
-    .then(function (r) {
-      var m = {};
-      r.rows.forEach(function (row) {
-        var pid = String(row.product_id != null ? row.product_id : "").trim();
-        if (!pid) return;
-        var sl = parseSizeLabelsCell(row.size_labels);
-        m[pid] = {
-          s: row.price_s != null ? Number(row.price_s) : null,
-          m: row.price_m != null ? Number(row.price_m) : null,
-          l: row.price_l != null ? Number(row.price_l) : null,
-          stockS: row.stock_s != null ? Number(row.stock_s) : null,
-          stockM: row.stock_m != null ? Number(row.stock_m) : null,
-          stockL: row.stock_l != null ? Number(row.stock_l) : null,
-          listed: row.listed !== false,
-          returnGift: row.return_gift === true,
-          sizeLabels: sl,
-        };
-      });
-      cb(null, m);
-    })
-    .catch(cb);
+  ensureCatalogOverridesColumns(function (e0) {
+    if (e0) return cb(e0);
+    pool
+      .query(
+        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels " +
+          "FROM catalog_price_overrides ORDER BY product_id"
+      )
+      .then(function (r) {
+        var m = {};
+        r.rows.forEach(function (row) {
+          var pid = String(row.product_id != null ? row.product_id : "").trim();
+          if (!pid) return;
+          var sl = parseSizeLabelsCell(row.size_labels);
+          m[pid] = {
+            s: row.price_s != null ? Number(row.price_s) : null,
+            m: row.price_m != null ? Number(row.price_m) : null,
+            l: row.price_l != null ? Number(row.price_l) : null,
+            stockS: row.stock_s != null ? Number(row.stock_s) : null,
+            stockM: row.stock_m != null ? Number(row.stock_m) : null,
+            stockL: row.stock_l != null ? Number(row.stock_l) : null,
+            listed: row.listed !== false,
+            returnGift: row.return_gift === true,
+            sizeLabels: sl,
+          };
+        });
+        cb(null, m);
+      })
+      .catch(cb);
+  });
 }
 
 function resolveBasePrices(productId, cb) {
