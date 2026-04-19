@@ -2129,7 +2129,8 @@ app.get("/api/vendor/raw-materials", function (req, res) {
     if (!ok) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
-    rawMaterialsDb.listAll(function (e2, list) {
+    var q = String((req.query && req.query.q) || "").trim();
+    rawMaterialsDb.listAll(q, function (e2, list) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
@@ -2158,6 +2159,7 @@ function rawMaterialPayloadFromBody(b, file) {
     name: firstField(b && b.name),
     description: firstField(b && b.description),
     note: firstField(b && b.note),
+    sku: firstField(b && b.sku),
     priceInr: priceInr,
     mrpInr: mrpInr === "" || mrpInr == null ? null : mrpInr,
     options: opts && typeof opts === "object" ? opts : {},
@@ -2186,6 +2188,7 @@ app.post(
             name: jb.name,
             description: jb.description,
             note: jb.note,
+            sku: jb.sku,
             priceInr: jb.priceInr,
             mrpInr: jb.mrpInr,
             options: jb.options,
@@ -2195,7 +2198,14 @@ app.post(
           function (e2, row) {
             if (e2) {
               var msg = String((e2 && e2.message) || e2);
-              var code = msg.indexOf("required") >= 0 || msg.indexOf("Add a main image") >= 0 || msg.indexOf("Quantity") >= 0 || msg.indexOf("Colour") >= 0 ? 400 : 500;
+              var code =
+                msg.indexOf("required") >= 0 ||
+                msg.indexOf("Add a main image") >= 0 ||
+                msg.indexOf("Quantity") >= 0 ||
+                msg.indexOf("Colour") >= 0 ||
+                msg.indexOf("SKU") >= 0
+                  ? 400
+                  : 500;
               return res.status(code).json({ ok: false, error: msg });
             }
             res.setHeader("Cache-Control", "no-store");
@@ -2210,7 +2220,14 @@ app.post(
         function (e2, row) {
           if (e2) {
             var msg2 = String((e2 && e2.message) || e2);
-            var code2 = msg2.indexOf("required") >= 0 || msg2.indexOf("Add a main image") >= 0 || msg2.indexOf("Quantity") >= 0 || msg2.indexOf("Colour") >= 0 ? 400 : 500;
+            var code2 =
+              msg2.indexOf("required") >= 0 ||
+              msg2.indexOf("Add a main image") >= 0 ||
+              msg2.indexOf("Quantity") >= 0 ||
+              msg2.indexOf("Colour") >= 0 ||
+              msg2.indexOf("SKU") >= 0
+                ? 400
+                : 500;
             return res.status(code2).json({ ok: false, error: msg2 });
           }
           res.setHeader("Cache-Control", "no-store");
@@ -2242,6 +2259,7 @@ app.put(
             name: jb.name,
             description: jb.description,
             note: jb.note,
+            sku: jb.sku,
             priceInr: jb.priceInr,
             mrpInr: jb.mrpInr,
             options: jb.options,
@@ -2250,7 +2268,15 @@ app.put(
           function (e2, row) {
             if (e2) {
               var msg = String((e2 && e2.message) || e2);
-              var code = msg.indexOf("Not found") >= 0 ? 404 : msg.indexOf("Quantity") >= 0 || msg.indexOf("Colour") >= 0 ? 400 : 500;
+              var code =
+                msg.indexOf("Not found") >= 0
+                  ? 404
+                  : msg.indexOf("Quantity") >= 0 ||
+                      msg.indexOf("Colour") >= 0 ||
+                      msg.indexOf("SKU") >= 0 ||
+                      msg.indexOf("Name is") >= 0
+                    ? 400
+                    : 500;
               return res.status(code).json({ ok: false, error: msg });
             }
             res.setHeader("Cache-Control", "no-store");
@@ -2262,7 +2288,15 @@ app.put(
       rawMaterialsDb.updateRow(id, rawMaterialPayloadFromBody(req.body || {}, req.file), function (e2, row) {
         if (e2) {
           var msg2 = String((e2 && e2.message) || e2);
-          var code2 = msg2.indexOf("Not found") >= 0 ? 404 : msg2.indexOf("Quantity") >= 0 || msg2.indexOf("Colour") >= 0 ? 400 : 500;
+          var code2 =
+            msg2.indexOf("Not found") >= 0
+              ? 404
+              : msg2.indexOf("Quantity") >= 0 ||
+                  msg2.indexOf("Colour") >= 0 ||
+                  msg2.indexOf("SKU") >= 0 ||
+                  msg2.indexOf("Name is") >= 0
+                ? 400
+                : 500;
           return res.status(code2).json({ ok: false, error: msg2 });
         }
         res.setHeader("Cache-Control", "no-store");

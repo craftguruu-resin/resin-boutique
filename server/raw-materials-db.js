@@ -58,6 +58,80 @@ function parseOptionsCell(raw) {
   return {};
 }
 
+function normalizeSkuInput(raw) {
+  var t = String(raw == null ? "" : raw)
+    .trim()
+    .slice(0, 120);
+  if (!t) return "";
+  if (!/^[A-Za-z0-9][A-Za-z0-9._\s-]*$/.test(t)) {
+    throw new Error("SKU may only use letters, numbers, spaces, dot, underscore, and hyphen (max 120 characters).");
+  }
+  return t.toUpperCase().replace(/\s+/g, "-");
+}
+
+/** Safe ILIKE pattern: strips % and _ so user input cannot widen the match. */
+function iLikeContainsPattern(needle) {
+  var t = String(needle || "")
+    .trim()
+    .slice(0, 200)
+    .replace(/%/g, "")
+    .replace(/_/g, "");
+  if (!t) return null;
+  return "%" + t + "%";
+}
+
+function resolveSkuForInsert(pool, opts, cb) {
+  var raw = opts && opts.sku != null ? String(opts.sku).trim() : "";
+  var norm = "";
+  try {
+    norm = raw ? normalizeSkuInput(raw) : "";
+  } catch (e) {
+    return process.nextTick(function () {
+      cb(e);
+    });
+  }
+  function tryAuto(skuTry, attempt) {
+    if (attempt > 12) return cb(new Error("Could not allocate a unique SKU; try again."));
+    pool
+      .query("SELECT 1 FROM raw_materials WHERE lower(trim(sku)) = lower(trim($1)) LIMIT 1", [skuTry])
+      .then(function (r) {
+        if (r.rows.length) {
+          var next = "RM-" + crypto.randomBytes(4).toString("hex").toUpperCase();
+          return tryAuto(next, attempt + 1);
+        }
+        cb(null, skuTry);
+      })
+      .catch(cb);
+  }
+  if (norm) {
+    return pool
+      .query("SELECT 1 FROM raw_materials WHERE lower(trim(sku)) = lower(trim($1)) LIMIT 1", [norm])
+      .then(function (r) {
+        if (r.rows.length) {
+          return cb(new Error("That SKU is already in use."));
+        }
+        cb(null, norm);
+      })
+      .catch(cb);
+  }
+  tryAuto("RM-" + crypto.randomBytes(4).toString("hex").toUpperCase(), 0);
+}
+
+function assertSkuUniqueForUpdate(pool, rid, skuNorm, cb) {
+  pool
+    .query(
+      "SELECT 1 FROM raw_materials WHERE lower(trim(sku)) = lower(trim($1)) AND id <> $2 LIMIT 1",
+      [skuNorm, rid]
+    )
+    .then(function (r) {
+      if (r.rows.length) {
+        return cb(new Error("That SKU is already used by another product."));
+      }
+      cb(null);
+    })
+    .catch(cb);
+}
+
 function parseOptionalMoney(v) {
   if (v == null || v === "") return null;
   var n = Number(v);
@@ -182,6 +256,7 @@ function mapRow(row) {
   var mrp = row.mrp_inr != null ? Number(row.mrp_inr) : null;
   return {
     id: row.id,
+    sku: String(row.sku || "").trim(),
     name: String(row.name || ""),
     description: String(row.description || ""),
     image: String(row.image_path || ""),
@@ -202,7 +277,7 @@ function listActive(cb) {
   }
   pool
     .query(
-      "SELECT id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE is_active = true ORDER BY updated_at DESC"
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE is_active = true ORDER BY updated_at DESC"
     )
     .then(function (r) {
       cb(null, (r.rows || []).map(mapRow));
@@ -210,17 +285,29 @@ function listActive(cb) {
     .catch(cb);
 }
 
-function listAll(cb) {
+function listAll(search, cb) {
+  if (typeof search === "function") {
+    cb = search;
+    search = "";
+  }
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
       cb(null, []);
     });
   }
+  var needle = String(search || "").trim().slice(0, 200);
+  var sql =
+    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, updated_at FROM raw_materials";
+  var params = [];
+  var pat = iLikeContainsPattern(needle);
+  if (pat) {
+    sql += " WHERE (name ILIKE $1 OR sku ILIKE $1 OR id ILIKE $1 OR description ILIKE $1)";
+    params.push(pat);
+  }
+  sql += " ORDER BY updated_at DESC";
   pool
-    .query(
-      "SELECT id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, updated_at FROM raw_materials ORDER BY updated_at DESC"
-    )
+    .query(sql, params)
     .then(function (r) {
       cb(null, (r.rows || []).map(mapRow));
     })
@@ -237,7 +324,7 @@ function getActiveById(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1 AND is_active = true",
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1 AND is_active = true",
       [rid]
     )
     .then(function (r) {
@@ -257,7 +344,7 @@ function getByIdForVendor(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1",
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1",
       [rid]
     )
     .then(function (r) {
@@ -334,19 +421,22 @@ function createRow(opts, cb) {
   var heroFromOpts = resolveHeroImagePath(normOpts);
 
   function insertWithImage(imagePath) {
-    var id = "raw-mat--" + crypto.randomBytes(6).toString("hex");
-    pool
-      .query(
-        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb) RETURNING id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json",
-        [id, name, desc, imagePath, note, priceInr, mrpInr, JSON.stringify(normOpts)]
-      )
-      .then(function (r) {
-        try {
-          catalogFromData.invalidateCache();
-        } catch (_) {}
-        cb(null, mapRow(r.rows[0]));
-      })
-      .catch(cb);
+    resolveSkuForInsert(pool, opts, function (skuErr, skuFinal) {
+      if (skuErr) return cb(skuErr);
+      var newId = "raw-mat--" + crypto.randomBytes(6).toString("hex");
+      pool
+        .query(
+          "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9) RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json",
+          [newId, name, desc, imagePath, note, priceInr, mrpInr, JSON.stringify(normOpts), skuFinal]
+        )
+        .then(function (r) {
+          try {
+            catalogFromData.invalidateCache();
+          } catch (_) {}
+          cb(null, mapRow(r.rows[0]));
+        })
+        .catch(cb);
+    });
   }
 
   if (buf && Buffer.isBuffer(buf) && buf.length >= 32) {
@@ -419,42 +509,63 @@ function updateRow(id, opts, cb) {
     });
   }
 
-  function doUpdate(imagePath) {
-    var params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), rid];
-    var sql =
-      "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, updated_at = now() WHERE id = $7 RETURNING id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
-    if (imagePath != null) {
-      sql =
-        "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, image_path = $8, updated_at = now() WHERE id = $7 RETURNING id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
-      params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), rid, imagePath];
-    }
-    pool
-      .query(sql, params)
-      .then(function (r) {
-        if (!r.rowCount) throw new Error("Not found");
-        try {
-          catalogFromData.invalidateCache();
-        } catch (_) {}
-        cb(null, mapRow(r.rows[0]));
-      })
-      .catch(cb);
-  }
-
-  var buf = opts && opts.imageBuffer;
-  var url = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : null;
-
-  if (buf && Buffer.isBuffer(buf) && buf.length >= 32) {
-    persistImageBuffer(buf, opts.mime, name, function (err, rel) {
-      if (err) return cb(err);
-      doUpdate(rel);
+  var skuUpd;
+  try {
+    skuUpd = normalizeSkuInput(String((opts && opts.sku) || ""));
+  } catch (eSk) {
+    return process.nextTick(function () {
+      cb(eSk);
     });
-    return;
   }
-  if (url && (url.indexOf("http") === 0 || url.indexOf("//") === 0)) {
-    doUpdate(url.slice(0, 2000));
-    return;
+  if (!skuUpd) {
+    return process.nextTick(function () {
+      cb(new Error("SKU is required."));
+    });
   }
-  doUpdate(null);
+
+  assertSkuUniqueForUpdate(pool, rid, skuUpd, function (errU) {
+    if (errU) return cb(errU);
+
+    function doUpdate(imagePath) {
+      var params;
+      var sql;
+      if (imagePath != null) {
+        sql =
+          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, image_path = $9, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
+        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid, imagePath];
+      } else {
+        sql =
+          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
+        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid];
+      }
+      pool
+        .query(sql, params)
+        .then(function (r) {
+          if (!r.rowCount) throw new Error("Not found");
+          try {
+            catalogFromData.invalidateCache();
+          } catch (_) {}
+          cb(null, mapRow(r.rows[0]));
+        })
+        .catch(cb);
+    }
+
+    var buf = opts && opts.imageBuffer;
+    var url = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : null;
+
+    if (buf && Buffer.isBuffer(buf) && buf.length >= 32) {
+      persistImageBuffer(buf, opts.mime, name, function (err, rel) {
+        if (err) return cb(err);
+        doUpdate(rel);
+      });
+      return;
+    }
+    if (url && (url.indexOf("http") === 0 || url.indexOf("//") === 0)) {
+      doUpdate(url.slice(0, 2000));
+      return;
+    }
+    doUpdate(null);
+  });
 }
 
 function deleteRow(id, cb) {
@@ -560,6 +671,7 @@ function seedDemoMaterialsPromise(pool) {
   var demos = [
     {
       id: DEMO_IDS[0],
+      sku: "RM-DEMO-POUR",
       name: "Oh My Pour! Crystal Clear Resin",
       description:
         "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
@@ -573,8 +685,8 @@ function seedDemoMaterialsPromise(pool) {
   return Promise.all(
     demos.map(function (d) {
       return pool.query(
-        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb) ON CONFLICT (id) DO NOTHING",
-        [d.id, d.name, d.description, d.image, d.note, d.price, d.mrp, JSON.stringify(d.options)]
+        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9) ON CONFLICT (id) DO NOTHING",
+        [d.id, d.name, d.description, d.image, d.note, d.price, d.mrp, JSON.stringify(d.options), d.sku]
       );
     })
   ).then(function () {});

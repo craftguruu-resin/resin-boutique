@@ -102,15 +102,21 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
-  function rowInput(label, val, ph) {
+  function rowInput(label, val, ph, extraClass, extraAttrs) {
+    var cls = "vrm-opt-inp" + (extraClass ? " " + String(extraClass) : "");
+    var x = extraAttrs ? " " + String(extraAttrs) : "";
     return (
       '<label class="vs-muted" style="display:block;font-size:0.78rem;margin-bottom:0.2rem">' +
       esc(label) +
-      '</label><input type="text" class="vrm-opt-inp" value="' +
+      '</label><input type="text" class="' +
+      esc(cls) +
+      '" value="' +
       esc(val) +
       "\" placeholder=\"" +
       esc(ph || "") +
-      '" />'
+      '"' +
+      x +
+      " />"
     );
   }
 
@@ -156,6 +162,275 @@
     return "#888888";
   }
 
+  /** English colour names → hex for vendor swatches (keys lowercased, single spaces). */
+  var NAMED_COLORS = {
+    white: "#ffffff",
+    ivory: "#fffff0",
+    cream: "#fffdd0",
+    beige: "#f5f5dc",
+    linen: "#faf0e6",
+    tan: "#d2b48c",
+    sand: "#c2b280",
+    black: "#000000",
+    charcoal: "#1e293b",
+    slate: "#64748b",
+    silver: "#94a3b8",
+    gray: "#9ca3af",
+    grey: "#9ca3af",
+    "dark gray": "#4b5563",
+    "dark grey": "#4b5563",
+    red: "#ef4444",
+    crimson: "#dc2626",
+    scarlet: "#e11d48",
+    cherry: "#b91c1c",
+    rose: "#fb7185",
+    pink: "#ec4899",
+    magenta: "#d946ef",
+    fuchsia: "#c026d3",
+    purple: "#9333ea",
+    violet: "#7c3aed",
+    indigo: "#4f46e5",
+    blue: "#3b82f6",
+    navy: "#1e3a8a",
+    "royal blue": "#2563eb",
+    "sky blue": "#0ea5e9",
+    cyan: "#06b6d4",
+    teal: "#14b8a6",
+    turquoise: "#2dd4bf",
+    aqua: "#22d3ee",
+    mint: "#6ee7b7",
+    green: "#22c55e",
+    "lime green": "#84cc16",
+    "forest green": "#15803d",
+    "dark green": "#166534",
+    olive: "#6b7c3f",
+    yellow: "#eab308",
+    gold: "#ca8a04",
+    amber: "#f59e0b",
+    orange: "#f97316",
+    peach: "#fdba74",
+    coral: "#fb7185",
+    brown: "#92400e",
+    chocolate: "#78350f",
+    coffee: "#6b4423",
+    copper: "#b45309",
+    bronze: "#a16207",
+    rust: "#c2410c",
+    maroon: "#881337",
+    burgundy: "#9f1239",
+    plum: "#86198f",
+    lavender: "#c4b5fd",
+    lilac: "#ddd6fe",
+    periwinkle: "#a5b4fc",
+    "light blue": "#93c5fd",
+    "light green": "#86efac",
+    "light pink": "#fbcfe8",
+    "light yellow": "#fef08a",
+    "dark blue": "#1e40af",
+    "dark red": "#991b1b",
+    "hot pink": "#db2777",
+    "deep purple": "#6b21a8",
+    "electric blue": "#2563eb",
+    "sea green": "#0d9488",
+    "spring green": "#4ade80",
+    "emerald green": "#059669",
+    emerald: "#10b981",
+    jade: "#00a36c",
+    sapphire: "#1d4ed8",
+    ruby: "#e11d48",
+    pearl: "#e2e8f0",
+    champagne: "#f7e7ce",
+    "rose gold": "#e8b4b8",
+    "antique white": "#faebd7",
+    "off white": "#f8fafc",
+    "midnight blue": "#0f172a",
+    "steel blue": "#4682b4",
+    "powder blue": "#b0e0e6",
+    "pale green": "#98fb98",
+    "golden yellow": "#facc15",
+    "neon green": "#39ff14",
+    "neon pink": "#ff10f0",
+    "neon orange": "#ff6600",
+    "wine red": "#722f37",
+    "forest blue": "#1e3a5f",
+    "ice blue": "#d9f1ff",
+    "dusty rose": "#d4a5a5",
+    "sage green": "#9caf88",
+    "mint green": "#98ff98",
+    "royal purple": "#6b21a8",
+    "sunflower yellow": "#ffc512",
+    "burnt orange": "#cc5500",
+    "burnt sienna": "#e97451",
+    "raw umber": "#826644",
+    "payne gray": "#536878",
+    "payne grey": "#536878",
+  };
+
+  var SORTED_COLOR_KEYS = Object.keys(NAMED_COLORS).sort(function (a, b) {
+    return b.length - a.length;
+  });
+
+  var COLOR_QUICK_PICKS = [
+    { name: "Emerald", hex: "#10b981" },
+    { name: "Gold", hex: "#ca8a04" },
+    { name: "Rose", hex: "#fb7185" },
+    { name: "Navy", hex: "#1e3a8a" },
+    { name: "Black", hex: "#000000" },
+    { name: "White", hex: "#ffffff" },
+    { name: "Copper", hex: "#b45309" },
+    { name: "Purple", hex: "#9333ea" },
+    { name: "Sky blue", hex: "#0ea5e9" },
+    { name: "Forest green", hex: "#15803d" },
+    { name: "Burgundy", hex: "#9f1239" },
+    { name: "Coral", hex: "#fb7185" },
+  ];
+
+  function titleCaseWords(key) {
+    return String(key || "")
+      .split(" ")
+      .map(function (w) {
+        return w ? w.charAt(0).toUpperCase() + w.slice(1).toLowerCase() : "";
+      })
+      .join(" ");
+  }
+
+  function ensureColorDatalist() {
+    if (document.getElementById("vrmColorNameList")) return;
+    var dl = document.createElement("datalist");
+    dl.id = "vrmColorNameList";
+    Object.keys(NAMED_COLORS)
+      .sort(function (a, b) {
+        return a.localeCompare(b);
+      })
+      .forEach(function (k) {
+        var opt = document.createElement("option");
+        opt.value = titleCaseWords(k);
+        dl.appendChild(opt);
+      });
+    document.body.appendChild(dl);
+  }
+
+  function findNamedColorMatches(raw, limit) {
+    var q = String(raw || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+    var lim = limit != null ? limit : 8;
+    if (!q) return [];
+    var out = [];
+    var seen = Object.create(null);
+    function addKey(k) {
+      if (!k || seen[k]) return;
+      seen[k] = 1;
+      out.push({ key: k, name: titleCaseWords(k), hex: NAMED_COLORS[k] });
+    }
+    if (NAMED_COLORS[q]) addKey(q);
+    SORTED_COLOR_KEYS.forEach(function (k) {
+      if (out.length >= lim) return;
+      if (k.startsWith(q)) addKey(k);
+    });
+    SORTED_COLOR_KEYS.forEach(function (k) {
+      if (out.length >= lim) return;
+      if (seen[k]) return;
+      if (k.indexOf(q) >= 0) addKey(k);
+    });
+    return out.slice(0, lim);
+  }
+
+  function wireColorRow(row) {
+    ensureColorDatalist();
+    var nameInp = row.querySelector("input.vrm-color-name");
+    var pick = row.querySelector("input.vrm-color-pick");
+    var read = row.querySelector(".vrm-color-readout");
+    var sug = row.querySelector(".vrm-color-suggestions");
+    if (!nameInp || !pick || !read) return;
+
+    function syncReadout() {
+      read.textContent = String(pick.value || "").toUpperCase();
+    }
+
+    function applyHex(hex) {
+      pick.value = normalizeHexVendor(hex);
+      syncReadout();
+    }
+
+    function hideSug() {
+      if (!sug) return;
+      sug.hidden = true;
+      sug.innerHTML = "";
+    }
+
+    function renderSuggestions(matches) {
+      if (!sug) return;
+      if (!matches.length) {
+        hideSug();
+        return;
+      }
+      sug.innerHTML = matches
+        .map(function (m) {
+          return (
+            '<button type="button" class="vrm-color-suggest-btn" data-hex="' +
+            esc(m.hex) +
+            "\"><span class=\"vrm-color-swatch-dot\" style=\"background:" +
+            esc(m.hex) +
+            '\"></span><span class="vrm-color-suggest-text">' +
+            esc(m.name) +
+            ' <span class="vs-muted">' +
+            esc(String(m.hex).toUpperCase()) +
+            "</span></span></button>"
+          );
+        })
+        .join("");
+      sug.hidden = false;
+      sug.querySelectorAll(".vrm-color-suggest-btn").forEach(function (b) {
+        b.addEventListener("mousedown", function (ev) {
+          ev.preventDefault();
+        });
+        b.addEventListener("click", function () {
+          applyHex(b.getAttribute("data-hex"));
+          hideSug();
+        });
+      });
+    }
+
+    function syncFromName() {
+      var raw = nameInp.value.trim();
+      var q = raw.toLowerCase().replace(/\s+/g, " ");
+      if (q && NAMED_COLORS[q]) {
+        applyHex(NAMED_COLORS[q]);
+        hideSug();
+        return;
+      }
+      var matches = findNamedColorMatches(raw, 8);
+      renderSuggestions(matches);
+    }
+
+    var tmr;
+    nameInp.addEventListener("input", function () {
+      window.clearTimeout(tmr);
+      tmr = window.setTimeout(syncFromName, 140);
+    });
+    nameInp.addEventListener("change", syncFromName);
+    nameInp.addEventListener("blur", function () {
+      window.clearTimeout(tmr);
+      syncFromName();
+    });
+
+    row.querySelectorAll(".vrm-color-chip").forEach(function (chip) {
+      chip.addEventListener("click", function () {
+        var hx = chip.getAttribute("data-hex");
+        var lab = chip.getAttribute("data-label");
+        if (lab) nameInp.value = lab;
+        if (hx) applyHex(hx);
+        hideSug();
+      });
+    });
+
+    pick.addEventListener("input", syncReadout);
+    pick.addEventListener("change", syncReadout);
+    syncReadout();
+  }
+
   function renderOptionBlocks() {
     var sz = document.getElementById("vrmSizesBlock");
     var qt = document.getElementById("vrmQtyBlock");
@@ -180,7 +455,7 @@
     if (cl) {
       cl.innerHTML = uC
         ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem\">Colours (max 5)</h3>" +
-          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Use the colour picker for each swatch (guest PDP uses it exactly). Optional image URL overrides the hero for that swatch.</p>" +
+          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Type an <strong>English colour name</strong> (e.g. <em>forest green</em>, <em>gold</em>) — the swatch updates when there is a clear match, or pick from the suggestions. Use quick chips or the native colour control to fine-tune. Optional image URL overrides the hero for that swatch on the guest PDP.</p>" +
           '<div id="vrmColorRows"></div><button type="button" class="vs-btn vs-btn--ghost" id="vrmAddColor">+ Add colour</button>'
         : "";
     }
@@ -258,33 +533,49 @@
   function addColorRow(o) {
     var host = document.getElementById("vrmColorRows");
     if (!host) return;
+    ensureColorDatalist();
     var hx = normalizeHexVendor(o.hex || "#6366f1");
+    var chips = COLOR_QUICK_PICKS.map(function (p) {
+      return (
+        '<button type="button" class="vrm-color-chip" data-hex="' +
+        esc(p.hex) +
+        '" data-label="' +
+        esc(p.name) +
+        "\"><span class=\"vrm-color-chip-dot\" style=\"background:" +
+        esc(p.hex) +
+        '\"></span>' +
+        esc(p.name) +
+        "</button>"
+      );
+    }).join("");
     var inner =
       '<div style="grid-column:1/-1">' +
-      rowInput("Colour name", o.label || "", "Indigo label") +
+      rowInput(
+        "Colour name",
+        o.label || "",
+        "e.g. Green, Navy, Rose gold…",
+        "vrm-color-name",
+        'list="vrmColorNameList" autocomplete="off" spellcheck="true"'
+      ) +
       "</div>" +
-      '<div style="grid-column:1/-1">' +
-      '<label class="vs-muted" style="display:block;font-size:0.78rem;margin-bottom:0.25rem">Swatch colour</label>' +
-      '<div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap">' +
+      '<div class="vrm-color-quick" style="grid-column:1/-1" aria-label="Quick colour picks">' +
+      chips +
+      "</div>" +
+      '<div class="vrm-color-suggestions" style="grid-column:1/-1" hidden aria-live="polite"></div>' +
+      '<div style="grid-column:1/-1" class="vrm-color-swatch-row">' +
+      '<span class="vs-muted vrm-color-swatch-label">Swatch</span>' +
+      '<div class="vrm-color-swatch-controls">' +
       '<input type="color" class="vrm-color-pick" value="' +
       esc(hx) +
-      "\" aria-label=\"Choose swatch colour\" style=\"width:48px;height:48px;padding:0;border:1px solid rgba(15,23,42,0.12);border-radius:10px;cursor:pointer;background:#fff\" />" +
-      '<code class="vrm-color-readout" style="font-size:0.82rem;color:#334155"></code></div></div>' +
+      "\" aria-label=\"Fine-tune swatch colour\" />" +
+      '<code class="vrm-color-readout"></code>' +
+      "</div></div>" +
       '<div style="grid-column:1/-1">' +
       rowUrl("Image URL (optional)", o.image || "") +
       "</div>";
     var row = wrapRow(inner);
     host.appendChild(row);
-    var pick = row.querySelector("input.vrm-color-pick");
-    var read = row.querySelector(".vrm-color-readout");
-    function syncReadout() {
-      if (read && pick) read.textContent = String(pick.value || "").toUpperCase();
-    }
-    if (pick) {
-      pick.addEventListener("input", syncReadout);
-      pick.addEventListener("change", syncReadout);
-      syncReadout();
-    }
+    wireColorRow(row);
   }
 
   function readRows(containerSel, kind) {
@@ -294,7 +585,7 @@
     var out = [];
     rows.forEach(function (row, idx) {
       if (kind === "color") {
-        var labInp = row.querySelector("input.vrm-opt-inp");
+        var labInp = row.querySelector("input.vrm-color-name") || row.querySelector("input.vrm-opt-inp");
         var pick = row.querySelector("input.vrm-color-pick");
         var urlInp = row.querySelector("input.vrm-opt-url");
         var lab = labInp && labInp.value.trim();
@@ -419,6 +710,8 @@
     document.getElementById("vrmSubmit").textContent = "Save product";
     document.getElementById("vrmCancelEdit").style.display = "none";
     document.getElementById("vrmForm").reset();
+    var skuEl = document.getElementById("vrmSku");
+    if (skuEl) skuEl.value = "";
     document.getElementById("vrmUseSize").checked = true;
     document.getElementById("vrmUseQty").checked = false;
     document.getElementById("vrmUseColor").checked = true;
@@ -439,6 +732,8 @@
     document.getElementById("vrmSubmit").textContent = "Update product";
     document.getElementById("vrmCancelEdit").style.display = "inline-flex";
     document.getElementById("vrmName").value = m.name || "";
+    var skuF = document.getElementById("vrmSku");
+    if (skuF) skuF.value = m.sku != null ? String(m.sku) : "";
     document.getElementById("vrmDesc").value = m.description || "";
     document.getElementById("vrmNote").value = m.note || "";
     document.getElementById("vrmPrice").value = m.priceInr != null ? String(m.priceInr) : "0";
@@ -450,7 +745,7 @@
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  function renderRows(rows) {
+  function renderRows(rows, searchQuery) {
     var tb = document.getElementById("vrmTbody");
     var empty = document.getElementById("vrmEmpty");
     var table = document.getElementById("vrmTable");
@@ -459,7 +754,7 @@
     rawList = rows || [];
     if (!rows || !rows.length) {
       empty.style.display = "block";
-      empty.textContent = "No materials yet.";
+      empty.textContent = searchQuery ? "No materials match your search." : "No materials yet.";
       table.style.display = "none";
       return;
     }
@@ -468,6 +763,7 @@
     rows.forEach(function (r) {
       var active = r.isActive !== false;
       var tr = document.createElement("tr");
+      tr.title = "Internal id: " + (r.id || "");
       tr.innerHTML =
         "<td>" +
         (r.image
@@ -477,9 +773,9 @@
           : "—") +
         "</td><td><strong>" +
         esc(r.name) +
-        "</strong><br /><small class=\"vs-muted\">" +
-        esc(r.id || "") +
-        "</small></td><td>" +
+        "</strong></td><td><span class=\"vs-muted\" style=\"font-size:0.82rem;font-weight:600\">" +
+        esc(r.sku || "—") +
+        "</span></td><td>" +
         esc(String(minOfferPrice(r))) +
         "</td><td>" +
         (active ? "<span class=\"vs-pill vs-pill--active\">Live</span>" : "<span class=\"vs-pill vs-pill--inactive\">Hidden</span>") +
@@ -504,7 +800,10 @@
 
   function loadList() {
     showMsg("", false);
-    return fetch(base() + "/api/vendor/raw-materials", { headers: V.authHeaders(), cache: "no-store" })
+    var qEl = document.getElementById("vrmSearch");
+    var q = qEl ? qEl.value.trim() : "";
+    var url = base() + "/api/vendor/raw-materials" + (q ? "?q=" + encodeURIComponent(q) : "");
+    return fetch(url, { headers: V.authHeaders(), cache: "no-store" })
       .then(function (res) {
         return res.text().then(function (text) {
           if (res.status === 401) {
@@ -517,7 +816,7 @@
           if (!res.ok || !j.ok) {
             throw new Error((j && j.error) || res.statusText || "Load failed");
           }
-          renderRows(j.materials || []);
+          renderRows(j.materials || [], q);
         });
       })
       .catch(function (e) {
@@ -633,6 +932,21 @@
       loadList().catch(function () {});
     });
 
+    var vrmSearchTimer = null;
+    function scheduleVrmSearchReload() {
+      if (vrmSearchTimer) window.clearTimeout(vrmSearchTimer);
+      vrmSearchTimer = window.setTimeout(function () {
+        loadList().catch(function () {});
+      }, 300);
+    }
+    var vrmSearchEl = document.getElementById("vrmSearch");
+    if (vrmSearchEl) {
+      vrmSearchEl.addEventListener("input", scheduleVrmSearchReload);
+      vrmSearchEl.addEventListener("change", function () {
+        loadList().catch(function () {});
+      });
+    }
+
     document.getElementById("vrmCancelEdit").addEventListener("click", function () {
       resetForm();
     });
@@ -640,6 +954,11 @@
     document.getElementById("vrmForm").addEventListener("submit", function (ev) {
       ev.preventDefault();
       var editId = document.getElementById("vrmEditingId").value.trim();
+      var skuVal = document.getElementById("vrmSku") ? document.getElementById("vrmSku").value.trim() : "";
+      if (editId && !skuVal) {
+        showMsg("SKU is required when editing an existing product.", true);
+        return;
+      }
       var options = readOptionsFromForm();
       var file = document.getElementById("vrmImage").files && document.getElementById("vrmImage").files[0];
       var imageUrl = document.getElementById("vrmImageUrl").value.trim();
@@ -648,6 +967,7 @@
       if (file) {
         var fd = new FormData();
         fd.set("name", document.getElementById("vrmName").value.trim());
+        fd.set("sku", skuVal);
         fd.set("description", document.getElementById("vrmDesc").value.trim());
         fd.set("note", document.getElementById("vrmNote").value.trim());
         fd.set("priceInr", document.getElementById("vrmPrice").value.trim());
@@ -675,6 +995,7 @@
 
       var payload = {
         name: document.getElementById("vrmName").value.trim(),
+        sku: skuVal,
         description: document.getElementById("vrmDesc").value.trim(),
         note: document.getElementById("vrmNote").value.trim(),
         priceInr: Number(document.getElementById("vrmPrice").value) || 0,

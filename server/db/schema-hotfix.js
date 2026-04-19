@@ -77,6 +77,9 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS price_inr NUMERIC(12, 2) NOT NULL DEFAULT 0",
     "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS mrp_inr NUMERIC(12, 2)",
     "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
+    "UPDATE raw_materials SET sku = regexp_replace(id, '^raw-mat--', 'RM-', 'i') WHERE trim(coalesce(sku, '')) = ''",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_materials_sku_lower ON raw_materials (lower(trim(sku)))",
     "ALTER TABLE raw_materials ALTER COLUMN image_path TYPE TEXT USING image_path::text",
     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
     "CREATE TABLE IF NOT EXISTS guest_email_otps (" +

@@ -35,7 +35,19 @@
           <div class="vs-card vrm-manage-card">
             <div class="vrm-manage-head">
               <h2 class="vs-card__title" style="margin: 0">All raw materials</h2>
-              <button type="button" class="vs-btn vs-btn--primary" id="vrmAddNew">+ Add new product</button>
+              <div class="vrm-manage-toolbar">
+                <div class="vs-field vrm-search-field" style="margin: 0">
+                  <label for="vrmSearch" class="visually-hidden">Search materials</label>
+                  <input
+                    type="search"
+                    id="vrmSearch"
+                    class="vrm-search-input"
+                    placeholder="Search by name, SKU, or ID…"
+                    autocomplete="off"
+                  />
+                </div>
+                <button type="button" class="vs-btn vs-btn--primary" id="vrmAddNew">+ Add new product</button>
+              </div>
             </div>
             <p id="vrmEmpty" class="vs-muted">Loading…</p>
             <div class="vs-table-wrap">
@@ -44,6 +56,7 @@
                   <tr>
                     <th>Image</th>
                     <th>Name</th>
+                    <th>SKU</th>
                     <th>From price</th>
                     <th>Active</th>
                     <th>Actions</th>
@@ -63,6 +76,13 @@
               <div class="vs-field">
                 <label for="vrmName">Name</label>
                 <input type="text" id="vrmName" maxlength="500" required />
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vrmSku">SKU</label>
+                <input type="text" id="vrmSku" maxlength="120" placeholder="e.g. RM-EPOXY-1L (optional when adding — auto-generated if empty)" />
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.78rem">
+                  Letters, numbers, spaces, hyphen, dot, underscore; stored uppercase. Must be unique. Required when editing.
+                </p>
               </div>
               <div class="vs-field" style="margin-top: 0.5rem">
                 <label for="vrmDesc">Description</label>
