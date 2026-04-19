@@ -102,6 +102,17 @@
             <p class="band-sub">Pieces flagged as return gifts in the vendor catalog — open any card for sizes and MRP.</p>
           </div>
         </div>
+        <div class="category-toolbar" id="rgToolbar" aria-label="Sort return gifts">
+          <div class="category-toolbar__group">
+            <label class="category-toolbar__label" for="rgSortSelect">Sort</label>
+            <select id="rgSortSelect" class="category-toolbar__select">
+              <option value="name-asc">Name · A → Z</option>
+              <option value="name-desc">Name · Z → A</option>
+              <option value="price-asc">From price · low → high</option>
+              <option value="price-desc">From price · high → low</option>
+            </select>
+          </div>
+        </div>
         <div class="product-grid" id="rgGrid"></div>
       </div>
     </section>

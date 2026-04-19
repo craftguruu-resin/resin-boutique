@@ -87,6 +87,7 @@ function guestSnapshotObj(guest) {
     state: guest.state,
     zip: guest.zip,
     country: guest.country,
+    addressType: guest.addressType != null ? String(guest.addressType).slice(0, 24) : "",
   };
 }
 
@@ -178,7 +179,8 @@ function createCheckoutParcelOrder(opts, cb) {
     .then(function () {
       return guestDb.insertGuestStrictOrAttachAddress(client, guest);
     })
-    .then(function (guestId) {
+    .then(function (guestOut) {
+      var guestId = guestOut && guestOut.guestId != null ? guestOut.guestId : null;
       return resolveSkuMapWithClient(client, items).then(function (skuMap) {
         return client
           .query(

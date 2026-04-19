@@ -5,6 +5,9 @@
   var CART = window.RESIN_CART;
   if (!D || !CART || !D.listProductsAll) return;
 
+  var DEFAULT_SORT = "name-asc";
+  var rgSortWired = false;
+
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s;
@@ -31,6 +34,50 @@
     return m == null ? 0 : m;
   }
 
+  function sortSelect() {
+    return document.getElementById("rgSortSelect");
+  }
+
+  function allowedSort(s) {
+    return { "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 }[s] ? s : DEFAULT_SORT;
+  }
+
+  function syncReturnGiftsUrl() {
+    var sel = sortSelect();
+    if (!sel) return;
+    try {
+      var u = new URL(window.location.href);
+      var sort = allowedSort(sel.value);
+      if (sort !== DEFAULT_SORT) u.searchParams.set("sort", sort);
+      else u.searchParams.delete("sort");
+      history.replaceState({}, "", u.pathname + (u.search ? "?" + u.searchParams.toString() : ""));
+    } catch (_) {}
+  }
+
+  function sortItems(items) {
+    var sel = sortSelect();
+    var sort = sel ? allowedSort(sel.value) : DEFAULT_SORT;
+    var arr = items.slice();
+    if (sort === "name-desc") {
+      arr.sort(function (a, b) {
+        return String(b.name || "").localeCompare(String(a.name || ""), undefined, { sensitivity: "base" });
+      });
+    } else if (sort === "price-asc") {
+      arr.sort(function (a, b) {
+        return minPrice(a) - minPrice(b);
+      });
+    } else if (sort === "price-desc") {
+      arr.sort(function (a, b) {
+        return minPrice(b) - minPrice(a);
+      });
+    } else {
+      arr.sort(function (a, b) {
+        return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
+      });
+    }
+    return arr;
+  }
+
   function collectReturnGifts() {
     var out = [];
     var seen = {};
@@ -45,10 +92,24 @@
     return out;
   }
 
+  function wireSortOnce() {
+    if (rgSortWired) return;
+    var sel = sortSelect();
+    if (!sel) return;
+    rgSortWired = true;
+    var params = new URLSearchParams(window.location.search);
+    sel.value = allowedSort(params.get("sort") || DEFAULT_SORT);
+    sel.addEventListener("change", function () {
+      syncReturnGiftsUrl();
+      paint();
+    });
+  }
+
   function paint() {
+    wireSortOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
-    var items = collectReturnGifts();
+    var items = sortItems(collectReturnGifts());
     grid.innerHTML = "";
     if (!items.length) {
       grid.innerHTML =

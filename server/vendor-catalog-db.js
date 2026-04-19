@@ -3,7 +3,69 @@
 var poolMod = require("./db/pool.js");
 var catalogFromData = require("./catalog-from-data.js");
 
-/** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, listed, returnGift } */
+function parseSizeLabelsCell(raw) {
+  if (raw == null) return {};
+  if (typeof raw === "string") {
+    try {
+      var j = JSON.parse(raw);
+      return j && typeof j === "object" && !Array.isArray(j) ? j : {};
+    } catch (_) {
+      return {};
+    }
+  }
+  if (typeof raw === "object" && !Array.isArray(raw)) return raw;
+  return {};
+}
+
+function normalizeOneLabel(raw) {
+  var t = String(raw == null ? "" : raw)
+    .trim()
+    .slice(0, 120);
+  return t ? { name: t } : null;
+}
+
+/**
+ * Merge optional per-size display names into catalog_price_overrides.size_labels.
+ * If patch omits size keys, cur labels are kept.
+ * @param {object} curSl — { s?: {name}, m?: {name}, l?: {name} }
+ * @param {object|null} patch — may include sizeLabelS, sizeLabelM, sizeLabelL and/or sizeLabels
+ */
+function mergeSizeLabelsFromPatch(curSl, patch) {
+  var base = {};
+  if (curSl && typeof curSl === "object") {
+    ["s", "m", "l"].forEach(function (k) {
+      var slot = curSl[k];
+      if (slot && slot.name) base[k] = { name: String(slot.name).trim().slice(0, 120) };
+    });
+  }
+  if (!patch) return base;
+  var pairs = [
+    ["sizeLabelS", "s"],
+    ["sizeLabelM", "m"],
+    ["sizeLabelL", "l"],
+  ];
+  pairs.forEach(function (pr) {
+    var pk = pr[0];
+    var letter = pr[1];
+    if (!Object.prototype.hasOwnProperty.call(patch, pk)) return;
+    var v = normalizeOneLabel(patch[pk]);
+    if (v) base[letter] = v;
+    else delete base[letter];
+  });
+  if (patch.sizeLabels != null && typeof patch.sizeLabels === "object" && !Array.isArray(patch.sizeLabels)) {
+    ["s", "m", "l"].forEach(function (letter) {
+      var slot = patch.sizeLabels[letter];
+      if (slot && slot.name) {
+        base[letter] = { name: String(slot.name).trim().slice(0, 120) };
+      } else if (Object.prototype.hasOwnProperty.call(patch.sizeLabels, letter)) {
+        delete base[letter];
+      }
+    });
+  }
+  return base;
+}
+
+/** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, listed, returnGift, sizeLabels } */
 function listOverridesMap(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -13,13 +75,15 @@ function listOverridesMap(cb) {
   }
   pool
     .query(
-      "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift FROM catalog_price_overrides ORDER BY product_id"
+      "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels " +
+        "FROM catalog_price_overrides ORDER BY product_id"
     )
     .then(function (r) {
       var m = {};
       r.rows.forEach(function (row) {
         var pid = String(row.product_id != null ? row.product_id : "").trim();
         if (!pid) return;
+        var sl = parseSizeLabelsCell(row.size_labels);
         m[pid] = {
           s: row.price_s != null ? Number(row.price_s) : null,
           m: row.price_m != null ? Number(row.price_m) : null,
@@ -29,6 +93,7 @@ function listOverridesMap(cb) {
           stockL: row.stock_l != null ? Number(row.stock_l) : null,
           listed: row.listed !== false,
           returnGift: row.return_gift === true,
+          sizeLabels: sl,
         };
       });
       cb(null, m);
@@ -113,7 +178,7 @@ function mergeStockPatch(cur, patch) {
 
 /**
  * @param {string} productId
- * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, listed?: boolean, returnGift?: boolean }} patch
+ * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, listed?: boolean, returnGift?: boolean, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, sizeLabels?: object }} patch
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function upsertOverride(productId, patch, cb) {
@@ -152,19 +217,25 @@ function upsertOverride(productId, patch, cb) {
       if (patch && Object.prototype.hasOwnProperty.call(patch, "returnGift")) {
         rg = !!patch.returnGift;
       }
+      var curSl = cur.sizeLabels && typeof cur.sizeLabels === "object" ? cur.sizeLabels : {};
+      var mergedSl = mergeSizeLabelsFromPatch(curSl, patch);
+      var slJson = JSON.stringify(mergedSl || {});
       pool
         .query(
-          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) " +
+          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels) " +
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
             "out_of_stock = false, " +
-            "listed = COALESCE($11::boolean, catalog_price_overrides.listed), " +
+            "listed = COALESCE($12::boolean, catalog_price_overrides.listed), " +
             "return_gift = EXCLUDED.return_gift, " +
-            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, listedUpdateParam]
+            "size_labels = EXCLUDED.size_labels, " +
+            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, updated_at",
+          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];
+          var slOut = parseSizeLabelsCell(row.size_labels);
           cb(null, {
             productId: row.product_id,
             prices: {
@@ -179,6 +250,7 @@ function upsertOverride(productId, patch, cb) {
             },
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
+            sizeLabels: slOut,
             updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
           });
         })

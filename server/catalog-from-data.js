@@ -19,10 +19,10 @@ function getResinData() {
   return cache;
 }
 
-/** @returns {{ id: string, name: string, category: string, subcategory: string, image: string, prices: { s: number, m: number, l: number } }[]} */
+/** @returns {{ id: string, name: string, category: string, subcategory: string, image: string, prices: { s: number, m: number, l: number }, sizeLabels?: object }[]} */
 function getProductsSummary() {
   return getResinData().allProducts.map(function (p) {
-    return {
+    var row = {
       id: p.id,
       name: p.name,
       category: p.category,
@@ -34,6 +34,11 @@ function getProductsSummary() {
         l: Number(p.prices && p.prices.l) || 0,
       },
     };
+    var sl = p.sizeLabels;
+    if (sl && typeof sl === "object" && (sl.s || sl.m || sl.l)) {
+      row.sizeLabels = sl;
+    }
+    return row;
   });
 }
 

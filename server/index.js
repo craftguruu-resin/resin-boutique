@@ -383,10 +383,13 @@ function validateGuestParcel(g) {
   if (typeof g.state !== "string" || g.state.trim().length < 1 || g.state.length > 120) return "Invalid state";
   if (typeof g.zip !== "string" || g.zip.trim().length < 1 || g.zip.length > 20) return "Invalid postal code";
   if (typeof g.country !== "string" || g.country.trim().length < 1 || g.country.length > 80) return "Invalid country";
+  if (g.addressType != null && typeof g.addressType === "string" && g.addressType.length > 24) return "Invalid address type";
   return null;
 }
 
 function normalizeGuestParcel(g) {
+  var at = String((g && g.addressType) || "").trim().slice(0, 24).toLowerCase();
+  if (at !== "home" && at !== "work" && at !== "other") at = "";
   return {
     name: String(g.name || "").trim().slice(0, 200),
     email: String(g.email || "").trim().slice(0, 200),
@@ -397,6 +400,7 @@ function normalizeGuestParcel(g) {
     state: String(g.state || "").trim().slice(0, 120),
     zip: String(g.zip || "").trim().slice(0, 20),
     country: String(g.country || "").trim().slice(0, 80),
+    addressType: at,
   };
 }
 
@@ -760,6 +764,8 @@ function handleSaveGuestAddress(req, res) {
     res.json({
       ok: true,
       guestId: out && out.guestId != null ? out.guestId : null,
+      savedAddressId: out && out.savedAddressId != null ? out.savedAddressId : null,
+      addressReused: !!(out && out.addressReused),
       fileMode: !(out && out.guestId != null),
     });
   }
@@ -1607,6 +1613,17 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       o.returnGift = !!x.returnGift;
       /* Always send listed so the guest merge never confuses “missing key” with delisting. */
       o.listed = x.listed !== false;
+      var slIn = x.sizeLabels != null && typeof x.sizeLabels === "object" ? x.sizeLabels : {};
+      var slOut = {};
+      ["s", "m", "l"].forEach(function (letter) {
+        var slot = slIn[letter];
+        if (slot && slot.name) {
+          slOut[letter] = { name: String(slot.name).trim().slice(0, 120) };
+        }
+      });
+      if (Object.keys(slOut).length) {
+        o.sizeLabels = slOut;
+      }
       out[key] = o;
     });
     res.setHeader("Cache-Control", "no-store");
@@ -2222,6 +2239,10 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
         listed: b.listed !== undefined ? !!b.listed : undefined,
         returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
+        sizeLabelS: b.sizeLabelS !== undefined ? b.sizeLabelS : b.size_label_s !== undefined ? b.size_label_s : undefined,
+        sizeLabelM: b.sizeLabelM !== undefined ? b.sizeLabelM : b.size_label_m !== undefined ? b.size_label_m : undefined,
+        sizeLabelL: b.sizeLabelL !== undefined ? b.sizeLabelL : b.size_label_l !== undefined ? b.size_label_l : undefined,
+        sizeLabels: b.sizeLabels !== undefined ? b.sizeLabels : undefined,
       },
       function (e2, row) {
         if (e2) {

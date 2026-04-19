@@ -468,7 +468,18 @@ function listAllProductsForManage(opts, cb) {
         staticList.forEach(function (p) {
           var ov = omap[p.id] || {};
           var listed = ov.listed !== false;
-          out.push({
+          var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
+          var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
+          var comb = {};
+          ["s", "m", "l"].forEach(function (letter) {
+            var a = ovSl[letter];
+            var b = stSl[letter];
+            var slot = a && a.name ? a : b && b.name ? b : null;
+            if (slot && slot.name) {
+              comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
+            }
+          });
+          var row = {
             id: p.id,
             name: p.name,
             category: p.category,
@@ -483,12 +494,27 @@ function listAllProductsForManage(opts, cb) {
             returnGift: !!(ov && ov.returnGift),
             source: "catalog",
             isActive: listed,
-          });
+          };
+          if (Object.keys(comb).length) {
+            row.sizeLabels = comb;
+          }
+          out.push(row);
         });
 
         vendorList.forEach(function (row) {
           var ov = omap[row.id] || {};
           var listed = ov.listed !== false;
+          var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
+          var stSl = row.sizeLabels && typeof row.sizeLabels === "object" ? row.sizeLabels : {};
+          var comb = {};
+          ["s", "m", "l"].forEach(function (letter) {
+            var a = ovSl[letter];
+            var b = stSl[letter];
+            var slot = a && a.name ? a : b && b.name ? b : null;
+            if (slot && slot.name) {
+              comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
+            }
+          });
           var merged = Object.assign({}, row, {
             prices: {
               s: ov.s != null ? Number(ov.s) : row.prices.s,
@@ -500,6 +526,9 @@ function listAllProductsForManage(opts, cb) {
             source: "vendor",
             isActive: row.is_active !== false && listed,
           });
+          if (Object.keys(comb).length) {
+            merged.sizeLabels = comb;
+          }
           out.push(merged);
         });
 

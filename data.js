@@ -324,6 +324,22 @@
         delete p.returnGift;
         n++;
       }
+      if (Object.prototype.hasOwnProperty.call(o, "sizeLabels")) {
+        var sl = o.sizeLabels;
+        var next = {};
+        if (sl && typeof sl === "object") {
+          ["s", "m", "l"].forEach(function (letter) {
+            var slot = sl[letter];
+            if (slot && slot.name) {
+              next[letter] = { name: String(slot.name).trim().slice(0, 120) };
+            }
+          });
+        }
+        if (Object.keys(next).length) {
+          p.sizeLabels = next;
+          n++;
+        }
+      }
       BY_ID[p.id] = p;
     });
     return n;

@@ -13,7 +13,7 @@
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
 </head>
-<body class="subpage page-checkout">
+<body class="subpage page-checkout page-checkout--store">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -60,49 +60,23 @@
           </p>
         </div>
 
-        <div class="checkout-layout">
-          <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary" aria-labelledby="summary-heading">
-            <h2 id="summary-heading">Order summary</h2>
-            <div class="checkout-snips" aria-label="Selected items preview">
-              <div class="checkout-snips__grid" id="checkoutSnipsGrid"></div>
-            </div>
-            <ul class="checkout-lines" id="checkoutLines"></ul>
-            <div class="checkout-totals">
-              <div class="checkout-total-row">
-                <span>Items total (incl. 18% GST)</span>
-                <span id="valSubtotal">₹0</span>
-              </div>
-              <div class="checkout-total-row">
-                <span>Taxable value (excl. GST)</span>
-                <span id="valTaxable">₹0</span>
-              </div>
-              <div class="checkout-total-row">
-                <span>GST (18%)</span>
-                <span id="valTax">₹0</span>
-              </div>
-              <div class="checkout-total-row">
-                <span>Shipping</span>
-                <span id="valShipping">₹0</span>
-              </div>
-              <div class="checkout-total-row checkout-total-row--grand">
-                <span>Total due</span>
-                <span id="valTotal">₹0</span>
-              </div>
-            </div>
-
-          </aside>
-
+        <div class="checkout-layout checkout-layout--reflow">
           <div class="checkout-layout__main">
           <div class="checkout-panel checkout-intro" id="checkoutStepReview" aria-labelledby="checkoutIntroTitle">
             <span class="checkout-step-badge" id="checkoutStepLabel">Step 1 of 2</span>
             <h2 id="checkoutIntroTitle">Review your order</h2>
             <p>
-              Your cart and totals are on the left — they stay in <strong>this browser</strong> until you complete checkout. You can enter contact and shipping below without signing in first; we store your email and phone so you can sign back in later with the same email and a one-time code.
+              Your cart and totals are on the right — they stay in <strong>this browser</strong> until you complete checkout. You can enter contact and shipping without signing in first; we store your email and phone so you can sign back in later with the same email and a one-time code.
             </p>
             <button type="button" class="checkout-submit" id="checkoutGoDetails">Continue to fill details →</button>
           </div>
 
-          <div class="checkout-panel checkout-hidden" id="checkoutStepFill" hidden>
+          <div class="checkout-panel checkout-hidden checkout-panel--shipping" id="checkoutStepFill" hidden>
+            <nav class="checkout-breadcrumb" aria-label="Checkout steps">
+              <a href="index.html">Cart</a>
+              <span class="checkout-breadcrumb__sep" aria-hidden="true">›</span>
+              <span class="checkout-breadcrumb__current">Shipping</span>
+            </nav>
             <button type="button" class="checkout-back-link" id="checkoutBackReview">← Back to order review</button>
             <form id="checkoutForm" class="checkout-form-grid" novalidate>
               <div class="checkout-address-panel">
@@ -199,6 +173,24 @@
                 </div>
               </fieldset>
 
+              <fieldset class="checkout-fieldset">
+                <legend>Address type</legend>
+                <div class="checkout-addr-type" role="radiogroup" aria-label="Address type">
+                  <label class="checkout-addr-type__opt">
+                    <input type="radio" name="addrType" value="home" checked />
+                    <span>Home</span>
+                  </label>
+                  <label class="checkout-addr-type__opt">
+                    <input type="radio" name="addrType" value="work" />
+                    <span>Work</span>
+                  </label>
+                  <label class="checkout-addr-type__opt">
+                    <input type="radio" name="addrType" value="other" />
+                    <span>Other</span>
+                  </label>
+                </div>
+              </fieldset>
+
               <details class="checkout-auth-details" id="checkoutAuthOptional">
                 <summary class="checkout-auth-details__summary">Optional: sign in with email code (saved addresses &amp; order history)</summary>
                 <div class="checkout-auth-details__body">
@@ -249,10 +241,7 @@
 
               <div class="checkout-actions-row" id="checkoutActionsRow">
                 <button type="submit" class="checkout-submit checkout-actions-row__primary" id="checkoutAddAddressBtn">
-                  Add guest address
-                </button>
-                <button type="button" class="checkout-submit checkout-actions-row__pay" id="checkoutOpenUpiModal">
-                  Pay now
+                  Save shipping address
                 </button>
               </div>
               <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
@@ -264,6 +253,40 @@
             </form>
           </div>
           </div>
+
+          <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary checkout-summary-rail" aria-labelledby="summary-heading">
+            <h2 id="summary-heading">Order summary</h2>
+            <div class="checkout-snips" aria-label="Selected items preview">
+              <div class="checkout-snips__grid" id="checkoutSnipsGrid"></div>
+            </div>
+            <ul class="checkout-lines" id="checkoutLines"></ul>
+            <div class="checkout-totals">
+              <div class="checkout-total-row">
+                <span>Items total (incl. 18% GST)</span>
+                <span id="valSubtotal">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>Taxable value (excl. GST)</span>
+                <span id="valTaxable">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>GST (18%)</span>
+                <span id="valTax">₹0</span>
+              </div>
+              <div class="checkout-total-row">
+                <span>Shipping</span>
+                <span id="valShipping">₹0</span>
+              </div>
+              <div class="checkout-total-row checkout-total-row--grand">
+                <span>Total due</span>
+                <span id="valTotal">₹0</span>
+              </div>
+            </div>
+            <button type="button" class="checkout-summary-pay js-checkout-open-pay" id="checkoutOpenUpiModal">
+              Pay now
+            </button>
+            <p class="checkout-summary-pay-hint">Opens secure Razorpay after you fill shipping on the left.</p>
+          </aside>
         </div>
       </div>
     </div>

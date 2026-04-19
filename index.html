@@ -216,6 +216,17 @@
           </div>
           <p class="band-tagline">Clocks, keychains, coasters &amp; more</p>
         </header>
+        <div class="category-toolbar home-featured-toolbar" id="homeFeaturedToolbar" aria-label="Sort featured catalog lines">
+          <div class="category-toolbar__group">
+            <label class="category-toolbar__label" for="homeFeaturedSort">Sort lines</label>
+            <select id="homeFeaturedSort" class="category-toolbar__select">
+              <option value="name-asc">Name · A → Z</option>
+              <option value="name-desc">Name · Z → A</option>
+              <option value="price-asc">From price · low → high</option>
+              <option value="price-desc">From price · high → low</option>
+            </select>
+          </div>
+        </div>
         <div class="product-grid" id="productGrid"></div>
       </div>
     </section>

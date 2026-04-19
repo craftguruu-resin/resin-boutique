@@ -116,18 +116,52 @@
           <h1 class="product-title product-title--fx" id="productTitle">Loading…</h1>
           <p class="product-meta-line"><span id="productCategoryBadge">—</span></p>
 
-          <div class="product-qty-bar">
-            <div class="qty-dock glass-panel qty-dock--animate qty-dock--strip" id="qtyDock">
-              <div class="qty-dock__head qty-dock__head--compact">
-                <h2 class="qty-dock__title">Qty</h2>
-                <p class="qty-dock__sub" id="qtyTierHint">Same MRP per piece.</p>
+          <div class="pd-buy-rail">
+            <div class="pd-buy-rail__price-row">
+              <p class="product-price-hero pd-buy-rail__price">
+                <strong id="productPrice">₹0</strong>
+                <span class="currency-tag">MRP</span>
+              </p>
+              <p class="pd-stock-hint" id="productStockHint" hidden></p>
+            </div>
+            <p class="pd-buy-rail__breakdown" id="priceBreakdown"></p>
+            <p class="pd-buy-rail__size-line" id="priceSizeLabel">Classic</p>
+
+            <div class="size-dock glass-panel size-dock--primary size-dock--compact pd-buy-rail__sizes" id="sizeDock">
+              <div class="size-dock__head size-dock__head--inline">
+                <h2 class="size-dock__title">Size</h2>
               </div>
-              <div class="product-qty-stepper" id="productQtyStepper" aria-label="Adjust quantity">
-                <button type="button" id="productQtyMinus" aria-label="Decrease quantity">−</button>
-                <span class="product-qty-stepper__val" id="productQtyStepperVal">1</span>
-                <button type="button" id="productQtyPlus" aria-label="Increase quantity">+</button>
+              <div class="size-scale size-scale--compact" id="sizeScale" data-sel="m" aria-hidden="true">
+                <div class="size-scale__labels">
+                  <span data-k="s">Compact</span>
+                  <span data-k="m">Classic</span>
+                  <span data-k="l">Grand</span>
+                </div>
+                <div class="size-scale__track">
+                  <span class="size-scale__fill"></span>
+                </div>
+              </div>
+              <div class="size-options size-options--pills" id="sizeOptions" role="radiogroup" aria-label="Choose size"></div>
+            </div>
+
+            <div class="product-qty-bar pd-buy-rail__qty">
+              <div class="qty-dock glass-panel qty-dock--strip pd-qty-dock" id="qtyDock">
+                <div class="qty-dock__head qty-dock__head--compact">
+                  <h2 class="qty-dock__title">Quantity</h2>
+                  <p class="qty-dock__sub" id="qtyTierHint">Same MRP per piece.</p>
+                </div>
+                <div class="product-qty-stepper product-qty-stepper--pill" id="productQtyStepper" aria-label="Adjust quantity">
+                  <button type="button" id="productQtyMinus" aria-label="Decrease quantity">−</button>
+                  <span class="product-qty-stepper__val" id="productQtyStepperVal">1</span>
+                  <button type="button" id="productQtyPlus" aria-label="Increase quantity">+</button>
+                </div>
               </div>
             </div>
+
+            <button type="button" class="pd-buy-rail__cta btn-add-lg btn-add-lg--fx" id="addToCartBtn">
+              <span class="btn-add-premium__text">Add to cart</span>
+            </button>
+            <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
           </div>
 
           <p class="product-return-gift-badge" id="productReturnGiftBadge" hidden>
@@ -136,48 +170,6 @@
 
           <div class="product-share-bar" id="productShareHost" aria-label="Share this piece"></div>
 
-          <div class="size-dock glass-panel size-dock--primary size-dock--animate size-dock--compact" id="sizeDock">
-            <div class="size-dock__head">
-              <h2 class="size-dock__title">Sizes</h2>
-            </div>
-            <div class="size-scale size-scale--compact" id="sizeScale" data-sel="m" aria-hidden="true">
-              <div class="size-scale__labels">
-                <span data-k="s">Compact</span>
-                <span data-k="m">Classic</span>
-                <span data-k="l">Grand</span>
-              </div>
-              <div class="size-scale__track">
-                <span class="size-scale__fill"></span>
-              </div>
-            </div>
-            <div class="size-options size-options--lux" id="sizeOptions" role="radiogroup" aria-label="Choose size"></div>
-          </div>
-
-          <div class="price-block price-block--fx">
-            <span class="price-block__eyebrow">Your selection</span>
-            <div class="price-block__row">
-              <span class="price-block__size" id="priceSizeLabel">Classic</span>
-              <p class="product-price-hero">
-                <strong id="productPrice">₹0</strong>
-                <span class="currency-tag">MRP</span>
-              </p>
-            </div>
-            <p class="price-block__breakdown" id="priceBreakdown"></p>
-          </div>
-
-          <button type="button" class="btn-add-lg btn-add-lg--fx btn-add-premium" id="addToCartBtn">
-            <span class="btn-add-premium__glow" aria-hidden="true"></span>
-            <span class="btn-add-premium__inner">
-              <span class="btn-add-premium__icon" aria-hidden="true">
-                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 11V6a3 3 0 1 1 6 0v5M5 9h14l-1.2 12.1a2 2 0 0 1-2 1.9H8.2a2 2 0 0 1-2-1.9L5 9Z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/>
-                </svg>
-              </span>
-              <span class="btn-add-premium__text">Add to cart</span>
-              <span class="btn-add-premium__chev" aria-hidden="true">→</span>
-            </span>
-          </button>
-          <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
           <p class="product-reseller-note" id="productResellerNote">
             For orders of more than 50 units of the same piece, please
             <a href="about.html">contact us</a> for reseller pricing and timelines.

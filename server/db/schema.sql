@@ -21,10 +21,13 @@ CREATE TABLE IF NOT EXISTS guest_addresses (
   state VARCHAR(120) NOT NULL,
   zip VARCHAR(20) NOT NULL,
   country VARCHAR(80) NOT NULL,
+  address_type VARCHAR(24) NOT NULL DEFAULT '',
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_guest_addresses_guest ON guest_addresses (guest_id);
+
+ALTER TABLE guest_addresses ADD COLUMN IF NOT EXISTS address_type VARCHAR(24) NOT NULL DEFAULT '';
 
 CREATE TABLE IF NOT EXISTS guest_sessions (
   id BIGSERIAL PRIMARY KEY,
@@ -167,6 +170,8 @@ ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_s NUMERIC(14,
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_m NUMERIC(14, 2);
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_l NUMERIC(14, 2);
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true;
+
+ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb;
 
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT '';
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS size_key VARCHAR(20) NOT NULL DEFAULT '';

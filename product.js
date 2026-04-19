@@ -47,7 +47,7 @@
     offeredSizeKeys().forEach(function (key) {
       var btn = els.sizes.querySelector('.size-pick[data-size="' + key + '"]');
       if (!btn) return;
-      var pr = btn.querySelector(".size-pick__price");
+      var pr = btn.querySelector(".size-pill__price") || btn.querySelector(".size-pick__price");
       if (!pr) return;
       var v = product.prices && product.prices[key];
       if (v == null || !Number.isFinite(Number(v))) return;
@@ -290,6 +290,20 @@
         els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " each · same MRP per piece";
       }
     }
+    var stockHint = document.getElementById("productStockHint");
+    if (stockHint && product.stock) {
+      var stk = product.stock[selected];
+      if (stk != null && Number.isFinite(Number(stk))) {
+        stockHint.hidden = false;
+        stockHint.innerHTML =
+          '<span class="pd-stock-dot" aria-hidden="true"></span><span>' +
+          String(Math.floor(Number(stk))) +
+          " in stock</span>";
+      } else {
+        stockHint.hidden = true;
+        stockHint.textContent = "";
+      }
+    }
     if (els.priceSizeLabel) {
       els.priceSizeLabel.textContent = D.getSizeLabelNameForProduct
         ? D.getSizeLabelNameForProduct(product, selected)
@@ -362,25 +376,22 @@
           : D.getSizeProfile
             ? D.getSizeProfile(product.category, key)
             : { dim: "", pour: "", viz: 1 };
-        var uid = baseUid + "-" + key;
-        var pourLine = profile.pour ? String(profile.pour).trim() : "";
         var btn = document.createElement("button");
         btn.type = "button";
-        btn.className = "size-pick" + (key === selected ? " is-selected" : "");
+        btn.className = "size-pick size-pick--pill" + (key === selected ? " is-selected" : "");
         btn.dataset.size = key;
         btn.style.setProperty("--viz", String(profile.viz != null ? profile.viz : 1));
         btn.setAttribute("role", "radio");
         btn.setAttribute("aria-checked", key === selected ? "true" : "false");
         btn.innerHTML =
-          resinFigureHtml(uid) +
-          '<span class="size-pick__badge">' +
+          '<span class="size-pill__main">' +
+          '<span class="size-pill__label">' +
           escapeHtml(labName) +
           "</span>" +
-          '<span class="size-pick__dim">' +
+          '<span class="size-pill__dim">' +
           escapeHtml(profile.dim) +
-          "</span>" +
-          (pourLine ? '<span class="size-pick__pour">' + escapeHtml(pourLine) + "</span>" : "") +
-          '<span class="size-pick__price">' +
+          "</span></span>" +
+          '<span class="size-pill__price">' +
           fmt(product.prices[key]) +
           ' <span class="currency-tag">MRP</span></span>';
         btn.addEventListener("click", function () {
@@ -402,7 +413,8 @@
     }
 
     if (els.sizeScale) {
-      els.sizeScale.hidden = offered.length <= 1;
+      els.sizeScale.hidden = true;
+      els.sizeScale.setAttribute("aria-hidden", "true");
       els.sizeScale.querySelectorAll("[data-k]").forEach(function (sp) {
         var k = sp.getAttribute("data-k");
         if (k !== "s" && k !== "m" && k !== "l") return;

@@ -6,6 +6,7 @@
   var pendingHighlightOrderId = "";
   var ordersCache = [];
   var activeOrderTab = "current";
+  var activeAcctSection = "orders";
 
   function billApiPortOverride() {
     try {
@@ -528,9 +529,156 @@
     var card = document.getElementById("accountOrdersCard");
     if (!card) return;
     if (show) {
-      card.removeAttribute("hidden");
+      if (activeAcctSection === "orders") {
+        card.removeAttribute("hidden");
+      }
     } else {
       card.setAttribute("hidden", "hidden");
+    }
+  }
+
+  function setAcctNavActive(section) {
+    var nav = document.getElementById("accountSideNav");
+    if (!nav) return;
+    nav.querySelectorAll("[data-acct-section]").forEach(function (b) {
+      var on = (b.getAttribute("data-acct-section") || "") === section;
+      b.classList.toggle("account-side-nav__link--active", on);
+    });
+  }
+
+  function formatAddrTypeLabel(t) {
+    var x = String(t || "").toLowerCase();
+    if (x === "home") return "Home";
+    if (x === "work") return "Work";
+    if (x === "other") return "Other";
+    return "";
+  }
+
+  function renderAccountAddrRows(addresses) {
+    var list = document.getElementById("accountAddrList");
+    if (!list) return;
+    list.innerHTML = "";
+    if (!addresses || !addresses.length) {
+      list.innerHTML =
+        '<li class="account-orders-empty"><p class="account-orders-empty__text">No saved addresses yet. Save one from checkout.</p></li>';
+      return;
+    }
+    addresses.forEach(function (a) {
+      var li = document.createElement("li");
+      li.className = "account-addr-card";
+      var typeL = formatAddrTypeLabel(a.addressType);
+      var head = typeL ? typeL + " · " : "";
+      li.innerHTML =
+        "<p><strong>" +
+        escapeHtml(head + [a.addrLine1, a.addrLine2].filter(Boolean).join(", ")) +
+        "</strong></p>" +
+        "<p>" +
+        escapeHtml([a.city, a.state, a.zip, a.country].filter(Boolean).join(", ")) +
+        "</p>";
+      list.appendChild(li);
+    });
+  }
+
+  function refreshAccountAddresses() {
+    var list = document.getElementById("accountAddrList");
+    var hint = document.getElementById("accountAddrSignInHint");
+    if (!list) return;
+    list.innerHTML = "";
+    var token = null;
+    try {
+      token = localStorage.getItem(GUEST_TOKEN_KEY);
+    } catch (_) {}
+    if (!token) {
+      if (hint) hint.hidden = false;
+      list.innerHTML =
+        '<li class="account-orders-empty"><p class="account-orders-empty__text">Sign in to load saved addresses.</p></li>';
+      return;
+    }
+    if (hint) hint.hidden = true;
+    fetch(billApiBase() + "/api/guest/me", { headers: guestAuthHeaders() })
+      .then(function (res) {
+        return parseApiJson(res).then(function (x) {
+          return { status: res.status, x: x };
+        });
+      })
+      .then(function (o) {
+        var j = o.x.json || {};
+        if (!o.x.okHttp || !j.ok) {
+          renderAccountAddrRows([]);
+          return;
+        }
+        renderAccountAddrRows(j.addresses || []);
+      })
+      .catch(function () {
+        renderAccountAddrRows([]);
+      });
+  }
+
+  function renderAccountSaveLater() {
+    var list = document.getElementById("accountLaterList");
+    if (!list || !window.RESIN_CART || typeof window.RESIN_CART.loadSaveLater !== "function") return;
+    var lines = window.RESIN_CART.loadSaveLater();
+    list.innerHTML = "";
+    if (!lines.length) {
+      list.innerHTML =
+        '<li class="account-orders-empty"><p class="account-orders-empty__text">Nothing saved yet. Use Save for later on checkout.</p></li>';
+      return;
+    }
+    lines.forEach(function (line) {
+      var li = document.createElement("li");
+      li.className = "account-later-line";
+      var sz = window.RESIN_DATA && window.RESIN_DATA.lineSizeLabel ? window.RESIN_DATA.lineSizeLabel(line.id, line.size) : line.size;
+      var imgSrc = lineImageSrc(line);
+      var thumb =
+        imgSrc && String(imgSrc).length
+          ? '<span class="account-later-line__img"><img src="' + escapeAttr(imgSrc) + '" alt="" width="48" height="48" loading="lazy" /></span>'
+          : '<span class="account-later-line__img account-later-line__img--empty" aria-hidden="true"></span>';
+      li.innerHTML =
+        thumb +
+        '<div class="account-later-line__body">' +
+        "<strong>" +
+        escapeHtml(line.name || "") +
+        "</strong>" +
+        "<span>" +
+        escapeHtml(sz || "") +
+        " · Qty " +
+        (line.qty || 1) +
+        "</span></div>" +
+        '<div class="account-later-line__actions">' +
+        '<button type="button" class="checkout-pay-secondary account-later-line__tocart" data-later-to-cart-id="' +
+        escapeAttr(line.id) +
+        '" data-later-to-cart-size="' +
+        escapeAttr(line.size) +
+        '">Move to cart</button>' +
+        '<button type="button" class="account-later-line__rm" data-later-rm-id="' +
+        escapeAttr(line.id) +
+        '" data-later-rm-size="' +
+        escapeAttr(line.size) +
+        '" aria-label="Remove">×</button></div>';
+      list.appendChild(li);
+    });
+  }
+
+  function setAccountSection(section) {
+    activeAcctSection = section || "orders";
+    var ordersC = document.getElementById("accountOrdersCard");
+    var addrC = document.getElementById("accountAddressesCard");
+    var laterC = document.getElementById("accountSaveLaterCard");
+    setAcctNavActive(activeAcctSection);
+    if (activeAcctSection === "orders") {
+      if (ordersC) ordersC.removeAttribute("hidden");
+      if (addrC) addrC.setAttribute("hidden", "hidden");
+      if (laterC) laterC.setAttribute("hidden", "hidden");
+    } else if (activeAcctSection === "addresses") {
+      if (ordersC) ordersC.setAttribute("hidden", "hidden");
+      if (addrC) addrC.removeAttribute("hidden");
+      if (laterC) laterC.setAttribute("hidden", "hidden");
+      refreshAccountAddresses();
+    } else if (activeAcctSection === "later") {
+      if (ordersC) ordersC.setAttribute("hidden", "hidden");
+      if (addrC) addrC.setAttribute("hidden", "hidden");
+      if (laterC) laterC.removeAttribute("hidden");
+      renderAccountSaveLater();
     }
   }
 
@@ -907,6 +1055,12 @@
         showAccountAuth(true);
         showSessionBar(false);
         showAccountStoreChrome(false);
+        activeAcctSection = "orders";
+        setAcctNavActive("orders");
+        var addrC = document.getElementById("accountAddressesCard");
+        var laterC = document.getElementById("accountSaveLaterCard");
+        if (addrC) addrC.setAttribute("hidden", "hidden");
+        if (laterC) laterC.setAttribute("hidden", "hidden");
         var list = document.getElementById("accountOrdersList");
         if (list) list.innerHTML = "";
         var ban = document.getElementById("accountPaidBanner");
@@ -935,6 +1089,43 @@
       outSide.addEventListener("click", function () {
         var top = document.getElementById("acctSignOut");
         if (top) top.click();
+      });
+    }
+
+    var sideNav = document.getElementById("accountSideNav");
+    if (sideNav) {
+      sideNav.addEventListener("click", function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest("[data-acct-section]") : null;
+        if (!b || !sideNav.contains(b)) return;
+        ev.preventDefault();
+        var s = b.getAttribute("data-acct-section");
+        if (s) setAccountSection(s);
+      });
+    }
+
+    var laterList = document.getElementById("accountLaterList");
+    if (laterList) {
+      laterList.addEventListener("click", function (ev) {
+        var toCart = ev.target && ev.target.closest ? ev.target.closest("[data-later-to-cart-id]") : null;
+        if (toCart) {
+          var id = toCart.getAttribute("data-later-to-cart-id");
+          var size = toCart.getAttribute("data-later-to-cart-size");
+          if (window.RESIN_CART && typeof window.RESIN_CART.moveSaveLaterToCart === "function") {
+            if (window.RESIN_CART.moveSaveLaterToCart(id, size)) {
+              renderAccountSaveLater();
+              if (window.RESIN_SHELL) {
+                if (window.RESIN_SHELL.updateBadge) window.RESIN_SHELL.updateBadge();
+                if (window.RESIN_SHELL.renderDrawer) window.RESIN_SHELL.renderDrawer();
+              }
+            }
+          }
+          return;
+        }
+        var rm = ev.target && ev.target.closest ? ev.target.closest("[data-later-rm-id]") : null;
+        if (rm && window.RESIN_CART && typeof window.RESIN_CART.removeSaveLaterLine === "function") {
+          window.RESIN_CART.removeSaveLaterLine(rm.getAttribute("data-later-rm-id"), rm.getAttribute("data-later-rm-size"));
+          renderAccountSaveLater();
+        }
       });
     }
 
@@ -972,15 +1163,6 @@
     }
 
     hydrateSessionFromToken();
-
-    setInterval(function () {
-      var card = document.getElementById("accountOrdersCard");
-      try {
-        if (!card || card.hasAttribute("hidden")) return;
-        if (!localStorage.getItem(GUEST_TOKEN_KEY)) return;
-        loadOrders();
-      } catch (_) {}
-    }, 45000);
   }
 
   boot();

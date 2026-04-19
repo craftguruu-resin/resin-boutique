@@ -74,7 +74,7 @@ function saveGuestAddressOnly(guest, cb) {
     return guestDb.saveGuestAddressOnly(guest, cb);
   }
   process.nextTick(function () {
-    cb(null, { guestId: null });
+    cb(null, { guestId: null, savedAddressId: null, addressReused: false });
   });
 }
 

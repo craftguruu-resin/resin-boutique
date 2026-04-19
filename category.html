@@ -105,6 +105,39 @@
             <p class="band-sub" id="categorySub">Loading…</p>
           </div>
         </div>
+        <div class="category-toolbar" id="categoryToolbar" aria-label="Sort and price filters">
+          <div class="category-toolbar__group">
+            <label class="category-toolbar__label" for="categorySortSelect">Sort</label>
+            <select id="categorySortSelect" class="category-toolbar__select"></select>
+          </div>
+          <div class="category-toolbar__group category-toolbar__group--range">
+            <span class="category-toolbar__label">Price range (₹)</span>
+            <div class="category-toolbar__range">
+              <input
+                type="number"
+                id="categoryPriceMin"
+                class="category-toolbar__input"
+                inputmode="decimal"
+                min="0"
+                step="1"
+                placeholder="Min"
+                aria-label="Minimum from-price"
+              />
+              <span class="category-toolbar__dash" aria-hidden="true">—</span>
+              <input
+                type="number"
+                id="categoryPriceMax"
+                class="category-toolbar__input"
+                inputmode="decimal"
+                min="0"
+                step="1"
+                placeholder="Max"
+                aria-label="Maximum from-price"
+              />
+            </div>
+          </div>
+          <button type="button" class="category-toolbar__clear" id="categoryFilterClear">Clear filters</button>
+        </div>
         <div class="product-grid" id="subcategoryGrid" hidden></div>
         <div class="product-grid" id="productGrid"></div>
         <nav class="pagination" id="pagination" aria-label="Pagination"></nav>

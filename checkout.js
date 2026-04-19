@@ -111,6 +111,14 @@
     set("state", addr.state);
     set("zip", addr.zip);
     set("country", addr.country);
+    var at = String((addr && addr.addressType) || "").toLowerCase();
+    document.querySelectorAll('input[name="addrType"]').forEach(function (inp) {
+      inp.checked = inp.value === at;
+    });
+    if (!document.querySelector('input[name="addrType"]:checked')) {
+      var h = document.querySelector('input[name="addrType"][value="home"]');
+      if (h) h.checked = true;
+    }
   }
 
   function fillSavedAddrSelect(addresses) {
@@ -604,6 +612,13 @@
     });
   }
 
+  function addressTypeFromForm() {
+    var r = document.querySelector('input[name="addrType"]:checked');
+    var v = r && r.value ? String(r.value).trim().toLowerCase() : "home";
+    if (v !== "home" && v !== "work" && v !== "other") v = "home";
+    return v;
+  }
+
   function buildGuestPayloadFromForm() {
     function val(id) {
       var el = document.getElementById(id);
@@ -619,6 +634,7 @@
       state: val("state"),
       zip: val("zip"),
       country: val("country"),
+      addressType: addressTypeFromForm(),
     };
   }
 
@@ -921,16 +937,25 @@
         escapeAttr(line.name || "product") +
         '">' +
         imgHtml +
+        '<span class="checkout-snip__badge" aria-hidden="true">' +
+        escapeHtml(String(line.qty || 1)) +
+        "</span>" +
         '<span class="checkout-snip__meta">' +
         escapeHtml(line.name || "") +
         "</span></a>" +
+        '<div class="checkout-snip__actions">' +
+        '<button type="button" class="checkout-snip__later" data-later-id="' +
+        escapeAttr(line.id) +
+        '" data-later-size="' +
+        escapeAttr(line.size) +
+        '" title="Save for later">♡</button>' +
         '<button type="button" class="checkout-snip__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
         '" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
-        ' from cart">×</button>';
+        ' from cart">×</button></div>';
       var szMeta = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
       var amt = lineTotalAmt(line);
       var hay =
@@ -980,16 +1005,23 @@
         " each</span>" +
         "</div>" +
         "</a>" +
+        '<div class="checkout-line__tail">' +
+        '<span class="checkout-line__price">' +
+        fmt(lineAmt) +
+        "</span>" +
+        '<div class="checkout-line__actions">' +
+        '<button type="button" class="checkout-line__later" data-later-id="' +
+        escapeAttr(line.id) +
+        '" data-later-size="' +
+        escapeAttr(line.size) +
+        '" title="Save for later">Later</button>' +
         '<button type="button" class="checkout-line__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
         '" title="Remove" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
-        '">×</button>' +
-        '<span class="checkout-line__price">' +
-        fmt(lineAmt) +
-        "</span>";
+        '">×</button></div></div>';
       var hay =
         (line.name || "") +
         " " +
@@ -1103,10 +1135,32 @@
     }
   }
 
+  function onSaveLaterClick(e) {
+    var btn = e.target && e.target.closest ? e.target.closest(".checkout-line__later, .checkout-snip__later") : null;
+    if (!btn) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var id = btn.getAttribute("data-later-id");
+    var size = btn.getAttribute("data-later-size");
+    if (!CART.moveLineToSaveLater) return;
+    var ok = CART.moveLineToSaveLater(id, size);
+    if (ok) refreshCheckout();
+    if (window.RESIN_SHELL) {
+      window.RESIN_SHELL.updateBadge();
+      window.RESIN_SHELL.renderDrawer();
+    }
+  }
+
   function bindRemoveDelegation() {
     if (removeDelegationDone) return;
-    if (els.lines) els.lines.addEventListener("click", onRemoveClick);
-    if (els.snipsGrid) els.snipsGrid.addEventListener("click", onRemoveClick);
+    if (els.lines) {
+      els.lines.addEventListener("click", onRemoveClick);
+      els.lines.addEventListener("click", onSaveLaterClick);
+    }
+    if (els.snipsGrid) {
+      els.snipsGrid.addEventListener("click", onRemoveClick);
+      els.snipsGrid.addEventListener("click", onSaveLaterClick);
+    }
     removeDelegationDone = true;
   }
 

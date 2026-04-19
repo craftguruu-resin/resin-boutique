@@ -346,17 +346,71 @@
     return true;
   }
 
+  var DEFAULT_HOME_SORT = "name-asc";
+  var homeFeaturedSortWired = false;
+
+  function homeFeaturedSortEl() {
+    return document.getElementById("homeFeaturedSort");
+  }
+
+  function sortFeaturedCategories(cats) {
+    var sel = homeFeaturedSortEl();
+    var sort = (sel && sel.value) || DEFAULT_HOME_SORT;
+    var arr = cats.slice();
+    if (sort === "name-desc") {
+      arr.sort(function (a, b) {
+        return String(b.label || "").localeCompare(String(a.label || ""), undefined, { sensitivity: "base" });
+      });
+    } else if (sort === "price-asc") {
+      arr.sort(function (a, b) {
+        var ma = minPriceInCategory(a.id);
+        var mb = minPriceInCategory(b.id);
+        var na = ma != null ? ma : Infinity;
+        var nb = mb != null ? mb : Infinity;
+        return na - nb;
+      });
+    } else if (sort === "price-desc") {
+      arr.sort(function (a, b) {
+        var ma = minPriceInCategory(a.id);
+        var mb = minPriceInCategory(b.id);
+        var na = ma != null ? ma : -Infinity;
+        var nb = mb != null ? mb : -Infinity;
+        return nb - na;
+      });
+    } else {
+      arr.sort(function (a, b) {
+        return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
+      });
+    }
+    return arr;
+  }
+
+  function wireHomeFeaturedSortOnce() {
+    if (homeFeaturedSortWired) return;
+    var sel = homeFeaturedSortEl();
+    if (!sel) return;
+    homeFeaturedSortWired = true;
+    sel.addEventListener("change", function () {
+      renderFeatured();
+      syncHomeFindUrl();
+    });
+  }
+
   function syncHomeFindUrl() {
     try {
       var u = new URL(window.location.href);
       var inp = document.getElementById("globalFindQuery");
       var cap = document.getElementById("globalFindHomePriceCap");
+      var sortEl = document.getElementById("homeFeaturedSort");
       var q = inp && inp.value.trim();
       var m = cap && cap.value;
+      var sort = sortEl && sortEl.value;
       if (q) u.searchParams.set("q", q);
       else u.searchParams.delete("q");
       if (m) u.searchParams.set("maxp", m);
       else u.searchParams.delete("maxp");
+      if (sort && sort !== DEFAULT_HOME_SORT) u.searchParams.set("sort", sort);
+      else u.searchParams.delete("sort");
       var hash = window.location.hash || "";
       history.replaceState(
         {},
@@ -439,16 +493,18 @@
 
   function renderFeatured() {
     if (!els.productGrid) return;
+    wireHomeFeaturedSortOnce();
     els.productGrid.className = "featured-cat-grid";
     els.productGrid.innerHTML = "";
     if (els.filterLabel) {
       els.filterLabel.textContent =
-        "Use the orb (top right): type any part of a name for instant matches, set a max “from” price for featured lines, then open a piece—full MRP on the product page.";
+        "Sort lines below (default A→Z). Use search and max price in the header to narrow cards, then open a category—full MRP on each product page.";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
       return listedProductsInCategory(c.id).length > 0;
     });
+    cats = sortFeaturedCategories(cats);
     cats.forEach(function (cat, i) {
       var preview = firstProductInCategory(cat.id);
       var count = listedProductsInCategory(cat.id).length;
@@ -757,12 +813,18 @@
   var hp = new URLSearchParams(window.location.search);
   var bootQ = (hp.get("q") || "").trim();
   var bootMaxp = (hp.get("maxp") || "").trim();
+  var bootSort = hp.get("sort") || DEFAULT_HOME_SORT;
   var gq = document.getElementById("globalFindQuery");
   var gCap = document.getElementById("globalFindHomePriceCap");
+  var gSort = document.getElementById("homeFeaturedSort");
   if (bootQ && gq) gq.value = bootQ;
   if (bootMaxp && gCap) {
     var ok = { "35": 1, "50": 1, "75": 1, "100": 1, "150": 1, "250": 1, "500": 1, "1000": 1 };
     if (ok[bootMaxp]) gCap.value = bootMaxp;
+  }
+  if (gSort) {
+    var sortOk = { "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 };
+    gSort.value = sortOk[bootSort] ? bootSort : DEFAULT_HOME_SORT;
   }
 
   renderCategories();

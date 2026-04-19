@@ -48,13 +48,10 @@
 
       <div class="account-layout">
         <aside class="account-sidebar" id="accountSidebar" hidden aria-label="Account sections">
-          <nav class="account-side-nav">
-            <a class="account-side-nav__link account-side-nav__link--active" href="account.html">My orders</a>
-            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Your addresses</span>
-            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Login &amp; security</span>
-            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Payments</span>
-            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Archived orders</span>
-            <span class="account-side-nav__link account-side-nav__link--muted" title="Coming soon">Saved items</span>
+          <nav class="account-side-nav" id="accountSideNav">
+            <button type="button" class="account-side-nav__link account-side-nav__link--active" data-acct-section="orders">My orders</button>
+            <button type="button" class="account-side-nav__link" data-acct-section="addresses">Your addresses</button>
+            <button type="button" class="account-side-nav__link" data-acct-section="later">Save for later</button>
             <div class="account-side-nav__rule" role="presentation"></div>
             <a class="account-side-nav__link" href="index.html">Continue shopping</a>
             <button type="button" class="account-side-nav__link account-side-nav__link--btn" id="acctSignOutSidebar">Log out</button>
@@ -128,6 +125,28 @@
               <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="all">All orders</button>
             </div>
             <ul class="account-orders-list" id="accountOrdersList"></ul>
+          </div>
+
+          <div class="auth-modal__sheet checkout-auth-sheet account-dock account-addr-panel" id="accountAddressesCard" hidden>
+            <div class="account-orders-panel__head">
+              <h2 class="account-orders-panel__h">Your addresses</h2>
+              <p class="account-order-hint account-orders-panel__hint">
+                Saved when you use <strong>Save shipping address</strong> on checkout while signed in with the same email.
+              </p>
+            </div>
+            <p class="account-addr-panel__need-signin" id="accountAddrSignInHint" hidden>
+              Sign in with your email code to see saved guest addresses.
+            </p>
+            <ul class="account-addr-list" id="accountAddrList"></ul>
+            <a class="checkout-back-link account-addr-panel__link" href="checkout.html">Go to checkout</a>
+          </div>
+
+          <div class="auth-modal__sheet checkout-auth-sheet account-dock account-later-panel" id="accountSaveLaterCard" hidden>
+            <div class="account-orders-panel__head">
+              <h2 class="account-orders-panel__h">Save for later</h2>
+              <p class="account-order-hint account-orders-panel__hint">Items you moved from checkout stay here until you move them back to the cart.</p>
+            </div>
+            <ul class="account-later-list" id="accountLaterList"></ul>
           </div>
         </div>
       </div>

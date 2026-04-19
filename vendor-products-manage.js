@@ -168,8 +168,9 @@
       .join("");
   }
 
+  /** Bundled catalog rows: name & images stay on data.js; prices, return gift, and size labels are editable here. */
   function setCatalogFormDisabled(on) {
-    ["vpmName", "vpmLblS", "vpmLblM", "vpmLblL", "vpmImage", "vpmImageUrl"].forEach(function (id) {
+    ["vpmName", "vpmImage", "vpmImageUrl"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !!on;
     });
@@ -336,9 +337,13 @@
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
         returnGift: returnGift,
+        sizeLabelS: String((document.getElementById("vpmLblS") && document.getElementById("vpmLblS").value) || "").trim(),
+        sizeLabelM: String((document.getElementById("vpmLblM") && document.getElementById("vpmLblM").value) || "").trim(),
+        sizeLabelL: String((document.getElementById("vpmLblL") && document.getElementById("vpmLblL").value) || "").trim(),
       })
         .then(function () {
           showMsg("Saved.", false);
+          refreshGuestCatalogMerge();
           return loadList();
         })
         .then(function () {
@@ -395,6 +400,7 @@
       })
       .then(function () {
         showMsg("Saved.", false);
+        refreshGuestCatalogMerge();
         return loadList();
       })
       .then(function () {

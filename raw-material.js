@@ -23,15 +23,52 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  var lastMaterials = [];
+  var sortWired = false;
+  var DEFAULT_SORT = "name-asc";
+
+  function sortSelect() {
+    return document.getElementById("rmSortSelect");
+  }
+
+  function sortedList(list) {
+    var sel = sortSelect();
+    var sort = (sel && sel.value) || DEFAULT_SORT;
+    var arr = (list || []).slice();
+    if (sort === "name-desc") {
+      arr.sort(function (a, b) {
+        return String((b && b.name) || "").localeCompare(String((a && a.name) || ""), undefined, { sensitivity: "base" });
+      });
+    } else {
+      arr.sort(function (a, b) {
+        return String((a && a.name) || "").localeCompare(String((b && b.name) || ""), undefined, { sensitivity: "base" });
+      });
+    }
+    return arr;
+  }
+
+  function wireSortOnce() {
+    if (sortWired) return;
+    var sel = sortSelect();
+    if (!sel) return;
+    sortWired = true;
+    sel.addEventListener("change", function () {
+      render(lastMaterials);
+    });
+  }
+
   function render(list) {
+    wireSortOnce();
+    lastMaterials = list || [];
     var g = document.getElementById("rmGrid");
     if (!g) return;
     g.innerHTML = "";
-    if (!list || !list.length) {
+    var rows = sortedList(lastMaterials);
+    if (!rows.length) {
       g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">No materials listed yet.</p>';
       return;
     }
-    list.forEach(function (m) {
+    rows.forEach(function (m) {
       var card = document.createElement("article");
       card.className = "rm-card";
       card.innerHTML =

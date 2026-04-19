@@ -7,6 +7,7 @@
 
   /** Browser-only cart when not signed in (per device / profile). */
   var ANON_CART_KEY = "resin_craftguru_cart_inr_v1";
+  var ANON_SAVE_LATER_KEY = "craftguru_save_later_v1";
 
   function sessionEmailLower() {
     try {
@@ -23,6 +24,12 @@
     var em = sessionEmailLower();
     if (em) return "resin_craftguru_cart_inr_v1__acct__" + em;
     return ANON_CART_KEY;
+  }
+
+  function saveLaterStorageKey() {
+    var em = sessionEmailLower();
+    if (em) return ANON_SAVE_LATER_KEY + "__acct__" + em;
+    return ANON_SAVE_LATER_KEY;
   }
 
   function safeNumber(n, fallback) {
@@ -123,6 +130,15 @@
     var merged = mergeLineLists(existing, anon);
     saveRaw(userKey, merged);
     saveRaw(ANON_CART_KEY, []);
+    var anonLater = loadSaveLaterFromKey(ANON_SAVE_LATER_KEY);
+    var userLaterKey = saveLaterStorageKey();
+    var mergedLater = mergeLineLists(loadSaveLaterFromKey(userLaterKey), anonLater);
+    try {
+      global.localStorage.setItem(userLaterKey, JSON.stringify(mergedLater));
+    } catch (_) {}
+    try {
+      global.localStorage.setItem(ANON_SAVE_LATER_KEY, JSON.stringify([]));
+    } catch (_) {}
     notify();
   }
 
@@ -195,6 +211,100 @@
     save([]);
   }
 
+  function loadSaveLaterFromKey(key) {
+    try {
+      var raw = global.localStorage.getItem(key);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      var out = [];
+      parsed.forEach(function (l) {
+        var n = normalizeLine(l);
+        if (n) out.push(n);
+      });
+      return out;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function loadSaveLater() {
+    return loadSaveLaterFromKey(saveLaterStorageKey());
+  }
+
+  function saveSaveLater(lines) {
+    try {
+      global.localStorage.setItem(saveLaterStorageKey(), JSON.stringify(lines || []));
+    } catch (_) {}
+    try {
+      global.dispatchEvent(new CustomEvent("resinSaveLaterChanged"));
+    } catch (_) {}
+  }
+
+  function removeSaveLaterLine(id, size) {
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var next = loadSaveLater().filter(function (l) {
+      return !(l.id === sid && l.size === ss);
+    });
+    saveSaveLater(next);
+    return next;
+  }
+
+  /**
+   * Move one cart line to Save for later (same qty). Removes from cart.
+   * @returns {boolean} whether a line was moved
+   */
+  function moveLineToSaveLater(id, size) {
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var lines = load();
+    var hit = null;
+    for (var i = 0; i < lines.length; i++) {
+      if (lines[i].id === sid && lines[i].size === ss) {
+        hit = lines[i];
+        break;
+      }
+    }
+    if (!hit) return false;
+    var later = loadSaveLater();
+    var k = lineKey(hit);
+    var map = Object.create(null);
+    later.forEach(function (l) {
+      var n = normalizeLine(l);
+      if (n) map[lineKey(n)] = Object.assign({}, n);
+    });
+    if (map[k]) {
+      map[k].qty = Math.max(1, Math.floor(safeNumber(map[k].qty, 1) + safeNumber(hit.qty, 1)));
+    } else {
+      map[k] = Object.assign({}, hit);
+    }
+    var merged = Object.keys(map).map(function (x) {
+      return map[x];
+    });
+    saveSaveLater(merged);
+    removeLine(sid, ss);
+    return true;
+  }
+
+  function moveSaveLaterToCart(id, size) {
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var later = loadSaveLater();
+    var hit = null;
+    for (var i = 0; i < later.length; i++) {
+      if (later[i].id === sid && later[i].size === ss) {
+        hit = later[i];
+        break;
+      }
+    }
+    if (!hit) return false;
+    addItem(hit);
+    removeSaveLaterLine(sid, ss);
+    notify();
+    return true;
+  }
+
   function countItems() {
     return load().reduce(function (acc, l) {
       return acc + Math.max(0, safeNumber(l.qty, 0));
@@ -238,5 +348,10 @@
     formatMoney: formatMoney,
     onAccountLogin: onAccountLogin,
     onAccountLogout: onAccountLogout,
+    loadSaveLater: loadSaveLater,
+    saveSaveLater: saveSaveLater,
+    removeSaveLaterLine: removeSaveLaterLine,
+    moveLineToSaveLater: moveLineToSaveLater,
+    moveSaveLaterToCart: moveSaveLaterToCart,
   };
 })(typeof window !== "undefined" ? window : this);

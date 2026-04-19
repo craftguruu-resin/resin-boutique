@@ -31,6 +31,19 @@
     return document.getElementById("globalFindPriceCap");
   }
 
+  /** On category page, primary sort control is the in-page toolbar (falls back to header popover). */
+  function categorySortEl() {
+    return document.getElementById("categorySortSelect") || gfSort();
+  }
+
+  function categoryPriceMinEl() {
+    return document.getElementById("categoryPriceMin");
+  }
+
+  function categoryPriceMaxEl() {
+    return document.getElementById("categoryPriceMax");
+  }
+
   function partialTokenMatch(haystack, queryRaw) {
     var h = String(haystack || "")
       .toLowerCase()
@@ -63,11 +76,15 @@
     return bits.join(" ").replace(/\s+/g, " ");
   }
 
+  /** Default when no `sort` query param — stable, not reshuffled on background catalog merges. */
+  var DEFAULT_SORT = "name-asc";
+
   var params = new URLSearchParams(window.location.search);
   var cat = D.normalizeCategoryId(params.get("cat"));
   var page = parseInt(params.get("page") || "1", 10) || 1;
   var urlQ = (params.get("q") || "").trim();
-  var urlSort = params.get("sort") || "relevance";
+  var urlSort = params.get("sort") || DEFAULT_SORT;
+  var urlMinp = (params.get("minp") || "").trim();
   var urlMaxp = (params.get("maxp") || "").trim();
 
   function liveCatalogList() {
@@ -79,8 +96,9 @@
   var subLabelForList = "";
   var multiSub = false;
   var catalogBarWired = false;
-  var priceCapWired = false;
   var gfInputWired = false;
+  var categoryToolbarWired = false;
+  var filterInputTimer = null;
   function escapeHtml(s) {
     var d = document.createElement("div");
     d.textContent = s;
@@ -120,24 +138,33 @@
     });
   }
 
-  function shuffle(arr) {
-    var a = arr.slice();
-    for (var i = a.length - 1; i > 0; i--) {
-      var j = Math.floor(Math.random() * (i + 1));
-      var t = a[i];
-      a[i] = a[j];
-      a[j] = t;
+  /** Deterministic “curated” order so list does not jump when prices refresh in the background. */
+  function fnv1a32(str) {
+    var h = 2166136261 >>> 0;
+    var s = String(str || "");
+    for (var i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 16777619);
     }
-    return a;
+    return h >>> 0;
   }
 
-  function categoryUrl(c, pg, q, sort, maxp) {
+  function curatedDisplayOrder(slice) {
+    return slice.slice().sort(function (a, b) {
+      return fnv1a32(a.id) - fnv1a32(b.id);
+    });
+  }
+
+  function categoryUrl(c, pg, q, sort, minp, maxp) {
     var p = new URLSearchParams();
     p.set("cat", c);
     if (pg && pg > 1) p.set("page", String(pg));
     if (q) p.set("q", q);
-    if (sort && sort !== "relevance") p.set("sort", sort);
+    if (sort && sort !== DEFAULT_SORT) p.set("sort", sort);
+    if (minp) p.set("minp", minp);
+    else p.delete("minp");
     if (maxp) p.set("maxp", maxp);
+    else p.delete("maxp");
     return "category.html?" + p.toString();
   }
 
@@ -152,17 +179,21 @@
 
   function syncUrl() {
     var qEl = gfQuery();
-    var sEl = gfSort();
-    var capEl = gfPriceCap();
+    var sEl = categorySortEl();
+    var minEl = categoryPriceMinEl();
+    var maxEl = categoryPriceMaxEl();
     if (!qEl || !sEl) return;
     var q = qEl.value.trim();
-    var sort = sEl.value || "relevance";
-    var maxp = capEl && capEl.value ? capEl.value.trim() : "";
+    var sort = sEl.value || DEFAULT_SORT;
+    var minp = minEl && minEl.value != null ? String(minEl.value).trim() : "";
+    var maxp = maxEl && maxEl.value != null ? String(maxEl.value).trim() : "";
     var u = new URL(window.location.href);
     if (q) u.searchParams.set("q", q);
     else u.searchParams.delete("q");
-    if (sort && sort !== "relevance") u.searchParams.set("sort", sort);
+    if (sort && sort !== DEFAULT_SORT) u.searchParams.set("sort", sort);
     else u.searchParams.delete("sort");
+    if (minp) u.searchParams.set("minp", minp);
+    else u.searchParams.delete("minp");
     if (maxp) u.searchParams.set("maxp", maxp);
     else u.searchParams.delete("maxp");
     if (page > 1) u.searchParams.set("page", String(page));
@@ -176,21 +207,28 @@
 
   function getFilteredSortedItems() {
     var qEl = gfQuery();
-    var sEl = gfSort();
+    var sEl = categorySortEl();
     var q = (qEl && qEl.value) || "";
     q = String(q).trim();
-    var sort = (sEl && sEl.value) || "relevance";
+    var sort = (sEl && sEl.value) || DEFAULT_SORT;
     var arr = liveCatalogList().slice();
     if (q) {
       arr = arr.filter(function (p) {
         return partialTokenMatch(productSearchHaystack(p), q);
       });
     }
-    var capEl = gfPriceCap();
-    var cap = capEl && capEl.value ? parseFloat(capEl.value, 10) : NaN;
-    if (!isNaN(cap)) {
+    var minEl = categoryPriceMinEl();
+    var maxEl = categoryPriceMaxEl();
+    var lo = minEl && String(minEl.value || "").trim() !== "" ? parseFloat(minEl.value, 10) : NaN;
+    var hi = maxEl && String(maxEl.value || "").trim() !== "" ? parseFloat(maxEl.value, 10) : NaN;
+    if (Number.isFinite(lo)) {
       arr = arr.filter(function (p) {
-        return minPrice(p) <= cap;
+        return minPrice(p) >= lo;
+      });
+    }
+    if (Number.isFinite(hi)) {
+      arr = arr.filter(function (p) {
+        return minPrice(p) <= hi;
       });
     }
     if (sort === "name-asc") {
@@ -220,7 +258,7 @@
     page = Math.min(Math.max(1, page), pages);
     var start = (page - 1) * ps;
     var slice = filtered.slice(start, start + ps);
-    var displayItems = sort === "relevance" ? shuffle(slice) : slice;
+    var displayItems = sort === "relevance" ? curatedDisplayOrder(slice) : slice;
     return {
       items: displayItems,
       page: page,
@@ -234,14 +272,17 @@
   function updateCatalogHint(result, q) {
     var h = gfHint();
     if (!h) return;
-    var capEl = gfPriceCap();
-    var capOn = capEl && capEl.value;
+    var minEl = categoryPriceMinEl();
+    var maxEl = categoryPriceMaxEl();
+    var rangeOn =
+      (minEl && String(minEl.value || "").trim() !== "") || (maxEl && String(maxEl.value || "").trim() !== "");
     var qOn = !!(q && String(q).trim());
     var totalInCat = liveCatalogList().length;
-    if (!qOn && !capOn && result.total === totalInCat) {
-      h.textContent = "Showing all " + result.total + " piece(s). Search, price cap, or sort in the header.";
+    if (!qOn && !rangeOn && result.total === totalInCat) {
+      h.textContent =
+        "Showing all " + result.total + " piece(s). Use search in the header, or sort and price range above.";
     } else if (result.total === 0) {
-      h.textContent = "No match — try shorter words, clear the price cap, or reset sort.";
+      h.textContent = "No match — try different words, adjust the price range, or tap Clear filters.";
     } else {
       h.textContent = "Showing " + result.total + " of " + totalInCat + " piece(s).";
     }
@@ -256,25 +297,80 @@
     syncUrl();
   }
 
+  function fillCategorySortSelectIfNeeded() {
+    var sel = document.getElementById("categorySortSelect");
+    if (!sel || sel.options.length) return;
+    var rows = [
+      ["name-asc", "Name · A → Z"],
+      ["name-desc", "Name · Z → A"],
+      ["price-asc", "Price · low → high"],
+      ["price-desc", "Price · high → low"],
+      ["relevance", "Curated mix"],
+    ];
+    rows.forEach(function (o) {
+      var op = document.createElement("option");
+      op.value = o[0];
+      op.textContent = o[1];
+      sel.appendChild(op);
+    });
+  }
+
+  function syncHeaderSortFromToolbar() {
+    var t = document.getElementById("categorySortSelect");
+    var g = gfSort();
+    if (t && g && t.value) g.value = t.value;
+  }
+
   function wireCatalogBarOnce() {
     if (catalogBarWired) return;
     catalogBarWired = true;
-    var sEl = gfSort();
+    var sEl = categorySortEl();
     if (sEl) {
       sEl.addEventListener("change", function () {
+        syncHeaderSortFromToolbar();
         applyCatalogFilters(true);
       });
     }
   }
 
-  function wirePriceCapOnce() {
-    if (priceCapWired) return;
-    var cap = gfPriceCap();
-    if (!cap) return;
-    priceCapWired = true;
-    cap.addEventListener("change", function () {
-      applyCatalogFilters(true);
-    });
+  function wireCategoryToolbarOnce() {
+    if (categoryToolbarWired) return;
+    var minEl = categoryPriceMinEl();
+    var maxEl = categoryPriceMaxEl();
+    if (!minEl && !maxEl) return;
+    categoryToolbarWired = true;
+    function onRangeChange() {
+      if (filterInputTimer) clearTimeout(filterInputTimer);
+      filterInputTimer = setTimeout(function () {
+        filterInputTimer = null;
+        applyCatalogFilters(true);
+      }, 280);
+    }
+    if (minEl) {
+      minEl.addEventListener("change", function () {
+        applyCatalogFilters(true);
+      });
+      minEl.addEventListener("input", onRangeChange);
+    }
+    if (maxEl) {
+      maxEl.addEventListener("change", function () {
+        applyCatalogFilters(true);
+      });
+      maxEl.addEventListener("input", onRangeChange);
+    }
+    var clr = document.getElementById("categoryFilterClear");
+    if (clr) {
+      clr.addEventListener("click", function () {
+        if (minEl) minEl.value = "";
+        if (maxEl) maxEl.value = "";
+        var s = categorySortEl();
+        if (s) s.value = DEFAULT_SORT;
+        syncHeaderSortFromToolbar();
+        var qIn = gfQuery();
+        if (qIn) qIn.value = "";
+        applyCatalogFilters(true);
+      });
+    }
   }
 
   function wireGlobalFindQueryOnce() {
@@ -289,11 +385,13 @@
 
   function setBarsProductMode() {
     if (window.GLOBAL_FIND) {
-      window.GLOBAL_FIND.setSortBlockVisible(true);
+      window.GLOBAL_FIND.setSortBlockVisible(false);
       window.GLOBAL_FIND.clearHint();
     }
     var fw = document.getElementById("globalFindCategoryFilterWrap");
-    if (fw) fw.hidden = false;
+    if (fw) fw.hidden = true;
+    var sw = document.getElementById("globalFindSortWrap");
+    if (sw) sw.hidden = true;
   }
 
   function renderProductList(result, subId, label, subLabel) {
@@ -405,14 +503,16 @@
       if (result.pages <= 1) return;
 
       var qEl = gfQuery();
-      var sEl = gfSort();
+      var sEl = categorySortEl();
       var qNow = qEl ? qEl.value.trim() : "";
-      var sortNow = sEl ? sEl.value : "relevance";
-      var capEl = gfPriceCap();
-      var maxpNow = capEl && capEl.value ? capEl.value.trim() : "";
+      var sortNow = sEl ? sEl.value : DEFAULT_SORT;
+      var minEl = categoryPriceMinEl();
+      var maxEl = categoryPriceMaxEl();
+      var minpNow = minEl && minEl.value != null ? String(minEl.value).trim() : "";
+      var maxpNow = maxEl && maxEl.value != null ? String(maxEl.value).trim() : "";
 
       function linkFor(pg) {
-        return categoryUrl(cat, pg, qNow, sortNow, maxpNow);
+        return categoryUrl(cat, pg, qNow, sortNow, minpNow, maxpNow);
       }
 
       if (result.page > 1) {
@@ -442,7 +542,7 @@
     labelForList = D.getCategoryLabel(cat);
     if (els.heading) els.heading.textContent = labelForList;
     if (els.crumbCat) els.crumbCat.textContent = labelForList;
-    if (els.crumbCatLink) els.crumbCatLink.href = categoryUrl(cat, 1, "", "relevance", "");
+    if (els.crumbCatLink) els.crumbCatLink.href = categoryUrl(cat, 1, "", DEFAULT_SORT, "", "");
     document.title = labelForList + " — Craft guru";
 
     try {
@@ -458,22 +558,35 @@
     subLabelForList = "";
 
     setBarsProductMode();
+    fillCategorySortSelectIfNeeded();
     wireCatalogBarOnce();
+    wireCategoryToolbarOnce();
     wireGlobalFindQueryOnce();
-    wirePriceCapOnce();
 
     var qIn = gfQuery();
-    var sIn = gfSort();
-    var capIn = gfPriceCap();
+    var sIn = categorySortEl();
+    var minIn = categoryPriceMinEl();
+    var maxIn = categoryPriceMaxEl();
     if (qIn) qIn.value = urlQ;
     if (sIn) {
       var allowed = { relevance: 1, "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 };
-      sIn.value = allowed[urlSort] ? urlSort : "relevance";
+      sIn.value = allowed[urlSort] ? urlSort : DEFAULT_SORT;
     }
-    if (capIn) {
-      var allowedCap = { "": 1, "35": 1, "50": 1, "75": 1, "100": 1, "150": 1, "250": 1, "500": 1, "1000": 1 };
-      capIn.value = allowedCap[urlMaxp] ? urlMaxp : "";
+    var numOk = function (s) {
+      return /^[0-9]+(\.[0-9]+)?$/.test(String(s || "").trim());
+    };
+    if (minIn) {
+      minIn.value = numOk(urlMinp) ? urlMinp : "";
     }
+    if (maxIn) {
+      var allowedCap = { "35": 1, "50": 1, "75": 1, "100": 1, "150": 1, "250": 1, "500": 1, "1000": 1 };
+      if (urlMaxp && (allowedCap[urlMaxp] || numOk(urlMaxp))) {
+        maxIn.value = urlMaxp;
+      } else {
+        maxIn.value = "";
+      }
+    }
+    syncHeaderSortFromToolbar();
 
     var fs = getFilteredSortedItems();
     var pages = Math.max(1, Math.ceil(fs.items.length / (D.pageSize || 48)));

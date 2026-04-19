@@ -24,11 +24,11 @@
     var rows = [];
     if (m === "category") {
       rows = [
-        ["relevance", "Curated shuffle"],
         ["name-asc", "Name · A → Z"],
         ["name-desc", "Name · Z → A"],
         ["price-asc", "From price · low → high"],
         ["price-desc", "From price · high → low"],
+        ["relevance", "Curated mix"],
       ];
     } else if (m === "checkout") {
       rows = [
