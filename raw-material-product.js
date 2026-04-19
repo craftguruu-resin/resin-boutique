@@ -203,9 +203,15 @@
     _lastHeroResolvedSrc: "",
   };
 
-  function commitPdpHtml(root, html) {
+  /**
+   * View Transitions defer the update callback until after the old state snapshot.
+   * Any code that must see the new DOM (event listeners, fadeHero) must run inside afterUpdate,
+   * invoked from the same callback that sets innerHTML — not after startViewTransition returns.
+   */
+  function commitPdpHtml(root, html, afterUpdate) {
     function apply() {
       root.innerHTML = html;
+      if (typeof afterUpdate === "function") afterUpdate(root);
     }
     if (typeof document.startViewTransition === "function") {
       document.startViewTransition(apply);
@@ -277,6 +283,32 @@
     state.lineQty = 1;
     state.heroZoom = 1;
     state._zoomUrl = "";
+  }
+
+  /** Split vendor description on blank lines for readable multi-paragraph layout. */
+  function formatDescParagraphs(raw) {
+    var s = String(raw == null ? "" : raw)
+      .replace(/\r\n/g, "\n")
+      .trim();
+    if (!s) return "";
+    var paras = s
+      .split(/\n{2,}/)
+      .map(function (p) {
+        return p
+          .split(/\n/)
+          .map(function (line) {
+            return line.trim();
+          })
+          .filter(Boolean)
+          .join(" ");
+      })
+      .filter(Boolean);
+    if (!paras.length) return "";
+    return paras
+      .map(function (p) {
+        return "<p>" + esc(p) + "</p>";
+      })
+      .join("");
   }
 
   function normalizeHexClient(raw) {
@@ -375,7 +407,7 @@
     var sizeHtml = "";
     if (opt.useSize && opt.sizes && opt.sizes.length) {
       sizeHtml =
-        '<div class="rm-opt-block"><span class="rm-opt-block__label">Size</span><div class="rm-opt-pills" data-rm-opt="size">' +
+        '<div class="rm-opt-block rm-opt-block--modern"><span class="rm-opt-block__label">Size</span><div class="rm-opt-pills" data-rm-opt="size">' +
         opt.sizes
           .map(function (s) {
             var on = s.id === state.sel.sid ? " is-on" : "";
@@ -396,7 +428,7 @@
     var qtyHtml = "";
     if (opt.useQty && opt.qtyOptions && opt.qtyOptions.length) {
       qtyHtml =
-        '<div class="rm-opt-block"><span class="rm-opt-block__label">Pack / quantity</span><div class="rm-opt-pills" data-rm-opt="qty">' +
+        '<div class="rm-opt-block rm-opt-block--modern"><span class="rm-opt-block__label">Pack / quantity</span><div class="rm-opt-pills" data-rm-opt="qty">' +
         opt.qtyOptions
           .map(function (s) {
             var on = s.id === state.sel.qid ? " is-on" : "";
@@ -417,7 +449,7 @@
     var colHtml = "";
     if (opt.useColor && opt.colors && opt.colors.length) {
       colHtml =
-        '<div class="rm-opt-block rm-opt-block--color"><span class="rm-opt-block__label">Colour</span><div class="rm-color-row" data-rm-opt="color">' +
+        '<div class="rm-opt-block rm-opt-block--modern rm-opt-block--color"><span class="rm-opt-block__label">Colour</span><div class="rm-color-row" data-rm-opt="color">' +
         opt.colors
           .map(function (s) {
             var on = s.id === state.sel.cid ? " is-on" : "";
@@ -456,8 +488,8 @@
     var detailText = String(opt.detailBody || "").trim() || String(m.description || "").trim();
 
     var html =
-      '<div class="rm-pdp">' +
-      '<div class="rm-pdp-gallery">' +
+      '<div class="rm-pdp rm-pdp--modern">' +
+      '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
       '<div class="rm-pdp-thumb-col">' +
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
       '<div class="rm-pdp-thumb-track">' +
@@ -482,13 +514,14 @@
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div></div>" +
-      '<div class="rm-pdp__detail">' +
+      '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       '<p class="rm-pdp__brand">' +
       esc(brandKicker) +
       "</p>" +
       "<h1 class=\"rm-pdp__title\">" +
       esc(m.name) +
       "</h1>" +
+      '<div class="rm-pdp__stars-wrap">' +
       '<div class="rm-pdp__stars" aria-label="Customer rating">' +
       "★★★★★ " +
       '<span class="rm-pdp__rating-num">' +
@@ -496,7 +529,7 @@
       "</span>" +
       ' <span class="rm-pdp__reviews">(' +
       esc(String(revN)) +
-      " reviews)</span></div>" +
+      " reviews)</span></div></div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +
@@ -506,11 +539,15 @@
         : "") +
       (pct != null ? '<span class="rm-pdp__save">' + pct + "% off</span>" : "") +
       "</div>" +
-      (m.description ? '<p class="rm-pdp__desc">' + esc(m.description) + "</p>" : "") +
+      (m.description
+        ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose">' +
+          formatDescParagraphs(m.description) +
+          "</div></div>"
+        : "") +
       sizeHtml +
       qtyHtml +
       colHtml +
-      '<div class="rm-pdp__cart-row">' +
+      '<div class="rm-pdp__cart-row rm-pdp__cart-row--modern">' +
       '<div class="rm-pdp__qty">' +
       '<button type="button" id="rmLineQtyMinus">−</button>' +
       "<span>" +
@@ -522,9 +559,9 @@
       '<button type="button" class="rm-pdp__wish" id="rmPdpWish" aria-label="Save to wishlist">♡</button>' +
       "</div>" +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
-      (trust ? '<div class="rm-trust">' + trust + "</div>" : "") +
+      (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
       (detailText
-        ? '<div class="rm-pdp-accordion">' +
+        ? '<div class="rm-pdp-accordion rm-pdp-accordion--modern">' +
           '<button type="button" class="rm-pdp-acc-head" id="rmPdpAccBtn" aria-expanded="true">' +
           "<span>Detail</span>" +
           '<span class="rm-pdp-acc-icon" id="rmPdpAccIcon" aria-hidden="true">−</span>' +
@@ -535,10 +572,10 @@
         : "") +
       "</div></div>";
 
-    commitPdpHtml(root, html);
-    fadeHeroImageIn(root);
+    commitPdpHtml(root, html, function () {
+      fadeHeroImageIn(root);
 
-    var track = root.querySelector(".rm-pdp-thumb-track");
+      var track = root.querySelector(".rm-pdp-thumb-track");
     var navUp = root.querySelector(".rm-pdp-thumb-nav--up");
     var navDown = root.querySelector(".rm-pdp-thumb-nav--down");
     function scrollThumbStrip(dir) {
@@ -680,6 +717,7 @@
         } catch (_) {}
       });
     }
+    });
   }
 
   function load() {
