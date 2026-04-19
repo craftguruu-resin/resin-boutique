@@ -303,7 +303,14 @@
       })
       .then(function (res) {
         return parseApiJson(res).then(function (x) {
-          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Sign-in failed");
+          if (!x.okHttp || !x.json.ok) {
+            if (x.json && x.json.code === "bill_api_secret") {
+              throw new Error(
+                "API secret mismatch: set BILL_API_SECRET on Render to match data-bill-api-secret on this page's <html> (or remove BILL_API_SECRET and leave data-bill-api-secret empty)."
+              );
+            }
+            throw new Error((x.json && x.json.error) || "Sign-in failed");
+          }
           return x.json.token;
         });
       });

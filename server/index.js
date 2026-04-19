@@ -847,7 +847,7 @@ app.get("/api/vendor/status", function (_req, res) {
   });
 });
 
-/** Probe session without extending idle (peek). Requires BILL_API_SECRET when configured. */
+/** Probe session without extending idle (peek). */
 app.get("/api/vendor/session", function (req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!vendorAuth.vendorRequireAuth()) {
