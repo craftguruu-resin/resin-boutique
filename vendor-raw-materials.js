@@ -351,6 +351,8 @@
     document.getElementById("vrmHero").value = opt.heroImage || "";
     document.getElementById("vrmBadge").value = opt.badge || "";
     document.getElementById("vrmTrust").value = (opt.trustBullets || []).join("\n");
+    var gg = document.getElementById("vrmGalleryImages");
+    if (gg) gg.value = (opt.galleryImages || []).join("\n");
     renderOptionBlocks();
     var sr = document.getElementById("vrmSizeRows");
     if (sr) sr.innerHTML = "";
@@ -386,6 +388,16 @@
         return l.trim();
       })
       .filter(Boolean);
+    var galEl = document.getElementById("vrmGalleryImages");
+    var galleryImages = galEl
+      ? galEl.value
+          .split("\n")
+          .map(function (l) {
+            return l.trim();
+          })
+          .filter(Boolean)
+          .slice(0, 12)
+      : [];
     var o = {
       useSize: uS,
       useQty: uQ,
@@ -396,6 +408,7 @@
       sizes: uS ? readRows("#vrmSizeRows", "size") : [],
       qtyOptions: uQ ? readRows("#vrmQtyRows", "qty") : [],
       colors: uC ? readRows("#vrmColorRows", "color") : [],
+      galleryImages: galleryImages,
     };
     return o;
   }

@@ -88,6 +88,15 @@ function normalizeOptions(o) {
   var reviewCount =
     Number.isFinite(rcRaw) && rcRaw > 0 ? Math.min(999999, Math.round(rcRaw)) : null;
   var detailBody = String(src.detailBody || "").trim().slice(0, 4000);
+  var galSrc = Array.isArray(src.galleryImages) ? src.galleryImages : [];
+  var galleryImages = galSrc
+    .map(function (u) {
+      return String(u || "")
+        .trim()
+        .slice(0, 2000);
+    })
+    .filter(Boolean)
+    .slice(0, 12);
 
   function normList(arr, kind) {
     if (!Array.isArray(arr)) return [];
@@ -143,6 +152,7 @@ function normalizeOptions(o) {
     ratingScore: ratingScore,
     reviewCount: reviewCount,
     detailBody: detailBody,
+    galleryImages: galleryImages,
   };
 }
 
@@ -165,6 +175,7 @@ function mapRow(row) {
       ratingScore: "",
       reviewCount: null,
       detailBody: "",
+      galleryImages: [],
     };
   }
   var price = row.price_inr != null ? Number(row.price_inr) : 0;
