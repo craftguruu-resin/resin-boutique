@@ -26,6 +26,8 @@ function ensureVendorInventoryColumns() {
   if (!p) return Promise.resolve();
 
   var statements = [
+    /* Run early: vendor catalog/inventory queries SELECT products.size_labels immediately after listen. */
+    "ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS category_id VARCHAR(80) NOT NULL DEFAULT ''",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT ''",
     "CREATE INDEX IF NOT EXISTS idx_vendor_inventory_category ON vendor_inventory_items (category_id)",
@@ -33,7 +35,6 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS qty_s NUMERIC(14, 2)",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS qty_m NUMERIC(14, 2)",
     "ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS qty_l NUMERIC(14, 2)",
-    "ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS out_of_stock BOOLEAN NOT NULL DEFAULT false",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false",

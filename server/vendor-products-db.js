@@ -11,6 +11,32 @@ var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogMediaPath = require("./media-path.js");
 
+/** Ensures older Postgres DBs have products.size_labels before any SELECT/INSERT that uses it. */
+var productsSizeLabelsPromise = null;
+function ensureProductsSizeLabelsColumn(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null);
+    });
+  }
+  if (!productsSizeLabelsPromise) {
+    productsSizeLabelsPromise = pool
+      .query("ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb")
+      .catch(function (err) {
+        productsSizeLabelsPromise = null;
+        return Promise.reject(err);
+      });
+  }
+  productsSizeLabelsPromise
+    .then(function () {
+      cb(null);
+    })
+    .catch(function (e) {
+      cb(e);
+    });
+}
+
 /** Accepts CDN URLs (Cloudinary, R2, etc.). Rejects non-HTTPS and obvious SSRF targets. */
 function normalizeHttpsImageUrl(raw) {
   var u = String(raw || "").trim().slice(0, 2000);
@@ -215,32 +241,35 @@ function listExtraProductsForStorefront(cb) {
       cb(null, []);
     });
   }
-  var staticIds;
-  try {
-    staticIds = new Set(catalogFromData.getProductsSummary().map(function (p) {
-      return p.id;
-    }));
-  } catch (e) {
-    return process.nextTick(function () {
-      cb(e, []);
-    });
-  }
-  pool
-    .query(
-      "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
-        "COALESCE(co.return_gift, false) AS listing_return_gift " +
-        "FROM products p " +
-        "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
-        "WHERE p.is_active = true ORDER BY p.updated_at DESC"
-    )
-    .then(function (r) {
-      var out = [];
-      r.rows.forEach(function (row) {
-        if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
+  ensureProductsSizeLabelsColumn(function (e0) {
+    if (e0) return cb(e0);
+    var staticIds;
+    try {
+      staticIds = new Set(catalogFromData.getProductsSummary().map(function (p) {
+        return p.id;
+      }));
+    } catch (e) {
+      return process.nextTick(function () {
+        cb(e, []);
       });
-      cb(null, out);
-    })
-    .catch(cb);
+    }
+    pool
+      .query(
+        "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
+          "COALESCE(co.return_gift, false) AS listing_return_gift " +
+          "FROM products p " +
+          "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
+          "WHERE p.is_active = true ORDER BY p.updated_at DESC"
+      )
+      .then(function (r) {
+        var out = [];
+        r.rows.forEach(function (row) {
+          if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
+        });
+        cb(null, out);
+      })
+      .catch(cb);
+  });
 }
 
 /**
@@ -254,6 +283,14 @@ function createVendorProduct(opts, cb) {
       cb(new Error("Database not configured"));
     });
   }
+  ensureProductsSizeLabelsColumn(function (e0) {
+    if (e0) return cb(e0);
+    createVendorProductAfterSchema(opts, cb);
+  });
+}
+
+function createVendorProductAfterSchema(opts, cb) {
+  var pool = poolMod.getPool();
   var name = String((opts && opts.name) || "").trim().slice(0, 500);
   var categoryId = String((opts && opts.categoryId) || "").trim().slice(0, 80);
   var priceS = Math.max(0, Number(opts && opts.priceS) || 0);
@@ -560,26 +597,29 @@ function listVendorManagedProducts(cb) {
       cb(null, []);
     });
   }
-  var staticIds;
-  try {
-    staticIds = staticCatalogProductIds();
-  } catch (e) {
-    return process.nextTick(function () {
-      cb(e, []);
-    });
-  }
-  pool
-    .query(
-      "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products ORDER BY updated_at DESC"
-    )
-    .then(function (r) {
-      var out = [];
-      r.rows.forEach(function (row) {
-        if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
+  ensureProductsSizeLabelsColumn(function (e0) {
+    if (e0) return cb(e0);
+    var staticIds;
+    try {
+      staticIds = staticCatalogProductIds();
+    } catch (e) {
+      return process.nextTick(function () {
+        cb(e, []);
       });
-      cb(null, out);
-    })
-    .catch(cb);
+    }
+    pool
+      .query(
+        "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products ORDER BY updated_at DESC"
+      )
+      .then(function (r) {
+        var out = [];
+        r.rows.forEach(function (row) {
+          if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
+        });
+        cb(null, out);
+      })
+      .catch(cb);
+  });
 }
 
 /**
@@ -710,12 +750,14 @@ function updateVendorProductById(productId, opts, cb) {
         cb(new Error("Database not configured"));
       });
     }
-    pool
-      .query(
-        "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products WHERE id = $1 LIMIT 1",
-        [id]
-      )
-      .then(function (r) {
+    ensureProductsSizeLabelsColumn(function (e00) {
+      if (e00) return cb(e00);
+      pool
+        .query(
+          "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products WHERE id = $1 LIMIT 1",
+          [id]
+        )
+        .then(function (r) {
         if (!r.rows.length) {
           throw new Error("Product not found");
         }
@@ -856,6 +898,7 @@ function updateVendorProductById(productId, opts, cb) {
         }
       })
       .catch(cb);
+    });
   });
 }
 
