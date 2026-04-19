@@ -122,6 +122,27 @@
     return Math.round(((mrp - p) / mrp) * 100);
   }
 
+  function normalizeHexClient(raw) {
+    var h = String(raw == null ? "" : raw)
+      .trim()
+      .replace(/^#/, "");
+    if (!h) return "#888888";
+    if (/^[0-9a-fA-F]{6}$/.test(h)) return "#" + h.toLowerCase();
+    if (/^[0-9a-fA-F]{3}$/.test(h)) {
+      return (
+        "#" +
+        h[0].toLowerCase() +
+        h[0].toLowerCase() +
+        h[1].toLowerCase() +
+        h[1].toLowerCase() +
+        h[2].toLowerCase() +
+        h[2].toLowerCase()
+      );
+    }
+    if (/^[0-9a-fA-F]{8}$/.test(h)) return "#" + h.slice(0, 6).toLowerCase();
+    return "#888888";
+  }
+
   function render() {
     var m = state.material;
     var root = document.getElementById("rmPdpRoot");
@@ -199,13 +220,13 @@
         opt.colors
           .map(function (s) {
             var on = s.id === state.sel.cid ? " is-on" : "";
-            var hx = s.hex || "#888";
+            var hx = normalizeHexClient(s.hex != null ? s.hex : s.Hex);
             return (
               "<button type=\"button\" class=\"rm-color-swatch" +
               on +
               "\" data-cid=\"" +
               escAttr(s.id) +
-              "\" style=\"background:" +
+              "\" style=\"background-color:" +
               escAttr(hx) +
               "\" title=\"" +
               escAttr(s.label) +
@@ -224,10 +245,24 @@
       })
       .join("");
 
+    var brandKicker = String(opt.brandLine || "").trim();
+    if (!brandKicker) brandKicker = "Craft Guru · Raw material";
+    var ratingNum = String(opt.ratingScore || "4.8").trim() || "4.8";
+    var revN =
+      opt.reviewCount != null && Number.isFinite(Number(opt.reviewCount))
+        ? Math.round(Number(opt.reviewCount))
+        : 214;
+    var detailText = String(opt.detailBody || "").trim() || String(m.description || "").trim();
+
     root.innerHTML =
       '<div class="rm-pdp">' +
-      '<div class="rm-pdp__thumbs">' +
+      '<div class="rm-pdp-gallery">' +
+      '<div class="rm-pdp-thumb-col">' +
+      '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
+      '<div class="rm-pdp-thumb-track">' +
       thumbs +
+      "</div>" +
+      '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--down" aria-label="Scroll thumbnails down">▼</button>' +
       "</div>" +
       '<div class="rm-pdp__hero-wrap">' +
       (opt.badge ? '<span class="rm-pdp__badge">' + esc(opt.badge) + "</span>" : "") +
@@ -238,13 +273,22 @@
       (mainImg
         ? '<img id="rmPdpHeroImg" src="' + escAttr(imgSrc(mainImg)) + '" alt="' + escAttr(m.name) + '" />'
         : '<div class="band-empty">No image</div>') +
-      "</div>" +
+      "</div></div>" +
       '<div class="rm-pdp__detail">' +
-      '<p class="rm-pdp__brand">Craft Guru · Raw material</p>' +
+      '<p class="rm-pdp__brand">' +
+      esc(brandKicker) +
+      "</p>" +
       "<h1 class=\"rm-pdp__title\">" +
       esc(m.name) +
       "</h1>" +
-      '<div class="rm-pdp__stars" aria-hidden="true">★★★★★ <span style="color:rgba(15,23,42,0.35)">4.6</span></div>' +
+      '<div class="rm-pdp__stars" aria-label="Customer rating">' +
+      "★★★★★ " +
+      '<span class="rm-pdp__rating-num">' +
+      esc(ratingNum) +
+      "</span>" +
+      ' <span class="rm-pdp__reviews">(' +
+      esc(String(revN)) +
+      " reviews)</span></div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price">' +
       (CART ? CART.formatMoney(m.priceInr || 0) : "₹" + (m.priceInr || 0)) +
@@ -258,7 +302,7 @@
       sizeHtml +
       qtyHtml +
       colHtml +
-      '<div class="rm-pdp__qty-row">' +
+      '<div class="rm-pdp__cart-row">' +
       '<div class="rm-pdp__qty">' +
       '<button type="button" id="rmLineQtyMinus">−</button>' +
       "<span>" +
@@ -267,10 +311,34 @@
       '<button type="button" id="rmLineQtyPlus">+</button>' +
       "</div>" +
       '<button type="button" class="rm-pdp__add" id="rmAddCart">Add to cart</button>' +
+      '<button type="button" class="rm-pdp__wish" id="rmPdpWish" aria-label="Save to wishlist">♡</button>' +
       "</div>" +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust">' + trust + "</div>" : "") +
+      (detailText
+        ? '<div class="rm-pdp-accordion">' +
+          '<button type="button" class="rm-pdp-acc-head" id="rmPdpAccBtn" aria-expanded="true">' +
+          "<span>Detail</span>" +
+          '<span class="rm-pdp-acc-icon" id="rmPdpAccIcon" aria-hidden="true">−</span>' +
+          "</button>" +
+          '<div class="rm-pdp-acc-body" id="rmPdpAccBody">' +
+          esc(detailText) +
+          "</div></div>"
+        : "") +
       "</div></div>";
+
+    var track = root.querySelector(".rm-pdp-thumb-track");
+    var navUp = root.querySelector(".rm-pdp-thumb-nav--up");
+    var navDown = root.querySelector(".rm-pdp-thumb-nav--down");
+    function scrollThumbStrip(dir) {
+      if (!track) return;
+      var st = window.getComputedStyle(track);
+      var row = st.flexDirection === "row" || st.flexDirection === "row-reverse";
+      if (row) track.scrollBy({ left: dir * 88, behavior: "smooth" });
+      else track.scrollBy({ top: dir * 88, behavior: "smooth" });
+    }
+    if (navUp) navUp.addEventListener("click", function () { scrollThumbStrip(-1); });
+    if (navDown) navDown.addEventListener("click", function () { scrollThumbStrip(1); });
 
     root.querySelectorAll(".rm-pdp__thumb").forEach(function (btn) {
       btn.addEventListener("click", function () {
@@ -327,6 +395,24 @@
         render();
       });
     }
+    var accBtn = document.getElementById("rmPdpAccBtn");
+    var accBody = document.getElementById("rmPdpAccBody");
+    var accIcon = document.getElementById("rmPdpAccIcon");
+    if (accBtn && accBody) {
+      accBtn.addEventListener("click", function () {
+        var collapsed = accBody.classList.toggle("is-collapsed");
+        accBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+        if (accIcon) accIcon.textContent = collapsed ? "+" : "−";
+      });
+    }
+
+    var wish = document.getElementById("rmPdpWish");
+    if (wish) {
+      wish.addEventListener("click", function () {
+        wish.classList.toggle("is-on");
+      });
+    }
+
     var add = document.getElementById("rmAddCart");
     if (add && CART) {
       add.addEventListener("click", function () {

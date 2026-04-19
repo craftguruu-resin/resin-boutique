@@ -3,15 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Product — Craft guru</title>
+  <title>Shop resin raw material — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="raw-material-pages.css" />
 </head>
-<body class="subpage page-product">
+<body class="subpage">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -34,13 +35,13 @@
     </a>
     <nav class="nav-dock nav-dock--fx" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
-      <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
+      <a href="raw-material-shop.html" class="nav-dock-link is-active">Resin raw material</a>
       <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
       <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
     <div class="site-top-end">
-      <div class="global-find" id="globalFindRoot" data-find-mode="product">
+      <div class="global-find" id="globalFindRoot" data-find-mode="category">
         <button
           type="button"
           class="global-find__trigger"
@@ -63,6 +64,20 @@
               <label class="global-find__mini-label" for="globalFindSort">Order</label>
               <select id="globalFindSort" class="global-find__select"></select>
             </div>
+            <div class="global-find__filter-block" id="globalFindCategoryFilterWrap" hidden>
+              <label class="global-find__mini-label" for="globalFindPriceCap">Filter · max “from” price</label>
+              <select id="globalFindPriceCap" class="global-find__select">
+                <option value="">Any price</option>
+                <option value="35">≤ ₹35</option>
+                <option value="50">≤ ₹50</option>
+                <option value="75">≤ ₹75</option>
+                <option value="100">≤ ₹100</option>
+                <option value="150">≤ ₹150</option>
+                <option value="250">≤ ₹250</option>
+                <option value="500">≤ ₹500</option>
+                <option value="1000">≤ ₹1,000</option>
+              </select>
+            </div>
             <label class="visually-hidden" for="globalFindQuery">Search catalog</label>
             <input type="search" id="globalFindQuery" class="global-find__input" autocomplete="off" />
             <p class="global-find__hint" id="globalFindHint" aria-live="polite"></p>
@@ -77,106 +92,81 @@
   </header>
 
   <main class="sub-main">
-    <div class="product-page" id="productRoot">
-      <nav class="crumb product-crumb crumb-animate" aria-label="Breadcrumb">
-        <a href="index.html">Home</a>
-        <span class="crumb-sep" aria-hidden="true">/</span>
-        <a id="backLink" href="category.html">Category</a>
-        <span id="productCrumbSub" hidden>
-          <span class="crumb-sep" aria-hidden="true">/</span>
-          <a id="crumbSubBack" href="#">Collection</a>
-        </span>
-        <span class="crumb-sep" aria-hidden="true">/</span>
-        <span id="crumbProductName" class="crumb-current">—</span>
-      </nav>
-
-      <p class="flow-step flow-step--animate" id="flowStep">Piece overview</p>
-
-      <div class="product-layout product-layout--split product-layout--buy-tight">
-        <div class="product-visual product-visual--fx">
-          <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
-            <div class="product-hero-img__glow" aria-hidden="true"></div>
-            <img id="productImage" src="" alt="" width="800" height="900" />
-            <p class="product-hero-img__zoom-hint" id="productZoomHint">
-              Scroll on the image to zoom in or out. Drag to move when zoomed. Double-click the image to reset.
-            </p>
+    <section class="band-shop band-shop--flush">
+      <div class="band-shop-inner">
+        <p class="crumb crumb--fx">
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span> <a href="raw-material.html">Resin raw material</a> <span aria-hidden="true">/</span> Shop
+        </p>
+        <div class="section-head section-head--solo">
+          <div>
+            <h1 class="band-title band-title--fx">Material shop</h1>
+            <p class="band-sub">Browse vendor-listed resin supplies. Same checkout and orders as the main catalogue.</p>
           </div>
-          <section class="product-overview product-overview--under-visual glass-panel" aria-labelledby="overview-h">
-            <h2 class="product-overview__h" id="overview-h">About this piece</h2>
-            <p class="product-overview__copy" id="productIntroText"></p>
-            <p class="product-overview__hint">
-              <a href="#qtyDock" class="overview-jump">Quantity</a>
-              <span class="overview-jump-sep" aria-hidden="true"> · </span>
-              <a href="#sizeDock" class="overview-jump">Sizes &amp; MRP →</a>
-            </p>
-          </section>
         </div>
-
-        <div class="product-detail product-detail--purchase product-detail--buy-column">
-          <h1 class="product-title product-title--fx" id="productTitle">Loading…</h1>
-          <p class="product-meta-line"><span id="productCategoryBadge">—</span></p>
-
-          <div class="pd-buy-rail">
-            <div class="pd-buy-rail__price-row">
-              <p class="product-price-hero pd-buy-rail__price">
-                <strong id="productPrice">₹0</strong>
-                <span class="currency-tag">MRP</span>
-              </p>
-              <p class="pd-stock-hint" id="productStockHint" hidden></p>
-            </div>
-            <p class="pd-buy-rail__breakdown" id="priceBreakdown"></p>
-            <p class="pd-buy-rail__size-line" id="priceSizeLabel">Classic</p>
-
-            <div class="size-dock glass-panel size-dock--primary size-dock--compact pd-buy-rail__sizes" id="sizeDock">
-              <div class="size-dock__head size-dock__head--inline">
-                <h2 class="size-dock__title">Size</h2>
-              </div>
-              <div class="size-scale size-scale--compact" id="sizeScale" data-sel="m" aria-hidden="true">
-                <div class="size-scale__labels">
-                  <span data-k="s">Compact</span>
-                  <span data-k="m">Classic</span>
-                  <span data-k="l">Grand</span>
-                </div>
-                <div class="size-scale__track">
-                  <span class="size-scale__fill"></span>
-                </div>
-              </div>
-              <div class="size-options size-options--pills" id="sizeOptions" role="radiogroup" aria-label="Choose size"></div>
-            </div>
-
-            <div class="product-qty-bar pd-buy-rail__qty">
-              <div class="qty-dock glass-panel qty-dock--strip pd-qty-dock" id="qtyDock">
-                <div class="qty-dock__head qty-dock__head--compact">
-                  <h2 class="qty-dock__title">Quantity</h2>
-                  <p class="qty-dock__sub" id="qtyTierHint">Same MRP per piece.</p>
-                </div>
-                <div class="product-qty-stepper product-qty-stepper--pill" id="productQtyStepper" aria-label="Adjust quantity">
-                  <button type="button" id="productQtyMinus" aria-label="Decrease quantity">−</button>
-                  <span class="product-qty-stepper__val" id="productQtyStepperVal">1</span>
-                  <button type="button" id="productQtyPlus" aria-label="Increase quantity">+</button>
+        <div class="rm-landing">
+          <aside class="rm-rail" aria-label="On this page">
+            <p class="rm-rail__label">On this page</p>
+            <ul class="rm-rail__list">
+              <li><a href="#rm-hero">Discover</a></li>
+              <li><a href="#rm-shop">Products</a></li>
+              <li><a href="#rm-toolbar">Sort</a></li>
+            </ul>
+          </aside>
+          <div>
+            <div class="rm-hero" id="rm-hero">
+              <div class="rm-hero__blob" aria-hidden="true"></div>
+              <div class="rm-hero__inner">
+                <p class="rm-hero__kicker">Craft Guru</p>
+                <h2 class="rm-hero__title-stack">
+                  <span class="rm-hero__title-line1">Discover Your Radiance</span>
+                  <span class="rm-hero__title-line2">Unveiling Beauty in Every Shade</span>
+                </h2>
+                <p class="rm-hero__sub">
+                  Transform your creative endeavours into masterpieces with our Craftguru Resin High-Grade Crystal Clear epoxy, setting new standards in the realm of resin craftsmanship.
+                </p>
+                <a class="rm-hero__cta" href="#rm-shop">Get Started</a>
+                <div class="rm-stats">
+                  <div>
+                    <div class="rm-stats__lead">Trusted by over 350,000+ Clients Worldwide</div>
+                  </div>
+                  <div>
+                    <div class="rm-stats__big">6M+</div>
+                    <div class="rm-stats__stars">★★★★★</div>
+                    <p class="rm-stats__cap">Worldwide Product Sale per year</p>
+                  </div>
+                  <div>
+                    <div class="rm-stats__big">4.6</div>
+                    <div class="rm-stats__stars">★★★★★</div>
+                    <p class="rm-stats__cap">3,350 Ratings Worldwide</p>
+                  </div>
                 </div>
               </div>
+              <div class="rm-hero__visual">
+                <img
+                  src="media/raw-material-shop-hero-craftguru.png"
+                  width="720"
+                  height="560"
+                  alt="Craftguru Resin product bottles"
+                  decoding="async"
+                />
+              </div>
             </div>
-
-            <button type="button" class="pd-buy-rail__cta btn-add-lg btn-add-lg--fx" id="addToCartBtn">
-              <span class="btn-add-premium__text">Add to cart</span>
-            </button>
-            <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
+            <div id="rm-shop">
+              <div id="rm-toolbar" class="category-toolbar" aria-label="Sort materials">
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
+                  <select id="rmSortSelect" class="category-toolbar__select">
+                    <option value="name-asc">Name · A → Z</option>
+                    <option value="name-desc">Name · Z → A</option>
+                  </select>
+                </div>
+              </div>
+              <div class="rm-grid-cards" id="rmGrid"></div>
+            </div>
           </div>
-
-          <p class="product-return-gift-badge" id="productReturnGiftBadge" hidden>
-            Return gift · <a href="return-gifts.html">View return-gifts collection</a>
-          </p>
-
-          <div class="product-share-bar" id="productShareHost" aria-label="Share this piece"></div>
-
-          <p class="product-reseller-note" id="productResellerNote">
-            For orders of more than 50 units of the same piece, please
-            <a href="about.html">contact us</a> for reseller pricing and timelines.
-          </p>
         </div>
       </div>
-    </div>
+    </section>
   </main>
 
   <footer class="site-footer site-footer--craftguru" id="site-footer">
@@ -286,7 +276,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
-  <script src="product.js"></script>
+  <script src="raw-material.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>

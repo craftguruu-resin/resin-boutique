@@ -56,6 +56,25 @@
     );
   }
 
+  function normalizeHexVendor(h) {
+    var s = String(h == null ? "" : h)
+      .trim()
+      .replace(/^#/, "");
+    if (/^[0-9a-fA-F]{6}$/.test(s)) return "#" + s.toLowerCase();
+    if (/^[0-9a-fA-F]{3}$/.test(s)) {
+      return (
+        "#" +
+        s[0].toLowerCase() +
+        s[0].toLowerCase() +
+        s[1].toLowerCase() +
+        s[1].toLowerCase() +
+        s[2].toLowerCase() +
+        s[2].toLowerCase()
+      );
+    }
+    return "#888888";
+  }
+
   function renderOptionBlocks() {
     var sz = document.getElementById("vrmSizesBlock");
     var qt = document.getElementById("vrmQtyBlock");
@@ -79,7 +98,7 @@
     if (cl) {
       cl.innerHTML = uC
         ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem\">Colours (max 5)</h3>" +
-          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Hex like #c084fc + label + optional image.</p>" +
+          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Use the colour picker for each swatch (guest PDP uses it exactly). Optional image URL overrides the hero for that swatch.</p>" +
           '<div id="vrmColorRows"></div><button type="button" class="vs-btn vs-btn--ghost" id="vrmAddColor">+ Add colour</button>'
         : "";
     }
@@ -141,13 +160,33 @@
   function addColorRow(o) {
     var host = document.getElementById("vrmColorRows");
     if (!host) return;
-    host.appendChild(
-      wrapRow(
-        rowInput("Label", o.label || "", "Amber") +
-          rowInput("Hex", o.hex || "#888888", "#f97316") +
-          rowUrl("Image URL (optional)", o.image || "")
-      )
-    );
+    var hx = normalizeHexVendor(o.hex || "#6366f1");
+    var inner =
+      '<div style="grid-column:1/-1">' +
+      rowInput("Colour name", o.label || "", "Indigo label") +
+      "</div>" +
+      '<div style="grid-column:1/-1">' +
+      '<label class="vs-muted" style="display:block;font-size:0.78rem;margin-bottom:0.25rem">Swatch colour</label>' +
+      '<div style="display:flex;align-items:center;gap:0.65rem;flex-wrap:wrap">' +
+      '<input type="color" class="vrm-color-pick" value="' +
+      esc(hx) +
+      "\" aria-label=\"Choose swatch colour\" style=\"width:48px;height:48px;padding:0;border:1px solid rgba(15,23,42,0.12);border-radius:10px;cursor:pointer;background:#fff\" />" +
+      '<code class="vrm-color-readout" style="font-size:0.82rem;color:#334155"></code></div></div>' +
+      '<div style="grid-column:1/-1">' +
+      rowUrl("Image URL (optional)", o.image || "") +
+      "</div>";
+    var row = wrapRow(inner);
+    host.appendChild(row);
+    var pick = row.querySelector("input.vrm-color-pick");
+    var read = row.querySelector(".vrm-color-readout");
+    function syncReadout() {
+      if (read && pick) read.textContent = String(pick.value || "").toUpperCase();
+    }
+    if (pick) {
+      pick.addEventListener("input", syncReadout);
+      pick.addEventListener("change", syncReadout);
+      syncReadout();
+    }
   }
 
   function readRows(containerSel, kind) {
@@ -158,11 +197,19 @@
     rows.forEach(function (row, idx) {
       var inps = row.querySelectorAll("input");
       if (kind === "color") {
-        var lab = inps[0] && inps[0].value.trim();
-        var hex = inps[1] && inps[1].value.trim();
-        var img = inps[2] && inps[2].value.trim();
+        var labInp = row.querySelector("input.vrm-opt-inp");
+        var pick = row.querySelector("input.vrm-color-pick");
+        var urlInp = row.querySelector("input.vrm-opt-url");
+        var lab = labInp && labInp.value.trim();
+        var hex = pick && pick.value.trim();
+        var img = urlInp && urlInp.value.trim();
         if (!lab) return;
-        out.push({ id: "c" + (idx + 1), label: lab.slice(0, 120), hex: hex || "#888888", image: img });
+        out.push({
+          id: "c" + (idx + 1),
+          label: lab.slice(0, 120),
+          hex: normalizeHexVendor(hex || "#888888"),
+          image: img || "",
+        });
       } else {
         var label = inps[0] && inps[0].value.trim();
         var image = inps[1] && inps[1].value.trim();

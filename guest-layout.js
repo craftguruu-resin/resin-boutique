@@ -27,6 +27,7 @@
     if (pn === "account.html") return;
     if (pn === "checkout.html") return;
     if (pn === "raw-material-product.html") return;
+    if (pn === "raw-material-shop.html") return;
     var main = document.querySelector("main.sub-main");
     if (!main) return;
     var D = window.RESIN_DATA;
@@ -69,7 +70,7 @@
     });
 
     [
-      ["raw-material.html", "Resin raw material"],
+      ["raw-material-shop.html", "Resin raw material"],
       ["photo-frames.html", "Photo frames"],
       ["return-gifts.html", "Return gifts"],
     ].forEach(function (pair) {

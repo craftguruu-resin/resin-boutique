@@ -23,6 +23,27 @@ function shortId() {
   return crypto.randomBytes(4).toString("hex");
 }
 
+function normalizeHexString(raw) {
+  var h = String(raw == null ? "" : raw)
+    .trim()
+    .replace(/^#/, "");
+  if (!h) return "#888888";
+  if (/^[0-9a-fA-F]{6}$/.test(h)) return "#" + h.toLowerCase();
+  if (/^[0-9a-fA-F]{3}$/.test(h)) {
+    return (
+      "#" +
+      h[0].toLowerCase() +
+      h[0].toLowerCase() +
+      h[1].toLowerCase() +
+      h[1].toLowerCase() +
+      h[2].toLowerCase() +
+      h[2].toLowerCase()
+    );
+  }
+  if (/^[0-9a-fA-F]{8}$/.test(h)) return "#" + h.slice(0, 6).toLowerCase();
+  return "#888888";
+}
+
 function parseOptionsCell(raw) {
   if (raw == null) return {};
   if (typeof raw === "string") {
@@ -54,6 +75,13 @@ function normalizeOptions(o) {
     .filter(Boolean)
     .slice(0, 8);
 
+  var brandLine = String(src.brandLine || "").trim().slice(0, 100);
+  var ratingScore = String(src.ratingScore || "").trim().slice(0, 20);
+  var rcRaw = Number(src.reviewCount);
+  var reviewCount =
+    Number.isFinite(rcRaw) && rcRaw > 0 ? Math.min(999999, Math.round(rcRaw)) : null;
+  var detailBody = String(src.detailBody || "").trim().slice(0, 4000);
+
   function normList(arr, kind) {
     if (!Array.isArray(arr)) return [];
     return arr
@@ -64,11 +92,8 @@ function normalizeOptions(o) {
         if (!label) return null;
         var image = String(row.image || "").trim().slice(0, 2000);
         var out = { id: id, label: label, image: image };
-        if (kind === "color") {
-          var hex = String(row.hex || "").trim();
-          if (!/^#?[0-9a-fA-F]{3,8}$/.test(hex)) hex = "#888888";
-          if (hex.charAt(0) !== "#") hex = "#" + hex;
-          out.hex = hex.slice(0, 9);
+        if (kind === "co" || kind === "color") {
+          out.hex = normalizeHexString(row.hex != null ? row.hex : row.Hex);
         }
         return out;
       })
@@ -90,7 +115,7 @@ function normalizeOptions(o) {
     throw new Error("Quantity option is enabled: add at least 3 pack / quantity choices.");
   }
   if (useColor && (colors.length < 1 || colors.length > 5)) {
-    throw new Error("Colour option: add between 1 and 5 colours (label + hex from studio).");
+    throw new Error("Colour option: add between 1 and 5 colours (label + swatch colour from studio).");
   }
 
   return {
@@ -103,6 +128,10 @@ function normalizeOptions(o) {
     sizes: sizes,
     qtyOptions: qtyOptions,
     colors: colors,
+    brandLine: brandLine,
+    ratingScore: ratingScore,
+    reviewCount: reviewCount,
+    detailBody: detailBody,
   };
 }
 
@@ -111,7 +140,21 @@ function mapRow(row) {
   try {
     opts = normalizeOptions(opts);
   } catch (_) {
-    opts = { useSize: true, useQty: false, useColor: false, sizes: [{ id: "std", label: "Standard", image: "" }], qtyOptions: [], colors: [], badge: "", heroImage: "", trustBullets: [] };
+    opts = {
+      useSize: true,
+      useQty: false,
+      useColor: false,
+      sizes: [{ id: "std", label: "Standard", image: "" }],
+      qtyOptions: [],
+      colors: [],
+      badge: "",
+      heroImage: "",
+      trustBullets: [],
+      brandLine: "",
+      ratingScore: "",
+      reviewCount: null,
+      detailBody: "",
+    };
   }
   var price = row.price_inr != null ? Number(row.price_inr) : 0;
   var mrp = row.mrp_inr != null ? Number(row.mrp_inr) : null;
@@ -414,103 +457,73 @@ function setActive(id, isActive, cb) {
     .catch(cb);
 }
 
-var DEMO_IDS = ["raw-mat--demo-crystal-epoxy", "raw-mat--demo-pigment-set", "raw-mat--demo-hardener"];
+var DEMO_IDS = ["raw-mat--craftguru-showcase-pour"];
 
-function demoOptionsVariant(kind) {
-  if (kind === "pigment") {
-    return {
-      useSize: false,
-      useQty: true,
-      useColor: true,
-      badge: "Studio pick",
-      heroImage: "https://placehold.co/900x1100/7c3aed/ffffff/png?text=Craft+Guru%0APigment+Kit",
-      trustBullets: ["Non-toxic pigments", "UV-stable", "Mixes with Craft Guru epoxy", "Vegan"],
-      sizes: [],
-      qtyOptions: [
-        { id: "q1", label: "3 jars", image: "" },
-        { id: "q2", label: "6 jars", image: "" },
-        { id: "q3", label: "12 jars", image: "" },
-      ],
-      colors: [
-        { id: "c1", label: "Sunrise", hex: "#f59e0b", image: "https://placehold.co/800x1000/f59e0b/1f2937/png?text=Craft+Guru" },
-        { id: "c2", label: "Lagoon", hex: "#06b6d4", image: "https://placehold.co/800x1000/06b6d4/ffffff/png?text=Craft+Guru" },
-        { id: "c3", label: "Berry", hex: "#db2777", image: "https://placehold.co/800x1000/db2777/ffffff/png?text=Craft+Guru" },
-      ],
-    };
-  }
-  if (kind === "hardener") {
-    return {
-      useSize: true,
-      useQty: false,
-      useColor: false,
-      badge: "BEST SELLER",
-      heroImage: "https://placehold.co/900x1100/15803d/ffffff/png?text=Craft+Guru%0AHardener",
-      trustBullets: ["Measured ratio", "Low yellowing", "Room-temp cure", "Craft Guru lab tested"],
-      sizes: [
-        { id: "s1", label: "250 ml", image: "" },
-        { id: "s2", label: "500 ml", image: "" },
-        { id: "s3", label: "1 L", image: "" },
-      ],
-      qtyOptions: [],
-      colors: [],
-    };
-  }
+function showcaseLuminaOptions() {
+  var hero = "media/raw-material-shop-hero-craftguru.png";
   return {
+    brandLine: "CRAFT GURU",
+    ratingScore: "4.8",
+    reviewCount: 214,
+    detailBody:
+      "How to use: cap bottles tightly between sessions and store upright out of direct sun. Mix Part A + Part B exactly as your batch card describes (by weight is most consistent). Pour in controlled layers for deep moulds so heat can escape. Cure times move with room temperature — 24–28°C is the sweet spot. This is a workshop resin, not a skin product; use gloves and ventilation. Questions? WhatsApp the studio from your order confirmation.",
     useSize: true,
     useQty: false,
     useColor: true,
-    badge: "New",
-    heroImage: "https://placehold.co/900x1100/4c1d95/ffffff/png?text=Craft+Guru%0ACrystal+Clear",
-    trustBullets: ["High-clarity pour", "Low bubble formula", "Made for deep casts", "Craft Guru supply"],
+    badge: "BEST SELLER",
+    heroImage: hero,
+    trustBullets: [
+      "Safe & non-toxic when cured",
+      "Lab-formulated in Jaipur",
+      "Low-yellowing crystal line",
+      "Vegan & cruelty-free supply chain",
+    ],
     sizes: [
-      { id: "s1", label: "750 ml", image: "" },
-      { id: "s2", label: "1.5 L", image: "" },
+      { id: "sz400", label: "400 ML", image: "" },
+      { id: "sz600", label: "600 ML", image: "" },
     ],
     qtyOptions: [],
     colors: [
-      { id: "c1", label: "Part A clear", hex: "#e5e7eb", image: "https://placehold.co/800x1000/e5e7eb/111827/png?text=Craft+Guru+A" },
-      { id: "c2", label: "Part B clear", hex: "#d1d5db", image: "https://placehold.co/800x1000/d1d5db/111827/png?text=Craft+Guru+B" },
+      {
+        id: "co-indigo",
+        label: "Indigo label",
+        hex: "#312e81",
+        image: hero,
+      },
+      {
+        id: "co-forest",
+        label: "Forest label",
+        hex: "#15803d",
+        image: hero,
+      },
+      {
+        id: "co-amber",
+        label: "Amber label",
+        hex: "#d97706",
+        image: hero,
+      },
     ],
   };
 }
 
 /**
- * Inserts three demo rows for QA (ON CONFLICT DO NOTHING). Safe to call on every migrate.
+ * Inserts one showcase raw material row for QA (ON CONFLICT DO NOTHING).
  * @param {import('pg').Pool} pool
  * @returns {Promise<void>}
  */
 function seedDemoMaterialsPromise(pool) {
+  var hero = "media/raw-material-shop-hero-craftguru.png";
   var demos = [
     {
       id: DEMO_IDS[0],
-      name: "Craft Guru Crystal Clear Epoxy",
+      name: "Oh My Pour! Crystal Clear Resin",
       description:
-        "High-clarity epoxy for river tables, coasters, and deep pours. Pair with Craft Guru hardener for a dependable studio workflow.",
-      note: "Ships from Jaipur · confirm lead time on WhatsApp",
-      image: "https://placehold.co/900x1100/4c1d95/ffffff/png?text=Craft+Guru%0ACrystal+Clear",
-      price: 1899,
-      mrp: 2299,
-      options: demoOptionsVariant("epoxy"),
-    },
-    {
-      id: DEMO_IDS[1],
-      name: "Craft Guru Pigment Discovery Set",
-      description: "Concentrated resin pigments in curated hues. Pick your palette and pack size — colours are studio-controlled swatches.",
-      note: "Starter-friendly",
-      image: "https://placehold.co/900x1100/7c3aed/ffffff/png?text=Craft+Guru%0APigments",
-      price: 649,
-      mrp: 799,
-      options: demoOptionsVariant("pigment"),
-    },
-    {
-      id: DEMO_IDS[2],
-      name: "Craft Guru Hardener (Part B)",
-      description: "Matched hardener for Craft Guru crystal line. Choose the bottle size that fits your pour plan.",
-      note: "Store cool & dry",
-      image: "https://placehold.co/900x1100/15803d/ffffff/png?text=Craft+Guru%0AHardener",
-      price: 799,
-      mrp: 899,
-      options: demoOptionsVariant("hardener"),
+        "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
+      note: "Ships free the week you pay on orders over ₹1500 · WhatsApp +91-8824350056 to confirm batch timing.",
+      image: hero,
+      price: 1649,
+      mrp: 2049,
+      options: showcaseLuminaOptions(),
     },
   ];
   return Promise.all(

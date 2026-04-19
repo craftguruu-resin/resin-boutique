@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resin raw material — Craft guru</title>
+  <title>Resin raw material — Overview — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -35,7 +35,7 @@
     </a>
     <nav class="nav-dock nav-dock--fx" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
-      <a href="raw-material.html" class="nav-dock-link is-active">Resin raw material</a>
+      <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
       <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
       <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
@@ -97,63 +97,16 @@
         <p class="crumb crumb--fx">
           <a href="index.html">Home</a> <span aria-hidden="true">/</span> Resin raw material
         </p>
-        <div class="section-head section-head--solo">
-          <div>
-            <h1 class="band-title band-title--fx">Resin raw material</h1>
-            <p class="band-sub">Epoxy, pigments, and studio supplies — same cart, checkout, and orders as the rest of the shop. These SKUs are managed only here (not under Products / Inventory).</p>
-          </div>
-        </div>
-        <div class="rm-landing">
-          <aside class="rm-rail" aria-label="On this page">
-            <p class="rm-rail__label">On this page</p>
-            <ul class="rm-rail__list">
-              <li><a href="#rm-hero">Discover</a></li>
-              <li><a href="#rm-shop">Products</a></li>
-              <li><a href="#rm-toolbar">Sort</a></li>
-            </ul>
-          </aside>
-          <div>
-            <div class="rm-hero" id="rm-hero">
-              <div class="rm-hero__blob" aria-hidden="true"></div>
-              <div class="rm-hero__inner">
-                <p class="rm-hero__kicker">Craft Guru supply</p>
-                <h2 class="rm-hero__title">Discover your next pour</h2>
-                <p class="rm-hero__sub">
-                  Crystal clears, pigments, and hardeners with the same secure checkout you already use — variant choices (size, pack, colour) are set in the vendor raw material console.
-                </p>
-                <a class="rm-hero__cta" href="#rm-shop">Shop materials</a>
-                <div class="rm-stats">
-                  <div>
-                    <div class="rm-stats__big">Trusted by studios</div>
-                    <p class="rm-stats__cap">Same orders &amp; tags as catalogue items.</p>
-                  </div>
-                  <div>
-                    <div class="rm-stats__big">6M+</div>
-                    <div class="rm-stats__stars">★★★★★</div>
-                    <p class="rm-stats__cap">Worldwide resin community inspiration.</p>
-                  </div>
-                  <div>
-                    <div class="rm-stats__big">4.6</div>
-                    <div class="rm-stats__stars">★★★★★</div>
-                    <p class="rm-stats__cap">Service-first fulfilment from Jaipur.</p>
-                  </div>
-                </div>
-              </div>
-              <div class="rm-hero__visual" aria-hidden="true">
-                <img src="https://placehold.co/640x520/4c1d95/ffffff/png?text=Craft+Guru%0ARaw+Materials" width="640" height="520" alt="" decoding="async" />
-              </div>
-            </div>
-            <div id="rm-shop">
-            <div id="rm-toolbar" class="category-toolbar" aria-label="Sort materials">
-              <div class="category-toolbar__group">
-                <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
-                <select id="rmSortSelect" class="category-toolbar__select">
-                  <option value="name-asc">Name · A → Z</option>
-                  <option value="name-desc">Name · Z → A</option>
-                </select>
-              </div>
-            </div>
-            <div class="rm-grid-cards" id="rmGrid"></div>
+        <div class="rm-home">
+          <div class="section-head section-head--solo">
+            <div>
+              <h1 class="band-title band-title--fx">Resin raw material</h1>
+              <p class="band-sub">
+                Epoxy, pigments, and hardeners use the same cart and checkout as the rest of Craftguru. Listings and variants are controlled from the vendor raw material console — they do not appear under Products or Inventory.
+              </p>
+              <p class="band-sub" style="margin-top: 0.75rem">
+                <a class="rm-home__cta" href="raw-material-shop.html">Open material shop</a>
+              </p>
             </div>
           </div>
         </div>
@@ -268,7 +221,6 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
-  <script src="raw-material.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
