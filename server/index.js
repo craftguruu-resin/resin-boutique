@@ -68,6 +68,7 @@ var schemaHotfix = require("./db/schema-hotfix.js");
 var vendorAuth = require("./vendor-auth.js");
 var guestSessions = require("./guest-sessions.js");
 var guestOtp = require("./guest-otp.js");
+var guestGoogleAuth = require("./guest-google-auth.js");
 var guestDb = require("./guest-db.js");
 var wa = require("./whatsapp-meta.js");
 
@@ -486,6 +487,7 @@ app.get("/api/health", function (_req, res) {
       whatsappConfigured: hasToken,
       razorpayConfigured: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && Razorpay),
       emailConfigured: Boolean(createMailTransport()),
+      googleSignInConfigured: guestGoogleAuth.googleSignInConfigured(),
       database: poolMod.isEnabled()
         ? { enabled: true, reachable: Boolean(dbOk), error: err ? String(err.message) : null }
         : { enabled: false, hint: "Set DATABASE_URL for Postgres (orders, guests, vendor, catalog)." },
@@ -1038,6 +1040,44 @@ app.post("/api/guest-auth/login/verify", function (req, res) {
         token: sess.token,
         guestId: sess.guestId,
         expiresInMs: sess.expiresInMs,
+      });
+    });
+  });
+});
+
+/** Public: optional status for the storefront (no secrets). */
+app.get("/api/guest-auth/google/status", function (_req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ok: true, enabled: guestGoogleAuth.googleSignInConfigured() });
+});
+
+/**
+ * Public: Sign in with Google (GIS credential JWT). Verifies with Google, then issues the same guest Bearer as email OTP.
+ * Configure GOOGLE_CLIENT_ID in server/.env and data-google-client-id on storefront HTML (same Web client id).
+ */
+app.post("/api/guest-auth/google/session", function (req, res) {
+  var ip = req.ip || req.connection.remoteAddress || "unknown";
+  if (!rateOk(ip)) {
+    return res.status(429).json({ ok: false, error: "Too many requests." });
+  }
+  var credential = String((req.body || {}).credential || "").trim();
+  if (!credential) {
+    return res.status(400).json({ ok: false, error: "Missing Google credential" });
+  }
+  guestGoogleAuth.verifyAndEnsureGuest(credential, function (err, out) {
+    if (err) {
+      return res.status(400).json({ ok: false, error: err.message || "Google sign-in failed" });
+    }
+    guestSessions.issueGuestTokenForGuestId(out.guestId, function (e2, sess) {
+      if (e2) {
+        return res.status(503).json({ ok: false, error: e2.message || "Could not create session" });
+      }
+      res.json({
+        ok: true,
+        token: sess.token,
+        guestId: sess.guestId,
+        expiresInMs: sess.expiresInMs,
+        email: out.email,
       });
     });
   });

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847">
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-google-client-id="">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -473,6 +473,9 @@
         <h2 id="authModalTitle">Account</h2>
         <button type="button" class="auth-modal__x" id="authModalClose" aria-label="Close">✕</button>
       </div>
+      <p class="auth-google-hint">Optional: sign in with Google (same session as email code across the site).</p>
+      <div class="auth-google-slot" id="homeGoogleSignIn" aria-label="Sign in with Google"></div>
+      <p class="auth-or-divider"><span>or use email code</span></p>
       <div class="auth-tabs">
         <button type="button" class="auth-tab is-active" id="authTabSignup">Sign up</button>
         <button type="button" class="auth-tab" id="authTabLogin">Log in</button>
@@ -520,6 +523,13 @@
   <script>
     /** Homepage auth: email OTP via API (auth-home.js). Point data-bill-api-base on this page to your Node server. */
     window.CRAFT_AUTH = window.CRAFT_AUTH || {};
+  </script>
+  <script src="google-signin.js"></script>
+  <script>
+    document.documentElement.classList.toggle(
+      "auth-google-ui-off",
+      !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
+    );
   </script>
   <script src="auth-home.js"></script>
   <script src="catalog-filter-ui.js"></script>

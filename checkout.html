@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="" data-google-client-id="">
 <head>
   <meta charset="UTF-8" />
   <!-- If checkout is not on the API port, set data-bill-api-port on <html>, or once: localStorage.setItem('craftguruBillApiPort','YOUR_PORT'). -->
@@ -497,6 +497,13 @@
   <script src="header.js"></script>
   <script src="global-find.js"></script>
   <script src="auth-db.js"></script>
+  <script src="google-signin.js"></script>
+  <script>
+    document.documentElement.classList.toggle(
+      "auth-google-ui-off",
+      !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
+    );
+  </script>
   <script src="checkout.js"></script>
 </body>
 </html>

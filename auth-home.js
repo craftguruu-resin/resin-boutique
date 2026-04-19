@@ -242,9 +242,13 @@
 
   function renderAuthBar() {
     var email = getSessionEmail();
-    var inAuth = !!email;
+    var hasToken = false;
+    try {
+      hasToken = !!localStorage.getItem(GUEST_TOKEN_KEY);
+    } catch (_) {}
+    var inAuth = !!email || hasToken;
     if (els.userLabel) {
-      els.userLabel.textContent = inAuth ? email : "";
+      els.userLabel.textContent = email ? email : hasToken ? "Signed in" : "";
       els.userLabel.classList.toggle("is-hidden", !inAuth);
     }
     if (els.signupBtn) els.signupBtn.classList.toggle("is-hidden", inAuth);
@@ -277,6 +281,71 @@
     }
 
     var base = getApiBase();
+
+    (function hydrateFromGuestToken() {
+      var tok = "";
+      try {
+        tok = localStorage.getItem(GUEST_TOKEN_KEY) || "";
+      } catch (_) {}
+      if (!tok) return;
+      fetch(base + "/api/guest/me", {
+        headers: { Authorization: "Bearer " + tok },
+        cache: "no-store",
+      })
+        .then(function (res) {
+          if (res.status === 401) {
+            setGuestToken("");
+            setSessionEmail("");
+            renderAuthBar();
+            return null;
+          }
+          return res.text().then(function (text) {
+            try {
+              return JSON.parse(text);
+            } catch (_) {
+              return null;
+            }
+          });
+        })
+        .then(function (j) {
+          if (j && j.ok && j.email) setSessionEmail(normalizeEmail(j.email));
+          renderAuthBar();
+        })
+        .catch(function () {
+          renderAuthBar();
+        });
+    })();
+
+    var gEl = document.getElementById("homeGoogleSignIn");
+    if (gEl && window.CRAFT_GOOGLE_SIGNIN && CRAFT_GOOGLE_SIGNIN.isConfigured()) {
+      CRAFT_GOOGLE_SIGNIN.bootstrap(function (credential) {
+        setMsg(els.msgSu, "");
+        setMsg(els.msgLo, "");
+        postJson(base + "/api/guest-auth/google/session", { credential: credential }, function (err, json) {
+          if (err) {
+            setMsg(els.msgSu, err.message || "Google sign-in failed.");
+            if (els.msgLo) setMsg(els.msgLo, err.message || "Google sign-in failed.");
+            return;
+          }
+          var em = json && json.email ? normalizeEmail(json.email) : "";
+          if (json && json.token) setGuestToken(json.token);
+          if (em) setSessionEmail(em);
+          if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
+            window.RESIN_CART.onAccountLogin();
+          }
+          if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
+            window.CRAFT_AUTH_DB.putUser({ email: em, name: "", createdAt: Date.now() }, function () {
+              renderAuthBar();
+              closeAuth();
+            });
+          } else {
+            renderAuthBar();
+            closeAuth();
+          }
+        });
+      });
+      CRAFT_GOOGLE_SIGNIN.renderButton(gEl, { width: 280 });
+    }
 
     if (els.btnOtpSu) {
       els.btnOtpSu.addEventListener("click", function () {
@@ -326,28 +395,26 @@
               setMsg(els.msgSu, err.message || "Verification failed.");
               return;
             }
-            if (!window.CRAFT_AUTH_DB || !window.CRAFT_AUTH_DB.putUser) {
-              setBtnBusy(els.btnGoSu, false);
-              setMsg(els.msgSu, "Storage not ready. Refresh and try again.");
-              return;
+            if (json && json.token) setGuestToken(json.token);
+            setSessionEmail(em);
+            if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
+              window.RESIN_CART.onAccountLogin();
             }
-            window.CRAFT_AUTH_DB.putUser(
-              { email: em, name: (els.nameSu && els.nameSu.value) || "", createdAt: Date.now() },
-              function (err2) {
-                setBtnBusy(els.btnGoSu, false);
-                if (err2) {
-                  setMsg(els.msgSu, "Could not save account locally. Try again.");
-                  return;
+            function finishSignupUi() {
+              setBtnBusy(els.btnGoSu, false);
+              renderAuthBar();
+              closeAuth();
+            }
+            if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
+              window.CRAFT_AUTH_DB.putUser(
+                { email: em, name: (els.nameSu && els.nameSu.value) || "", createdAt: Date.now() },
+                function () {
+                  finishSignupUi();
                 }
-                if (json && json.token) setGuestToken(json.token);
-                setSessionEmail(em);
-                if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
-                  window.RESIN_CART.onAccountLogin();
-                }
-                renderAuthBar();
-                closeAuth();
-              }
-            );
+              );
+            } else {
+              finishSignupUi();
+            }
           }
         );
       });
@@ -389,27 +456,20 @@
             setMsg(els.msgLo, err.message || "Verification failed.");
             return;
           }
-          if (!window.CRAFT_AUTH_DB || !window.CRAFT_AUTH_DB.putUser) {
-            setMsg(els.msgLo, "Storage not ready. Refresh and try again.");
-            return;
+          if (json && json.token) setGuestToken(json.token);
+          setSessionEmail(em);
+          if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
+            window.RESIN_CART.onAccountLogin();
           }
-          window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
-            var name = (user && user.name) || "";
-            var createdAt = (user && user.createdAt) || Date.now();
-            window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function (e3) {
-              if (e3) {
-                setMsg(els.msgLo, "Could not save session locally. Try again.");
-                return;
-              }
-              if (json && json.token) setGuestToken(json.token);
-              setSessionEmail(em);
-              if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
-                window.RESIN_CART.onAccountLogin();
-              }
-              renderAuthBar();
-              closeAuth();
+          renderAuthBar();
+          closeAuth();
+          if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
+            window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
+              var name = (user && user.name) || "";
+              var createdAt = (user && user.createdAt) || Date.now();
+              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
             });
-          });
+          }
         });
       });
     }

@@ -78,19 +78,23 @@
     return fetch(base + "/api/guest/me", {
       method: "GET",
       headers: guestAuthHeaders(),
+      cache: "no-store",
     })
       .then(function (res) {
-        return parseApiJson(res);
+        var st = res.status;
+        return parseApiJson(res).then(function (x) {
+          return { status: st, x: x };
+        });
       })
-      .then(function (x) {
-        var j = x.json;
-        if (!x.okHttp || !j.ok) {
+      .then(function (o) {
+        var j = o.x.json;
+        if (o.x.okHttp && j.ok) return j;
+        if (o.status === 401 || (j && j.code === "NO_SESSION")) {
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
           } catch (_) {}
-          return null;
         }
-        return j;
+        return null;
       })
       .catch(function () {
         return null;
@@ -408,21 +412,36 @@
             checkoutAuthSetMsg(msgEl, err.message || "Verification failed.");
             return;
           }
+          checkoutAfterVerifySuccess(em, json, "");
+          checkoutAuthSetMsg(msgEl, "Signed in.", "ok");
           if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
             window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
               var name = (user && user.name) || "";
               var createdAt = (user && user.createdAt) || Date.now();
-              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {
-                checkoutAfterVerifySuccess(em, json, name);
-                checkoutAuthSetMsg(msgEl, "Signed in.", "ok");
-              });
+              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
             });
-          } else {
-            checkoutAfterVerifySuccess(em, json, "");
-            checkoutAuthSetMsg(msgEl, "Signed in.", "ok");
           }
         });
       });
+    }
+
+    var chG = document.getElementById("checkoutGoogleSignIn");
+    if (chG && window.CRAFT_GOOGLE_SIGNIN && CRAFT_GOOGLE_SIGNIN.isConfigured()) {
+      CRAFT_GOOGLE_SIGNIN.bootstrap(function (cred) {
+        checkoutPostJson(base + "/api/guest-auth/google/session", { credential: cred }, function (err, json) {
+          var msgSu = document.getElementById("checkoutAuthMsgSu");
+          var msgLo = document.getElementById("checkoutAuthMsgLo");
+          if (err) {
+            if (msgSu) checkoutAuthSetMsg(msgSu, err.message || "Google sign-in failed.");
+            if (msgLo) checkoutAuthSetMsg(msgLo, err.message || "Google sign-in failed.");
+            return;
+          }
+          var em = json && json.email ? normalizeCheckoutEmail(json.email) : "";
+          checkoutAfterVerifySuccess(em, json, "");
+          if (msgLo) checkoutAuthSetMsg(msgLo, "Signed in with Google.", "ok");
+        });
+      });
+      CRAFT_GOOGLE_SIGNIN.renderButton(chG, { width: 280 });
     }
   }
 

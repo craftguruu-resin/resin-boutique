@@ -858,3 +858,57 @@ body.guest-site .global-find {
   margin-left: auto;
 }
 
+/* Google Identity + email OTP combo (home / account / checkout modals) */
+html.auth-google-ui-off .auth-google-hint,
+html.auth-google-ui-off .auth-google-slot,
+html.auth-google-ui-off .auth-or-divider {
+  display: none !important;
+}
+
+.auth-google-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  color: rgba(15, 23, 42, 0.55);
+}
+
+.auth-google-slot {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0 0 0.65rem;
+  min-height: 2.5rem;
+}
+
+.auth-or-divider {
+  margin: 0.35rem 0 0.85rem;
+  text-align: center;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.38);
+}
+
+.auth-or-divider span {
+  display: inline-block;
+  padding: 0 0.5rem;
+  position: relative;
+}
+
+.auth-or-divider span::before,
+.auth-or-divider span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 4rem;
+  height: 1px;
+  background: rgba(15, 23, 42, 0.12);
+}
+
+.auth-or-divider span::before {
+  right: 100%;
+}
+
+.auth-or-divider span::after {
+  left: 100%;
+}
+

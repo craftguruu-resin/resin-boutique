@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="" data-bill-api-port="" data-bill-api-secret="">
+<html lang="en" data-bill-api-base="" data-bill-api-port="" data-bill-api-secret="" data-google-client-id="">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -76,6 +76,9 @@
             <div class="auth-modal__head checkout-auth-sheet__head">
               <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
             </div>
+            <p class="auth-google-hint">Optional: sign in with Google (same session as email code).</p>
+            <div class="auth-google-slot" id="acctGoogleSignIn" aria-label="Sign in with Google"></div>
+            <p class="auth-or-divider"><span>or use email code</span></p>
             <div class="auth-tabs">
               <button type="button" class="auth-tab is-active" id="acctTabSu">Sign up</button>
               <button type="button" class="auth-tab" id="acctTabLo">Log in</button>
@@ -158,6 +161,13 @@
   <script src="cart.js"></script>
   <script src="guest-layout.js"></script>
   <script src="auth-db.js"></script>
+  <script src="google-signin.js"></script>
+  <script>
+    document.documentElement.classList.toggle(
+      "auth-google-ui-off",
+      !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
+    );
+  </script>
   <script src="shell.js"></script>
   <script src="account.js"></script>
 </body>

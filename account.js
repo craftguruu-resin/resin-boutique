@@ -898,7 +898,21 @@
       .then(function (o) {
         var x = o.x;
         var j = x.json || {};
-        if (!x.okHttp || !j.ok) {
+        if (x.okHttp && j.ok) {
+          if (j.email) setSessionEmail(j.email);
+          var em2 = j.email || sessionEmailDisplay() || "";
+          showSessionBar(true, em2);
+          showAccountStoreChrome(true, em2);
+          showAccountAuth(false);
+          focusAccountOrdersSection();
+          loadOrders();
+          return;
+        }
+        var needReauth =
+          o.status === 401 ||
+          (j && j.code === "NO_SESSION") ||
+          String((j && j.error) || "").toLowerCase().indexOf("sign in") >= 0;
+        if (needReauth) {
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
           } catch (_) {}
@@ -909,19 +923,18 @@
           showOrdersCard(false);
           return;
         }
-        if (j.email) setSessionEmail(j.email);
-        var em2 = j.email || sessionEmailDisplay() || "";
-        showSessionBar(true, em2);
-        showAccountStoreChrome(true, em2);
+        showAccountAuth(false);
+        showSessionBar(true, sessionEmailDisplay() || "…");
+        showAccountStoreChrome(true, sessionEmailDisplay() || "");
         focusAccountOrdersSection();
         loadOrders();
       })
       .catch(function () {
-        /* Do not clear token on transient errors — user stays signed in until /api/guest/me returns 401. */
-        showAccountAuth(true);
-        showSessionBar(false);
-        showAccountStoreChrome(false);
-        showOrdersCard(false);
+        showAccountAuth(false);
+        showSessionBar(true, sessionEmailDisplay() || "…");
+        showAccountStoreChrome(true, sessionEmailDisplay() || "");
+        focusAccountOrdersSection();
+        loadOrders();
       });
   }
 
@@ -1055,21 +1068,36 @@
             setMsg(msgEl, err.message || "Verification failed.");
             return;
           }
+          afterAuthSuccess(em, json, "");
+          setMsg(msgEl, "Signed in.", "ok");
           if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
             window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
               var name = (user && user.name) || "";
               var createdAt = (user && user.createdAt) || Date.now();
-              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {
-                afterAuthSuccess(em, json, name);
-                setMsg(msgEl, "Signed in.", "ok");
-              });
+              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
             });
-          } else {
-            afterAuthSuccess(em, json, "");
-            setMsg(msgEl, "Signed in.", "ok");
           }
         });
       });
+    }
+
+    var acctGoogle = document.getElementById("acctGoogleSignIn");
+    if (acctGoogle && window.CRAFT_GOOGLE_SIGNIN && CRAFT_GOOGLE_SIGNIN.isConfigured()) {
+      CRAFT_GOOGLE_SIGNIN.bootstrap(function (cred) {
+        postJson(base + "/api/guest-auth/google/session", { credential: cred }, function (err, json) {
+          var msgSu = document.getElementById("acctMsgSu");
+          var msgLo = document.getElementById("acctMsgLo");
+          if (err) {
+            if (msgSu) setMsg(msgSu, err.message || "Google sign-in failed.");
+            if (msgLo) setMsg(msgLo, err.message || "Google sign-in failed.");
+            return;
+          }
+          var em = json && json.email ? normalizeEmail(json.email) : "";
+          afterAuthSuccess(em, json, "");
+          if (msgSu) setMsg(msgSu, "Signed in with Google.", "ok");
+        });
+      });
+      CRAFT_GOOGLE_SIGNIN.renderButton(acctGoogle, { width: 280 });
     }
 
     var outBtn = document.getElementById("acctSignOut");
