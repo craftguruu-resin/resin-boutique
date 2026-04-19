@@ -1589,3 +1589,64 @@ a.vd-kpi-card--link:focus-visible {
   color: #334155;
   letter-spacing: 0.02em;
 }
+
+/* Full-screen vendor login (server requires VENDOR auth) */
+.vs-html--vendor-locked,
+.vs-body--vendor-locked {
+  overflow: hidden;
+}
+
+.vs-auth-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(6px);
+}
+
+.vs-auth-gate__panel {
+  width: 100%;
+  max-width: 22rem;
+  padding: 1.5rem 1.35rem;
+  margin: 0;
+}
+
+.vs-auth-gate__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--vs-text);
+}
+
+.vs-auth-gate__hint {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--vs-muted);
+}
+
+.vs-auth-gate__err {
+  min-height: 1.25rem;
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--vs-danger);
+}
+
+.vs-auth-gate__form .vs-field {
+  margin-bottom: 0.9rem;
+}
+
+.vs-auth-gate__form .vs-btn {
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.vs-sidebar__foot a#vsVendorSignOut {
+  font-weight: 600;
+  color: var(--vs-indigo);
+}

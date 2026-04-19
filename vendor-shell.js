@@ -249,7 +249,7 @@
       .then(function (meta) {
         if (meta && meta.vendorAuthRequired) {
           throw new Error(
-            "Vendor login required (server has VENDOR_REQUIRE_AUTH=1). Open vendor-dashboard.html, sign in, then return here."
+            "Vendor login required (server has vendor auth on — e.g. Render with RENDER=true, or VENDOR_REQUIRE_AUTH=1). Sign in on the vendor page, then return here."
           );
         }
         if (meta && meta.billSecretConfigured) {
@@ -348,10 +348,127 @@
       link("returns", vendorPageHref("vendor-returns.html"), "Returns", "↩") +
       "</ul>" +
       "<div class='vs-sidebar__foot'>" +
-      "<a href='" +
+      "<a href='#' id='vsVendorSignOut'>Sign out</a> · <a href='" +
       vendorPageHref("index.html") +
       "'>Storefront</a> · Parcel tags match checkout guidance." +
       "</div></aside>";
+    try {
+      var so = document.getElementById("vsVendorSignOut");
+      if (so) {
+        so.addEventListener("click", function (e) {
+          e.preventDefault();
+          clearToken();
+          location.reload();
+        });
+      }
+    } catch (_) {}
+  }
+
+  /** Vendor HTML pages that load this script (not checkout). */
+  function isVendorPortalPage() {
+    try {
+      var p = (window.location.pathname || "").replace(/\\/g, "/").split("/").pop() || "";
+      p = String(p).split("?")[0].toLowerCase();
+      return p.indexOf("vendor-") === 0 && p.slice(-5) === ".html";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function ensureVendorAuthGate() {
+    if (!isVendorPortalPage()) return;
+    if (document.getElementById("vsVendorAuthGate")) return;
+
+    function hideGate() {
+      try {
+        document.documentElement.classList.remove("vs-html--vendor-locked");
+      } catch (_) {}
+      try {
+        document.body.classList.remove("vs-body--vendor-locked");
+      } catch (_) {}
+      var g = document.getElementById("vsVendorAuthGate");
+      if (g) g.remove();
+    }
+
+    function showGate(networkErr) {
+      if (document.getElementById("vsVendorAuthGate")) return;
+      try {
+        document.documentElement.classList.add("vs-html--vendor-locked");
+      } catch (_) {}
+      try {
+        document.body.classList.add("vs-body--vendor-locked");
+      } catch (_) {}
+      var wrap = document.createElement("div");
+      wrap.id = "vsVendorAuthGate";
+      wrap.className = "vs-auth-gate";
+      wrap.setAttribute("role", "dialog");
+      wrap.setAttribute("aria-modal", "true");
+      wrap.setAttribute("aria-labelledby", "vsVendorAuthTitle");
+      wrap.innerHTML =
+        "<div class='vs-auth-gate__panel vs-card'>" +
+        "<h1 id='vsVendorAuthTitle' class='vs-auth-gate__title'>Vendor sign-in</h1>" +
+        "<p class='vs-auth-gate__hint'>Use the username and password configured on the server (e.g. Render: VENDOR_PORTAL_USER / VENDOR_PORTAL_PASSWORD).</p>" +
+        "<p class='vs-auth-gate__err' id='vsVendorAuthErr' role='alert'></p>" +
+        "<form class='vs-auth-gate__form' id='vsVendorAuthForm' autocomplete='on'>" +
+        "<label class='vs-field'><span class='vs-field__lab'>Username</span>" +
+        "<input class='vs-input' type='text' name='username' id='vsVendorAuthUser' autocomplete='username' required /></label>" +
+        "<label class='vs-field'><span class='vs-field__lab'>Password</span>" +
+        "<input class='vs-input' type='password' name='password' id='vsVendorAuthPass' autocomplete='current-password' required /></label>" +
+        "<button type='submit' class='vs-btn vs-btn--primary' id='vsVendorAuthSubmit'>Sign in</button>" +
+        "</form></div>";
+      document.body.appendChild(wrap);
+      var errEl = document.getElementById("vsVendorAuthErr");
+      if (errEl && networkErr) errEl.textContent = String(networkErr);
+
+      document.getElementById("vsVendorAuthForm").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var u = document.getElementById("vsVendorAuthUser");
+        var pw = document.getElementById("vsVendorAuthPass");
+        var btn = document.getElementById("vsVendorAuthSubmit");
+        var err = document.getElementById("vsVendorAuthErr");
+        if (err) err.textContent = "";
+        if (btn) {
+          btn.disabled = true;
+          btn.textContent = "Signing in…";
+        }
+        doLogin(u && u.value, pw && pw.value)
+          .then(function (tok) {
+            setToken(tok);
+            hideGate();
+            location.reload();
+          })
+          .catch(function (e) {
+            if (err) err.textContent = (e && e.message) || "Sign-in failed";
+            if (btn) {
+              btn.disabled = false;
+              btn.textContent = "Sign in";
+            }
+          });
+      });
+    }
+
+    vendorFetch(vendorApiUrl("/api/vendor/status"))
+      .then(function (r) {
+        return r.json().catch(function () {
+          return {};
+        });
+      })
+      .then(function (meta) {
+        if (!meta || !meta.vendorAuthRequired) {
+          hideGate();
+          return;
+        }
+        return vendorFetch(vendorApiUrl("/api/vendor/session"), { headers: authHeaders() }).then(function (r) {
+          if (r.status === 200) {
+            hideGate();
+            return;
+          }
+          showGate();
+        });
+      })
+      .catch(function () {
+        showGate("Cannot reach the API at " + apiBase() + ". Start the server (npm start in server/) or fix data-bill-api-base / port.");
+      });
   }
 
   window.CraftguruVendor = {
@@ -370,5 +487,8 @@
     parseApiJson: parseApiJson,
   };
 
-  document.addEventListener("DOMContentLoaded", injectSidebar);
+  document.addEventListener("DOMContentLoaded", function () {
+    injectSidebar();
+    ensureVendorAuthGate();
+  });
 })();

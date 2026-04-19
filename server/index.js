@@ -841,9 +841,31 @@ app.get("/api/vendor/status", function (_req, res) {
   res.json({
     ok: true,
     vendorAuthRequired: vendorAuth.vendorRequireAuth(),
+    vendorSessionIdleMs: vendorAuth.getSessionIdleMs(),
     databaseConfigured: poolMod.isEnabled(),
     billSecretConfigured: billSecretConfigured(),
   });
+});
+
+/** Probe session without extending idle (peek). Requires BILL_API_SECRET when configured. */
+app.get("/api/vendor/session", function (req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  if (!vendorAuth.vendorRequireAuth()) {
+    return res.json({ ok: true, vendorAuthRequired: false });
+  }
+  vendorAuth.tokenValid(
+    req,
+    function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, vendorAuthRequired: true, error: "Session check failed" });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, vendorAuthRequired: true, error: "Not signed in or session idle" });
+      }
+      res.json({ ok: true, vendorAuthRequired: true, idleMs: vendorAuth.getSessionIdleMs() });
+    },
+    { bump: false }
+  );
 });
 
 /** Vendor portal login — Postgres: vendor_users + vendor_sessions; else env nammu/nammu + memory. */

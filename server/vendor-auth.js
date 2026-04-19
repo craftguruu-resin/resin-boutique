@@ -6,11 +6,19 @@ var poolMod = require("./db/pool.js");
 
 var VENDOR_PORTAL_USER = process.env.VENDOR_PORTAL_USER || "nammu";
 var VENDOR_PORTAL_PASSWORD = process.env.VENDOR_PORTAL_PASSWORD || "nammu";
-var VENDOR_SESSION_MS = 12 * 60 * 60 * 1000;
 
-/** Set to "1" to require Bearer token on /api/vendor/* again. Default: open (no login). */
+/** Sliding inactivity window (ms). After this long without an authenticated API call, re-login. Default 1 hour. */
+var IDLE_MS = Number(process.env.VENDOR_SESSION_IDLE_MS);
+if (!Number.isFinite(IDLE_MS) || IDLE_MS < 60000) {
+  IDLE_MS = 60 * 60 * 1000;
+}
+
+/** Require Bearer on /api/vendor/*. Explicit VENDOR_REQUIRE_AUTH=0 disables. On Render (RENDER=true), defaults to locked unless disabled. */
 function vendorRequireAuth() {
-  return String(process.env.VENDOR_REQUIRE_AUTH || "").trim() === "1";
+  var ex = String(process.env.VENDOR_REQUIRE_AUTH || "").trim().toLowerCase();
+  if (ex === "0" || ex === "false" || ex === "off") return false;
+  if (ex === "1" || ex === "true" || ex === "on") return true;
+  return String(process.env.RENDER || "").toLowerCase() === "true";
 }
 
 var vendorSessionsMemory = Object.create(null);
@@ -25,8 +33,13 @@ function vendorAuthToken(req) {
   return m ? m[1].trim() : (req.get("x-vendor-token") || "").trim();
 }
 
-/** @param {(err: Error|null, ok: boolean) => void} cb */
-function tokenValid(req, cb) {
+/**
+ * @param {import("express").Request} req
+ * @param {(err: Error|null, ok: boolean) => void} cb
+ * @param {{ bump?: boolean }|undefined} opts bump=false: read-only check (e.g. /api/vendor/session) so page loads do not extend idle.
+ */
+function tokenValid(req, cb, opts) {
+  var bump = !opts || opts.bump !== false;
   if (!vendorRequireAuth()) {
     return process.nextTick(function () {
       cb(null, true);
@@ -49,7 +62,17 @@ function tokenValid(req, cb) {
         [h]
       )
       .then(function (r) {
-        cb(null, r.rows.length > 0);
+        if (!r.rows.length) return cb(null, false);
+        if (!bump) return cb(null, true);
+        return poolMod
+          .getPool()
+          .query(
+            "UPDATE vendor_sessions SET expires_at = NOW() + (($2::double precision / 1000.0) * INTERVAL '1 second') WHERE token_hash = $1",
+            [h, IDLE_MS]
+          )
+          .then(function () {
+            cb(null, true);
+          });
       })
       .catch(function (e) {
         cb(e, false);
@@ -57,9 +80,29 @@ function tokenValid(req, cb) {
     return;
   }
 
-  var exp = vendorSessionsMemory[tok];
+  var rec = vendorSessionsMemory[tok];
   process.nextTick(function () {
-    cb(null, typeof exp === "number" && exp > Date.now());
+    if (typeof rec === "number") {
+      if (rec <= Date.now()) {
+        delete vendorSessionsMemory[tok];
+        return cb(null, false);
+      }
+      if (bump) {
+        vendorSessionsMemory[tok] = { lastAt: Date.now() };
+      }
+      return cb(null, true);
+    }
+    if (!rec || typeof rec.lastAt !== "number") {
+      return cb(null, false);
+    }
+    if (Date.now() - rec.lastAt > IDLE_MS) {
+      delete vendorSessionsMemory[tok];
+      return cb(null, false);
+    }
+    if (bump) {
+      rec.lastAt = Date.now();
+    }
+    cb(null, true);
   });
 }
 
@@ -78,8 +121,8 @@ function login(username, password, cb) {
         }
         var row = r.rows[0];
         var token = crypto.randomBytes(32).toString("hex");
-        var exp = new Date(Date.now() + VENDOR_SESSION_MS);
         var h = sha256hex(token);
+        var exp = new Date(Date.now() + IDLE_MS);
         return poolMod
           .getPool()
           .query(
@@ -87,7 +130,7 @@ function login(username, password, cb) {
             [row.id, h, exp.toISOString()]
           )
           .then(function () {
-            cb(null, token, VENDOR_SESSION_MS);
+            cb(null, token, IDLE_MS);
           });
       })
       .catch(function (err) {
@@ -102,10 +145,14 @@ function login(username, password, cb) {
     });
   }
   var token = crypto.randomBytes(32).toString("hex");
-  vendorSessionsMemory[token] = Date.now() + VENDOR_SESSION_MS;
+  vendorSessionsMemory[token] = { lastAt: Date.now() };
   process.nextTick(function () {
-    cb(null, token, VENDOR_SESSION_MS);
+    cb(null, token, IDLE_MS);
   });
+}
+
+function getSessionIdleMs() {
+  return IDLE_MS;
 }
 
 module.exports = {
@@ -113,4 +160,5 @@ module.exports = {
   tokenValid,
   login,
   vendorRequireAuth: vendorRequireAuth,
+  getSessionIdleMs: getSessionIdleMs,
 };
