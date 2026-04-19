@@ -203,21 +203,253 @@
     _lastHeroResolvedSrc: "",
   };
 
-  /**
-   * View Transitions defer the update callback until after the old state snapshot.
-   * Any code that must see the new DOM (event listeners, fadeHero) must run inside afterUpdate,
-   * invoked from the same callback that sets innerHTML — not after startViewTransition returns.
-   */
-  function commitPdpHtml(root, html, afterUpdate) {
-    function apply() {
-      root.innerHTML = html;
-      if (typeof afterUpdate === "function") afterUpdate(root);
+  /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
+  function applyPdpHtml(root, html) {
+    root.innerHTML = html;
+  }
+
+  function nextGalleryIndexFrom(entries, cur, dir) {
+    var urlsIdx = [];
+    for (var j = 0; j < entries.length; j++) {
+      if (String(entries[j].url || "").trim()) urlsIdx.push(j);
     }
-    if (typeof document.startViewTransition === "function") {
-      document.startViewTransition(apply);
-    } else {
-      apply();
+    if (!urlsIdx.length) return 0;
+    var pos = urlsIdx.indexOf(cur);
+    if (pos < 0) pos = 0;
+    var np = (pos + dir + urlsIdx.length) % urlsIdx.length;
+    return urlsIdx[np];
+  }
+
+  function galleryUrlCountFrom(entries) {
+    var n = 0;
+    for (var i = 0; i < entries.length; i++) {
+      if (String(entries[i].url || "").trim()) n++;
     }
+    return n;
+  }
+
+  function shellNeedsRebuild(root, m, entries, galleryUrlCount) {
+    if (!root || !m) return true;
+    var shell = root.querySelector(".rm-pdp--modern");
+    if (!shell) return true;
+    if (String(shell.getAttribute("data-rm-material-id") || "") !== String(m.id)) return true;
+    var track = root.querySelector(".rm-pdp-thumb-track");
+    var thumbN = track ? track.querySelectorAll(".rm-pdp__thumb").length : 0;
+    if (thumbN !== galleryUrlCount) return true;
+    var needNav = galleryUrlCount > 1;
+    if (!!root.querySelector("#rmPdpPrev") !== needNav) return true;
+    if (!root.querySelector("#rmPdpHeroImg") && galleryUrlCount > 0) return true;
+    return false;
+  }
+
+  function patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct) {
+    var resolved = mainImg ? imgSrc(mainImg) : "";
+    var hi = root.querySelector("#rmPdpHeroImg");
+    var wrap = root.querySelector("#rmPdpHeroZoom");
+    if (hi && resolved) {
+      hi.src = resolved;
+      hi.setAttribute("alt", m.name || "");
+      hi.style.transform = "scale(" + (state.heroZoom || 1) + ")";
+      if (wrap) wrap.style.cursor = (state.heroZoom > 1) ? "grab" : "zoom-in";
+    }
+    var pr = root.querySelector("#rmPdpPrice");
+    if (pr) pr.textContent = CART ? CART.formatMoney(effPrice) : "₹" + effPrice;
+    var mrpEl = root.querySelector("#rmPdpMrp");
+    var saveEl = root.querySelector("#rmPdpSave");
+    var showMrp = effMrp != null && Number(effMrp) > Number(effPrice);
+    if (mrpEl) {
+      if (showMrp) {
+        mrpEl.textContent = CART ? CART.formatMoney(effMrp) : String(effMrp);
+        mrpEl.removeAttribute("hidden");
+      } else {
+        mrpEl.textContent = "";
+        mrpEl.setAttribute("hidden", "");
+      }
+    }
+    if (saveEl) {
+      if (pct != null) {
+        saveEl.textContent = pct + "% off";
+        saveEl.removeAttribute("hidden");
+      } else {
+        saveEl.textContent = "";
+        saveEl.setAttribute("hidden", "");
+      }
+    }
+    root.querySelectorAll(".rm-pdp__thumb").forEach(function (btn) {
+      btn.classList.toggle("is-active", Number(btn.getAttribute("data-img-idx")) === idx);
+    });
+    root.querySelectorAll(".rm-color-swatch[data-cid]").forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-cid")) === String(state.sel.cid));
+    });
+    root.querySelectorAll('.rm-opt-pills[data-rm-opt="size"] .rm-opt-pill[data-sid]').forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-sid")) === String(state.sel.sid));
+    });
+    root.querySelectorAll('.rm-opt-pills[data-rm-opt="qty"] .rm-opt-pill[data-qid]').forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-qid")) === String(state.sel.qid));
+    });
+    var lqv = root.querySelector("#rmLineQtyVal");
+    if (lqv) lqv.textContent = String(state.lineQty);
+  }
+
+  function wirePdpRootOnce(root) {
+    if (!root || root._rmPdpDelegated) return;
+    root._rmPdpDelegated = true;
+
+    function scrollThumbStrip(dir) {
+      var track = root.querySelector(".rm-pdp-thumb-track");
+      if (!track) return;
+      var st = window.getComputedStyle(track);
+      var row = st.flexDirection === "row" || st.flexDirection === "row-reverse";
+      if (row) track.scrollBy({ left: dir * 88, behavior: "smooth" });
+      else track.scrollBy({ top: dir * 88, behavior: "smooth" });
+    }
+
+    root.addEventListener("click", function (ev) {
+      var m = state.material;
+      if (!m) return;
+      var t = ev.target;
+      if (!t || !t.closest) return;
+
+      if (t.closest(".rm-pdp-thumb-nav--up")) {
+        scrollThumbStrip(-1);
+        return;
+      }
+      if (t.closest(".rm-pdp-thumb-nav--down")) {
+        scrollThumbStrip(1);
+        return;
+      }
+
+      var thumb = t.closest(".rm-pdp__thumb");
+      if (thumb) {
+        state.imgIndex = Number(thumb.getAttribute("data-img-idx")) || 0;
+        var sync = thumb.getAttribute("data-gallery-sync");
+        if (sync === "color") {
+          state.sel.cid = thumb.getAttribute("data-gallery-cid") || "";
+        } else if (sync === "size") {
+          state.sel.sid = thumb.getAttribute("data-gallery-sid") || "";
+        } else if (sync === "qty") {
+          state.sel.qid = thumb.getAttribute("data-gallery-qid") || "";
+        }
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+
+      if (t.closest("#rmPdpPrev")) {
+        var entP = galleryEntries(m, state.sel);
+        var ixP = Math.min(state.imgIndex, Math.max(0, entP.length - 1));
+        state.imgIndex = nextGalleryIndexFrom(entP, ixP, -1);
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+      if (t.closest("#rmPdpNext")) {
+        var entN = galleryEntries(m, state.sel);
+        var ixN = Math.min(state.imgIndex, Math.max(0, entN.length - 1));
+        state.imgIndex = nextGalleryIndexFrom(entN, ixN, 1);
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+
+      var sw = t.closest(".rm-color-swatch[data-cid]");
+      if (sw) {
+        state.sel.cid = sw.getAttribute("data-cid") || "";
+        var g4 = galleryEntries(m, state.sel);
+        var ix4 = indexForCid(g4, state.sel.cid);
+        state.imgIndex = ix4 >= 0 ? ix4 : 0;
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+
+      var sizePill = t.closest('.rm-opt-pills[data-rm-opt="size"] .rm-opt-pill[data-sid]');
+      if (sizePill) {
+        state.sel.sid = sizePill.getAttribute("data-sid") || "";
+        var g2 = galleryEntries(m, state.sel);
+        var ix2 = state.sel.cid ? indexForCid(g2, state.sel.cid) : 0;
+        state.imgIndex = ix2 >= 0 ? ix2 : 0;
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+
+      var qtyPill = t.closest('.rm-opt-pills[data-rm-opt="qty"] .rm-opt-pill[data-qid]');
+      if (qtyPill) {
+        state.sel.qid = qtyPill.getAttribute("data-qid") || "";
+        var g3 = galleryEntries(m, state.sel);
+        var ix3 = state.sel.cid ? indexForCid(g3, state.sel.cid) : 0;
+        state.imgIndex = ix3 >= 0 ? ix3 : 0;
+        state.heroZoom = 1;
+        render();
+        return;
+      }
+
+      if (t.closest("#rmLineQtyMinus")) {
+        state.lineQty = Math.max(1, state.lineQty - 1);
+        render();
+        return;
+      }
+      if (t.closest("#rmLineQtyPlus")) {
+        state.lineQty = Math.min(99, state.lineQty + 1);
+        render();
+        return;
+      }
+
+      var accBtn = t.closest("#rmPdpAccBtn");
+      if (accBtn) {
+        var accBody = root.querySelector("#rmPdpAccBody");
+        var accIcon = root.querySelector("#rmPdpAccIcon");
+        if (accBody) {
+          var collapsed = accBody.classList.toggle("is-collapsed");
+          accBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
+          if (accIcon) accIcon.textContent = collapsed ? "+" : "−";
+        }
+        return;
+      }
+
+      var wish = t.closest("#rmPdpWish");
+      if (wish) {
+        wish.classList.toggle("is-on");
+        return;
+      }
+
+      var add = t.closest("#rmAddCart");
+      if (add && CART) {
+        var slot = variantSlot(state.sel);
+        var vlabel = variantLabelFrom(m, state.sel);
+        CART.addItem({
+          id: m.id,
+          size: slot,
+          variantLabel: vlabel,
+          name: m.name,
+          price: effectivePriceInr(m, state.sel),
+          image: lineImageFor(m, state.sel),
+          qty: state.lineQty,
+        });
+        try {
+          if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
+        } catch (_) {}
+      }
+    });
+
+    root.addEventListener(
+      "wheel",
+      function (ev) {
+        var zoomEl = ev.target && ev.target.closest && ev.target.closest("#rmPdpHeroZoom");
+        if (!zoomEl || !state.material) return;
+        var heroImg = root.querySelector("#rmPdpHeroImg");
+        if (!heroImg) return;
+        ev.preventDefault();
+        var z = state.heroZoom || 1;
+        var d = ev.deltaY > 0 ? -0.1 : 0.1;
+        z = Math.min(3, Math.max(1, z + d));
+        state.heroZoom = z;
+        heroImg.style.transform = "scale(" + z + ")";
+        zoomEl.style.cursor = z > 1 ? "grab" : "zoom-in";
+      },
+      { passive: false }
+    );
   }
 
   /** Soft fade when hero URL changes (colour / thumb), without dual-image stack. */
@@ -361,17 +593,6 @@
       state._zoomUrl = mainImg;
     }
 
-    function nextGalleryIndex(cur, dir) {
-      var urlsIdx = [];
-      for (var j = 0; j < entries.length; j++) {
-        if (String(entries[j].url || "").trim()) urlsIdx.push(j);
-      }
-      if (!urlsIdx.length) return 0;
-      var pos = urlsIdx.indexOf(cur);
-      if (pos < 0) pos = 0;
-      var np = (pos + dir + urlsIdx.length) % urlsIdx.length;
-      return urlsIdx[np];
-    }
     var effPrice = effectivePriceInr(m, state.sel);
     var effMrp = effectiveMrpInr(m, state.sel);
     var pct = discountPctFor(m, state.sel);
@@ -400,9 +621,7 @@
         escAttr(imgSrc(u)) +
         "\" alt=\"\" width=\"72\" height=\"72\" loading=\"lazy\" /></button>";
     }
-    var galleryUrlCount = entries.filter(function (e) {
-      return String(e.url || "").trim();
-    }).length;
+    var galleryUrlCount = galleryUrlCountFrom(entries);
 
     var sizeHtml = "";
     if (opt.useSize && opt.sizes && opt.sizes.length) {
@@ -488,7 +707,9 @@
     var detailText = String(opt.detailBody || "").trim() || String(m.description || "").trim();
 
     var html =
-      '<div class="rm-pdp rm-pdp--modern">' +
+      '<div class="rm-pdp rm-pdp--modern" data-rm-material-id="' +
+      escAttr(String(m.id)) +
+      '">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
       '<div class="rm-pdp-thumb-col">' +
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
@@ -531,13 +752,15 @@
       esc(String(revN)) +
       " reviews)</span></div></div>" +
       '<div class="rm-pdp__price-row">' +
-      '<span class="rm-pdp__price">' +
+      '<span class="rm-pdp__price" id="rmPdpPrice">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +
       "</span>" +
       (effMrp != null && Number(effMrp) > Number(effPrice)
-        ? '<span class="rm-pdp__mrp">' + (CART ? CART.formatMoney(effMrp) : effMrp) + "</span>"
-        : "") +
-      (pct != null ? '<span class="rm-pdp__save">' + pct + "% off</span>" : "") +
+        ? '<span class="rm-pdp__mrp" id="rmPdpMrp">' + (CART ? CART.formatMoney(effMrp) : effMrp) + "</span>"
+        : '<span class="rm-pdp__mrp" id="rmPdpMrp" hidden></span>') +
+      (pct != null
+        ? '<span class="rm-pdp__save" id="rmPdpSave">' + pct + "% off</span>"
+        : '<span class="rm-pdp__save" id="rmPdpSave" hidden></span>') +
       "</div>" +
       (m.description
         ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose">' +
@@ -550,7 +773,7 @@
       '<div class="rm-pdp__cart-row rm-pdp__cart-row--modern">' +
       '<div class="rm-pdp__qty">' +
       '<button type="button" id="rmLineQtyMinus">−</button>' +
-      "<span>" +
+      '<span id="rmLineQtyVal">' +
       state.lineQty +
       "</span>" +
       '<button type="button" id="rmLineQtyPlus">+</button>' +
@@ -572,152 +795,13 @@
         : "") +
       "</div></div>";
 
-    commitPdpHtml(root, html, function () {
-      fadeHeroImageIn(root);
-
-      var track = root.querySelector(".rm-pdp-thumb-track");
-    var navUp = root.querySelector(".rm-pdp-thumb-nav--up");
-    var navDown = root.querySelector(".rm-pdp-thumb-nav--down");
-    function scrollThumbStrip(dir) {
-      if (!track) return;
-      var st = window.getComputedStyle(track);
-      var row = st.flexDirection === "row" || st.flexDirection === "row-reverse";
-      if (row) track.scrollBy({ left: dir * 88, behavior: "smooth" });
-      else track.scrollBy({ top: dir * 88, behavior: "smooth" });
+    if (shellNeedsRebuild(root, m, entries, galleryUrlCount)) {
+      applyPdpHtml(root, html);
+    } else {
+      patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
     }
-    if (navUp) navUp.addEventListener("click", function () { scrollThumbStrip(-1); });
-    if (navDown) navDown.addEventListener("click", function () { scrollThumbStrip(1); });
-
-    root.querySelectorAll(".rm-pdp__thumb").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        state.imgIndex = Number(btn.getAttribute("data-img-idx")) || 0;
-        var sync = btn.getAttribute("data-gallery-sync");
-        if (sync === "color") {
-          state.sel.cid = btn.getAttribute("data-gallery-cid") || "";
-        } else if (sync === "size") {
-          state.sel.sid = btn.getAttribute("data-gallery-sid") || "";
-        } else if (sync === "qty") {
-          state.sel.qid = btn.getAttribute("data-gallery-qid") || "";
-        }
-        state.heroZoom = 1;
-        render();
-      });
-    });
-    var prev = document.getElementById("rmPdpPrev");
-    var next = document.getElementById("rmPdpNext");
-    if (prev) {
-      prev.addEventListener("click", function () {
-        state.imgIndex = nextGalleryIndex(idx, -1);
-        state.heroZoom = 1;
-        render();
-      });
-    }
-    if (next) {
-      next.addEventListener("click", function () {
-        state.imgIndex = nextGalleryIndex(idx, 1);
-        state.heroZoom = 1;
-        render();
-      });
-    }
-    var zoomEl = document.getElementById("rmPdpHeroZoom");
-    var heroImg = document.getElementById("rmPdpHeroImg");
-    if (zoomEl && heroImg && mainImg) {
-      zoomEl.addEventListener(
-        "wheel",
-        function (ev) {
-          ev.preventDefault();
-          var z = state.heroZoom || 1;
-          var d = ev.deltaY > 0 ? -0.1 : 0.1;
-          z = Math.min(3, Math.max(1, z + d));
-          state.heroZoom = z;
-          heroImg.style.transform = "scale(" + z + ")";
-          zoomEl.style.cursor = z > 1 ? "grab" : "zoom-in";
-        },
-        { passive: false }
-      );
-    }
-    root.querySelectorAll("[data-sid]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        state.sel.sid = btn.getAttribute("data-sid") || "";
-        var g2 = galleryEntries(m, state.sel);
-        var ix2 = state.sel.cid ? indexForCid(g2, state.sel.cid) : 0;
-        state.imgIndex = ix2 >= 0 ? ix2 : 0;
-        state.heroZoom = 1;
-        render();
-      });
-    });
-    root.querySelectorAll("[data-qid]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        state.sel.qid = btn.getAttribute("data-qid") || "";
-        var g3 = galleryEntries(m, state.sel);
-        var ix3 = state.sel.cid ? indexForCid(g3, state.sel.cid) : 0;
-        state.imgIndex = ix3 >= 0 ? ix3 : 0;
-        state.heroZoom = 1;
-        render();
-      });
-    });
-    root.querySelectorAll("[data-cid]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        state.sel.cid = btn.getAttribute("data-cid") || "";
-        var g4 = galleryEntries(m, state.sel);
-        var ix4 = indexForCid(g4, state.sel.cid);
-        state.imgIndex = ix4 >= 0 ? ix4 : 0;
-        state.heroZoom = 1;
-        render();
-      });
-    });
-    var minus = document.getElementById("rmLineQtyMinus");
-    var plus = document.getElementById("rmLineQtyPlus");
-    if (minus) {
-      minus.addEventListener("click", function () {
-        state.lineQty = Math.max(1, state.lineQty - 1);
-        render();
-      });
-    }
-    if (plus) {
-      plus.addEventListener("click", function () {
-        state.lineQty = Math.min(99, state.lineQty + 1);
-        render();
-      });
-    }
-    var accBtn = document.getElementById("rmPdpAccBtn");
-    var accBody = document.getElementById("rmPdpAccBody");
-    var accIcon = document.getElementById("rmPdpAccIcon");
-    if (accBtn && accBody) {
-      accBtn.addEventListener("click", function () {
-        var collapsed = accBody.classList.toggle("is-collapsed");
-        accBtn.setAttribute("aria-expanded", collapsed ? "false" : "true");
-        if (accIcon) accIcon.textContent = collapsed ? "+" : "−";
-      });
-    }
-
-    var wish = document.getElementById("rmPdpWish");
-    if (wish) {
-      wish.addEventListener("click", function () {
-        wish.classList.toggle("is-on");
-      });
-    }
-
-    var add = document.getElementById("rmAddCart");
-    if (add && CART) {
-      add.addEventListener("click", function () {
-        var slot = variantSlot(state.sel);
-        var vlabel = variantLabelFrom(m, state.sel);
-        CART.addItem({
-          id: m.id,
-          size: slot,
-          variantLabel: vlabel,
-          name: m.name,
-          price: effectivePriceInr(m, state.sel),
-          image: lineImageFor(m, state.sel),
-          qty: state.lineQty,
-        });
-        try {
-          if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
-        } catch (_) {}
-      });
-    }
-    });
+    wirePdpRootOnce(root);
+    fadeHeroImageIn(root);
   }
 
   function load() {

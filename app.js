@@ -230,7 +230,7 @@
           var leaveSafety = window.setTimeout(function () {
             img.removeEventListener("transitionend", onLeaveEnd);
             afterPreload();
-          }, 750);
+          }, 1200);
           function afterPreload() {
             if (leaveConsumed) return;
             leaveConsumed = true;
@@ -251,7 +251,7 @@
                 img.classList.remove("hero-promo-carousel__img--enter-run");
                 heroBusy = false;
               }
-            }, 750);
+            }, 1200);
             function onEnterEnd(ev) {
               if (ev.target !== img) return;
               if (enterDone) return;

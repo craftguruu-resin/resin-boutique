@@ -17,6 +17,17 @@ function clampIntervalMs(v) {
   return Math.min(60000, Math.max(1500, n));
 }
 
+/** Merge boolean custom-hero flag from PATCH body (Express may send string "false"). */
+function patchCustomHeroEnabled(cur, patch) {
+  if (!patch || !Object.prototype.hasOwnProperty.call(patch, "customHeroEnabled")) {
+    return cur.customHeroEnabled !== false;
+  }
+  var v = patch.customHeroEnabled;
+  if (v === false || v === 0 || String(v).toLowerCase() === "false") return false;
+  if (v === true || v === 1 || String(v).toLowerCase() === "true") return true;
+  return cur.customHeroEnabled !== false;
+}
+
 /**
  * @param {(err: Error|null, rows?: { id: number, image: string, animation: string, sortOrder: number }[]) => void} cb
  */

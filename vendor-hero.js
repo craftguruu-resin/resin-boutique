@@ -5,6 +5,10 @@
   if (!V) return;
 
   var lastHeroSettings = null;
+  var cachedSlidesForPreview = [];
+  var livePreviewTimer = null;
+  var livePreviewBusy = false;
+  var livePreviewIdx = 0;
 
   function base() {
     return String(V.apiBase() || "").replace(/\/+$/, "");
@@ -67,82 +71,204 @@
     return V.vendorPageHref(u);
   }
 
-  function setPreviewAnim(raw) {
-    var ring = document.getElementById("vhPreviewRing");
-    if (!ring) return;
-    var a = String(raw || "slide")
-      .toLowerCase()
-      .replace(/[^a-z0-9-]/g, "");
-    if (!a) a = "slide";
-    if (a === "none" || a === "static" || a === "slide") {
-      ring.removeAttribute("data-hero-anim");
-    } else {
-      ring.setAttribute("data-hero-anim", a);
-    }
+  function prefersReducedMotion() {
+    return window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function wireHeroPreview() {
-    var sel = document.getElementById("vhAnim");
-    var img = document.getElementById("vhPreviewImg");
-    var fileIn = document.getElementById("vhImage");
-    if (sel) {
-      sel.addEventListener("change", function () {
-        setPreviewAnim(sel.value);
-      });
-      setPreviewAnim(sel.value);
+  function readIntervalMsFromForm(settings) {
+    var inp = document.getElementById("vhIntervalSec");
+    var sec = inp ? parseFloat(String(inp.value || ""), 10) : NaN;
+    if (!Number.isFinite(sec) || sec < 1.5) {
+      sec = (Number(settings && settings.carouselIntervalMs) || 5000) / 1000;
     }
-    if (fileIn && img) {
-      fileIn.addEventListener("change", function () {
-        var f = fileIn.files && fileIn.files[0];
-        if (!f || String(f.type || "").indexOf("image") !== 0) return;
-        try {
-          var prev = img.getAttribute("data-cg-preview-url");
-          if (prev) URL.revokeObjectURL(prev);
-          var u = URL.createObjectURL(f);
-          img.setAttribute("data-cg-preview-url", u);
-          img.src = u;
-        } catch (_) {}
-      });
-    }
+    if (!Number.isFinite(sec) || sec < 1.5) sec = 5;
+    return Math.round(Math.min(60, Math.max(1.5, sec)) * 1000);
   }
 
-  function resetHeroPreviewPlaceholder() {
-    var img = document.getElementById("vhPreviewImg");
+  function stopLivePreview() {
+    if (livePreviewTimer) {
+      clearInterval(livePreviewTimer);
+      livePreviewTimer = null;
+    }
+    livePreviewBusy = false;
+  }
+
+  function stripLivePreviewClasses(img) {
     if (!img) return;
-    var prev = img.getAttribute("data-cg-preview-url");
-    if (prev) {
-      try {
-        URL.revokeObjectURL(prev);
-      } catch (_) {}
-      img.removeAttribute("data-cg-preview-url");
-    }
-    img.src = V.vendorPageHref("media/brand-craftguru.png");
-    setPreviewAnim("slide");
+    img.classList.remove(
+      "vh-live-preview__img--leave",
+      "vh-live-preview__img--enter-start",
+      "vh-live-preview__img--enter-run"
+    );
   }
 
-  function syncPreviewFromFirstSlide(slides) {
-    var img = document.getElementById("vhPreviewImg");
-    if (!img || !slides || !slides.length) {
-      resetHeroPreviewPlaceholder();
+  function revokePreviewBlobIfAny(img) {
+    if (!img) return;
+    var prevBlob = img.getAttribute("data-cg-preview-url");
+    if (!prevBlob) return;
+    try {
+      URL.revokeObjectURL(prevBlob);
+    } catch (_) {}
+    img.removeAttribute("data-cg-preview-url");
+  }
+
+  function startLivePreview(slides, settings) {
+    stopLivePreview();
+    cachedSlidesForPreview = (slides || []).slice();
+    var root = document.getElementById("vhLivePreviewRoot");
+    var img = document.getElementById("vhLivePreviewImg");
+    var cap = document.getElementById("vhLivePreviewCaption");
+    if (!root || !img) return;
+    var list = cachedSlidesForPreview.slice();
+    var mode = settings && String(settings.displayMode || "").toLowerCase() === "single" ? "single" : "carousel";
+    var pinId = settings && settings.singleSlideId != null ? Number(settings.singleSlideId) : NaN;
+    if (mode === "single" && Number.isFinite(pinId)) {
+      list = list.filter(function (s) {
+        return Number(s.id) === pinId;
+      });
+    }
+    if (!list.length) {
+      root.classList.remove("vh-live-preview--slide");
+      stripLivePreviewClasses(img);
+      revokePreviewBlobIfAny(img);
+      img.removeAttribute("src");
+      if (cap) {
+        cap.textContent =
+          "Add slides to preview motion here. Use “Use built-in hero (default)” to show the original guest homepage hero — slides stay saved for later.";
+      }
       return;
     }
-    var prev = img.getAttribute("data-cg-preview-url");
-    if (prev) {
-      try {
-        URL.revokeObjectURL(prev);
-      } catch (_) {}
-      img.removeAttribute("data-cg-preview-url");
+    revokePreviewBlobIfAny(img);
+    var useSlide = list.length > 1 && mode !== "single";
+    root.classList.toggle("vh-live-preview--slide", !!useSlide);
+    livePreviewIdx = 0;
+    stripLivePreviewClasses(img);
+    img.src = imgHref(list[0].image);
+    img.alt = "Hero preview";
+    var ms = readIntervalMsFromForm(settings);
+    if (cap) {
+      cap.textContent =
+        (useSlide ? "Carousel preview · " : "Fixed slide · ") +
+        list.length +
+        " image(s) · " +
+        ms / 1000 +
+        "s between slides (matches field when saved)";
     }
-    var s0 = slides[0];
-    img.src = imgHref(s0.image);
-    setPreviewAnim(s0.animation || "orbit");
+    if (!useSlide || prefersReducedMotion()) return;
+
+    var firstGo = true;
+
+    function sameSrc(a, b) {
+      try {
+        if (!a || !b) return false;
+        if (a === b) return true;
+        var da = a.split("?")[0];
+        var db = b.split("?")[0];
+        return da === db;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function tick() {
+      if (livePreviewBusy) return;
+      var cur = list[livePreviewIdx % list.length];
+      var nextSrc = imgHref(cur && cur.image);
+      livePreviewIdx += 1;
+      if (firstGo) {
+        firstGo = false;
+        stripLivePreviewClasses(img);
+        img.src = nextSrc;
+        return;
+      }
+      if (prefersReducedMotion() || sameSrc(img.getAttribute("src") || "", nextSrc)) {
+        stripLivePreviewClasses(img);
+        img.src = nextSrc;
+        return;
+      }
+      livePreviewBusy = true;
+      var leaveConsumed = false;
+      var leaveSafety = window.setTimeout(function () {
+        img.removeEventListener("transitionend", onLeaveEnd);
+        afterPre();
+      }, 1200);
+      function afterPre() {
+        if (leaveConsumed) return;
+        leaveConsumed = true;
+        window.clearTimeout(leaveSafety);
+        img.removeEventListener("transitionend", onLeaveEnd);
+        stripLivePreviewClasses(img);
+        img.src = nextSrc;
+        img.classList.add("vh-live-preview__img--enter-start");
+        void img.offsetWidth;
+        img.classList.remove("vh-live-preview__img--enter-start");
+        img.classList.add("vh-live-preview__img--enter-run");
+        var enterDone = false;
+        var enterSafety = window.setTimeout(function () {
+          img.removeEventListener("transitionend", onEnterEnd);
+          if (!enterDone) {
+            enterDone = true;
+            img.classList.remove("vh-live-preview__img--enter-run");
+            livePreviewBusy = false;
+          }
+        }, 1200);
+        function onEnterEnd(ev) {
+          if (ev.target !== img) return;
+          if (enterDone) return;
+          enterDone = true;
+          window.clearTimeout(enterSafety);
+          img.removeEventListener("transitionend", onEnterEnd);
+          img.classList.remove("vh-live-preview__img--enter-run");
+          livePreviewBusy = false;
+        }
+        img.addEventListener("transitionend", onEnterEnd, { once: true });
+      }
+      function onLeaveEnd(ev) {
+        if (ev.target !== img) return;
+        window.clearTimeout(leaveSafety);
+        img.removeEventListener("transitionend", onLeaveEnd);
+        var pre = new Image();
+        pre.onload = function () {
+          afterPre();
+        };
+        pre.onerror = function () {
+          afterPre();
+        };
+        pre.src = nextSrc;
+      }
+      img.addEventListener("transitionend", onLeaveEnd, { once: true });
+      img.classList.add("vh-live-preview__img--leave");
+    }
+
+    tick();
+    livePreviewTimer = window.setInterval(tick, ms);
+  }
+
+  function wireUnsavedFilePeek() {
+    var fileIn = document.getElementById("vhImage");
+    var img = document.getElementById("vhLivePreviewImg");
+    if (!fileIn || !img) return;
+    fileIn.addEventListener("change", function () {
+      if (cachedSlidesForPreview && cachedSlidesForPreview.length) return;
+      var f = fileIn.files && fileIn.files[0];
+      if (!f || String(f.type || "").indexOf("image") !== 0) return;
+      try {
+        var prev = img.getAttribute("data-cg-preview-url");
+        if (prev) URL.revokeObjectURL(prev);
+        var u = URL.createObjectURL(f);
+        img.setAttribute("data-cg-preview-url", u);
+        img.src = u;
+        var cap = document.getElementById("vhLivePreviewCaption");
+        if (cap) cap.textContent = "Unsaved file — upload to add to the carousel.";
+      } catch (_) {}
+    });
   }
 
   function applyPlaybackForm(settings) {
     var inp = document.getElementById("vhIntervalSec");
     if (!inp || !settings) return;
     var sec = (Number(settings.carouselIntervalMs) || 5000) / 1000;
-    if (!Number.isFinite(sec)) sec = 2;
+    if (!Number.isFinite(sec) || sec < 1.5) sec = 5;
     inp.value = String(Math.round(sec * 10) / 10);
     syncCustomHeroUi(settings);
   }
@@ -176,7 +302,7 @@
     if (!slides || !slides.length) {
       empty.style.display = "block";
       empty.textContent = "No custom slides — storefront uses the default hero.";
-      resetHeroPreviewPlaceholder();
+      startLivePreview([], settings);
       return;
     }
     empty.style.display = "none";
@@ -217,7 +343,7 @@
         '">Remove</button>';
       ul.appendChild(li);
     });
-    syncPreviewFromFirstSlide(slides);
+    startLivePreview(slides, settings);
   }
 
   function loadSlides(opts) {
@@ -246,7 +372,13 @@
   }
 
   function boot() {
-    wireHeroPreview();
+    wireUnsavedFilePeek();
+    var intervalInp = document.getElementById("vhIntervalSec");
+    if (intervalInp) {
+      intervalInp.addEventListener("change", function () {
+        startLivePreview(cachedSlidesForPreview, lastHeroSettings);
+      });
+    }
 
     var customTog = document.getElementById("vhCustomToggle");
     if (customTog) {
@@ -270,7 +402,11 @@
     if (builtinBtn) {
       builtinBtn.addEventListener("click", function () {
         showMsg("Switching to built-in hero…", false);
-        putHeroSettings({ customHeroEnabled: false, displayMode: "carousel" })
+        putHeroSettings({
+          customHeroEnabled: false,
+          displayMode: "carousel",
+          carouselIntervalMs: 5000,
+        })
           .then(function () {
             return loadSlides({ quiet: true });
           })
@@ -440,8 +576,9 @@
     if (ivBtn) {
       ivBtn.addEventListener("click", function () {
         var inp = document.getElementById("vhIntervalSec");
-        var sec = inp ? parseFloat(String(inp.value || "2"), 10) : 2;
-        if (!Number.isFinite(sec)) sec = 2;
+        var sec = inp ? parseFloat(String(inp.value || "5"), 10) : 5;
+        if (!Number.isFinite(sec) || sec < 1.5) sec = 5;
+        sec = Math.min(60, sec);
         showMsg("Saving…", false);
         putHeroSettings({ carouselIntervalSeconds: sec })
           .then(function (s) {

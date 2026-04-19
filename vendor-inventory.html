@@ -37,28 +37,25 @@
             <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="addproduct">Add product</button>
           </div>
 
-          <div class="vs-card vi-studio-toolbar" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
-            <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
-              <div class="vs-field" style="margin: 0; flex: 1; min-width: 10rem; max-width: 22rem">
-                <label for="viSkuFilter">Search by SKU</label>
-                <input type="search" id="viSkuFilter" maxlength="120" placeholder="Contains…" autocomplete="off" />
-              </div>
-              <button type="button" class="vs-btn vs-btn--primary" id="viSkuSearchBtn">Search</button>
-              <button type="button" class="vs-btn vs-btn--ghost" id="viSkuClearBtn">Clear</button>
-            </div>
-          </div>
-
-          <p class="vs-muted" id="viCatalogStats" style="margin: 0 0 0.75rem; font-size: 0.82rem" hidden></p>
-
           <div id="viStudioPanel">
+            <div class="vs-card vi-studio-search-card" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
+              <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
+                <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem">
+                  <label for="viStudioSearch">Search materials</label>
+                  <input type="search" id="viStudioSearch" maxlength="200" placeholder="Name, SKU, or product id…" autocomplete="off" />
+                </div>
+                <button type="button" class="vs-btn vs-btn--primary" id="viStudioSearchBtn">Search</button>
+                <button type="button" class="vs-btn vs-btn--ghost" id="viStudioSearchClear">Clear</button>
+              </div>
+            </div>
             <div class="vs-card" style="margin-bottom: 1rem">
               <h2 class="vs-login__title" style="margin-top: 0">Add stock line</h2>
               <div class="vi-add-stock-layout">
                 <div class="vi-add-stock-layout__main">
-                  <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem">
+                  <div class="vs-grid vi-add-stock-top" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem">
                     <div class="vs-field">
-                      <label for="viName">Name</label>
-                      <input type="text" id="viName" placeholder="e.g. Epoxy resin 1L" />
+                      <label for="viSku">SKU (optional)</label>
+                      <input type="text" id="viSku" maxlength="120" placeholder="Enter SKU, then press Enter to match catalog" autocomplete="off" />
                     </div>
                     <div class="vs-field">
                       <label for="viCategory">Base category (parent)</label>
@@ -76,29 +73,31 @@
                       <label>Subcategory (from catalog product)</label>
                       <p id="viSubcatLabel" class="vs-muted" style="margin: 0; font-size: 0.9rem">—</p>
                     </div>
-                    <div class="vs-field">
-                      <label for="viSku">SKU (optional)</label>
-                      <input type="text" id="viSku" />
-                    </div>
-                    <div class="vs-field">
+                  </div>
+                  <div class="vs-grid vi-add-stock-sizes" style="grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; margin-top: 0.75rem">
+                    <div class="vi-size-cost-block">
                       <label for="viQtyS">Qty S (units)</label>
                       <input type="number" id="viQtyS" min="0" step="0.01" value="" placeholder="0" />
+                      <label for="viCostS" class="vi-size-cost-block__cost-label">Unit cost S (₹)</label>
+                      <input type="number" id="viCostS" min="0" step="0.01" value="" placeholder="0" />
                     </div>
-                    <div class="vs-field">
+                    <div class="vi-size-cost-block">
                       <label for="viQtyM">Qty M (units)</label>
                       <input type="number" id="viQtyM" min="0" step="0.01" value="" placeholder="0" />
+                      <label for="viCostM" class="vi-size-cost-block__cost-label">Unit cost M (₹)</label>
+                      <input type="number" id="viCostM" min="0" step="0.01" value="" placeholder="0" />
                     </div>
-                    <div class="vs-field">
+                    <div class="vi-size-cost-block">
                       <label for="viQtyL">Qty L (units)</label>
                       <input type="number" id="viQtyL" min="0" step="0.01" value="" placeholder="0" />
+                      <label for="viCostL" class="vi-size-cost-block__cost-label">Unit cost L (₹)</label>
+                      <input type="number" id="viCostL" min="0" step="0.01" value="" placeholder="0" />
                     </div>
+                  </div>
+                  <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin-top: 0.75rem">
                     <div class="vs-field">
                       <label for="viReorder">Reorder at</label>
                       <input type="number" id="viReorder" min="0" step="0.01" value="5" />
-                    </div>
-                    <div class="vs-field">
-                      <label for="viCost">Unit cost (INR)</label>
-                      <input type="number" id="viCost" min="0" step="0.01" value="0" />
                     </div>
                     <div class="vs-field">
                       <label for="viSupplier">Supplier</label>
@@ -141,10 +140,8 @@
           </div>
 
           <div id="viCatalogPanel" hidden>
+            <p class="vs-muted" id="viCatalogStats" style="margin: 0 0 0.75rem; font-size: 0.82rem" hidden></p>
             <div class="vs-card" style="margin-bottom: 1rem">
-              <p class="vs-muted" style="margin-top: 0">
-                Edit <strong>prices</strong> (₹) here. Use <strong>Discontinue / Set active</strong> on the <strong>Products</strong> page to hide or restore a listing on the guest shop. <strong>Sellable stock</strong> per size is read-only — set it under <strong>Studio materials</strong> (linked SKUs). The <strong>Products</strong> page lists the full catalog with search. Tap <strong>Refresh</strong> (top right) to reload data.
-              </p>
               <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
                 <div class="vs-field" style="margin: 0; min-width: 12rem">
                   <label for="viCatalogCategoryFilter">Category</label>

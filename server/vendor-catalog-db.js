@@ -303,7 +303,60 @@ function upsertOverride(productId, patch, cb) {
   });
 }
 
+/**
+ * Remove the catalog_price_overrides row for a bundled (data.js) product.
+ * Does not remove the product from the site catalog — only vendor DB overrides (prices, labels, listed, return gift).
+ * @param {string} productId
+ * @param {(err: Error|null, result?: { removed: boolean }) => void} cb
+ */
+function deleteBundledCatalogOverride(productId, cb) {
+  var id = String(productId || "")
+    .trim()
+    .slice(0, 220);
+  if (!id) {
+    return process.nextTick(function () {
+      cb(new Error("productId required"));
+    });
+  }
+  var staticIds;
+  try {
+    staticIds = new Set(
+      catalogFromData.getProductsSummary().map(function (p) {
+        return p.id;
+      })
+    );
+  } catch (e) {
+    return process.nextTick(function () {
+      cb(e);
+    });
+  }
+  if (!staticIds.has(id)) {
+    return process.nextTick(function () {
+      cb(new Error("Only bundled catalog products can be cleared this way."));
+    });
+  }
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  ensureCatalogOverridesColumns(function (e0) {
+    if (e0) return cb(e0);
+    pool
+      .query("DELETE FROM catalog_price_overrides WHERE product_id = $1 RETURNING product_id", [id])
+      .then(function (r) {
+        try {
+          catalogFromData.invalidateCache();
+        } catch (_) {}
+        cb(null, { removed: !!(r.rowCount > 0) });
+      })
+      .catch(cb);
+  });
+}
+
 module.exports = {
   listOverridesMap: listOverridesMap,
   upsertOverride: upsertOverride,
+  deleteBundledCatalogOverride: deleteBundledCatalogOverride,
 };

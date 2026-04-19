@@ -13,7 +13,7 @@
   var viPollTimer = null;
   var studioCategoryFilter = "";
   var studioProductFilter = "";
-  var studioSkuFilter = "";
+  var studioSearchQ = "";
   var catalogCategoryFilter = "";
   var viCategoriesCache = [];
 
@@ -216,11 +216,11 @@
   function syncListFiltersFromForm() {
     var catEl = document.getElementById("viCategory");
     var prodEl = document.getElementById("viProduct");
-    var skuEl = document.getElementById("viSkuFilter");
+    var searchEl = document.getElementById("viStudioSearch");
     studioCategoryFilter = catEl ? String(catEl.value || "").trim() : "";
     studioProductFilter =
       prodEl && !prodEl.disabled && prodEl.options && prodEl.options.length ? String(prodEl.value || "").trim() : "";
-    studioSkuFilter = skuEl ? String(skuEl.value || "").trim().slice(0, 120) : "";
+    studioSearchQ = searchEl ? String(searchEl.value || "").trim().slice(0, 200) : "";
   }
 
   function resolveMediaUrl(raw) {
@@ -429,7 +429,7 @@
     wireInventoryTableDelegation(tb);
     if (!items || !items.length) {
       tb.innerHTML =
-        "<tr><td colspan='8' class='vs-muted'>No inventory rows yet. Add materials you buy for the studio.</td></tr>";
+        "<tr><td colspan='9' class='vs-muted'>No inventory rows yet. Add materials you buy for the studio.</td></tr>";
       return;
     }
     tb.innerHTML = items
@@ -440,6 +440,17 @@
         var qtyCell = hasProd
           ? "<span class='vs-muted' title='Sum of S+M+L when all sizes are tracked'>" + esc(String(it.quantity)) + "</span>"
           : esc(String(it.quantity));
+        var us = it.unitCostS != null && it.unitCostS > 0 ? it.unitCostS : it.unitCost || 0;
+        var um = it.unitCostM != null && it.unitCostM > 0 ? it.unitCostM : it.unitCost || 0;
+        var ul = it.unitCostL != null && it.unitCostL > 0 ? it.unitCostL : it.unitCost || 0;
+        var costCell =
+          "<span class=\"vi-unit-costs\" title=\"Per-size unit cost (₹)\"><span class=\"vs-muted\">S</span> " +
+          esc(String(us)) +
+          " <span class=\"vs-muted\">·</span> <span class=\"vs-muted\">M</span> " +
+          esc(String(um)) +
+          " <span class=\"vs-muted\">·</span> <span class=\"vs-muted\">L</span> " +
+          esc(String(ul)) +
+          "</span>";
         return (
           "<tr><td>" +
           esc(it.name) +
@@ -461,7 +472,7 @@
           "</td><td>" +
           esc(String(it.reorderPoint)) +
           "</td><td>" +
-          esc(String(it.unitCost)) +
+          costCell +
           "</td><td>" +
           esc(it.supplier) +
           "</td><td>" +
@@ -546,6 +557,73 @@
     }
   }
 
+  function applyInventoryMatchToForm(items) {
+    if (!items || !items.length) {
+      window.alert("No studio inventory line matched that search. Try another SKU or pick category and product.");
+      return Promise.resolve(false);
+    }
+    var skuEl = document.getElementById("viSku");
+    var want = skuEl ? String(skuEl.value || "").trim().toLowerCase() : "";
+    var picked = items[0];
+    if (items.length > 1 && want) {
+      var exact = items.filter(function (it) {
+        return String(it.sku || "").trim().toLowerCase() === want;
+      });
+      if (exact.length >= 1) picked = exact[0];
+    }
+    var cid = String(picked.categoryId || "").trim();
+    var pid = String(picked.productId || "").trim();
+    if (!cid || !pid) {
+      window.alert("That line is not linked to a catalog product. Pick category and product manually.");
+      return Promise.resolve(false);
+    }
+    var catSel = document.getElementById("viCategory");
+    if (!catSel || !Array.prototype.some.call(catSel.options, function (o) { return o.value === cid; })) {
+      window.alert("Category for that item is not available in the list.");
+      return Promise.resolve(false);
+    }
+    catSel.value = cid;
+    return syncFormProductDropdown().then(function () {
+      var prodSel = document.getElementById("viProduct");
+      if (!prodSel || !Array.prototype.some.call(prodSel.options, function (o) { return o.value === pid; })) {
+        window.alert("Product was not found under that category.");
+        return false;
+      }
+      prodSel.value = pid;
+      updateProductPreviewFromForm();
+      syncListFiltersFromForm();
+      loadList().catch(function () {});
+      return true;
+    });
+  }
+
+  function resolveSkuFromInventoryEnter() {
+    var skuEl = document.getElementById("viSku");
+    var q = skuEl ? String(skuEl.value || "").trim() : "";
+    if (!q) return Promise.resolve();
+    var base = V.apiBase();
+    return vf(V.vendorApiUrl("/api/vendor/inventory?search=" + encodeURIComponent(q)), {
+      headers: V.authHeaders(),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (x.status === 401) {
+            return V.explainVendor401(base);
+          }
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Lookup failed");
+          return x.json.items || [];
+        });
+      })
+      .then(function (items) {
+        if (!items || !Array.isArray(items)) return;
+        return applyInventoryMatchToForm(items);
+      })
+      .catch(function (e) {
+        window.alert(String((e && e.message) || e));
+      });
+  }
+
   function loadList() {
     var base = V.apiBase();
     var url = V.vendorApiUrl("/api/vendor/inventory");
@@ -556,8 +634,8 @@
     if (studioProductFilter) {
       qs.push("productId=" + encodeURIComponent(studioProductFilter));
     }
-    if (studioSkuFilter) {
-      qs.push("sku=" + encodeURIComponent(studioSkuFilter));
+    if (studioSearchQ) {
+      qs.push("search=" + encodeURIComponent(studioSearchQ));
     }
     if (qs.length) {
       url += "?" + qs.join("&");
@@ -628,16 +706,24 @@
               var e = it.effectivePrices || {};
               var st = it.effectiveStock || {};
               var bid = esc(it.id);
+              var imgUrl = resolveMediaUrl(it.image || "");
+              var imgTag = imgUrl
+                ? "<img class=\"vi-cat-row-thumb\" src=\"" +
+                  esc(imgUrl) +
+                  "\" alt=\"\" width=\"40\" height=\"40\" loading=\"lazy\" />"
+                : "<span class=\"vi-cat-row-thumb vi-cat-row-thumb--empty\" aria-hidden=\"true\"></span>";
               return (
                 "<tr data-pid='" +
                 bid +
-                "'><td><strong>" +
+                "'><td><div class=\"vi-cat-product-cell\">" +
+                imgTag +
+                "<div class=\"vi-cat-product-cell__txt\"><strong>" +
                 esc(it.name) +
                 "</strong><br/><span class='vs-muted'>" +
                 bid +
                 "</span>" +
                 (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
-                "</td><td>" +
+                "</div></div></td><td>" +
                 esc(it.category) +
                 "</td><td><input class='vi-cat-price' data-k='s' data-pid='" +
                 bid +
@@ -736,15 +822,15 @@
     window.location.reload();
   });
 
-  on("viSkuSearchBtn", "click", function () {
+  on("viStudioSearchBtn", "click", function () {
     syncListFiltersFromForm();
     loadList().catch(function (e) {
       window.alert(String((e && e.message) || e));
     });
   });
 
-  on("viSkuClearBtn", "click", function () {
-    var s = document.getElementById("viSkuFilter");
+  on("viStudioSearchClear", "click", function () {
+    var s = document.getElementById("viStudioSearch");
     if (s) s.value = "";
     syncListFiltersFromForm();
     loadList().catch(function (e) {
@@ -752,15 +838,24 @@
     });
   });
 
-  var viSkuEl = document.getElementById("viSkuFilter");
-  if (viSkuEl) {
-    viSkuEl.addEventListener("keydown", function (ev) {
+  var viStudioSearchEl = document.getElementById("viStudioSearch");
+  if (viStudioSearchEl) {
+    viStudioSearchEl.addEventListener("keydown", function (ev) {
       if (ev.key !== "Enter") return;
       ev.preventDefault();
       syncListFiltersFromForm();
       loadList().catch(function (e) {
         window.alert(String((e && e.message) || e));
       });
+    });
+  }
+
+  var viSkuField = document.getElementById("viSku");
+  if (viSkuField) {
+    viSkuField.addEventListener("keydown", function (ev) {
+      if (ev.key !== "Enter") return;
+      ev.preventDefault();
+      resolveSkuFromInventoryEnter();
     });
   }
 
@@ -898,18 +993,24 @@
   }
 
   on("viAddBtn", "click", function () {
-    var name = document.getElementById("viName").value.trim();
-    if (!name) {
-      window.alert("Name is required");
-      return;
-    }
     var catEl = document.getElementById("viCategory");
     var prodEl = document.getElementById("viProduct");
     var categoryId = catEl ? String(catEl.value || "").trim() : "";
     var productId = prodEl ? String(prodEl.value || "").trim() : "";
+    var nameFromProduct = "";
+    if (prodEl && prodEl.selectedOptions && prodEl.selectedOptions[0]) {
+      nameFromProduct = String(prodEl.selectedOptions[0].textContent || "").trim();
+    }
     if (categoryId && !productId) {
       window.alert("Select a product under the chosen base category.");
       return;
+    }
+    if (!productId) {
+      var skuEarly = document.getElementById("viSku") ? String(document.getElementById("viSku").value || "").trim() : "";
+      if (!skuEarly) {
+        window.alert("Link a catalog product, or enter a SKU for an unsorted supply line.");
+        return;
+      }
     }
     function readQtySlot(id) {
       var el = document.getElementById(id);
@@ -920,7 +1021,7 @@
       return Number.isFinite(n) && n >= 0 ? n : null;
     }
     var body = {
-      name: name,
+      name: nameFromProduct,
       sku: document.getElementById("viSku").value.trim(),
       categoryId: categoryId,
       productId: productId,
@@ -928,7 +1029,9 @@
       quantityM: readQtySlot("viQtyM"),
       quantityL: readQtySlot("viQtyL"),
       reorderPoint: Number(document.getElementById("viReorder").value),
-      unitCost: Number(document.getElementById("viCost").value),
+      unitCostS: Number(document.getElementById("viCostS").value || 0),
+      unitCostM: Number(document.getElementById("viCostM").value || 0),
+      unitCostL: Number(document.getElementById("viCostL").value || 0),
       supplier: document.getElementById("viSupplier").value.trim(),
       notes: document.getElementById("viNotes").value.trim(),
     };
@@ -944,9 +1047,8 @@
         });
       })
       .then(function () {
-        document.getElementById("viName").value = "";
         document.getElementById("viSku").value = "";
-        ["viQtyS", "viQtyM", "viQtyL"].forEach(function (id) {
+        ["viQtyS", "viQtyM", "viQtyL", "viCostS", "viCostM", "viCostL"].forEach(function (id) {
           var el = document.getElementById(id);
           if (el) el.value = "";
         });

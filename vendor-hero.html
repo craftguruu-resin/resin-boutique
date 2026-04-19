@@ -128,14 +128,13 @@
           <div class="vs-card vh-hero-preview-card" style="margin-top: 0.85rem; padding: 0.85rem 1rem">
             <h2 class="vs-card__title" style="margin-top: 0">Live motion preview</h2>
             <p class="vs-muted" style="margin-top: 0">
-              Preview uses the same motion presets as the guest site. When custom hero is live, the preview still shows the ring layout; the storefront replaces the <strong>whole</strong> hero with your images.
+              Uses the same slide motion and timing as the guest homepage hero (rounded frame, left → right). Cycles your <strong>saved</strong> slides; change “Seconds between slides” then save timing to match.
             </p>
-            <div class="vh-hero-preview">
-              <div class="vh-hero-preview__frame">
-                <div class="hero-atelier__photo-ring vh-hero-preview__ring" id="vhPreviewRing" data-hero-anim="orbit">
-                  <img class="hero-atelier__photo-img" id="vhPreviewImg" src="media/brand-craftguru.png" alt="" width="200" height="200" />
-                </div>
+            <div class="vh-live-preview" id="vhLivePreviewRoot">
+              <div class="vh-live-preview__frame">
+                <img id="vhLivePreviewImg" class="vh-live-preview__img" alt="Hero preview" width="800" height="450" />
               </div>
+              <p id="vhLivePreviewCaption" class="vs-muted" style="margin: 0.45rem 0 0; font-size: 0.8rem"></p>
             </div>
           </div>
         </div>

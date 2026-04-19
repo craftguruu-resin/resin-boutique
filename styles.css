@@ -5700,24 +5700,24 @@ a.home-auth-btn {
 }
 
 .hero-promo-carousel--slide .hero-promo-carousel__img {
-  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.38s ease;
+  transition: transform 0.95s cubic-bezier(0.28, 0.65, 0.12, 1), opacity 0.55s ease;
 }
 
 .hero-promo-carousel__img.hero-promo-carousel__img--leave {
-  transform: translateX(-108%);
-  opacity: 0.35;
+  transform: translateX(-105%);
+  opacity: 0.25;
 }
 
 .hero-promo-carousel__img.hero-promo-carousel__img--enter-start {
-  transform: translateX(108%);
-  opacity: 0.96;
+  transform: translateX(105%);
+  opacity: 0.92;
   transition: none !important;
 }
 
 .hero-promo-carousel__img.hero-promo-carousel__img--enter-run {
   transform: translateX(0);
   opacity: 1;
-  transition: transform 0.52s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.38s ease;
+  transition: transform 0.95s cubic-bezier(0.28, 0.65, 0.12, 1), opacity 0.55s ease;
 }
 
 @media (min-width: 900px) {

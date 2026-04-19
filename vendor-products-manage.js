@@ -140,12 +140,12 @@
             esc(p.id) +
             "\">Set active</button>";
         }
-        if (src === "vendor") {
-          actions +=
-            "<button type=\"button\" class=\"vs-btn vs-btn--ghost vs-btn--danger vpm-del\" data-id=\"" +
-            esc(p.id) +
-            "\">Delete</button>";
-        }
+        actions +=
+          "<button type=\"button\" class=\"vs-btn vs-btn--ghost vs-btn--danger vpm-del\" data-id=\"" +
+          esc(p.id) +
+          "\" data-source=\"" +
+          esc(src) +
+          "\">Delete</button>";
         actions += "</div>";
         return (
           "<tr data-id=\"" +
@@ -280,6 +280,26 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Delete failed");
         }
+      });
+    });
+  }
+
+  /** Bundled catalog: removes catalog_price_overrides row only (product stays in site catalog). */
+  function deleteCatalogOverride(id) {
+    return fetch(base() + "/api/vendor/catalog-products/" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: V.authHeaders(),
+      cache: "no-store",
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var j = {};
+        try {
+          j = text ? JSON.parse(text) : {};
+        } catch (_) {}
+        if (!res.ok || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "Delete failed");
+        }
+        return j;
       });
     });
   }
@@ -450,14 +470,17 @@
 
     document.getElementById("vpmTbody").addEventListener("click", function (ev) {
       var t = ev.target;
-      if (!t || !t.getAttribute) return;
-      var id = t.getAttribute("data-id");
+      if (!t || typeof t.closest !== "function") return;
+      var btn = t.closest("button[data-id]");
+      if (!btn) return;
+      var id = btn.getAttribute("data-id");
       if (!id) return;
       var p = findProductById(id);
-      if (t.classList.contains("vpm-edit") && p) {
+      if (btn.classList.contains("vpm-edit") && p) {
         openEdit(p);
+        return;
       }
-      if (t.classList.contains("vpm-disc")) {
+      if (btn.classList.contains("vpm-disc")) {
         if (!window.confirm("Discontinue this product? It will disappear from the guest storefront and from the main Inventory screen until you set it active again.")) {
           return;
         }
@@ -468,8 +491,9 @@
           .catch(function (e) {
             window.alert(String((e && e.message) || e));
           });
+        return;
       }
-      if (t.classList.contains("vpm-react")) {
+      if (btn.classList.contains("vpm-react")) {
         setActive(id, true)
           .then(function () {
             return loadList();
@@ -477,9 +501,35 @@
           .catch(function (e) {
             window.alert(String((e && e.message) || e));
           });
+        return;
       }
-      if (t.classList.contains("vpm-del")) {
-        if (!window.confirm("Permanently delete this product from the database? This cannot be undone.")) {
+      if (btn.classList.contains("vpm-del")) {
+        var src = String(btn.getAttribute("data-source") || "vendor");
+        if (src === "catalog") {
+          if (
+            !window.confirm(
+              "Remove all saved database settings for this catalog product (custom prices, size labels, return-gift flag, discontinued state)? The product stays in the bundled site catalog with its default prices and listing."
+            )
+          ) {
+            return;
+          }
+          deleteCatalogOverride(id)
+            .then(function (j) {
+              if (editingId === id) closeEdit();
+              if (j && j.removed === false) {
+                showMsg("No saved overrides were stored for this product.", false);
+              } else {
+                showMsg("Catalog overrides removed.", false);
+              }
+              refreshGuestCatalogMerge();
+              return loadList();
+            })
+            .catch(function (e) {
+              window.alert(String((e && e.message) || e));
+            });
+          return;
+        }
+        if (!window.confirm("Permanently delete this vendor-added product from the database? This cannot be undone.")) {
           return;
         }
         deleteProduct(id)

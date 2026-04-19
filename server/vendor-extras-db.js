@@ -3,6 +3,7 @@
 var poolMod = require("./db/pool.js");
 var schemaHotfix = require("./db/schema-hotfix.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
+var catalogFromData = require("./catalog-from-data.js");
 
 var INVENTORY_JOINED_FROM =
   "FROM vendor_inventory_items v " +
@@ -11,7 +12,9 @@ var INVENTORY_JOINED_FROM =
   "LEFT JOIN catalog_price_overrides co ON co.product_id = v.product_id AND v.product_id IS NOT NULL AND v.product_id <> '' ";
 
 var INVENTORY_SELECT =
-  "SELECT v.id, v.name, v.sku, v.category_id, v.product_id, v.quantity, v.qty_s, v.qty_m, v.qty_l, v.reorder_point, v.unit_cost, v.supplier, v.notes, v.updated_at, " +
+  "SELECT v.id, v.name, v.sku, v.category_id, v.product_id, v.quantity, v.qty_s, v.qty_m, v.qty_l, v.reorder_point, v.unit_cost, " +
+  "COALESCE(v.unit_cost_s, 0) AS unit_cost_s, COALESCE(v.unit_cost_m, 0) AS unit_cost_m, COALESCE(v.unit_cost_l, 0) AS unit_cost_l, " +
+  "v.supplier, v.notes, v.updated_at, " +
   "c.label AS category_label, p.name AS product_name, " +
   "co.price_s AS catalog_price_s, co.price_m AS catalog_price_m, co.price_l AS catalog_price_l, " +
   "co.stock_s AS catalog_stock_s, co.stock_m AS catalog_stock_m, co.stock_l AS catalog_stock_l " +
@@ -131,6 +134,9 @@ function rowInventory(r) {
     qtyL: r.qty_l != null && Number.isFinite(Number(r.qty_l)) ? Number(r.qty_l) : null,
     reorderPoint: Number(r.reorder_point),
     unitCost: Number(r.unit_cost),
+    unitCostS: r.unit_cost_s != null && Number.isFinite(Number(r.unit_cost_s)) ? Number(r.unit_cost_s) : null,
+    unitCostM: r.unit_cost_m != null && Number.isFinite(Number(r.unit_cost_m)) ? Number(r.unit_cost_m) : null,
+    unitCostL: r.unit_cost_l != null && Number.isFinite(Number(r.unit_cost_l)) ? Number(r.unit_cost_l) : null,
     supplier: r.supplier || "",
     notes: r.notes || "",
     updatedAt: r.updated_at ? new Date(r.updated_at).toISOString() : null,
@@ -271,6 +277,8 @@ function listInventory(optsOrCb, maybeCb) {
     typeof optsOrCb === "function" ? "" : String((optsOrCb && optsOrCb.productId) || "").trim().slice(0, 220);
   var skuQ =
     typeof optsOrCb === "function" ? "" : String((optsOrCb && optsOrCb.sku) || "").trim().slice(0, 120).toLowerCase();
+  var searchQ =
+    typeof optsOrCb === "function" ? "" : String((optsOrCb && optsOrCb.search) || "").trim().slice(0, 200).toLowerCase();
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
@@ -288,7 +296,21 @@ function listInventory(optsOrCb, maybeCb) {
     wh.push("v.product_id = $" + (params.length + 1));
     params.push(productId);
   }
-  if (skuQ) {
+  if (searchQ) {
+    var p1 = "$" + (params.length + 1);
+    params.push(searchQ);
+    wh.push(
+      "(POSITION(" +
+        p1 +
+        " IN LOWER(COALESCE(v.sku, ''))) > 0 OR POSITION(" +
+        p1 +
+        " IN LOWER(COALESCE(v.name, ''))) > 0 OR POSITION(" +
+        p1 +
+        " IN LOWER(COALESCE(v.product_id, ''))) > 0 OR POSITION(" +
+        p1 +
+        " IN LOWER(COALESCE(p.name, ''))) > 0)"
+    );
+  } else if (skuQ) {
     wh.push("POSITION($" + (params.length + 1) + " IN LOWER(COALESCE(v.sku, ''))) > 0");
     params.push(skuQ);
   }
@@ -308,6 +330,50 @@ function listInventory(optsOrCb, maybeCb) {
   });
 }
 
+/**
+ * Resolve bundled or DB product name + category for studio inventory linking.
+ * @param {string} productId
+ * @param {(err: Error|null, meta?: { name: string, categoryId: string }) => void} cb
+ */
+function resolveCatalogProductMeta(productId, cb) {
+  var pid = String(productId || "").trim().slice(0, 220);
+  if (!pid) {
+    return process.nextTick(function () {
+      cb(new Error("productId required"));
+    });
+  }
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  pool
+    .query("SELECT name, category_id FROM products WHERE id = $1 AND is_active = true", [pid])
+    .then(function (r) {
+      if (r.rows.length) {
+        return cb(null, {
+          name: String(r.rows[0].name || "").trim().slice(0, 300),
+          categoryId: String(r.rows[0].category_id || "").trim().slice(0, 80),
+        });
+      }
+      try {
+        var list = catalogFromData.getProductsSummary();
+        var p = list.find(function (x) {
+          return String(x.id) === pid;
+        });
+        if (!p) return cb(new Error("Unknown or inactive product"));
+        cb(null, {
+          name: String(p.name || "").trim().slice(0, 300),
+          categoryId: String(p.category || "").trim().slice(0, 80),
+        });
+      } catch (e) {
+        cb(e);
+      }
+    })
+    .catch(cb);
+}
+
 /** @param {(err: Error|null, row?: object) => void} cb */
 function createInventory(body, cb) {
   var pool = poolMod.getPool();
@@ -317,9 +383,6 @@ function createInventory(body, cb) {
     });
   }
   var name = String((body && body.name) || "").trim().slice(0, 300);
-  if (!name) return process.nextTick(function () {
-    cb(new Error("Name required"));
-  });
   var sku = String((body && body.sku) || "").trim().slice(0, 120);
   function parseQtySlot(v) {
     if (v === undefined || v === null || String(v).trim() === "") return null;
@@ -333,19 +396,33 @@ function createInventory(body, cb) {
   var legacyQty = Math.max(0, Number(body && body.quantity) || 0);
   var qty = hasPerSize ? (qs || 0) + (qm || 0) + (ql || 0) : legacyQty;
   var reorder = Math.max(0, Number(body && body.reorderPoint) || 0);
-  var cost = Math.max(0, Number(body && body.unitCost) || 0);
+  var costS = Math.max(0, Number(body && body.unitCostS) || 0);
+  var costM = Math.max(0, Number(body && body.unitCostM) || 0);
+  var costL = Math.max(0, Number(body && body.unitCostL) || 0);
+  var costLegacy = Math.max(0, Number(body && body.unitCost) || 0);
+  if (!costS && !costM && !costL && costLegacy) {
+    costS = costM = costL = costLegacy;
+  }
+  var nz = (costS > 0 ? 1 : 0) + (costM > 0 ? 1 : 0) + (costL > 0 ? 1 : 0);
+  var cost = nz ? (costS + costM + costL) / nz : costLegacy;
   var supplier = String((body && body.supplier) || "").trim().slice(0, 200);
   var notes = body && body.notes != null ? String(body.notes).slice(0, 2000) : "";
   var categoryId = String((body && body.categoryId) || "").trim().slice(0, 80);
   var productId = String((body && body.productId) || "").trim().slice(0, 220);
 
-  function insertRow(finalCategoryId, pid) {
+  function insertRow(finalCategoryId, pid, rowName) {
+    var nm = String(rowName || "").trim().slice(0, 300);
+    if (!nm) {
+      return process.nextTick(function () {
+        cb(new Error("Name required"));
+      });
+    }
     pool
       .query(
-        "INSERT INTO vendor_inventory_items (name, sku, category_id, product_id, quantity, qty_s, qty_m, qty_l, reorder_point, unit_cost, supplier, notes) " +
-          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) " +
-          "RETURNING id, name, sku, category_id, product_id, quantity, qty_s, qty_m, qty_l, reorder_point, unit_cost, supplier, notes, updated_at",
-        [name, sku, finalCategoryId, pid, qty, qs, qm, ql, reorder, cost, supplier, notes]
+        "INSERT INTO vendor_inventory_items (name, sku, category_id, product_id, quantity, qty_s, qty_m, qty_l, reorder_point, unit_cost, unit_cost_s, unit_cost_m, unit_cost_l, supplier, notes) " +
+          "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15) " +
+          "RETURNING id, name, sku, category_id, product_id, quantity, qty_s, qty_m, qty_l, reorder_point, unit_cost, unit_cost_s, unit_cost_m, unit_cost_l, supplier, notes, updated_at",
+        [nm, sku, finalCategoryId, pid, qty, qs, qm, ql, reorder, cost, costS, costM, costL, supplier, notes]
       )
       .then(function (r) {
         var ins = r.rows[0];
@@ -384,19 +461,21 @@ function createInventory(body, cb) {
   withVendorInventorySchema(function (e0) {
     if (e0) return cb(e0);
     if (productId) {
-      pool
-        .query("SELECT id, category_id FROM products WHERE id = $1 AND is_active = true", [productId])
-        .then(function (r) {
-          if (!r.rows.length) throw new Error("Unknown or inactive product");
-          var cid = String(r.rows[0].category_id || "").trim().slice(0, 80);
-          if (categoryId && categoryId !== cid) {
-            throw new Error("Selected product does not belong to the selected category");
-          }
-          insertRow(cid || categoryId, productId);
-        })
-        .catch(cb);
+      resolveCatalogProductMeta(productId, function (eMeta, meta) {
+        if (eMeta) return cb(eMeta);
+        if (categoryId && meta.categoryId && categoryId !== meta.categoryId) {
+          return cb(new Error("Selected product does not belong to the selected category"));
+        }
+        var rowName = name || meta.name;
+        if (!rowName) return cb(new Error("Could not resolve product name"));
+        insertRow(meta.categoryId || categoryId, productId, rowName);
+      });
     } else {
-      insertRow(categoryId, "");
+      var autoName = name;
+      if (!autoName) {
+        autoName = sku ? "Supply · " + sku.slice(0, 240) : "Supply";
+      }
+      insertRow(categoryId, "", autoName);
     }
   });
 }
@@ -495,6 +574,18 @@ function updateInventory(id, body, cb) {
       fields.push("unit_cost = $" + i++);
       vals.push(Math.max(0, Number(eb.unitCost)));
     }
+    if (eb.unitCostS != null) {
+      fields.push("unit_cost_s = $" + i++);
+      vals.push(Math.max(0, Number(eb.unitCostS)));
+    }
+    if (eb.unitCostM != null) {
+      fields.push("unit_cost_m = $" + i++);
+      vals.push(Math.max(0, Number(eb.unitCostM)));
+    }
+    if (eb.unitCostL != null) {
+      fields.push("unit_cost_l = $" + i++);
+      vals.push(Math.max(0, Number(eb.unitCostL)));
+    }
     if (eb.supplier != null) {
       fields.push("supplier = $" + i++);
       vals.push(String(eb.supplier).trim().slice(0, 200));
@@ -566,18 +657,24 @@ function updateInventory(id, body, cb) {
           return doSqlUpdate(Object.assign({}, b, { productId: "" }), existing, "");
         }
         if (finalPid) {
-          return pool
-            .query("SELECT category_id FROM products WHERE id = $1 AND is_active = true", [finalPid])
-            .then(function (pr) {
-              if (!pr.rows.length) throw new Error("Unknown or inactive product");
-              var cid = String(pr.rows[0].category_id || "").trim().slice(0, 80);
+          return new Promise(function (resolve, reject) {
+            resolveCatalogProductMeta(finalPid, function (eMeta, meta) {
+              if (eMeta) return reject(eMeta);
+              var cid = String(meta.categoryId || "").trim().slice(0, 80);
               var wantCat = b.categoryId != null ? String(b.categoryId).trim().slice(0, 80) : "";
-              if (wantCat && wantCat !== cid) {
-                throw new Error("Selected product does not belong to the selected category");
+              if (wantCat && cid && wantCat !== cid) {
+                return reject(new Error("Selected product does not belong to the selected category"));
               }
-              var merged = Object.assign({}, b, { categoryId: cid });
+              var merged = Object.assign({}, b, { categoryId: cid || wantCat });
               if (bodyHasProductKey) merged.productId = finalPid;
+              resolve(merged);
+            });
+          })
+            .then(function (merged) {
               doSqlUpdate(merged, existing, finalPid);
+            })
+            .catch(function (err) {
+              cb(err);
             });
         }
         doSqlUpdate(b, existing, existingPid);
