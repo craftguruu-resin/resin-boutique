@@ -42,6 +42,55 @@
     return null;
   }
 
+  function finMoney(n) {
+    var x = Number(n);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  /** Size row + qty row: sum when both; else row price or product default. */
+  function effectivePriceInr(m, sel) {
+    var base = finMoney(m.priceInr) != null ? Number(m.priceInr) : 0;
+    if (!Number.isFinite(base) || base < 0) base = 0;
+    var opt = m.options || {};
+    var s = opt.useSize && sel.sid ? findOpt(opt.sizes, sel.sid) : null;
+    var q = opt.useQty && sel.qid ? findOpt(opt.qtyOptions, sel.qid) : null;
+    var ps = s ? finMoney(s.priceInr) : null;
+    var pq = q ? finMoney(q.priceInr) : null;
+    if (opt.useSize && opt.useQty) {
+      return (ps != null ? ps : base) + (pq != null ? pq : 0);
+    }
+    if (opt.useSize && s) return ps != null ? ps : base;
+    if (opt.useQty && q) return pq != null ? pq : base;
+    return base;
+  }
+
+  function effectiveMrpInr(m, sel) {
+    var baseM = finMoney(m.mrpInr);
+    var opt = m.options || {};
+    var s = opt.useSize && sel.sid ? findOpt(opt.sizes, sel.sid) : null;
+    var q = opt.useQty && sel.qid ? findOpt(opt.qtyOptions, sel.qid) : null;
+    var ms = s ? finMoney(s.mrpInr) : null;
+    var mq = q ? finMoney(q.mrpInr) : null;
+    if (opt.useSize && opt.useQty) {
+      var sm = ms != null ? ms : baseM;
+      var qm = mq != null ? mq : 0;
+      if (sm == null && (!qm || qm === 0)) return null;
+      if (sm == null) return null;
+      return sm + qm;
+    }
+    if (opt.useSize && s) return ms != null ? ms : baseM;
+    if (opt.useQty && q) return mq != null ? mq : baseM;
+    return baseM;
+  }
+
+  function discountPctFor(m, sel) {
+    var mrp = effectiveMrpInr(m, sel);
+    var p = effectivePriceInr(m, sel);
+    if (mrp == null || !Number.isFinite(mrp)) return null;
+    if (mrp <= p) return null;
+    return Math.round(((mrp - p) / mrp) * 100);
+  }
+
   function variantSlot(o) {
     var parts = [];
     if (o.sid) parts.push("s:" + o.sid);
@@ -107,19 +156,32 @@
 
   function syncDefaults(m) {
     var opt = m.options || {};
-    state.sel.sid = opt.useSize && opt.sizes && opt.sizes[0] ? opt.sizes[0].id : "";
-    state.sel.qid = opt.useQty && opt.qtyOptions && opt.qtyOptions[0] ? opt.qtyOptions[0].id : "";
+    var sizes =
+      opt.useSize && opt.sizes && opt.sizes.length ? opt.sizes.slice() : [{ id: "" }];
+    var qtys =
+      opt.useQty && opt.qtyOptions && opt.qtyOptions.length ? opt.qtyOptions.slice() : [{ id: "" }];
+    if (!opt.useSize) sizes = [{ id: "" }];
+    if (!opt.useQty) qtys = [{ id: "" }];
+    var bestSid = sizes[0] && sizes[0].id != null ? String(sizes[0].id) : "";
+    var bestQid = qtys[0] && qtys[0].id != null ? String(qtys[0].id) : "";
+    var bestP = Infinity;
+    sizes.forEach(function (s) {
+      qtys.forEach(function (q) {
+        var sid = opt.useSize ? String(s.id || "") : "";
+        var qid = opt.useQty ? String(q.id || "") : "";
+        var p = effectivePriceInr(m, { sid: sid, qid: qid, cid: "" });
+        if (p < bestP) {
+          bestP = p;
+          bestSid = sid;
+          bestQid = qid;
+        }
+      });
+    });
+    state.sel.sid = bestSid;
+    state.sel.qid = bestQid;
     state.sel.cid = opt.useColor && opt.colors && opt.colors[0] ? opt.colors[0].id : "";
     state.imgIndex = 0;
     state.lineQty = 1;
-  }
-
-  function discountPct(m) {
-    if (m.mrpInr == null || !Number.isFinite(Number(m.mrpInr))) return null;
-    var mrp = Number(m.mrpInr);
-    var p = Number(m.priceInr) || 0;
-    if (mrp <= p) return null;
-    return Math.round(((mrp - p) / mrp) * 100);
   }
 
   function normalizeHexClient(raw) {
@@ -155,7 +217,9 @@
     var imgs = heroImagesFor(m, state.sel);
     var idx = Math.min(state.imgIndex, Math.max(0, imgs.length - 1));
     var mainImg = imgs[idx] || "";
-    var pct = discountPct(m);
+    var effPrice = effectivePriceInr(m, state.sel);
+    var effMrp = effectiveMrpInr(m, state.sel);
+    var pct = discountPctFor(m, state.sel);
 
     var thumbs = imgs
       .map(function (u, i) {
@@ -291,10 +355,10 @@
       " reviews)</span></div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price">' +
-      (CART ? CART.formatMoney(m.priceInr || 0) : "₹" + (m.priceInr || 0)) +
+      (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +
       "</span>" +
-      (m.mrpInr != null && Number(m.mrpInr) > Number(m.priceInr)
-        ? '<span class="rm-pdp__mrp">' + (CART ? CART.formatMoney(m.mrpInr) : m.mrpInr) + "</span>"
+      (effMrp != null && Number(effMrp) > Number(effPrice)
+        ? '<span class="rm-pdp__mrp">' + (CART ? CART.formatMoney(effMrp) : effMrp) + "</span>"
         : "") +
       (pct != null ? '<span class="rm-pdp__save">' + pct + "% off</span>" : "") +
       "</div>" +
@@ -423,7 +487,7 @@
           size: slot,
           variantLabel: vlabel,
           name: m.name,
-          price: Number(m.priceInr) || 0,
+          price: effectivePriceInr(m, state.sel),
           image: lineImageFor(m, state.sel),
           qty: state.lineQty,
         });

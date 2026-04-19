@@ -33,6 +33,93 @@
     return "₹" + Math.round(Number(n) || 0);
   }
 
+  function findOpt(list, id) {
+    if (!id || !list) return null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
+    }
+    return null;
+  }
+
+  function finN(n) {
+    var x = Number(n);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  function effectivePriceInr(m, sel) {
+    var base = finN(m.priceInr) != null ? Number(m.priceInr) : 0;
+    if (!Number.isFinite(base) || base < 0) base = 0;
+    var opt = m.options || {};
+    var s = opt.useSize && sel.sid ? findOpt(opt.sizes, sel.sid) : null;
+    var q = opt.useQty && sel.qid ? findOpt(opt.qtyOptions, sel.qid) : null;
+    var ps = s ? finN(s.priceInr) : null;
+    var pq = q ? finN(q.priceInr) : null;
+    if (opt.useSize && opt.useQty) {
+      return (ps != null ? ps : base) + (pq != null ? pq : 0);
+    }
+    if (opt.useSize && s) return ps != null ? ps : base;
+    if (opt.useQty && q) return pq != null ? pq : base;
+    return base;
+  }
+
+  function effectiveMrpInr(m, sel) {
+    var baseM = finN(m.mrpInr);
+    var opt = m.options || {};
+    var s = opt.useSize && sel.sid ? findOpt(opt.sizes, sel.sid) : null;
+    var q = opt.useQty && sel.qid ? findOpt(opt.qtyOptions, sel.qid) : null;
+    var ms = s ? finN(s.mrpInr) : null;
+    var mq = q ? finN(q.mrpInr) : null;
+    if (opt.useSize && opt.useQty) {
+      var sm = ms != null ? ms : baseM;
+      var qm = mq != null ? mq : 0;
+      if (sm == null && (!qm || qm === 0)) return null;
+      if (sm == null) return null;
+      return sm + qm;
+    }
+    if (opt.useSize && s) return ms != null ? ms : baseM;
+    if (opt.useQty && q) return mq != null ? mq : baseM;
+    return baseM;
+  }
+
+  function minOfferMeta(m) {
+    var opt = m.options || {};
+    if (!opt.useSize && !opt.useQty) {
+      return {
+        min: Number(m.priceInr) || 0,
+        sel: { sid: "", qid: "" },
+      };
+    }
+    var sizes = opt.useSize && opt.sizes && opt.sizes.length ? opt.sizes : [{ id: "" }];
+    var qtys = opt.useQty && opt.qtyOptions && opt.qtyOptions.length ? opt.qtyOptions : [{ id: "" }];
+    if (!opt.useSize) sizes = [{ id: "" }];
+    if (!opt.useQty) qtys = [{ id: "" }];
+    var bestP = Infinity;
+    var bestSid = "";
+    var bestQid = "";
+    sizes.forEach(function (s) {
+      qtys.forEach(function (q) {
+        var sid = opt.useSize ? String(s.id || "") : "";
+        var qid = opt.useQty ? String(q.id || "") : "";
+        var p = effectivePriceInr(m, { sid: sid, qid: qid });
+        if (p < bestP) {
+          bestP = p;
+          bestSid = sid;
+          bestQid = qid;
+        }
+      });
+    });
+    return { min: bestP === Infinity ? Number(m.priceInr) || 0 : bestP, sel: { sid: bestSid, qid: bestQid } };
+  }
+
+  function discountHtml(m) {
+    var meta = minOfferMeta(m);
+    var mrp = effectiveMrpInr(m, meta.sel);
+    var p = meta.min;
+    if (mrp == null || !Number.isFinite(mrp) || !(mrp > p)) return "";
+    var pct = Math.round(((mrp - p) / mrp) * 100);
+    return '<span class="rm-card-shop__pill">' + esc(String(pct) + "% off") + "</span>";
+  }
+
   var lastMaterials = [];
   var sortWired = false;
   var DEFAULT_SORT = "name-asc";
@@ -67,15 +154,6 @@
     });
   }
 
-  function discountHtml(m) {
-    if (m.mrpInr == null || !Number.isFinite(Number(m.mrpInr))) return "";
-    var mrp = Number(m.mrpInr);
-    var p = Number(m.priceInr) || 0;
-    if (!(mrp > p)) return "";
-    var pct = Math.round(((mrp - p) / mrp) * 100);
-    return '<span class="rm-card-shop__pill">' + esc(String(pct) + "% off") + "</span>";
-  }
-
   function render(list) {
     wireSortOnce();
     lastMaterials = list || [];
@@ -92,9 +170,12 @@
       card.className = "rm-card-shop";
       var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
       var img = m.image ? imgSrc(m.image) : "";
+      var meta = minOfferMeta(m);
+      var effMrp = effectiveMrpInr(m, meta.sel);
+      var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
       var mrp =
-        m.mrpInr != null && Number(m.mrpInr) > Number(m.priceInr)
-          ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(m.mrpInr)) + "</span>"
+        effMrp != null && Number(effMrp) > Number(meta.min)
+          ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(effMrp)) + "</span>"
           : "";
       card.innerHTML =
         '<a href="' +
@@ -111,7 +192,7 @@
         (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
         '<div class="rm-card-shop__row">' +
         '<span class="rm-card-shop__price">' +
-        esc(fmtPrice(m.priceInr)) +
+        esc((showFrom ? "From " : "") + fmtPrice(meta.min)) +
         "</span>" +
         "<span>" +
         mrp +

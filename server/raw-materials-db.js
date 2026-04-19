@@ -58,6 +58,13 @@ function parseOptionsCell(raw) {
   return {};
 }
 
+function parseOptionalMoney(v) {
+  if (v == null || v === "") return null;
+  var n = Number(v);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.round(n * 100) / 100;
+}
+
 function normalizeOptions(o) {
   var src = o && typeof o === "object" ? o : {};
   var useSize = !!src.useSize;
@@ -94,6 +101,10 @@ function normalizeOptions(o) {
         var out = { id: id, label: label, image: image };
         if (kind === "co" || kind === "color") {
           out.hex = normalizeHexString(row.hex != null ? row.hex : row.Hex);
+        }
+        if (kind === "sz" || kind === "qt") {
+          out.priceInr = parseOptionalMoney(row.priceInr);
+          out.mrpInr = parseOptionalMoney(row.mrpInr);
         }
         return out;
       })
@@ -435,6 +446,28 @@ function updateRow(id, opts, cb) {
   doUpdate(null);
 }
 
+function deleteRow(id, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  var rid = String(id || "").trim().slice(0, 120);
+  pool
+    .query("DELETE FROM raw_materials WHERE id = $1 RETURNING id", [rid])
+    .then(function (r) {
+      if (!r.rowCount) {
+        throw new Error("Not found");
+      }
+      try {
+        catalogFromData.invalidateCache();
+      } catch (_) {}
+      cb(null);
+    })
+    .catch(cb);
+}
+
 function setActive(id, isActive, cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -479,8 +512,8 @@ function showcaseLuminaOptions() {
       "Vegan & cruelty-free supply chain",
     ],
     sizes: [
-      { id: "sz400", label: "400 ML", image: "" },
-      { id: "sz600", label: "600 ML", image: "" },
+      { id: "sz400", label: "400 ML", image: "", priceInr: 1200, mrpInr: 1500 },
+      { id: "sz600", label: "600 ML", image: "", priceInr: 1800, mrpInr: 2200 },
     ],
     qtyOptions: [],
     colors: [
@@ -521,7 +554,7 @@ function seedDemoMaterialsPromise(pool) {
         "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
       note: "Ships free the week you pay on orders over ₹1500 · WhatsApp +91-8824350056 to confirm batch timing.",
       image: hero,
-      price: 1649,
+      price: 1200,
       mrp: 2049,
       options: showcaseLuminaOptions(),
     },
@@ -543,6 +576,7 @@ module.exports = {
   getByIdForVendor: getByIdForVendor,
   createRow: createRow,
   updateRow: updateRow,
+  deleteRow: deleteRow,
   setActive: setActive,
   seedDemoMaterialsPromise: seedDemoMaterialsPromise,
   DEMO_IDS: DEMO_IDS,

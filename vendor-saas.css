@@ -1,23 +1,30 @@
-/* Craftguru vendor suite — light admin (teal accent, Autocare-style rail) */
+/* Craftguru vendor suite — Ledger-style (indigo + emerald, airy cards) */
 :root {
-  --vs-green: #0f766e;
-  --vs-green-hover: #0d5f59;
-  --vs-green-soft: rgba(15, 118, 110, 0.1);
-  --vs-green-mid: #14b8a6;
-  --vs-bg: #f1f5f9;
-  --vs-bg-pattern: radial-gradient(ellipse 100% 60% at 0% 0%, rgba(15, 118, 110, 0.05), transparent 50%);
+  --vs-indigo: #4f46e5;
+  --vs-indigo-hover: #4338ca;
+  --vs-indigo-soft: rgba(79, 70, 229, 0.12);
+  --vs-indigo-mid: #6366f1;
+  --vs-emerald: #10b981;
+  --vs-emerald-soft: rgba(16, 185, 129, 0.14);
+  --vs-green: #4f46e5;
+  --vs-green-hover: #4338ca;
+  --vs-green-soft: rgba(79, 70, 229, 0.12);
+  --vs-green-mid: #6366f1;
+  --vs-bg: #f3f4f6;
+  --vs-bg-pattern: radial-gradient(ellipse 90% 55% at 0% 0%, rgba(79, 70, 229, 0.06), transparent 55%);
   --vs-surface: #ffffff;
-  --vs-border: #e2e8f0;
+  --vs-border: #e5e7eb;
   --vs-text: #0f172a;
   --vs-muted: #64748b;
   --vs-danger: #dc2626;
   --vs-warn: #d97706;
   --vs-sidebar-w: 272px;
   --vs-sidebar-bg: #ffffff;
-  --vs-sidebar-border: #e2e8f0;
+  --vs-sidebar-border: #e5e7eb;
   --vs-sidebar-muted: #64748b;
-  --vs-radius: 12px;
-  --vs-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 24px rgba(15, 23, 42, 0.05);
+  --vs-radius: 14px;
+  --vs-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 12px 32px rgba(15, 23, 42, 0.08);
+  --vs-shadow-lg: 0 4px 6px rgba(15, 23, 42, 0.05), 0 20px 48px rgba(79, 70, 229, 0.1);
 }
 
 .vendor-saas {
@@ -28,6 +35,21 @@
   color: var(--vs-text);
   background-color: var(--vs-bg);
   background-image: var(--vs-bg-pattern);
+}
+
+.vendor-saas .vs-btn,
+.vendor-saas .vs-card,
+.vendor-saas .vrm-tab {
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.25s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.vendor-saas .vs-card:hover {
+  box-shadow: var(--vs-shadow-lg);
 }
 
 .vendor-saas *,
@@ -130,7 +152,7 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--vs-green) 0%, var(--vs-green-mid) 100%);
+  background: linear-gradient(135deg, var(--vs-indigo) 0%, var(--vs-indigo-mid) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -176,10 +198,10 @@
 }
 
 .vs-nav__link--active {
-  background: var(--vs-green-soft);
-  color: var(--vs-green);
+  background: var(--vs-indigo-soft);
+  color: var(--vs-indigo);
   font-weight: 600;
-  box-shadow: inset 3px 0 0 0 var(--vs-green);
+  box-shadow: inset 3px 0 0 0 var(--vs-indigo);
 }
 
 .vs-nav__ico {
@@ -196,7 +218,7 @@
 }
 
 .vs-sidebar__foot a {
-  color: var(--vs-green);
+  color: var(--vs-indigo);
   text-decoration: none;
 }
 
@@ -265,14 +287,17 @@
 }
 
 .vs-btn--primary {
-  background: var(--vs-green);
-  border-color: var(--vs-green);
+  background: var(--vs-indigo);
+  border-color: var(--vs-indigo);
   color: #fff;
+  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.28);
 }
 
 .vs-btn--primary:hover {
-  background: var(--vs-green-hover);
-  border-color: var(--vs-green-hover);
+  background: var(--vs-indigo-hover);
+  border-color: var(--vs-indigo-hover);
+  filter: brightness(1.03);
+  transform: translateY(-1px);
 }
 
 .vs-btn--ghost {
@@ -327,7 +352,7 @@
 }
 
 .vs-card__delta--up {
-  color: var(--vs-green-mid);
+  color: var(--vs-emerald);
 }
 
 .vs-card__delta--down {
@@ -646,7 +671,7 @@
 
 .vs-pill:hover,
 .vs-ful-pill:hover {
-  border-color: rgba(15, 118, 110, 0.35);
+  border-color: rgba(79, 70, 229, 0.35);
   color: var(--vs-text);
 }
 
@@ -694,8 +719,8 @@
 }
 
 .vpm-actions .vs-pill--active {
-  background: #16a34a;
-  border-color: #15803d;
+  background: var(--vs-emerald);
+  border-color: #059669;
   color: #fff;
 }
 
@@ -782,7 +807,7 @@
 }
 
 .vi-tabbar .vs-btn.vs-btn--primary {
-  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.2);
+  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
 }
 
 .vs-grid--charts {
@@ -1093,8 +1118,8 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vpm-return-gift-row__opt.is-selected {
-  border-color: rgba(15, 118, 110, 0.45);
-  background: rgba(15, 118, 110, 0.06);
+  border-color: rgba(79, 70, 229, 0.45);
+  background: rgba(79, 70, 229, 0.06);
 }
 
 .vendor-saas .vpm-return-gift-row__opt input {
@@ -1286,4 +1311,57 @@ a.vd-kpi-card--link:focus-visible {
 
 .vendor-saas .vh-hero-preview__ring .hero-atelier__photo-img {
   animation: none !important;
+}
+
+/* Raw materials — segmented tabs */
+.vrm-tabs {
+  display: flex;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+  padding: 0.3rem;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.06);
+  width: fit-content;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.vrm-tab {
+  border: none;
+  background: transparent;
+  color: var(--vs-muted);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 0.5rem 1.1rem;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.vrm-tab:hover {
+  color: var(--vs-text);
+  background: rgba(255, 255, 255, 0.75);
+}
+
+.vrm-tab.is-active {
+  background: var(--vs-surface);
+  color: var(--vs-indigo);
+  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.14);
+}
+
+.vrm-panel[hidden] {
+  display: none !important;
+}
+
+.vrm-manage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.vendor-saas .vrm-delete:hover {
+  color: var(--vs-danger);
 }

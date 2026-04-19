@@ -6,6 +6,74 @@
 
   var rawList = [];
 
+  function findOpt(list, id) {
+    if (!id || !list) return null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) return list[i];
+    }
+    return null;
+  }
+
+  function fin(n) {
+    var x = Number(n);
+    return Number.isFinite(x) ? x : null;
+  }
+
+  /** Same rules as guest PDP: size-only / qty-only / both (price = sizePart + qtyPart). */
+  function effectivePriceInr(m, sel) {
+    var base = fin(m.priceInr) != null ? Number(m.priceInr) : 0;
+    if (!Number.isFinite(base) || base < 0) base = 0;
+    var opt = m.options || {};
+    var s = opt.useSize && sel.sid ? findOpt(opt.sizes, sel.sid) : null;
+    var q = opt.useQty && sel.qid ? findOpt(opt.qtyOptions, sel.qid) : null;
+    var ps = s ? fin(s.priceInr) : null;
+    var pq = q ? fin(q.priceInr) : null;
+    if (opt.useSize && opt.useQty) {
+      return (ps != null ? ps : base) + (pq != null ? pq : 0);
+    }
+    if (opt.useSize && s) return ps != null ? ps : base;
+    if (opt.useQty && q) return pq != null ? pq : base;
+    return base;
+  }
+
+  function minOfferPrice(m) {
+    var opt = m.options || {};
+    if (!opt.useSize && !opt.useQty) return Number(m.priceInr) || 0;
+    var sizes = opt.useSize && opt.sizes && opt.sizes.length ? opt.sizes : [{ id: "" }];
+    var qtys = opt.useQty && opt.qtyOptions && opt.qtyOptions.length ? opt.qtyOptions : [{ id: "" }];
+    if (!opt.useSize) sizes = [{ id: "" }];
+    if (!opt.useQty) qtys = [{ id: "" }];
+    var best = Infinity;
+    sizes.forEach(function (s) {
+      qtys.forEach(function (q) {
+        var p = effectivePriceInr(m, {
+          sid: opt.useSize ? s.id : "",
+          qid: opt.useQty ? q.id : "",
+        });
+        if (p < best) best = p;
+      });
+    });
+    return best === Infinity ? Number(m.priceInr) || 0 : best;
+  }
+
+  function setVrmTab(which) {
+    var manage = document.getElementById("vrmPanelManage");
+    var form = document.getElementById("vrmPanelForm");
+    document.querySelectorAll(".vrm-tab").forEach(function (btn) {
+      var on = btn.getAttribute("data-vrm-tab") === which;
+      btn.classList.toggle("is-active", on);
+      btn.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    if (manage) {
+      manage.classList.toggle("is-active", which === "manage");
+      manage.hidden = which !== "manage";
+    }
+    if (form) {
+      form.classList.toggle("is-active", which === "form");
+      form.hidden = which !== "form";
+    }
+  }
+
   function base() {
     return String(V.apiBase() || "").replace(/\/+$/, "");
   }
@@ -56,6 +124,19 @@
     );
   }
 
+  function rowMoneyNum(label, val, cls) {
+    var v = val != null && String(val) !== "" ? String(val) : "";
+    return (
+      '<div><label class="vs-muted" style="display:block;font-size:0.78rem;margin-bottom:0.2rem">' +
+      esc(label) +
+      '</label><input type="number" class="' +
+      esc(cls) +
+      '" min="0" step="0.01" value="' +
+      esc(v) +
+      '" placeholder="Optional" /></div>'
+    );
+  }
+
   function normalizeHexVendor(h) {
     var s = String(h == null ? "" : h)
       .trim()
@@ -85,13 +166,14 @@
     if (sz) {
       sz.innerHTML = uS
         ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem\">Size options</h3>" +
-          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Label + optional image URL per row.</p>" +
+          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Label + optional price/MRP per row (blank price uses default above) + optional image URL.</p>" +
           '<div id="vrmSizeRows"></div><button type="button" class="vs-btn vs-btn--ghost" id="vrmAddSize">+ Add size</button>'
         : "";
     }
     if (qt) {
       qt.innerHTML = uQ
         ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem\">Pack / quantity options (min 3)</h3>" +
+          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Each pack can have its own price. With sizes enabled, guest price = size price + pack price (each part falls back to default when blank).</p>" +
           '<div id="vrmQtyRows"></div><button type="button" class="vs-btn vs-btn--ghost" id="vrmAddQty">+ Add pack</button>'
         : "";
     }
@@ -140,8 +222,16 @@
     if (!host) return;
     host.appendChild(
       wrapRow(
-        rowInput("Label", o.label || "", "500 ml") +
-          rowUrl("Image URL (optional)", o.image || "")
+        '<div style="grid-column:1/-1">' +
+          rowInput("Label", o.label || "", "500 ml") +
+          "</div>" +
+          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
+          rowMoneyNum("Price (INR)", o.priceInr, "vrm-sz-price") +
+          rowMoneyNum("MRP (optional)", o.mrpInr, "vrm-sz-mrp") +
+          "</div>" +
+          '<div style="grid-column:1/-1">' +
+          rowUrl("Image URL (optional)", o.image || "") +
+          "</div>"
       )
     );
   }
@@ -151,8 +241,16 @@
     if (!host) return;
     host.appendChild(
       wrapRow(
-        rowInput("Pack label", o.label || "", "3 × 400 ml") +
-          rowUrl("Image URL (optional)", o.image || "")
+        '<div style="grid-column:1/-1">' +
+          rowInput("Pack label", o.label || "", "3 × 400 ml") +
+          "</div>" +
+          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
+          rowMoneyNum("Price (INR)", o.priceInr, "vrm-qty-price") +
+          rowMoneyNum("MRP (optional)", o.mrpInr, "vrm-qty-mrp") +
+          "</div>" +
+          '<div style="grid-column:1/-1">' +
+          rowUrl("Image URL (optional)", o.image || "") +
+          "</div>"
       )
     );
   }
@@ -195,7 +293,6 @@
     var rows = host.querySelectorAll(".vrm-opt-row");
     var out = [];
     rows.forEach(function (row, idx) {
-      var inps = row.querySelectorAll("input");
       if (kind === "color") {
         var labInp = row.querySelector("input.vrm-opt-inp");
         var pick = row.querySelector("input.vrm-color-pick");
@@ -210,11 +307,38 @@
           hex: normalizeHexVendor(hex || "#888888"),
           image: img || "",
         });
-      } else {
-        var label = inps[0] && inps[0].value.trim();
-        var image = inps[1] && inps[1].value.trim();
-        if (!label) return;
-        out.push({ id: (kind === "size" ? "s" : "q") + (idx + 1), label: label.slice(0, 120), image: image });
+      } else if (kind === "size") {
+        var labS = row.querySelector("input.vrm-opt-inp");
+        var urlS = row.querySelector("input.vrm-opt-url");
+        var prS = row.querySelector("input.vrm-sz-price");
+        var mrS = row.querySelector("input.vrm-sz-mrp");
+        var lab = labS && labS.value.trim();
+        if (!lab) return;
+        var pr = prS && prS.value.trim() !== "" ? Number(prS.value) : null;
+        var mr = mrS && mrS.value.trim() !== "" ? Number(mrS.value) : null;
+        out.push({
+          id: "s" + (idx + 1),
+          label: lab.slice(0, 120),
+          image: urlS ? urlS.value.trim() : "",
+          priceInr: Number.isFinite(pr) && pr >= 0 ? pr : null,
+          mrpInr: Number.isFinite(mr) && mr >= 0 ? mr : null,
+        });
+      } else if (kind === "qty") {
+        var labQ = row.querySelector("input.vrm-opt-inp");
+        var urlQ = row.querySelector("input.vrm-opt-url");
+        var prQ = row.querySelector("input.vrm-qty-price");
+        var mrQ = row.querySelector("input.vrm-qty-mrp");
+        var labq = labQ && labQ.value.trim();
+        if (!labq) return;
+        var prq = prQ && prQ.value.trim() !== "" ? Number(prQ.value) : null;
+        var mrq = mrQ && mrQ.value.trim() !== "" ? Number(mrQ.value) : null;
+        out.push({
+          id: "q" + (idx + 1),
+          label: labq.slice(0, 120),
+          image: urlQ ? urlQ.value.trim() : "",
+          priceInr: Number.isFinite(prq) && prq >= 0 ? prq : null,
+          mrpInr: Number.isFinite(mrq) && mrq >= 0 ? mrq : null,
+        });
       }
     });
     return out;
@@ -309,6 +433,7 @@
     document.getElementById("vrmImageUrl").value =
       m.image && (m.image.indexOf("http") === 0 || m.image.indexOf("//") === 0) ? m.image : "";
     fillEditorsFromOptions(m.options || {});
+    setVrmTab("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -342,7 +467,7 @@
         "</strong><br /><small class=\"vs-muted\">" +
         esc(r.id || "") +
         "</small></td><td>" +
-        esc(r.priceInr != null ? String(r.priceInr) : "0") +
+        esc(String(minOfferPrice(r))) +
         "</td><td>" +
         (active ? "<span class=\"vs-pill vs-pill--active\">Live</span>" : "<span class=\"vs-pill vs-pill--inactive\">Hidden</span>") +
         "</td><td><button type=\"button\" class=\"vs-btn vs-btn--ghost vrm-edit\" data-id=\"" +
@@ -354,7 +479,12 @@
         (active ? "0" : "1") +
         "\">" +
         (active ? "Hide" : "Show") +
-        "</button></td>";
+        "</button> " +
+        "<button type=\"button\" class=\"vs-btn vs-btn--ghost vrm-delete\" data-id=\"" +
+        esc(r.id) +
+        "\" data-name=\"" +
+        esc(r.name || "") +
+        "\">Delete</button></td>";
       tb.appendChild(tr);
     });
   }
@@ -443,12 +573,48 @@
     });
   }
 
+  function deleteMaterial(id, name) {
+    var label = name || id || "this product";
+    if (!window.confirm('Permanently delete "' + label + '"? This cannot be undone.')) return;
+    return fetch(base() + "/api/vendor/raw-materials/" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: V.authHeaders(),
+      cache: "no-store",
+    }).then(function (res) {
+      return res.text().then(function (text) {
+        var j = {};
+        try {
+          j = text ? JSON.parse(text) : {};
+        } catch (_) {}
+        if (!res.ok || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "Delete failed");
+        }
+      });
+    });
+  }
+
   function boot() {
     renderOptionBlocks();
     ["vrmUseSize", "vrmUseQty", "vrmUseColor"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.addEventListener("change", renderOptionBlocks);
     });
+
+    document.querySelectorAll(".vrm-tab").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var w = btn.getAttribute("data-vrm-tab");
+        if (w) setVrmTab(w);
+      });
+    });
+
+    var addNew = document.getElementById("vrmAddNew");
+    if (addNew) {
+      addNew.addEventListener("click", function () {
+        resetForm();
+        setVrmTab("form");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
 
     document.getElementById("vrmRefresh").addEventListener("click", function () {
       loadList().catch(function () {});
@@ -523,6 +689,19 @@
         var id = b.getAttribute("data-id");
         var next = b.getAttribute("data-next") === "1";
         setActive(id, next)
+          .then(function () {
+            return loadList();
+          })
+          .catch(function (e) {
+            window.alert(String((e && e.message) || e));
+          });
+        return;
+      }
+      var del = ev.target && ev.target.closest ? ev.target.closest(".vrm-delete") : null;
+      if (del) {
+        var did = del.getAttribute("data-id");
+        var dname = del.getAttribute("data-name");
+        deleteMaterial(did, dname)
           .then(function () {
             return loadList();
           })
