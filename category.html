@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847">
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -244,6 +244,18 @@
   <script src="catalog-merge.js"></script>
   <script src="cart.js"></script>
   <script src="guest-layout.js"></script>
+  <script src="auth-db.js"></script>
+  <script>
+    window.CRAFT_AUTH = window.CRAFT_AUTH || {};
+  </script>
+  <script src="google-signin.js"></script>
+  <script>
+    document.documentElement.classList.toggle(
+      "auth-google-ui-off",
+      !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
+    );
+  </script>
+  <script src="auth-home.js"></script>
   <script src="craftguru-share.js"></script>
   <script src="shell.js"></script>
   <script src="header.js"></script>

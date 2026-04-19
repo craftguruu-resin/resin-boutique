@@ -172,10 +172,76 @@
     });
   }
 
+  /** Catalog subpages historically omitted the home auth bar — inject so Sign up / Log in match index.html. */
+  function injectStorefrontAuthChrome() {
+    if (document.getElementById("homeAuthBar")) return;
+    var pn = currentPageName();
+    if (!pn) return;
+    var pl = pn.toLowerCase();
+    if (pl.indexOf("vendor") === 0) return;
+
+    var topEnd = document.querySelector(".site-top-end");
+    if (!topEnd) return;
+
+    var bar = document.createElement("div");
+    bar.className = "home-auth-bar";
+    bar.id = "homeAuthBar";
+    bar.innerHTML =
+      '<span class="home-auth-user is-hidden" id="homeAuthUser"></span>' +
+      '<button type="button" class="home-auth-btn" id="homeAuthSignup">Sign up</button>' +
+      '<button type="button" class="home-auth-btn" id="homeAuthLogin">Log in</button>' +
+      '<a href="account.html" class="home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthOrders">My orders</a>' +
+      '<button type="button" class="home-auth-btn is-hidden" id="homeAuthLogout">Log out</button>';
+    topEnd.insertBefore(bar, topEnd.firstChild);
+
+    if (document.getElementById("authModal")) return;
+
+    var wrap = document.createElement("div");
+    wrap.innerHTML =
+      '<div class="auth-modal" id="authModal" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">' +
+      '<button type="button" class="auth-modal__backdrop" id="authModalBackdrop" aria-label="Close"></button>' +
+      '<div class="auth-modal__sheet">' +
+      '<div class="auth-modal__head">' +
+      '<h2 id="authModalTitle">Account</h2>' +
+      '<button type="button" class="auth-modal__x" id="authModalClose" aria-label="Close">✕</button>' +
+      "</div>" +
+      '<p class="auth-google-hint">Optional: sign in with Google (same session as email code across the site).</p>' +
+      '<div class="auth-google-slot" id="homeGoogleSignIn" aria-label="Sign in with Google"></div>' +
+      '<p class="auth-or-divider"><span>or use email code</span></p>' +
+      '<div class="auth-tabs">' +
+      '<button type="button" class="auth-tab is-active" id="authTabSignup">Sign up</button>' +
+      '<button type="button" class="auth-tab" id="authTabLogin">Log in</button>' +
+      "</div>" +
+      '<div id="authPanelSignup">' +
+      '<div class="auth-field"><label for="authNameSignup">Name (optional)</label>' +
+      '<input id="authNameSignup" type="text" autocomplete="name" placeholder="Your name" /></div>' +
+      '<div class="auth-field"><label for="authEmailSignup">Email</label>' +
+      '<input id="authEmailSignup" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" /></div>' +
+      '<button type="button" class="checkout-pay-secondary" id="authSendOtpSignup">Send OTP</button>' +
+      '<div class="auth-field"><label for="authOtpSignup">Enter OTP</label>' +
+      '<input id="authOtpSignup" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" /></div>' +
+      '<p class="auth-msg" id="authMsgSignup" style="display: none"></p>' +
+      '<button type="button" class="auth-submit" id="authSubmitSignup">Create account</button>' +
+      "</div>" +
+      '<div id="authPanelLogin" class="is-hidden">' +
+      '<div class="auth-field"><label for="authEmailLogin">Email</label>' +
+      '<input id="authEmailLogin" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" /></div>' +
+      '<button type="button" class="checkout-pay-secondary" id="authSendOtpLogin">Send OTP</button>' +
+      '<div class="auth-field"><label for="authOtpLogin">Enter OTP</label>' +
+      '<input id="authOtpLogin" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" /></div>' +
+      '<p class="auth-msg" id="authMsgLogin" style="display: none"></p>' +
+      '<button type="button" class="auth-submit" id="authSubmitLogin">Log in</button>' +
+      "</div></div></div>";
+    var modal = wrap.firstElementChild;
+    if (modal) document.body.appendChild(modal);
+    /* auth-db.js, google-signin.js, auth-home.js must be included in page markup after guest-layout.js (see category.html). */
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
     injectCategoryRail();
     injectHeaderSearch();
+    injectStorefrontAuthChrome();
   }
 
   if (document.readyState === "loading") {
