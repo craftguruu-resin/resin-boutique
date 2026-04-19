@@ -5,6 +5,8 @@ var path = require("path");
 var bcrypt = require("bcryptjs");
 var poolMod = require("./pool.js");
 var catalogFromData = require("../catalog-from-data.js");
+var rawMaterialsDb = require("../raw-materials-db.js");
+var schemaHotfix = require("./schema-hotfix.js");
 
 /**
  * Apply schema.sql (idempotent) and ensure default vendor row.
@@ -25,6 +27,12 @@ function migrate(cb) {
     })
     .then(function () {
       return bootstrapCategoriesPromise(p);
+    })
+    .then(function () {
+      return schemaHotfix.ensureVendorInventoryColumns();
+    })
+    .then(function () {
+      return rawMaterialsDb.seedDemoMaterialsPromise(p);
     })
     .then(function () {
       cb();

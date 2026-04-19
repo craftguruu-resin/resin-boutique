@@ -634,6 +634,8 @@
   function buildBillItemsForApi() {
     return CART.load().map(function (line) {
       var sz = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
+      var disp =
+        (line.variantLabel && String(line.variantLabel).trim()) || String(sz || line.size || "");
       var sizeKey = String(line.size || "")
         .trim()
         .toLowerCase()
@@ -643,7 +645,7 @@
         productId: String(line.id || ""),
         sizeKey: sizeKey,
         name: String(line.name || "Item"),
-        sizeLabel: String(sz || line.size || ""),
+        sizeLabel: String(disp).slice(0, 500),
         qty: Math.max(1, Math.floor(Number(line.qty) || 1)),
         unitPrice: Number(line.price) || 0,
         image: String(getLineImage(line) || "").slice(0, 500),
@@ -965,7 +967,10 @@
       var imgRel = getLineImage(line);
       var wrap = document.createElement("div");
       wrap.className = "checkout-snip-wrap";
-      var href = "product.html?id=" + encodeURIComponent(line.id);
+      var href =
+        String(line.id || "").indexOf("raw-mat--") === 0
+          ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
+          : "product.html?id=" + encodeURIComponent(line.id);
       var imgHtml = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" loading="lazy" width="92" height="92" />'
         : '<div class="checkout-snip__ph" aria-hidden="true"></div>';
@@ -995,7 +1000,9 @@
         '" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
         ' from cart">×</button></div>';
-      var szMeta = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
+      var szMeta =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var amt = lineTotalAmt(line);
       var hay =
         (line.name || "") +
@@ -1018,10 +1025,15 @@
     if (!els.lines) return;
     els.lines.innerHTML = "";
     lines.forEach(function (line) {
-      var sz = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var lineAmt = (line.price || 0) * (line.qty || 1);
       var imgRel = getLineImage(line);
-      var href = "product.html?id=" + encodeURIComponent(line.id);
+      var href =
+        String(line.id || "").indexOf("raw-mat--") === 0
+          ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
+          : "product.html?id=" + encodeURIComponent(line.id);
       var li = document.createElement("li");
       li.className = "checkout-line";
       li.innerHTML =

@@ -26,6 +26,7 @@
     if (pn === "index.html") return;
     if (pn === "account.html") return;
     if (pn === "checkout.html") return;
+    if (pn === "raw-material-product.html") return;
     var main = document.querySelector("main.sub-main");
     if (!main) return;
     var D = window.RESIN_DATA;

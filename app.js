@@ -792,7 +792,9 @@
     lines.forEach(function (line) {
       var li = document.createElement("li");
       li.className = "cart-item";
-      var sz = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var imgRel = getLineImage(line);
       var imgBlock = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" width="56" height="56" />'

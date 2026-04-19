@@ -71,6 +71,10 @@ function ensureVendorInventoryColumns() {
       "created_at TIMESTAMPTZ NOT NULL DEFAULT now()," +
       "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
       ")",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS price_inr NUMERIC(12, 2) NOT NULL DEFAULT 0",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS mrp_inr NUMERIC(12, 2)",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "ALTER TABLE raw_materials ALTER COLUMN image_path TYPE TEXT USING image_path::text",
     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
     "CREATE TABLE IF NOT EXISTS guest_email_otps (" +
       "id BIGSERIAL PRIMARY KEY," +

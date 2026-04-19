@@ -1730,6 +1730,20 @@ app.get("/api/catalog/raw-materials", function (_req, res) {
   });
 });
 
+app.get("/api/catalog/raw-materials/:id", function (req, res) {
+  var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+  rawMaterialsDb.getActiveById(id, function (e, row) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    if (!row) {
+      return res.status(404).json({ ok: false, error: "Not found" });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, material: row });
+  });
+});
+
 /** Vendor: create storefront product — image file under media/catalog/ or optional HTTPS imageUrl (CDN). */
 app.post(
   "/api/vendor/products",
@@ -2121,6 +2135,34 @@ app.get("/api/vendor/raw-materials", function (req, res) {
   });
 });
 
+function rawMaterialPayloadFromBody(b, file) {
+  function firstField(v) {
+    if (v == null) return null;
+    return Array.isArray(v) ? v[0] : v;
+  }
+  var opts = b && b.options;
+  if (opts != null && typeof opts === "string") {
+    try {
+      opts = JSON.parse(opts);
+    } catch (_) {
+      opts = {};
+    }
+  }
+  var priceInr = firstField(b && b.priceInr);
+  var mrpInr = firstField(b && b.mrpInr);
+  return {
+    name: firstField(b && b.name),
+    description: firstField(b && b.description),
+    note: firstField(b && b.note),
+    priceInr: priceInr,
+    mrpInr: mrpInr === "" || mrpInr == null ? null : mrpInr,
+    options: opts && typeof opts === "object" ? opts : {},
+    imageBuffer: file && file.buffer,
+    mime: file && file.mimetype,
+    imageUrl: firstField(b && b.imageUrl),
+  };
+}
+
 app.post(
   "/api/vendor/raw-materials",
   productImageUpload.single("image"),
@@ -2132,29 +2174,96 @@ app.post(
       if (!ok) {
         return res.status(401).json({ ok: false, error: "Unauthorized" });
       }
-      var b = req.body || {};
-      function firstField(v) {
-        if (v == null) return null;
-        return Array.isArray(v) ? v[0] : v;
+      var ct = String((req.headers && req.headers["content-type"]) || "").toLowerCase();
+      if (ct.indexOf("application/json") === 0) {
+        var jb = req.body || {};
+        rawMaterialsDb.createRow(
+          {
+            name: jb.name,
+            description: jb.description,
+            note: jb.note,
+            priceInr: jb.priceInr,
+            mrpInr: jb.mrpInr,
+            options: jb.options,
+            imageUrl: jb.imageUrl,
+            imageBuffer: null,
+          },
+          function (e2, row) {
+            if (e2) {
+              var msg = String((e2 && e2.message) || e2);
+              var code = msg.indexOf("required") >= 0 || msg.indexOf("Add a main image") >= 0 || msg.indexOf("Quantity") >= 0 || msg.indexOf("Colour") >= 0 ? 400 : 500;
+              return res.status(code).json({ ok: false, error: msg });
+            }
+            res.setHeader("Cache-Control", "no-store");
+            res.json({ ok: true, material: row });
+          }
+        );
+        return;
       }
+      var b = req.body || {};
       rawMaterialsDb.createRow(
-        {
-          name: firstField(b.name),
-          description: firstField(b.description),
-          note: firstField(b.note),
-          imageBuffer: req.file && req.file.buffer,
-          mime: req.file && req.file.mimetype,
-        },
+        rawMaterialPayloadFromBody(b, req.file),
         function (e2, row) {
           if (e2) {
-            var msg = String((e2 && e2.message) || e2);
-            var code = msg.indexOf("required") >= 0 ? 400 : 500;
-            return res.status(code).json({ ok: false, error: msg });
+            var msg2 = String((e2 && e2.message) || e2);
+            var code2 = msg2.indexOf("required") >= 0 || msg2.indexOf("Add a main image") >= 0 || msg2.indexOf("Quantity") >= 0 || msg2.indexOf("Colour") >= 0 ? 400 : 500;
+            return res.status(code2).json({ ok: false, error: msg2 });
           }
           res.setHeader("Cache-Control", "no-store");
           res.json({ ok: true, material: row });
         }
       );
+    });
+  }
+);
+
+app.put(
+  "/api/vendor/raw-materials/:id",
+  productImageUpload.single("image"),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+      var ct = String((req.headers && req.headers["content-type"]) || "").toLowerCase();
+      if (ct.indexOf("application/json") === 0) {
+        var jb = req.body || {};
+        rawMaterialsDb.updateRow(
+          id,
+          {
+            name: jb.name,
+            description: jb.description,
+            note: jb.note,
+            priceInr: jb.priceInr,
+            mrpInr: jb.mrpInr,
+            options: jb.options,
+            imageUrl: jb.imageUrl,
+          },
+          function (e2, row) {
+            if (e2) {
+              var msg = String((e2 && e2.message) || e2);
+              var code = msg.indexOf("Not found") >= 0 ? 404 : msg.indexOf("Quantity") >= 0 || msg.indexOf("Colour") >= 0 ? 400 : 500;
+              return res.status(code).json({ ok: false, error: msg });
+            }
+            res.setHeader("Cache-Control", "no-store");
+            res.json({ ok: true, material: row });
+          }
+        );
+        return;
+      }
+      rawMaterialsDb.updateRow(id, rawMaterialPayloadFromBody(req.body || {}, req.file), function (e2, row) {
+        if (e2) {
+          var msg2 = String((e2 && e2.message) || e2);
+          var code2 = msg2.indexOf("Not found") >= 0 ? 404 : msg2.indexOf("Quantity") >= 0 || msg2.indexOf("Colour") >= 0 ? 400 : 500;
+          return res.status(code2).json({ ok: false, error: msg2 });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, material: row });
+      });
     });
   }
 );

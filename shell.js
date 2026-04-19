@@ -47,7 +47,9 @@
     }
     list.innerHTML = "";
     lines.forEach(function (line) {
-      var sz = D && D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D && D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var imgRel = getLineImage(line);
       var li = document.createElement("li");
       li.className = "cart-item";

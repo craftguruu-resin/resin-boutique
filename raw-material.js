@@ -9,9 +9,9 @@
   }
 
   function esc(s) {
-    var d = document.createElement("div");
-    d.textContent = s;
-    return d.innerHTML;
+    var el = document.createElement("div");
+    el.textContent = s;
+    return el.innerHTML;
   }
 
   function escAttr(s) {
@@ -20,7 +20,17 @@
 
   function imgSrc(rel) {
     if (!rel) return "";
+    if (String(rel).indexOf("http") === 0 || String(rel).indexOf("//") === 0) return rel;
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
+  }
+
+  function fmtPrice(n) {
+    try {
+      if (window.RESIN_CART && typeof window.RESIN_CART.formatMoney === "function") {
+        return window.RESIN_CART.formatMoney(n);
+      }
+    } catch (_) {}
+    return "₹" + Math.round(Number(n) || 0);
   }
 
   var lastMaterials = [];
@@ -57,6 +67,15 @@
     });
   }
 
+  function discountHtml(m) {
+    if (m.mrpInr == null || !Number.isFinite(Number(m.mrpInr))) return "";
+    var mrp = Number(m.mrpInr);
+    var p = Number(m.priceInr) || 0;
+    if (!(mrp > p)) return "";
+    var pct = Math.round(((mrp - p) / mrp) * 100);
+    return '<span class="rm-card-shop__pill">' + esc(String(pct) + "% off") + "</span>";
+  }
+
   function render(list) {
     wireSortOnce();
     lastMaterials = list || [];
@@ -70,17 +89,34 @@
     }
     rows.forEach(function (m) {
       var card = document.createElement("article");
-      card.className = "rm-card";
+      card.className = "rm-card-shop";
+      var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
+      var img = m.image ? imgSrc(m.image) : "";
+      var mrp =
+        m.mrpInr != null && Number(m.mrpInr) > Number(m.priceInr)
+          ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(m.mrpInr)) + "</span>"
+          : "";
       card.innerHTML =
-        '<div class="rm-card__img">' +
-        (m.image ? '<img src="' + escAttr(imgSrc(m.image)) + '" alt="" loading="lazy" width="400" height="300" />' : "") +
+        '<a href="' +
+        escAttr(href) +
+        '">' +
+        '<div class="rm-card-shop__img">' +
+        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" width="400" height="300" />' : "") +
         "</div>" +
-        '<div class="rm-card__body"><h3>' +
+        '<div class="rm-card-shop__body">' +
+        '<span class="rm-card-shop__brand">Craft Guru</span>' +
+        "<h3 class=\"rm-card-shop__title\">" +
         esc(m.name || "Material") +
         "</h3>" +
-        (m.description ? "<p>" + esc(m.description) + "</p>" : "") +
-        (m.note ? "<p><small>" + esc(m.note) + "</small></p>" : "") +
-        "</div>";
+        (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
+        '<div class="rm-card-shop__row">' +
+        '<span class="rm-card-shop__price">' +
+        esc(fmtPrice(m.priceInr)) +
+        "</span>" +
+        "<span>" +
+        mrp +
+        discountHtml(m) +
+        "</span></div></div></a>";
       g.appendChild(card);
     });
   }

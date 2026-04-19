@@ -46,9 +46,11 @@
     var id = String(line.id || "");
     var size = String(line.size || "");
     if (!id || !size) return null;
+    var vl = String(line.variantLabel || "").trim().slice(0, 400);
     return {
       id: id,
       size: size,
+      variantLabel: vl,
       name: String(line.name || ""),
       price: safeNumber(line.price, 0),
       image: String(line.image || ""),

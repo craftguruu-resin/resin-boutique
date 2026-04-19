@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="raw-material-pages.css" />
 </head>
 <body class="subpage">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -99,19 +100,63 @@
         <div class="section-head section-head--solo">
           <div>
             <h1 class="band-title band-title--fx">Resin raw material</h1>
-            <p class="band-sub">Epoxy, pigments, and studio supplies the vendor lists for pickup or bulk — confirm stock on WhatsApp.</p>
+            <p class="band-sub">Epoxy, pigments, and studio supplies — same cart, checkout, and orders as the rest of the shop. These SKUs are managed only here (not under Products / Inventory).</p>
           </div>
         </div>
-        <div class="category-toolbar" id="rmToolbar" aria-label="Sort materials">
-          <div class="category-toolbar__group">
-            <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
-            <select id="rmSortSelect" class="category-toolbar__select">
-              <option value="name-asc">Name · A → Z</option>
-              <option value="name-desc">Name · Z → A</option>
-            </select>
+        <div class="rm-landing">
+          <aside class="rm-rail" aria-label="On this page">
+            <p class="rm-rail__label">On this page</p>
+            <ul class="rm-rail__list">
+              <li><a href="#rm-hero">Discover</a></li>
+              <li><a href="#rm-shop">Products</a></li>
+              <li><a href="#rm-toolbar">Sort</a></li>
+            </ul>
+          </aside>
+          <div>
+            <div class="rm-hero" id="rm-hero">
+              <div class="rm-hero__blob" aria-hidden="true"></div>
+              <div class="rm-hero__inner">
+                <p class="rm-hero__kicker">Craft Guru supply</p>
+                <h2 class="rm-hero__title">Discover your next pour</h2>
+                <p class="rm-hero__sub">
+                  Crystal clears, pigments, and hardeners with the same secure checkout you already use — variant choices (size, pack, colour) are set in the vendor raw material console.
+                </p>
+                <a class="rm-hero__cta" href="#rm-shop">Shop materials</a>
+                <div class="rm-stats">
+                  <div>
+                    <div class="rm-stats__big">Trusted by studios</div>
+                    <p class="rm-stats__cap">Same orders &amp; tags as catalogue items.</p>
+                  </div>
+                  <div>
+                    <div class="rm-stats__big">6M+</div>
+                    <div class="rm-stats__stars">★★★★★</div>
+                    <p class="rm-stats__cap">Worldwide resin community inspiration.</p>
+                  </div>
+                  <div>
+                    <div class="rm-stats__big">4.6</div>
+                    <div class="rm-stats__stars">★★★★★</div>
+                    <p class="rm-stats__cap">Service-first fulfilment from Jaipur.</p>
+                  </div>
+                </div>
+              </div>
+              <div class="rm-hero__visual" aria-hidden="true">
+                <img src="https://placehold.co/640x520/4c1d95/ffffff/png?text=Craft+Guru%0ARaw+Materials" width="640" height="520" alt="" decoding="async" />
+              </div>
+            </div>
+            <div id="rm-shop">
+            <div id="rm-toolbar" class="category-toolbar" aria-label="Sort materials">
+              <div class="category-toolbar__group">
+                <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
+                <select id="rmSortSelect" class="category-toolbar__select">
+                  <option value="name-asc">Name · A → Z</option>
+                  <option value="name-desc">Name · Z → A</option>
+                </select>
+              </div>
+            </div>
+            <div class="rm-grid-cards" id="rmGrid"></div>
+            </div>
           </div>
         </div>
-        <div class="rm-grid" id="rmGrid"></div>
       </div>
     </section>
   </main>

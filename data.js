@@ -95,6 +95,10 @@
   }
 
   function lineSizeLabel(productId, sizeKey) {
+    var pid = String(productId || "");
+    if (pid.indexOf("raw-mat--") === 0) {
+      return String(sizeKey || "").trim() || "Standard";
+    }
     var p = getProduct(productId);
     if (p) return getSizeLabelNameForProduct(p, sizeKey);
     var d = SIZE_LABELS[sizeKey];

@@ -650,7 +650,11 @@
     lines.forEach(function (line) {
       var li = document.createElement("li");
       li.className = "account-later-line";
-      var sz = window.RESIN_DATA && window.RESIN_DATA.lineSizeLabel ? window.RESIN_DATA.lineSizeLabel(line.id, line.size) : line.size;
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (window.RESIN_DATA && window.RESIN_DATA.lineSizeLabel
+          ? window.RESIN_DATA.lineSizeLabel(line.id, line.size)
+          : line.size);
       var imgSrc = lineImageSrc(line);
       var thumb =
         imgSrc && String(imgSrc).length

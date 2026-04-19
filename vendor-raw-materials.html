@@ -18,7 +18,7 @@
         <div>
           <h1 class="vs-topbar__title">Resin raw materials</h1>
           <p class="vs-topbar__sub">
-            Add materials for the guest “Resin raw material” page. Base category filters can be wired later; for now each row is name, description, optional note, and a photo.
+            Sell-only SKUs: they appear on the guest Resin raw material shop and in orders / tags / dashboard, but not under Products or Inventory. Configure size, pack quantity, and/or colour — paste Cloudinary (HTTPS) URLs for images.
           </p>
         </div>
         <div class="vs-topbar__actions">
@@ -27,32 +27,69 @@
       </header>
       <div class="vs-content">
         <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
-          <h2 class="vs-card__title" style="margin-top: 0">Add material</h2>
-          <form id="vrmAddForm">
+          <h2 class="vs-card__title" style="margin-top: 0" id="vrmFormTitle">Add raw material product</h2>
+          <form id="vrmForm">
+            <input type="hidden" id="vrmEditingId" value="" />
             <div class="vs-field">
               <label for="vrmName">Name</label>
-              <input type="text" id="vrmName" name="name" maxlength="500" required />
+              <input type="text" id="vrmName" maxlength="500" required />
             </div>
             <div class="vs-field" style="margin-top: 0.5rem">
               <label for="vrmDesc">Description</label>
-              <textarea id="vrmDesc" name="description" rows="3" maxlength="4000" placeholder="What it is, pack size, safety notes…"></textarea>
+              <textarea id="vrmDesc" rows="3" maxlength="4000" placeholder="Shown on product page"></textarea>
             </div>
             <div class="vs-field" style="margin-top: 0.5rem">
-              <label for="vrmNote">Short note (optional)</label>
-              <input type="text" id="vrmNote" name="note" maxlength="300" />
+              <label for="vrmNote">Short note (shipping / lead time)</label>
+              <input type="text" id="vrmNote" maxlength="300" />
+            </div>
+            <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+              <div class="vs-field" style="flex: 1; min-width: 140px">
+                <label for="vrmPrice">Price (INR)</label>
+                <input type="number" id="vrmPrice" min="0" step="1" required />
+              </div>
+              <div class="vs-field" style="flex: 1; min-width: 140px">
+                <label for="vrmMrp">MRP (optional)</label>
+                <input type="number" id="vrmMrp" min="0" step="1" placeholder="Strike-through" />
+              </div>
             </div>
             <div class="vs-field" style="margin-top: 0.5rem">
-              <label for="vrmImage">Photo</label>
-              <input type="file" id="vrmImage" name="image" accept="image/jpeg,image/png,image/webp" required />
+              <label for="vrmHero">Hero image URL (HTTPS / Cloudinary)</label>
+              <input type="url" id="vrmHero" placeholder="https://res.cloudinary.com/..." />
             </div>
-            <div class="vs-row-actions" style="margin-top: 0.75rem">
-              <button type="submit" class="vs-btn vs-btn--primary" id="vrmSubmit">Save material</button>
+            <div class="vs-field" style="margin-top: 0.5rem">
+              <label for="vrmBadge">Badge (optional)</label>
+              <input type="text" id="vrmBadge" maxlength="80" placeholder="e.g. BEST SELLER" />
+            </div>
+            <div class="vs-field" style="margin-top: 0.5rem">
+              <label for="vrmTrust">Trust line bullets (one per line)</label>
+              <textarea id="vrmTrust" rows="3" maxlength="800" placeholder="Safe &amp; non-toxic&#10;Lab tested"></textarea>
+            </div>
+            <fieldset class="vs-field" style="margin-top: 0.65rem; border: 1px solid rgba(15,23,42,0.1); border-radius: 10px; padding: 0.65rem 0.85rem">
+              <legend class="vs-muted" style="padding: 0 0.35rem">Variant controls (pick any combination)</legend>
+              <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vrmUseSize" checked /> Size (labels + optional image each)</label>
+              <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vrmUseQty" /> Pack / quantity presets (at least 3 when enabled)</label>
+              <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vrmUseColor" /> Colour swatches (1–5; hex + label + optional image each)</label>
+            </fieldset>
+            <div id="vrmSizesBlock" style="margin-top: 0.75rem"></div>
+            <div id="vrmQtyBlock" style="margin-top: 0.75rem"></div>
+            <div id="vrmColorsBlock" style="margin-top: 0.75rem"></div>
+            <div class="vs-field" style="margin-top: 0.75rem">
+              <label for="vrmImageUrl">Main / fallback image URL (HTTPS)</label>
+              <input type="url" id="vrmImageUrl" placeholder="If empty, hero or first swatch image is used" />
+            </div>
+            <div class="vs-field" style="margin-top: 0.5rem">
+              <label for="vrmImage">Or upload photo (JPEG/PNG/WebP)</label>
+              <input type="file" id="vrmImage" accept="image/jpeg,image/png,image/webp" />
+            </div>
+            <div class="vs-row-actions" style="margin-top: 0.85rem; display: flex; gap: 0.5rem; flex-wrap: wrap">
+              <button type="submit" class="vs-btn vs-btn--primary" id="vrmSubmit">Save product</button>
+              <button type="button" class="vs-btn vs-btn--ghost" id="vrmCancelEdit" style="display: none">Cancel edit</button>
             </div>
           </form>
           <p id="vrmMsg" class="vs-muted" style="display: none; margin-top: 0.65rem"></p>
         </div>
         <div class="vs-card" style="padding: 0.85rem 1rem">
-          <h2 class="vs-card__title" style="margin-top: 0">All rows</h2>
+          <h2 class="vs-card__title" style="margin-top: 0">All raw materials</h2>
           <p id="vrmEmpty" class="vs-muted">Loading…</p>
           <div class="vs-table-wrap">
             <table class="vs-table" id="vrmTable" style="display: none">
@@ -60,6 +97,7 @@
                 <tr>
                   <th>Image</th>
                   <th>Name</th>
+                  <th>Price</th>
                   <th>Active</th>
                   <th>Actions</th>
                 </tr>
