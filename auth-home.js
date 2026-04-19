@@ -8,6 +8,34 @@
   var SESSION_KEY = "cg_session_email";
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
 
+  var BILL_STATIC_SERVER_PORTS = {
+    "5500": 1,
+    "5501": 1,
+    "8080": 1,
+    "8888": 1,
+    "3000": 1,
+    "3001": 1,
+    "5173": 1,
+    "5174": 1,
+    "4173": 1,
+  };
+
+  function billIsLoopbackHost(hostname) {
+    var h = String(hostname || "").toLowerCase();
+    return h === "localhost" || h === "127.0.0.1" || h === "[::1]";
+  }
+
+  function billIsStaticDevPageForEmptyBase() {
+    try {
+      var loc = window.location;
+      if (!loc || loc.protocol === "file:") return true;
+      var port = String(loc.port || (loc.protocol === "https:" ? "443" : "80"));
+      if (BILL_STATIC_SERVER_PORTS[port]) return true;
+      if (billIsLoopbackHost(loc.hostname)) return true;
+    } catch (_) {}
+    return false;
+  }
+
   function isPrivateLanHost(hostname) {
     var h = String(hostname || "").toLowerCase();
     if (!/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(h)) return false;
@@ -23,6 +51,14 @@
       var v0 = document.documentElement.getAttribute("data-bill-api-base");
       if (v0 != null) {
         var t = String(v0).trim().replace(/\/+$/, "");
+        if (
+          t.length === 0 &&
+          window.location &&
+          window.location.protocol !== "file:" &&
+          !billIsStaticDevPageForEmptyBase()
+        ) {
+          return String(window.location.origin).replace(/\/+$/, "");
+        }
         if (t.length) {
           try {
             if (window.location && window.location.protocol !== "file:") {
@@ -46,6 +82,9 @@
         var loc = window.location;
         var lp = String(loc.port || (loc.protocol === "https:" ? "443" : "80"));
         if (lp !== port && (loc.hostname === "localhost" || loc.hostname === "127.0.0.1")) {
+          return "http://127.0.0.1:" + port;
+        }
+        if (BILL_STATIC_SERVER_PORTS[lp]) {
           return "http://127.0.0.1:" + port;
         }
         return String(loc.origin).replace(/\/+$/, "");

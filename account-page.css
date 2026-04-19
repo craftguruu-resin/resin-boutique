@@ -774,3 +774,37 @@ body.page-account .nav-dock-link--active {
     padding: 0.5rem 0.65rem;
   }
 }
+
+/* Signed-in: sidebar + main content side by side on wide screens (avoids cramped single column). */
+@media (min-width: 960px) {
+  .account-layout {
+    display: grid;
+    grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.5rem;
+  }
+
+  .account-sidebar:not([hidden]) {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .account-side-nav {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.25rem;
+    padding: 0.35rem 0.15rem;
+  }
+
+  .account-side-nav__rule {
+    width: 100%;
+    height: 1px;
+    margin: 0.5rem 0;
+    align-self: stretch;
+  }
+
+  .account-side-nav__link {
+    width: 100%;
+  }
+}

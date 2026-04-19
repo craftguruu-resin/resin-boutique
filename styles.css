@@ -5850,7 +5850,7 @@ a.home-auth-btn {
 .hero-atelier__photo-ring {
   position: relative;
   z-index: 2;
-  width: min(88vw, 420px);
+  width: min(92vw, 500px);
   aspect-ratio: 1;
   border-radius: 50%;
   padding: 10px;
@@ -5863,8 +5863,8 @@ a.home-auth-btn {
 
 @media (min-width: 900px) {
   .hero-atelier__photo-ring {
-    width: min(42vw, 460px);
-    transform: translate(-6%, 4%);
+    width: min(48vw, 540px);
+    transform: translate(-4%, 2%);
   }
 }
 
@@ -6039,6 +6039,8 @@ a.home-auth-btn {
 .hero-floatscape__chips {
   position: absolute;
   inset: 0;
+  /* Hide marketing chips (₹·S·M·↻) — default hero highlights the main resin clock only */
+  display: none;
 }
 
 .hero-float-chip {
@@ -6154,6 +6156,7 @@ a.home-auth-btn {
 .hero-float-polaroids {
   position: absolute;
   inset: 0;
+  display: none;
 }
 
 .hero-float-polar {

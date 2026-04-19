@@ -8,6 +8,19 @@
   var activeOrderTab = "current";
   var activeAcctSection = "orders";
 
+  function billIsStaticDevPage() {
+    try {
+      var loc = window.location;
+      if (!loc || loc.protocol === "file:") return true;
+      var port = String(loc.port || (loc.protocol === "https:" ? "443" : "80"));
+      var dev = { 5500: 1, 5501: 1, 5173: 1, 5174: 1, 3000: 1, 3001: 1, 8080: 1, 8888: 1, 4173: 1 };
+      if (dev[port]) return true;
+      var h = String(loc.hostname || "").toLowerCase();
+      if (h === "localhost" || h === "127.0.0.1" || h === "[::1]") return true;
+    } catch (_) {}
+    return false;
+  }
+
   function billApiPortOverride() {
     try {
       var v = document.documentElement.getAttribute("data-bill-api-port");
@@ -43,6 +56,10 @@
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
+        /* Empty = same origin when deployed (HTTPS / real host). On Live Server / Vite, fall through to :3847. */
+        if (t.length === 0 && window.location && window.location.protocol !== "file:" && !billIsStaticDevPage()) {
+          return String(window.location.origin).replace(/\/+$/, "");
+        }
         if (t.length) {
           try {
             if (window.location && window.location.protocol !== "file:") {
@@ -306,7 +323,6 @@
         escapeAttr(String(o.orderId)) +
         '"><span class="account-order-card__dl-icon" aria-hidden="true">↓</span> Download invoice</button>';
     }
-    actionsHtml += '<span class="account-order-card__kebab" aria-hidden="true">⋮</span>';
     if (canCancel) {
       actionsHtml +=
         '<button type="button" class="account-order-card__cancel checkout-pay-secondary account-order-cancel" data-cancel-id="' +
@@ -535,6 +551,13 @@
     } else {
       card.setAttribute("hidden", "hidden");
     }
+  }
+
+  /** After OTP sign-in, always land on My orders so the panel can open (showOrdersCard respects active section). */
+  function focusAccountOrdersSection() {
+    activeAcctSection = "orders";
+    setAcctNavActive("orders");
+    setAccountSection("orders");
   }
 
   function setAcctNavActive(section) {
@@ -770,7 +793,7 @@
     var base = billApiBase();
     var list = document.getElementById("accountOrdersList");
     if (!base || !list) return;
-    fetch(base + "/api/guest/orders", { headers: guestAuthHeaders() })
+    fetch(base + "/api/guest/orders", { headers: guestAuthHeaders(), cache: "no-store" })
       .then(function (res) {
         return parseApiJson(res).then(function (x) {
           return { status: res.status, x: x };
@@ -780,7 +803,8 @@
         var x = o.x;
         var j = x.json || {};
         if (!x.okHttp || !j.ok) {
-          if (o.status === 401 || j.code === "NO_SESSION") {
+          var needReauth = o.status === 401 || j.code === "NO_SESSION" || String(j.error || "").toLowerCase().indexOf("sign in") >= 0;
+          if (needReauth) {
             try {
               localStorage.removeItem(GUEST_TOKEN_KEY);
             } catch (_) {}
@@ -791,10 +815,17 @@
             showAccountAuth(true);
             showSessionBar(false);
             showAccountStoreChrome(false);
+            showOrdersCard(false);
+            ordersCache = [];
+            list.innerHTML = "";
+            return;
           }
-          showOrdersCard(false);
-          ordersCache = [];
-          list.innerHTML = "";
+          /* Network / 5xx: keep session; show inline error */
+          showOrdersCard(true);
+          list.innerHTML =
+            '<li class="account-orders-empty"><p class="account-orders-empty__text">' +
+            escapeHtml((j && j.error) || "Could not load orders. Check your connection and try Refresh.") +
+            "</p></li>";
           return;
         }
         showAccountAuth(false);
@@ -823,6 +854,7 @@
       if (json && json.token) localStorage.setItem(GUEST_TOKEN_KEY, json.token);
     } catch (_) {}
     setSessionEmail(emailNorm);
+    focusAccountOrdersSection();
     if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
       window.RESIN_CART.onAccountLogin();
     }
@@ -857,7 +889,7 @@
     showSessionBar(true, sessionEmailDisplay() || "…");
     showAccountStoreChrome(true, sessionEmailDisplay() || "");
     var base = billApiBase();
-    return fetch(base + "/api/guest/me", { headers: guestAuthHeaders() })
+    return fetch(base + "/api/guest/me", { headers: guestAuthHeaders(), cache: "no-store" })
       .then(function (res) {
         return parseApiJson(res).then(function (x) {
           return { status: res.status, x: x };
@@ -881,12 +913,11 @@
         var em2 = j.email || sessionEmailDisplay() || "";
         showSessionBar(true, em2);
         showAccountStoreChrome(true, em2);
+        focusAccountOrdersSection();
         loadOrders();
       })
       .catch(function () {
-        try {
-          localStorage.removeItem(GUEST_TOKEN_KEY);
-        } catch (_) {}
+        /* Do not clear token on transient errors — user stays signed in until /api/guest/me returns 401. */
         showAccountAuth(true);
         showSessionBar(false);
         showAccountStoreChrome(false);

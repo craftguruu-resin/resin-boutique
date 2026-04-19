@@ -475,11 +475,23 @@
     "5501": 1,
     "8080": 1,
     "8888": 1,
+    "3000": 1,
     "3001": 1,
     "5173": 1,
     "5174": 1,
     "4173": 1,
   };
+
+  function billIsStaticDevPageForEmptyBase() {
+    try {
+      var loc = window.location;
+      if (!loc || loc.protocol === "file:") return true;
+      var port = String(loc.port || (loc.protocol === "https:" ? "443" : "80"));
+      if (BILL_STATIC_SERVER_PORTS[port]) return true;
+      if (billIsLoopbackHost(loc.hostname)) return true;
+    } catch (_) {}
+    return false;
+  }
 
   function billApiPortOverride() {
     try {
@@ -521,6 +533,14 @@
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
+        if (
+          t.length === 0 &&
+          window.location &&
+          window.location.protocol !== "file:" &&
+          !billIsStaticDevPageForEmptyBase()
+        ) {
+          return String(window.location.origin).replace(/\/+$/, "");
+        }
         if (t.length) {
           try {
             if (window.location && window.location.protocol !== "file:") {

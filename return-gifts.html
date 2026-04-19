@@ -124,13 +124,13 @@
             </div>
             <div class="category-toolbar__group cg-filter-panel__group--range">
               <div class="cg-dual-range" id="rgPriceDualWrap">
-                <div class="cg-dual-range__label-row">
-                  <span class="cg-dual-range__label">Price range (₹)</span>
-                  <span class="cg-dual-range__value" id="rgPriceRangeLabel">Any price</span>
+                <span class="cg-dual-range__label">Price range (₹)</span>
+                <div class="cg-dual-range__slider">
+                  <div class="cg-dual-range__track" aria-hidden="true"></div>
+                  <input type="range" class="cg-dual-range__lo" id="rgPriceRangeLo" aria-label="Minimum from-price" />
+                  <input type="range" class="cg-dual-range__hi" id="rgPriceRangeHi" aria-label="Maximum from-price" />
                 </div>
-                <div class="cg-dual-range__track" aria-hidden="true"></div>
-                <input type="range" class="cg-dual-range__lo" id="rgPriceRangeLo" aria-label="Minimum from-price" />
-                <input type="range" class="cg-dual-range__hi" id="rgPriceRangeHi" aria-label="Maximum from-price" />
+                <span class="cg-dual-range__value" id="rgPriceRangeLabel">Any price</span>
               </div>
               <input type="hidden" id="rgPriceMin" value="" />
               <input type="hidden" id="rgPriceMax" value="" />
