@@ -133,7 +133,7 @@
               </div>
             </div>
             <div id="rm-shop">
-              <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter and sort materials">
+              <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter Shop by category">
                 <div class="category-toolbar__group">
                   <label class="category-toolbar__label" for="rmFilterBase">Base category</label>
                   <select id="rmFilterBase" class="category-toolbar__select">
@@ -148,21 +148,20 @@
                 </div>
                 <div class="category-toolbar__group category-toolbar__group--grow">
                   <label class="category-toolbar__label" for="rmFilterSearch">Search name or SKU</label>
-                  <input type="search" id="rmFilterSearch" class="category-toolbar__search" placeholder="Type to filter…" autocomplete="off" />
+                  <input type="search" id="rmFilterSearch" class="category-toolbar__search" placeholder="Filters Shop by category — use Apply" autocomplete="off" />
                 </div>
                 <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
+                  <label class="category-toolbar__label" for="rmSortSelect">Sort materials</label>
                   <select id="rmSortSelect" class="category-toolbar__select">
                     <option value="name-asc">Name · A → Z</option>
                     <option value="name-desc">Name · Z → A</option>
                   </select>
                 </div>
                 <div class="category-toolbar__group">
-                  <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply</button>
-                  <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset</button>
+                  <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply to Shop by category</button>
+                  <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset category filter</button>
                 </div>
               </div>
-              <div class="rm-grid-cards" id="rmGrid"></div>
             </div>
             <section class="rm-cat-hub" aria-labelledby="rmCatHubHeading">
               <div class="rm-cat-hub__head">
@@ -177,6 +176,13 @@
                 <p class="rm-best-sellers__sub">Highlighted and fast-moving raw materials from the shop.</p>
               </div>
               <div class="rm-best-sellers__grid" id="rmBestGrid"></div>
+            </section>
+            <section class="rm-product-panel" id="rmProductPanel" aria-labelledby="rmProductsHeading">
+              <div class="rm-product-panel__head">
+                <h2 id="rmProductsHeading" class="rm-best-sellers__title">Materials in this category</h2>
+                <p class="rm-best-sellers__sub">Opens when you choose a category or subcategory from the cards or the sidebar — not from the filter bar above.</p>
+              </div>
+              <div class="rm-grid-cards" id="rmGrid"></div>
             </section>
           </div>
         </div>

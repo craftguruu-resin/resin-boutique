@@ -146,6 +146,10 @@
   var filterWired = false;
   var DEFAULT_SORT = "name-asc";
   var rmShopHydratingFilters = false;
+  /** Taxonomy doc for hub + filter bar (set after fetch). */
+  var rmShopTaxDoc = null;
+  /** Hub-only filter from toolbar (not URL). Cleared by Reset. */
+  var rmShopHubFilter = null;
 
   function qsParams() {
     try {
@@ -159,39 +163,44 @@
     }
   }
 
-  function shopUrlFromFilterElements() {
+  function readHubFilterFromDom() {
     var baseSel = document.getElementById("rmFilterBase");
     var subSel = document.getElementById("rmFilterSub");
-    var b = baseSel ? String(baseSel.value || "").trim() : "";
-    var s = subSel && !subSel.disabled ? String(subSel.value || "").trim() : "";
-    var parts = [];
-    if (b) parts.push("base=" + encodeURIComponent(b));
-    if (s) parts.push("sub=" + encodeURIComponent(s));
-    return parts.length ? "raw-material-shop.html?" + parts.join("&") : "raw-material-shop.html";
+    var searchEl = document.getElementById("rmFilterSearch");
+    return {
+      base: baseSel ? String(baseSel.value || "").trim() : "",
+      sub: subSel && !subSel.disabled ? String(subSel.value || "").trim() : "",
+      needle: searchEl ? String(searchEl.value || "").trim() : "",
+    };
   }
 
-  function navigateToShopFilterUrl() {
-    window.location.assign(shopUrlFromFilterElements());
+  function normalizeHubFilter(h) {
+    if (!h) return null;
+    var b = String(h.base || "").trim();
+    var s = String(h.sub || "").trim();
+    var n = String(h.needle || "")
+      .trim()
+      .toLowerCase();
+    if (!b && !s && !n) return null;
+    return { base: b, sub: s, needle: n };
   }
 
-  /** After taxonomy fills the selects, changing base/sub updates the URL (full navigation) unless values match the page. */
-  function wireShopFilterSelectNavigationOnce() {
-    var baseSel = document.getElementById("rmFilterBase");
-    var subSel = document.getElementById("rmFilterSub");
-    if (!baseSel || !subSel || baseSel.dataset.rmFilterNav === "1") return;
-    baseSel.dataset.rmFilterNav = "1";
-    function maybeGo() {
-      if (rmShopHydratingFilters) return;
-      var par = qsParams();
-      var b = String(baseSel.value || "").trim();
-      var s = subSel.disabled ? "" : String(subSel.value || "").trim();
-      if (b === par.base && s === par.sub) return;
-      navigateToShopFilterUrl();
+  function materialMatchesHubFilter(m, hub) {
+    if (!hub) return true;
+    var b = String(hub.base || "").trim();
+    var s = String(hub.sub || "").trim();
+    var n = String(hub.needle || "")
+      .trim()
+      .toLowerCase();
+    if (b && String(m.baseCategorySlug || "").trim() !== b) return false;
+    if (s && String(m.subcategorySlug || "").trim() !== s) return false;
+    if (n) {
+      var name = String(m.name || "").toLowerCase();
+      var sku = String(m.sku || "").toLowerCase();
+      var idl = String(m.id || "").toLowerCase();
+      if (name.indexOf(n) < 0 && sku.indexOf(n) < 0 && idl.indexOf(n) < 0) return false;
     }
-    baseSel.addEventListener("change", function () {
-      setTimeout(maybeGo, 0);
-    });
-    subSel.addEventListener("change", maybeGo);
+    return true;
   }
 
   function materialsMatchFilters(m, base, sub, needle) {
@@ -271,14 +280,12 @@
       var baseSel = document.getElementById("rmFilterBase");
       var subSel = document.getElementById("rmFilterSub");
       if (!baseSel || !subSel) return;
-      var par = qsParams();
       var cats = (doc && doc.categories) || [];
       baseSel.innerHTML = '<option value="">All categories</option>';
       cats.forEach(function (c) {
         var o = document.createElement("option");
         o.value = c.id;
         o.textContent = c.name;
-        if (par.base === c.id) o.selected = true;
         baseSel.appendChild(o);
       });
       function refillSub() {
@@ -301,7 +308,6 @@
           var o2 = document.createElement("option");
           o2.value = s.id;
           o2.textContent = s.name;
-          if (par.sub === s.id && par.base === bid) o2.selected = true;
           subSel.appendChild(o2);
         });
       }
@@ -310,7 +316,6 @@
         baseSel.addEventListener("change", refillSub);
       }
       refillSub();
-      wireShopFilterSelectNavigationOnce();
       var searchEl = document.getElementById("rmFilterSearch");
       if (searchEl && !searchEl.dataset.rmInit) {
         searchEl.dataset.rmInit = "1";
@@ -359,28 +364,50 @@
     return hits.length === 1 ? hits[0] : null;
   }
 
-  /** Main-storefront-style category cards (featured-cat-card). */
-  function renderRmCategoryHub(doc, materials) {
+  function countMaterialsForHubCard(c, mats, cats, hubN) {
+    var n = 0;
+    for (var i = 0; i < mats.length; i++) {
+      var m = mats[i];
+      if (!materialMatchesHubFilter(m, hubN)) continue;
+      if (String(m.baseCategorySlug || "").trim() === c.id) {
+        n++;
+        continue;
+      }
+      if (inferredHubCategoryId(m, cats) === c.id) n++;
+    }
+    return n;
+  }
+
+  /** Main-storefront-style category cards; toolbar filter only changes this section. */
+  function renderRmCategoryHub(doc, materials, hubFilter) {
     var hub = document.getElementById("rmCategoryHub");
     if (!hub || !doc || !doc.categories) return;
     var mats = materials || [];
     var cats = doc.categories;
+    var hubN = normalizeHubFilter(hubFilter);
     hub.innerHTML = "";
-    cats.forEach(function (c, idx) {
-      var count = 0;
-      for (var i = 0; i < mats.length; i++) {
-        var m = mats[i];
-        if (String(m.baseCategorySlug || "") === c.id) {
-          count++;
-          continue;
-        }
-        if (inferredHubCategoryId(m, cats) === c.id) count++;
-      }
+    var catsToShow = cats.slice();
+    if (hubN && hubN.base) {
+      catsToShow = cats.filter(function (c) {
+        return c.id === hubN.base;
+      });
+    } else if (hubN && hubN.needle && !hubN.base) {
+      catsToShow = cats.filter(function (c) {
+        return countMaterialsForHubCard(c, mats, cats, hubN) > 0;
+      });
+    }
+    catsToShow.forEach(function (c, idx) {
+      var count = countMaterialsForHubCard(c, mats, cats, hubN);
       var subs = c.subcategories || [];
-      var hubSub = subs.length === 1 ? subs[0].id : "";
+      var defSub = "";
+      if (window.RmShopNav && typeof window.RmShopNav.preferredListingSub === "function") {
+        defSub = window.RmShopNav.preferredListingSub(c.id, c, mats);
+      } else if (subs.length === 1) {
+        defSub = String(subs[0].id || "").trim();
+      }
       var href = window.RmShopNav
-        ? window.RmShopNav.shopHref(c.id, hubSub)
-        : "raw-material-shop.html?base=" + encodeURIComponent(c.id) + (hubSub ? "&sub=" + encodeURIComponent(hubSub) : "");
+        ? window.RmShopNav.shopHref(c.id, subs.length ? defSub : "")
+        : "raw-material-shop.html?base=" + encodeURIComponent(c.id) + (defSub ? "&sub=" + encodeURIComponent(defSub) : "");
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
@@ -426,24 +453,30 @@
     filterWired = true;
     var apply = document.getElementById("rmFilterApply");
     var clear = document.getElementById("rmFilterClear");
-    var baseSel = document.getElementById("rmFilterBase");
-    var subSel = document.getElementById("rmFilterSub");
     var searchEl = document.getElementById("rmFilterSearch");
-    if (apply) apply.addEventListener("click", navigateToShopFilterUrl);
+    if (apply) {
+      apply.addEventListener("click", function () {
+        rmShopHubFilter = readHubFilterFromDom();
+        if (rmShopTaxDoc) renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
+      });
+    }
     if (clear) {
       clear.addEventListener("click", function () {
-        window.location.assign("raw-material-shop.html");
+        rmShopHubFilter = null;
+        var se = document.getElementById("rmFilterSearch");
+        if (se) se.value = "";
+        if (rmShopTaxDoc) {
+          fillFilterSelectsFromTaxonomy(rmShopTaxDoc);
+          renderRmCategoryHub(rmShopTaxDoc, allMaterials, null);
+        }
       });
     }
     if (searchEl) {
       searchEl.addEventListener("keydown", function (ev) {
         if (ev.key === "Enter") {
           ev.preventDefault();
-          var needle = searchEl.value.trim().toLowerCase();
-          var rows = allMaterials.filter(function (m) {
-            return materialsMatchFilters(m, baseSel ? baseSel.value : "", subSel && !subSel.disabled ? subSel.value : "", needle);
-          });
-          render(rows);
+          rmShopHubFilter = readHubFilterFromDom();
+          if (rmShopTaxDoc) renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
         }
       });
     }
@@ -488,19 +521,16 @@
     var rows = sortedList(lastMaterials);
     if (!rows.length) {
       var catalogTotal = (allMaterials && allMaterials.length) || 0;
-      var needleLive = "";
-      try {
-        var seLive = document.getElementById("rmFilterSearch");
-        needleLive = seLive && seLive.value ? seLive.value.trim().toLowerCase() : "";
-      } catch (_) {}
+      var parLive = qsParams();
+      var hasBrowse = !!(parLive.base || parLive.sub);
       var emptyMsg;
       if (catalogTotal === 0) {
         emptyMsg = "No materials listed yet.";
-      } else if (needleLive) {
-        emptyMsg = "No materials match your search. Clear the search box or try different words.";
-      } else {
+      } else if (!hasBrowse) {
         emptyMsg =
-          "No materials match this category or filters. Choose another category, subcategory, or reset filters.";
+          "Choose a category or subcategory from Shop by category or the sidebar to see products here. The filter bar above only narrows the category cards.";
+      } else {
+        emptyMsg = "No materials in this category view yet. Try another subcategory or check back soon.";
       }
       g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">' + esc(emptyMsg) + "</p>";
       return;
@@ -543,26 +573,46 @@
   }
 
   function load() {
-    var nav = document.getElementById("rmNavTree");
-    var par = qsParams();
-    if (nav && window.RmShopNav) {
-      window.RmShopNav.mount(nav, { activeBase: par.base, activeSub: par.sub });
-    }
     wireFiltersOnce();
 
     function applyMaterials(doc, materials) {
       allMaterials = materials || [];
-      renderBestSellers(allMaterials);
-      if (doc) {
-        renderRmCategoryHub(doc, allMaterials);
+      if (doc) rmShopTaxDoc = doc;
+
+      var par = qsParams();
+      if (doc && window.RmShopNav && par.base && !par.sub) {
+        var catList = (doc.categories) || [];
+        var cFound = null;
+        for (var ci = 0; ci < catList.length; ci++) {
+          if (catList[ci].id === par.base) {
+            cFound = catList[ci];
+            break;
+          }
+        }
+        var sc = (cFound && cFound.subcategories) || [];
+        if (sc.length > 1 && typeof window.RmShopNav.preferredListingSub === "function") {
+          var dsub = window.RmShopNav.preferredListingSub(par.base, cFound, allMaterials);
+          if (dsub) {
+            window.location.replace(window.RmShopNav.shopHref(par.base, dsub));
+            return;
+          }
+        }
       }
-      var needle = "";
-      try {
-        var se = document.getElementById("rmFilterSearch");
-        needle = se && se.value ? se.value.trim().toLowerCase() : "";
-      } catch (_) {}
+
+      renderBestSellers(allMaterials);
+      if (rmShopTaxDoc) {
+        renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
+      }
+      var navEl = document.getElementById("rmNavTree");
+      if (navEl && window.RmShopNav) {
+        window.RmShopNav.mount(navEl, {
+          activeBase: par.base,
+          activeSub: par.sub,
+          materials: allMaterials,
+        });
+      }
       var rows = allMaterials.filter(function (m) {
-        return materialsMatchFilters(m, par.base, par.sub, needle);
+        return materialsMatchFilters(m, par.base, par.sub, "");
       });
       render(rows);
     }

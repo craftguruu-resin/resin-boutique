@@ -244,12 +244,22 @@
   margin-top: 0.25rem;
 }
 
-/* Toolbar always stacks above the product grid (explicit column even if ancestors use flex). */
+/* Toolbar only (Shop by category sits below). */
 #rm-shop {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
   margin-bottom: 1.5rem;
+}
+
+.rm-product-panel {
+  margin-top: 1.75rem;
+  padding: 1.25rem 1.35rem;
+  border-radius: 20px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.95));
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
+}
+
+.rm-product-panel__head {
+  margin-bottom: 1rem;
 }
 
 .rm-grid-cards {

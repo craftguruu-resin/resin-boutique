@@ -43,6 +43,29 @@
     return u;
   }
 
+  /**
+   * For bases with multiple subfolders, pick the first taxonomy sub that has at least one listing;
+   * otherwise the first sub id (so Cutouts lands on MDF when only MDF has products).
+   */
+  function preferredListingSub(baseId, category, materials) {
+    var subs = (category && category.subcategories) || [];
+    if (!subs.length) return "";
+    if (subs.length === 1) return String(subs[0].id || "").trim();
+    var bid = String(baseId || "").trim();
+    var mats = materials || [];
+    for (var i = 0; i < subs.length; i++) {
+      var sid = String(subs[i].id || "").trim();
+      if (!sid) continue;
+      for (var j = 0; j < mats.length; j++) {
+        var m = mats[j];
+        if (String(m.baseCategorySlug || "").trim() === bid && String(m.subcategorySlug || "").trim() === sid) {
+          return sid;
+        }
+      }
+    }
+    return String(subs[0].id || "").trim();
+  }
+
   function fetchTaxonomy() {
     return fetch("raw-material-taxonomy.json", { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("taxonomy");
@@ -52,12 +75,13 @@
 
   /**
    * @param {HTMLElement} el
-   * @param {{ activeBase?: string, activeSub?: string }} ctx
+   * @param {{ activeBase?: string, activeSub?: string, materials?: unknown[] }} ctx
    */
   function mount(el, ctx) {
     ctx = ctx || {};
     var activeBase = String(ctx.activeBase || "").trim();
     var activeSub = String(ctx.activeSub || "").trim();
+    var materials = Array.isArray(ctx.materials) ? ctx.materials : [];
     if (!el) return Promise.resolve(null);
     return fetchTaxonomy().then(function (doc) {
       var cats = (doc && doc.categories) || [];
@@ -68,13 +92,14 @@
         var hasSubs = subs.length > 0;
         var isOpen = expanded.indexOf(c.id) >= 0 || (activeBase === c.id && hasSubs);
         var baseActive = activeBase === c.id && !activeSub;
+        var baseHref = hasSubs ? shopHref(c.id, preferredListingSub(c.id, c, materials)) : shopHref(c.id, "");
         if (!hasSubs) {
           html +=
             '<li class="rm-nav-tree__item">' +
             '<a class="rm-nav-tree__link' +
             (baseActive ? " is-active" : "") +
             '" href="' +
-            esc(shopHref(c.id, "")) +
+            esc(baseHref) +
             '">' +
             (c.image
               ? '<span class="rm-nav-tree__ico"><img src="' + esc(c.image) + '" alt="" width="36" height="36" loading="lazy" /></span>'
@@ -99,7 +124,7 @@
           '<a class="rm-nav-tree__link rm-nav-tree__link--base' +
           (baseActive ? " is-active" : "") +
           '" href="' +
-          esc(shopHref(c.id, "")) +
+          esc(baseHref) +
           '">' +
           (c.image
             ? '<span class="rm-nav-tree__ico"><img src="' + esc(c.image) + '" alt="" width="36" height="36" loading="lazy" /></span>'
@@ -149,5 +174,6 @@
     fetchTaxonomy: fetchTaxonomy,
     mount: mount,
     shopHref: shopHref,
+    preferredListingSub: preferredListingSub,
   };
 })();
