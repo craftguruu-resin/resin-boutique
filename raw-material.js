@@ -158,11 +158,31 @@
     var el = document.getElementById("rmBestGrid");
     if (!el) return;
     var list = (all || []).slice();
+    function badgeScore(m) {
+      var badge = String((m.options && m.options.badge) || "");
+      if (/best|popular|pick|new|top/i.test(badge)) return 2;
+      if (m.image) return 1;
+      return 0;
+    }
+    list.sort(function (a, b) {
+      return badgeScore(b) - badgeScore(a);
+    });
     var tagged = list.filter(function (m) {
       var badge = (m.options && m.options.badge) || "";
-      return /best|popular|top/i.test(String(badge));
+      return /best|popular|pick|new|top/i.test(String(badge));
     });
-    var pick = tagged.length ? tagged.slice(0, 6) : list.slice(0, 6);
+    var pick = [];
+    var seen = Object.create(null);
+    function addUnique(m) {
+      if (!m || !m.id || seen[m.id]) return;
+      seen[m.id] = 1;
+      pick.push(m);
+    }
+    tagged.forEach(addUnique);
+    list.forEach(function (m) {
+      if (pick.length >= 8) return;
+      addUnique(m);
+    });
     el.innerHTML = "";
     if (!pick.length) {
       el.innerHTML = '<p class="rm-best-sellers__empty">Listings will appear here once materials are published.</p>';
@@ -224,7 +244,10 @@
         subSel.appendChild(o2);
       });
     }
-    baseSel.addEventListener("change", refillSub);
+    if (!baseSel.dataset.rmTaxWired) {
+      baseSel.dataset.rmTaxWired = "1";
+      baseSel.addEventListener("change", refillSub);
+    }
     refillSub();
     var searchEl = document.getElementById("rmFilterSearch");
     if (searchEl && !searchEl.dataset.rmInit) {
@@ -233,26 +256,55 @@
     }
   }
 
-  function renderCategoryChips(doc) {
-    var wrap = document.getElementById("rmCategoryChips");
-    if (!wrap) return;
-    var cats = (doc && doc.categories) || [];
-    wrap.innerHTML = "";
-    cats.forEach(function (c) {
-      var a = document.createElement("a");
-      a.className = "rm-category-chip";
-      a.href = window.RmShopNav ? window.RmShopNav.shopHref(c.id, "") : "#";
-      if (c.image) {
-        a.innerHTML =
-          '<span class="rm-category-chip__img"><img src="' +
-          escAttr(c.image) +
-          '" alt="" width="48" height="48" loading="lazy" /></span><span class="rm-category-chip__lab">' +
-          esc(c.name) +
-          "</span>";
-      } else {
-        a.innerHTML = '<span class="rm-category-chip__lab">' + esc(c.name) + "</span>";
+  /** Main-storefront-style category cards (featured-cat-card). */
+  function renderRmCategoryHub(doc, materials) {
+    var hub = document.getElementById("rmCategoryHub");
+    if (!hub || !doc || !doc.categories) return;
+    var mats = materials || [];
+    hub.innerHTML = "";
+    doc.categories.forEach(function (c, idx) {
+      var count = 0;
+      for (var i = 0; i < mats.length; i++) {
+        if (String(mats[i].baseCategorySlug || "") === c.id) count++;
       }
-      wrap.appendChild(a);
+      var href = window.RmShopNav ? window.RmShopNav.shopHref(c.id, "") : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
+      var card = document.createElement("article");
+      card.className = "featured-cat-card reveal-tile is-inview";
+      card.style.setProperty("--stagger", String(idx % 10));
+      var imgRel = c.image || "";
+      var imgBlock = imgRel
+        ? '<a class="featured-cat-card__media-hit" href="' +
+          escAttr(href) +
+          '" aria-label="Browse ' +
+          escAttr(c.name) +
+          '"><div class="featured-cat-card__media"><img src="' +
+          escAttr(imgSrc(imgRel)) +
+          '" alt="" loading="lazy" width="640" height="480" /></div></a>'
+        : '<a class="featured-cat-card__media-hit" href="' +
+          escAttr(href) +
+          '"><div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div></a>';
+      card.innerHTML =
+        '<div class="featured-cat-card__shine" aria-hidden="true"></div>' +
+        imgBlock +
+        '<div class="featured-cat-card__body">' +
+        '<h3><a href="' +
+        escAttr(href) +
+        '">' +
+        esc(c.name) +
+        "</a></h3>" +
+        "<p>" +
+        esc(String(count)) +
+        (count === 1 ? " product in this category" : " products in this category") +
+        "</p>" +
+        '<div class="featured-cat-card__row">' +
+        '<a class="featured-cat-card__cta" href="' +
+        escAttr(href) +
+        '">View collection →</a>' +
+        '<a class="featured-cat-card__quick-add" href="' +
+        escAttr(href) +
+        '">Choose product</a>' +
+        "</div></div>";
+      hub.appendChild(card);
     });
   }
 
@@ -379,48 +431,54 @@
     if (nav && window.RmShopNav) {
       window.RmShopNav.mount(nav, { activeBase: par.base, activeSub: par.sub });
     }
-    if (window.RmShopNav && window.RmShopNav.fetchTaxonomy) {
-      window.RmShopNav
-        .fetchTaxonomy()
-        .then(function (doc) {
-          fillFilterSelectsFromTaxonomy(doc);
-          renderCategoryChips(doc);
-        })
-        .catch(function () {});
-    }
     wireFiltersOnce();
-    if (!b) {
-      render([]);
-      renderBestSellers([]);
-      return;
+
+    function applyMaterials(doc, materials) {
+      allMaterials = materials || [];
+      renderBestSellers(allMaterials);
+      if (doc) {
+        renderRmCategoryHub(doc, allMaterials);
+      }
+      var needle = "";
+      try {
+        var se = document.getElementById("rmFilterSearch");
+        needle = se && se.value ? se.value.trim().toLowerCase() : "";
+      } catch (_) {}
+      var rows = allMaterials.filter(function (m) {
+        return materialsMatchFilters(m, par.base, par.sub, needle);
+      });
+      render(rows);
     }
-    fetch(b + "/api/catalog/raw-materials", { cache: "no-store" })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (j) {
-        if (!j || !j.ok) {
-          allMaterials = [];
-          render([]);
-          renderBestSellers([]);
-          return;
+
+    var taxP = Promise.resolve(null);
+    if (window.RmShopNav && window.RmShopNav.fetchTaxonomy) {
+      taxP = window.RmShopNav.fetchTaxonomy().catch(function () {
+        return null;
+      });
+    }
+    taxP
+      .then(function (doc) {
+        if (doc) {
+          fillFilterSelectsFromTaxonomy(doc);
         }
-        allMaterials = j.materials || [];
-        renderBestSellers(allMaterials);
-        var needle = "";
-        try {
-          var se = document.getElementById("rmFilterSearch");
-          needle = se && se.value ? se.value.trim().toLowerCase() : "";
-        } catch (_) {}
-        var rows = allMaterials.filter(function (m) {
-          return materialsMatchFilters(m, par.base, par.sub, needle);
-        });
-        render(rows);
+        if (!b) {
+          applyMaterials(doc, []);
+          return Promise.resolve();
+        }
+        return fetch(b + "/api/catalog/raw-materials", { cache: "no-store" })
+          .then(function (res) {
+            return res.json();
+          })
+          .then(function (j) {
+            if (!j || !j.ok) {
+              applyMaterials(doc, []);
+              return;
+            }
+            applyMaterials(doc, j.materials || []);
+          });
       })
       .catch(function () {
-        allMaterials = [];
-        render([]);
-        renderBestSellers([]);
+        applyMaterials(null, []);
       });
   }
 

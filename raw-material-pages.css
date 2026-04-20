@@ -1069,6 +1069,14 @@
   color: rgba(15, 23, 42, 0.5);
 }
 
+.rm-cat-hub {
+  margin: 1.75rem 0 1.5rem;
+}
+
+.rm-cat-hub__head {
+  margin-bottom: 1.1rem;
+}
+
 .rm-filter-toolbar {
   flex-wrap: wrap;
   margin-bottom: 1rem;
@@ -1115,47 +1123,6 @@
 .category-toolbar__btn--ghost {
   background: rgba(15, 23, 42, 0.06);
   color: #0f172a;
-}
-
-.rm-category-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
-}
-
-.rm-category-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.35rem 0.65rem 0.35rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.1);
-  background: rgba(255, 255, 255, 0.8);
-  text-decoration: none;
-  color: #0f172a;
-  font-size: 0.82rem;
-  font-weight: 600;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.rm-category-chip:hover {
-  border-color: rgba(76, 29, 149, 0.25);
-  background: rgba(76, 29, 149, 0.06);
-}
-
-.rm-category-chip__img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-
-.rm-category-chip__img img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
 }
 
 @media (max-width: 900px) {
