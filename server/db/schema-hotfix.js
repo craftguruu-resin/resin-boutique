@@ -26,6 +26,12 @@ function ensureVendorInventoryColumns() {
   if (!p) return Promise.resolve();
 
   var statements = [
+    /* Site-wide JSON docs (raw material taxonomy, photo frame nav, etc.) — older DBs may predate schema.sql. */
+    "CREATE TABLE IF NOT EXISTS vendor_site_docs (" +
+      "doc_key VARCHAR(80) PRIMARY KEY," +
+      "doc JSONB NOT NULL DEFAULT '{}'::jsonb," +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+      ")",
     /* Run early: vendor catalog/inventory queries SELECT products.size_labels immediately after listen. */
     "ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
     /* listOverridesMap() reads these before products — was missing and caused column "size_labels" does not exist on prod */

@@ -139,6 +139,13 @@
     if (pfUnder) pfUnder.hidden = d !== "resin-photo-frame";
   }
 
+  function appendCategoryPlaceholder(catSel) {
+    var ph = document.createElement("option");
+    ph.value = "";
+    ph.textContent = "— Select category —";
+    catSel.appendChild(ph);
+  }
+
   function onEditDomainChange() {
     var d = String(document.getElementById("vcmEditDomain").value || "");
     var hrefWrap = document.getElementById("vcmEditHrefWrap");
@@ -148,6 +155,7 @@
     if (!catSel || !subSel) return;
     catSel.innerHTML = "";
     subSel.innerHTML = "";
+    appendCategoryPlaceholder(catSel);
     if (d === "resin-products") {
       resinCategories.forEach(function (c) {
         var o = document.createElement("option");
@@ -170,6 +178,7 @@
         catSel.appendChild(o);
       });
     }
+    catSel.value = "";
     onEditCatChange();
   }
 
@@ -186,35 +195,41 @@
     if (!catId) return;
     if (d === "resin-products") {
       var c = resinCategories.find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       (c && c.subcategories ? c.subcategories : []).forEach(function (s) {
-        if (!s || s.id === "all") return;
+        if (!s || !s.id) return;
         var o = document.createElement("option");
-        o.value = s.id;
-        o.textContent = s.label || s.id;
+        o.value = String(s.id);
+        if (String(s.id) === "all") {
+          o.textContent = (s.label || "All") + " (storefront default)";
+        } else {
+          o.textContent = s.label || s.id;
+        }
         subSel.appendChild(o);
       });
     } else if (d === "resin-raw-material") {
       var c2 = (rmTaxonomy.categories || []).find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       (c2 && c2.subcategories ? c2.subcategories : []).forEach(function (s) {
         if (!s) return;
         var o = document.createElement("option");
-        o.value = s.id;
+        o.value = String(s.id);
         o.textContent = s.name || s.id;
         subSel.appendChild(o);
       });
-    } else {
+    } else if (d === "resin-photo-frame") {
       var c3 = (pfNav.categories || []).find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       (c3 && c3.subcategories ? c3.subcategories : []).forEach(function (s) {
         if (!s) return;
         var o = document.createElement("option");
-        o.value = s.id;
-        o.textContent = s.name || s.id;
+        o.value = String(s.id);
+        var base = (s.name || s.id) + " (photo frame line)";
+        var href = (s.href != null && String(s.href).trim()) || "";
+        o.textContent = href ? base + " → " + href : base;
         subSel.appendChild(o);
       });
     }
@@ -317,8 +332,9 @@
     }
     var hrefVal = String(document.getElementById("vcmCreateHref").value || "").trim();
     if (!hrefVal) {
-      setMsg("Photo frame lines need a shop link (e.g. category.html?cat=…).", true);
-      return;
+      hrefVal = "category.html?cat=" + slugify(subName || catName);
+      var hrefInput = document.getElementById("vcmCreateHref");
+      if (hrefInput) hrefInput.value = hrefVal;
     }
     var doc2 = clone(pfNav);
     doc2.categories = doc2.categories || [];
@@ -371,14 +387,14 @@
     }
     if (d === "resin-products") {
       var c = resinCategories.find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditName").value = (c && c.label) || "";
         document.getElementById("vcmEditImg").value = (c && c.nav_image) || "";
       } else {
         var s = (c && c.subcategories && c.subcategories.find(function (y) {
-          return y.id === subVal;
+          return String(y.id) === subVal;
         })) || {};
         document.getElementById("vcmEditName").value = s.label || "";
         document.getElementById("vcmEditImg").value = s.image || "";
@@ -389,14 +405,14 @@
     }
     if (d === "resin-raw-material") {
       var c2 = (rmTaxonomy.categories || []).find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditName").value = (c2 && c2.name) || "";
         document.getElementById("vcmEditImg").value = (c2 && c2.image) || "";
       } else {
         var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
-          return y.id === subVal;
+          return String(y.id) === subVal;
         })) || {};
         document.getElementById("vcmEditName").value = s2.name || "";
         document.getElementById("vcmEditImg").value = s2.image || "";
@@ -405,22 +421,26 @@
       setMsg("Loaded.");
       return;
     }
-    var c3 = (pfNav.categories || []).find(function (x) {
-      return x.id === catId;
-    });
-    if (subVal === CAT_ONLY) {
-      document.getElementById("vcmEditName").value = (c3 && c3.name) || "";
-      document.getElementById("vcmEditImg").value = (c3 && c3.image) || "";
-      document.getElementById("vcmEditHref").value = "";
-    } else {
-      var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
-        return y.id === subVal;
-      })) || {};
-      document.getElementById("vcmEditName").value = s3.name || "";
-      document.getElementById("vcmEditImg").value = s3.image || "";
-      document.getElementById("vcmEditHref").value = (s3.href != null && String(s3.href)) || "";
+    if (d === "resin-photo-frame") {
+      var c3 = (pfNav.categories || []).find(function (x) {
+        return String(x.id) === catId;
+      });
+      if (subVal === CAT_ONLY) {
+        document.getElementById("vcmEditName").value = (c3 && c3.name) || "";
+        document.getElementById("vcmEditImg").value = (c3 && c3.image) || "";
+        document.getElementById("vcmEditHref").value = "";
+      } else {
+        var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
+          return String(y.id) === subVal;
+        })) || {};
+        document.getElementById("vcmEditName").value = s3.name || "";
+        document.getElementById("vcmEditImg").value = s3.image || "";
+        document.getElementById("vcmEditHref").value = (s3.href != null && String(s3.href)) || "";
+      }
+      setMsg("Loaded.");
+      return;
     }
-    setMsg("Loaded.");
+    setMsg("Unknown domain.", true);
   });
 
   document.getElementById("vcmEditSave").addEventListener("click", function () {
@@ -460,11 +480,11 @@
         return;
       }
       var c = resinCategories.find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       var subs = clone(c && c.subcategories) || [];
       var ix = subs.findIndex(function (s) {
-        return s.id === subVal;
+        return String(s.id) === subVal;
       });
       if (ix < 0) {
         setMsg("Subcategory not found.", true);
@@ -494,7 +514,7 @@
     if (d === "resin-raw-material") {
       var doc = clone(rmTaxonomy);
       var grp = (doc.categories || []).find(function (x) {
-        return x.id === catId;
+        return String(x.id) === catId;
       });
       if (!grp) {
         setMsg("Category not found.", true);
@@ -505,7 +525,7 @@
         grp.image = img;
       } else {
         var sx = (grp.subcategories || []).find(function (y) {
-          return y.id === subVal;
+          return String(y.id) === subVal;
         });
         if (!sx) {
           setMsg("Subcategory not found.", true);
@@ -528,9 +548,13 @@
         });
       return;
     }
+    if (d !== "resin-photo-frame") {
+      setMsg("Unknown domain.", true);
+      return;
+    }
     var doc2 = clone(pfNav);
     var grp2 = (doc2.categories || []).find(function (x) {
-      return x.id === catId;
+      return String(x.id) === catId;
     });
     if (!grp2) {
       setMsg("Group not found.", true);
@@ -541,7 +565,7 @@
       grp2.image = img;
     } else {
       var sx2 = (grp2.subcategories || []).find(function (y) {
-        return y.id === subVal;
+        return String(y.id) === subVal;
       });
       if (!sx2) {
         setMsg("Line not found.", true);
@@ -549,7 +573,11 @@
       }
       sx2.name = name;
       sx2.image = img;
-      if (hrefE) sx2.href = hrefE;
+      if (hrefE) {
+        sx2.href = hrefE;
+      } else if (!String(sx2.href || "").trim()) {
+        sx2.href = "category.html?cat=" + slugify(name);
+      }
     }
     putPf(doc2)
       .then(function (x) {
@@ -620,7 +648,7 @@
               throw new Error((x.json && x.json.error) || "Delete materials failed");
             }
             docRm.categories = (docRm.categories || []).filter(function (c) {
-              return c.id !== catId;
+              return String(c.id) !== catId;
             });
             return putRm(docRm);
           })
@@ -643,11 +671,11 @@
             throw new Error((x.json && x.json.error) || "Delete materials failed");
           }
           var grp = (docRm.categories || []).find(function (c) {
-            return c.id === catId;
+            return String(c.id) === catId;
           });
           if (grp && grp.subcategories) {
             grp.subcategories = grp.subcategories.filter(function (s) {
-              return s.id !== subVal;
+              return String(s.id) !== subVal;
             });
           }
           return putRm(docRm);
@@ -665,9 +693,13 @@
         });
       return;
     }
+    if (d !== "resin-photo-frame") {
+      setMsg("Unknown domain.", true);
+      return;
+    }
     var doc2 = clone(pfNav);
     var grp2 = (doc2.categories || []).find(function (x) {
-      return x.id === catId;
+      return String(x.id) === catId;
     });
     if (!grp2) {
       setMsg("Group not found.", true);
@@ -675,11 +707,11 @@
     }
     if (subVal === CAT_ONLY) {
       doc2.categories = (doc2.categories || []).filter(function (c) {
-        return c.id !== catId;
+        return String(c.id) !== catId;
       });
     } else {
       grp2.subcategories = (grp2.subcategories || []).filter(function (s) {
-        return s.id !== subVal;
+        return String(s.id) !== subVal;
       });
     }
     putPf(doc2)
