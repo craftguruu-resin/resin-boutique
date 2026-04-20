@@ -163,6 +163,20 @@
     }
   }
 
+  /** Shop "home": no category drill-in — Shop by category + hub filter bar only here. */
+  function isRawMaterialShopHome() {
+    var p = qsParams();
+    return !String(p.base || "").trim() && !String(p.sub || "").trim();
+  }
+
+  function toggleRmShopHomeOnlySections() {
+    var home = isRawMaterialShopHome();
+    var hub = document.querySelector(".rm-cat-hub");
+    var tb = document.getElementById("rm-shop");
+    if (hub) hub.toggleAttribute("hidden", !home);
+    if (tb) tb.toggleAttribute("hidden", !home);
+  }
+
   function readHubFilterFromDom() {
     var baseSel = document.getElementById("rmFilterBase");
     var subSel = document.getElementById("rmFilterSub");
@@ -528,9 +542,15 @@
         emptyMsg = "No materials listed yet.";
       } else if (!hasBrowse) {
         emptyMsg =
-          "Choose a category or subcategory from Shop by category or the sidebar to see products here. The filter bar above only narrows the category cards.";
+          "Choose a category or subcategory from Shop by category or the sidebar to see products here. The filter bar only narrows the category cards on the shop home.";
       } else {
-        emptyMsg = "No materials in this category view yet. Try another subcategory or check back soon.";
+        g.innerHTML =
+          '<p class="band-empty" style="grid-column:1/-1">' +
+          esc(
+            "No materials match this category or filters. Choose another category, subcategory, or reset filters."
+          ) +
+          ' <a class="rm-empty-link" href="raw-material-shop.html">Back to raw material shop home</a></p>';
+        return;
       }
       g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">' + esc(emptyMsg) + "</p>";
       return;
@@ -573,6 +593,7 @@
   }
 
   function load() {
+    toggleRmShopHomeOnlySections();
     wireFiltersOnce();
 
     function applyMaterials(doc, materials) {
@@ -600,9 +621,10 @@
       }
 
       renderBestSellers(allMaterials);
-      if (rmShopTaxDoc) {
+      if (rmShopTaxDoc && isRawMaterialShopHome()) {
         renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
       }
+      toggleRmShopHomeOnlySections();
       var navEl = document.getElementById("rmNavTree");
       if (navEl && window.RmShopNav) {
         window.RmShopNav.mount(navEl, {

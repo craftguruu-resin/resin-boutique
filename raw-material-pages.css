@@ -262,6 +262,17 @@
   margin-bottom: 1rem;
 }
 
+a.rm-empty-link {
+  color: var(--accent, #2563eb);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 0.12em;
+}
+
+a.rm-empty-link:hover {
+  color: #1d4ed8;
+}
+
 .rm-grid-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
