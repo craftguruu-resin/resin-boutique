@@ -43,7 +43,8 @@
       pn === "raw-material-product.html" ||
       pn === "raw-material.html" ||
       pn === "photo-frame-shop.html" ||
-      pn === "photo-frame-product.html"
+      pn === "photo-frame-product.html" ||
+      pn === "photo-frames.html"
     );
   }
 
@@ -51,12 +52,12 @@
     var root = catalogJsonApiBase();
     var pn = currentPageName();
     var isPhotoFrame =
-      pn === "photo-frame-shop.html" || pn === "photo-frame-product.html";
+      pn === "photo-frame-shop.html" || pn === "photo-frame-product.html" || pn === "photo-frames.html";
     var path =
       (isPhotoFrame ? "/api/catalog/photo-frame-products?q=" : "/api/catalog/raw-materials?q=") +
       encodeURIComponent(q);
     try {
-      if (pn === "raw-material-shop.html" || pn === "photo-frame-shop.html") {
+      if (pn === "raw-material-shop.html" || pn === "photo-frame-shop.html" || pn === "photo-frames.html") {
         var u = new URL(window.location.href);
         var b = u.searchParams.get("base") || "";
         var s = u.searchParams.get("sub") || "";
@@ -93,6 +94,7 @@
     if (pn === "raw-material-shop.html") return;
     if (pn === "photo-frame-product.html") return;
     if (pn === "photo-frame-shop.html") return;
+    if (pn === "photo-frames.html") return;
     var main = document.querySelector("main.sub-main");
     if (!main) return;
     var D = window.RESIN_DATA;
@@ -184,7 +186,7 @@
     if (headerSearchUsesRawMaterialsApi()) {
       var pnx = currentPageName();
       ph =
-        pnx === "photo-frame-shop.html" || pnx === "photo-frame-product.html"
+        pnx === "photo-frame-shop.html" || pnx === "photo-frame-product.html" || pnx === "photo-frames.html"
           ? "Search photo frames…"
           : "Search raw materials…";
     }
@@ -243,7 +245,8 @@
         return;
       }
       var pnHit = currentPageName();
-      var isPfHit = pnHit === "photo-frame-shop.html" || pnHit === "photo-frame-product.html";
+      var isPfHit =
+        pnHit === "photo-frame-shop.html" || pnHit === "photo-frame-product.html" || pnHit === "photo-frames.html";
       var pdpHref = isPfHit ? "photo-frame-product.html?id=" : "raw-material-product.html?id=";
       var subDefault = isPfHit ? "Photo frame" : "Raw material";
       res.innerHTML = list

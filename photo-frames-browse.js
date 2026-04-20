@@ -117,6 +117,29 @@
     return { min: bestP === Infinity ? Number(m.priceInr) || 0 : bestP, sel: { sid: bestSid, qid: bestQid } };
   }
 
+  function syncNavPhotoFramesLink() {
+    var navPf = document.getElementById("navDockPhotoFrames");
+    if (!navPf) return;
+    try {
+      var page = (window.location.pathname || "").split("/").pop() || "";
+      if (/^photo-frames\.html/i.test(page)) {
+        navPf.setAttribute("href", "photo-frames.html" + (window.location.search || ""));
+      }
+    } catch (_) {}
+  }
+
+  function pdpUrlForProductId(id) {
+    var sid = String(id == null ? "" : id).trim();
+    if (!sid) return "";
+    try {
+      var u = new URL("photo-frame-product.html", window.location.href);
+      u.searchParams.set("id", sid);
+      return u.pathname + u.search + u.hash;
+    } catch (_) {
+      return "photo-frame-product.html?id=" + encodeURIComponent(sid);
+    }
+  }
+
   function productsUrl(par) {
     var root = catalogApiBase();
     var path = "/api/catalog/photo-frame-products";
@@ -160,14 +183,15 @@
     list.forEach(function (m) {
       var meta = minOfferMeta(m);
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
-      var href = "photo-frame-product.html?id=" + encodeURIComponent(m.id);
+      var href = pdpUrlForProductId(m && m.id != null ? m.id : "");
+      if (!href) return;
       var img = m.image ? imgSrc(m.image) : "";
       var card = document.createElement("article");
       card.className = "rm-card-shop";
       card.innerHTML =
         '<a href="' +
         escAttr(href) +
-        '">' +
+        '" data-pf-pdp="1">' +
         '<div class="rm-card-shop__img">' +
         (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" width="400" height="300" />' : "") +
         "</div>" +
@@ -186,10 +210,13 @@
   }
 
   function run() {
+    syncNavPhotoFramesLink();
     var par = qsParams();
     var has = !!(par.base || par.sub);
     if (!has) {
       setBrowseVisible(false, "");
+      var navReset = document.getElementById("navDockPhotoFrames");
+      if (navReset) navReset.setAttribute("href", "photo-frames.html");
       return;
     }
     var titleParts = [];
@@ -214,6 +241,9 @@
       })
       .catch(function () {
         renderProducts([]);
+      })
+      .then(function () {
+        syncNavPhotoFramesLink();
       });
   }
 

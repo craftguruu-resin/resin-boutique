@@ -30,7 +30,8 @@
     links.forEach(function (l) {
       var href = l.getAttribute("href") || "";
       if (!href) return;
-      if (href === path) l.classList.add("is-active");
+      var hrefFile = href.split("#")[0].split("?")[0].trim() || href;
+      if (hrefFile === path) l.classList.add("is-active");
       if (path === "index.html" && (href === "#categories" || href === "index.html#categories")) l.classList.add("is-active");
     });
   }
