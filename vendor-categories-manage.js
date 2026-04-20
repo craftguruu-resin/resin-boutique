@@ -450,7 +450,7 @@
     var hrefVal = hrefFromUser;
     if (!hrefVal) {
       hrefVal =
-        "photo-frame-shop.html?base=" +
+        "photo-frames.html?base=" +
         encodeURIComponent(String(grp2.id || "").trim()) +
         "&sub=" +
         encodeURIComponent(lid);
@@ -680,7 +680,7 @@
         sx2.href = hrefE;
       } else if (!String(sx2.href || "").trim()) {
         sx2.href =
-          "photo-frame-shop.html?base=" +
+          "photo-frames.html?base=" +
           encodeURIComponent(String(catId || "").trim()) +
           "&sub=" +
           encodeURIComponent(String(subVal || "").trim());

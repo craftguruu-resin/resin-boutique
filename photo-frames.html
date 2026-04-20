@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="raw-material-pages.css" />
 </head>
 <body class="subpage">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -124,6 +125,12 @@
         <ul class="pf-home-link-grid" id="photoFrameNavGrid" aria-label="Photo frame catalogue lines">
           <li class="pf-home-link-grid__loading">Loading lines…</li>
         </ul>
+        <section id="pfBrowseSection" class="pf-browse" hidden aria-labelledby="pfBrowseHeading">
+          <a href="photo-frames.html" class="pf-browse__back">← All photo frame lines</a>
+          <h2 id="pfBrowseHeading" class="band-title band-title--fx">Photo frames</h2>
+          <p class="band-sub pf-browse__sub">Same product tiles and checkout as the rest of Craftguru.</p>
+          <div id="pfBrowseGrid" class="pf-browse__grid"></div>
+        </section>
       </div>
     </section>
   </main>
@@ -227,6 +234,7 @@
   <script src="header.js"></script>
   <script src="global-find.js"></script>
   <script src="photo-frame-nav.js"></script>
+  <script src="photo-frames-browse.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>
