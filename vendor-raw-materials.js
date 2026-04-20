@@ -40,8 +40,14 @@
   function refillSubSelect(baseSel, subSel, selectedSub) {
     if (!baseSel || !subSel) return;
     var bid = baseSel.value;
-    subSel.innerHTML = '<option value="">None / N.A.</option>';
+    var sid = subSel.id;
+    var isFormSub = sid === "vrmSubCat";
+    subSel.innerHTML = "";
+    var ph = document.createElement("option");
+    ph.value = "";
     if (!bid) {
+      ph.textContent = "None / N.A.";
+      subSel.appendChild(ph);
       subSel.disabled = true;
       return;
     }
@@ -54,18 +60,28 @@
       }
     }
     var subs = (cat && cat.subcategories) || [];
-    if (!subs.length) {
-      subSel.disabled = true;
-      return;
+    if (isFormSub) {
+      ph.textContent = "None / N.A.";
+    } else if (subs.length) {
+      ph.textContent = "All subfolders";
+    } else {
+      ph.textContent = "Whole category (no sub-folders)";
     }
+    subSel.appendChild(ph);
     subSel.disabled = false;
     subs.forEach(function (s) {
       var o = document.createElement("option");
       o.value = s.id;
       o.textContent = s.name;
-      if (s.id === selectedSub) o.selected = true;
       subSel.appendChild(o);
     });
+    if (selectedSub) {
+      for (var j = 0; j < subSel.options.length; j++) {
+        subSel.options[j].selected = subSel.options[j].value === selectedSub;
+      }
+    } else {
+      subSel.selectedIndex = 0;
+    }
   }
 
   function setVendorFormCategories(baseVal, subVal) {

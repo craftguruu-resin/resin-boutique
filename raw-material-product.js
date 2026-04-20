@@ -9,6 +9,19 @@
     return M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
   }
 
+  function catalogApiBase() {
+    var b = String(apiBase() || "")
+      .trim()
+      .replace(/\/+$/, "");
+    if (b) return b;
+    try {
+      if (window.location && window.location.protocol !== "file:") {
+        return String(window.location.origin || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    return "";
+  }
+
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s;
@@ -806,7 +819,7 @@
 
   function load() {
     var id = qs().trim();
-    var b = apiBase();
+    var b = catalogApiBase();
     if (!id) {
       state.material = null;
       document.title = "Product — Craft guru";
@@ -817,16 +830,9 @@
       }
       return;
     }
-    if (!b) {
-      state.material = null;
-      render();
-      var nav1 = document.getElementById("rmNavTree");
-      if (nav1 && window.RmShopNav) {
-        window.RmShopNav.mount(nav1, { activeBase: "", activeSub: "" });
-      }
-      return;
-    }
-    fetch(b + "/api/catalog/raw-materials/" + encodeURIComponent(id), { cache: "no-store" })
+    var path = "/api/catalog/raw-materials/" + encodeURIComponent(id);
+    var url = b ? b + path : path;
+    fetch(url, { cache: "no-store" })
       .then(function (res) {
         return res.json().then(function (j) {
           return { okHttp: res.ok, j: j };

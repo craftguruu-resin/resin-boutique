@@ -8,6 +8,26 @@
     return M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
   }
 
+  /** Same host as the storefront when data-bill-api-base is blank (e.g. stripped on production). */
+  function catalogApiBase() {
+    var b = String(apiBase() || "")
+      .trim()
+      .replace(/\/+$/, "");
+    if (b) return b;
+    try {
+      if (window.location && window.location.protocol !== "file:") {
+        return String(window.location.origin || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    return "";
+  }
+
+  function catalogMaterialsFetchUrl() {
+    var base = catalogApiBase();
+    var path = "/api/catalog/raw-materials";
+    return base ? base + path : path;
+  }
+
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s;
@@ -236,6 +256,9 @@
         }
       }
       var subs = (cat && cat.subcategories) || [];
+      if (!subs.length && subSel.options[0]) {
+        subSel.options[0].textContent = "Whole category (no sub-folders)";
+      }
       subs.forEach(function (s) {
         var o2 = document.createElement("option");
         o2.value = s.id;
@@ -256,16 +279,60 @@
     }
   }
 
+  var HUB_STOP = {
+    resin: 1,
+    material: 1,
+    materials: 1,
+    crystal: 1,
+    craft: 1,
+    guru: 1,
+    clear: 1,
+    epoxy: 1,
+    high: 1,
+    grade: 1,
+    studio: 1,
+  };
+
+  /** When DB rows lack base_category_slug, attribute at most one hub bucket from the product name (avoids double-counting). */
+  function inferredHubCategoryId(m, cats) {
+    if (String(m.baseCategorySlug || "").trim()) return null;
+    var name = String(m.name || "").toLowerCase();
+    if (!name) return null;
+    var hits = [];
+    for (var ci = 0; ci < cats.length; ci++) {
+      var c = cats[ci];
+      var parts = String(c.name || "")
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter(function (t) {
+          return t.length > 4 && !HUB_STOP[t];
+        });
+      for (var pi = 0; pi < parts.length; pi++) {
+        if (name.indexOf(parts[pi]) >= 0) {
+          hits.push(c.id);
+          break;
+        }
+      }
+    }
+    return hits.length === 1 ? hits[0] : null;
+  }
+
   /** Main-storefront-style category cards (featured-cat-card). */
   function renderRmCategoryHub(doc, materials) {
     var hub = document.getElementById("rmCategoryHub");
     if (!hub || !doc || !doc.categories) return;
     var mats = materials || [];
+    var cats = doc.categories;
     hub.innerHTML = "";
-    doc.categories.forEach(function (c, idx) {
+    cats.forEach(function (c, idx) {
       var count = 0;
       for (var i = 0; i < mats.length; i++) {
-        if (String(mats[i].baseCategorySlug || "") === c.id) count++;
+        var m = mats[i];
+        if (String(m.baseCategorySlug || "") === c.id) {
+          count++;
+          continue;
+        }
+        if (inferredHubCategoryId(m, cats) === c.id) count++;
       }
       var href = window.RmShopNav ? window.RmShopNav.shopHref(c.id, "") : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
       var card = document.createElement("article");
@@ -425,7 +492,6 @@
   }
 
   function load() {
-    var b = apiBase();
     var nav = document.getElementById("rmNavTree");
     var par = qsParams();
     if (nav && window.RmShopNav) {
@@ -461,11 +527,7 @@
         if (doc) {
           fillFilterSelectsFromTaxonomy(doc);
         }
-        if (!b) {
-          applyMaterials(doc, []);
-          return Promise.resolve();
-        }
-        return fetch(b + "/api/catalog/raw-materials", { cache: "no-store" })
+        return fetch(catalogMaterialsFetchUrl(), { cache: "no-store" })
           .then(function (res) {
             return res.json();
           })

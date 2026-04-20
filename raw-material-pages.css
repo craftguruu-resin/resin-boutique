@@ -244,6 +244,14 @@
   margin-top: 0.25rem;
 }
 
+/* Toolbar always stacks above the product grid (explicit column even if ancestors use flex). */
+#rm-shop {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 .rm-grid-cards {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
