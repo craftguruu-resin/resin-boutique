@@ -176,4 +176,70 @@
     shopHref: shopHref,
     preferredListingSub: preferredListingSub,
   };
+
+  /**
+   * When the pointer is over the category sidebar, wheel deltas should scroll the page
+   * unless the nav tree is its own scroll box (then chain at top/bottom).
+   */
+  function wireWheelScrollThroughCategoryAside() {
+    var aside = document.querySelector(".rm-nav-tree-wrap");
+    if (!aside || aside.dataset.rmWheelThrough === "1") return;
+    aside.dataset.rmWheelThrough = "1";
+
+    function innerScroller() {
+      var nav = aside.querySelector(".rm-nav-tree");
+      if (!nav) return null;
+      return nav.scrollHeight > nav.clientHeight + 2 ? nav : null;
+    }
+
+    aside.addEventListener(
+      "wheel",
+      function (ev) {
+        if (!ev.deltaY) return;
+        var inner = innerScroller();
+        if (!inner) {
+          window.scrollBy(0, ev.deltaY);
+          ev.preventDefault();
+          return;
+        }
+        var top = inner.scrollTop;
+        var maxTop = inner.scrollHeight - inner.clientHeight;
+        if (ev.deltaY < 0 && top <= 0) {
+          window.scrollBy(0, ev.deltaY);
+          ev.preventDefault();
+        } else if (ev.deltaY > 0 && top >= maxTop - 1) {
+          window.scrollBy(0, ev.deltaY);
+          ev.preventDefault();
+        }
+      },
+      { passive: false }
+    );
+  }
+
+  /** Shop by category block is not a scroll container — wheel should move the main page. */
+  function wireWheelScrollThroughCategoryHub() {
+    var hub = document.querySelector(".rm-cat-hub");
+    if (!hub || hub.dataset.rmWheelThrough === "1") return;
+    hub.dataset.rmWheelThrough = "1";
+    hub.addEventListener(
+      "wheel",
+      function (ev) {
+        if (!ev.deltaY) return;
+        window.scrollBy(0, ev.deltaY);
+        ev.preventDefault();
+      },
+      { passive: false }
+    );
+  }
+
+  function wireRmShopScrollThrough() {
+    wireWheelScrollThroughCategoryAside();
+    wireWheelScrollThroughCategoryHub();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", wireRmShopScrollThrough);
+  } else {
+    wireRmShopScrollThrough();
+  }
 })();
