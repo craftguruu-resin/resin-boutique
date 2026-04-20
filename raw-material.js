@@ -145,6 +145,7 @@
   var sortWired = false;
   var filterWired = false;
   var DEFAULT_SORT = "name-asc";
+  var rmShopHydratingFilters = false;
 
   function qsParams() {
     try {
@@ -156,6 +157,41 @@
     } catch (_) {
       return { base: "", sub: "" };
     }
+  }
+
+  function shopUrlFromFilterElements() {
+    var baseSel = document.getElementById("rmFilterBase");
+    var subSel = document.getElementById("rmFilterSub");
+    var b = baseSel ? String(baseSel.value || "").trim() : "";
+    var s = subSel && !subSel.disabled ? String(subSel.value || "").trim() : "";
+    var parts = [];
+    if (b) parts.push("base=" + encodeURIComponent(b));
+    if (s) parts.push("sub=" + encodeURIComponent(s));
+    return parts.length ? "raw-material-shop.html?" + parts.join("&") : "raw-material-shop.html";
+  }
+
+  function navigateToShopFilterUrl() {
+    window.location.assign(shopUrlFromFilterElements());
+  }
+
+  /** After taxonomy fills the selects, changing base/sub updates the URL (full navigation) unless values match the page. */
+  function wireShopFilterSelectNavigationOnce() {
+    var baseSel = document.getElementById("rmFilterBase");
+    var subSel = document.getElementById("rmFilterSub");
+    if (!baseSel || !subSel || baseSel.dataset.rmFilterNav === "1") return;
+    baseSel.dataset.rmFilterNav = "1";
+    function maybeGo() {
+      if (rmShopHydratingFilters) return;
+      var par = qsParams();
+      var b = String(baseSel.value || "").trim();
+      var s = subSel.disabled ? "" : String(subSel.value || "").trim();
+      if (b === par.base && s === par.sub) return;
+      navigateToShopFilterUrl();
+    }
+    baseSel.addEventListener("change", function () {
+      setTimeout(maybeGo, 0);
+    });
+    subSel.addEventListener("change", maybeGo);
   }
 
   function materialsMatchFilters(m, base, sub, needle) {
@@ -230,52 +266,58 @@
   }
 
   function fillFilterSelectsFromTaxonomy(doc) {
-    var baseSel = document.getElementById("rmFilterBase");
-    var subSel = document.getElementById("rmFilterSub");
-    if (!baseSel || !subSel) return;
-    var par = qsParams();
-    var cats = (doc && doc.categories) || [];
-    baseSel.innerHTML = '<option value="">All categories</option>';
-    cats.forEach(function (c) {
-      var o = document.createElement("option");
-      o.value = c.id;
-      o.textContent = c.name;
-      if (par.base === c.id) o.selected = true;
-      baseSel.appendChild(o);
-    });
-    function refillSub() {
-      var bid = baseSel.value;
-      subSel.innerHTML = '<option value="">All</option>';
-      subSel.disabled = !bid;
-      if (!bid) return;
-      var cat = null;
-      for (var ci = 0; ci < cats.length; ci++) {
-        if (cats[ci].id === bid) {
-          cat = cats[ci];
-          break;
-        }
-      }
-      var subs = (cat && cat.subcategories) || [];
-      if (!subs.length && subSel.options[0]) {
-        subSel.options[0].textContent = "Whole category (no sub-folders)";
-      }
-      subs.forEach(function (s) {
-        var o2 = document.createElement("option");
-        o2.value = s.id;
-        o2.textContent = s.name;
-        if (par.sub === s.id && par.base === bid) o2.selected = true;
-        subSel.appendChild(o2);
+    rmShopHydratingFilters = true;
+    try {
+      var baseSel = document.getElementById("rmFilterBase");
+      var subSel = document.getElementById("rmFilterSub");
+      if (!baseSel || !subSel) return;
+      var par = qsParams();
+      var cats = (doc && doc.categories) || [];
+      baseSel.innerHTML = '<option value="">All categories</option>';
+      cats.forEach(function (c) {
+        var o = document.createElement("option");
+        o.value = c.id;
+        o.textContent = c.name;
+        if (par.base === c.id) o.selected = true;
+        baseSel.appendChild(o);
       });
-    }
-    if (!baseSel.dataset.rmTaxWired) {
-      baseSel.dataset.rmTaxWired = "1";
-      baseSel.addEventListener("change", refillSub);
-    }
-    refillSub();
-    var searchEl = document.getElementById("rmFilterSearch");
-    if (searchEl && !searchEl.dataset.rmInit) {
-      searchEl.dataset.rmInit = "1";
-      searchEl.value = "";
+      function refillSub() {
+        var bid = baseSel.value;
+        subSel.innerHTML = '<option value="">All</option>';
+        subSel.disabled = !bid;
+        if (!bid) return;
+        var cat = null;
+        for (var ci = 0; ci < cats.length; ci++) {
+          if (cats[ci].id === bid) {
+            cat = cats[ci];
+            break;
+          }
+        }
+        var subs = (cat && cat.subcategories) || [];
+        if (!subs.length && subSel.options[0]) {
+          subSel.options[0].textContent = "Whole category (no sub-folders)";
+        }
+        subs.forEach(function (s) {
+          var o2 = document.createElement("option");
+          o2.value = s.id;
+          o2.textContent = s.name;
+          if (par.sub === s.id && par.base === bid) o2.selected = true;
+          subSel.appendChild(o2);
+        });
+      }
+      if (!baseSel.dataset.rmTaxWired) {
+        baseSel.dataset.rmTaxWired = "1";
+        baseSel.addEventListener("change", refillSub);
+      }
+      refillSub();
+      wireShopFilterSelectNavigationOnce();
+      var searchEl = document.getElementById("rmFilterSearch");
+      if (searchEl && !searchEl.dataset.rmInit) {
+        searchEl.dataset.rmInit = "1";
+        searchEl.value = "";
+      }
+    } finally {
+      rmShopHydratingFilters = false;
     }
   }
 
@@ -334,7 +376,11 @@
         }
         if (inferredHubCategoryId(m, cats) === c.id) count++;
       }
-      var href = window.RmShopNav ? window.RmShopNav.shopHref(c.id, "") : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
+      var subs = c.subcategories || [];
+      var hubSub = subs.length === 1 ? subs[0].id : "";
+      var href = window.RmShopNav
+        ? window.RmShopNav.shopHref(c.id, hubSub)
+        : "raw-material-shop.html?base=" + encodeURIComponent(c.id) + (hubSub ? "&sub=" + encodeURIComponent(hubSub) : "");
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
@@ -383,20 +429,10 @@
     var baseSel = document.getElementById("rmFilterBase");
     var subSel = document.getElementById("rmFilterSub");
     var searchEl = document.getElementById("rmFilterSearch");
-    function go() {
-      var b = baseSel ? baseSel.value : "";
-      var s = subSel && !subSel.disabled ? subSel.value : "";
-      var u = "raw-material-shop.html";
-      var parts = [];
-      if (b) parts.push("base=" + encodeURIComponent(b));
-      if (s) parts.push("sub=" + encodeURIComponent(s));
-      if (parts.length) u += "?" + parts.join("&");
-      window.location.href = u;
-    }
-    if (apply) apply.addEventListener("click", go);
+    if (apply) apply.addEventListener("click", navigateToShopFilterUrl);
     if (clear) {
       clear.addEventListener("click", function () {
-        window.location.href = "raw-material-shop.html";
+        window.location.assign("raw-material-shop.html");
       });
     }
     if (searchEl) {
@@ -451,7 +487,22 @@
     g.innerHTML = "";
     var rows = sortedList(lastMaterials);
     if (!rows.length) {
-      g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">No materials listed yet.</p>';
+      var catalogTotal = (allMaterials && allMaterials.length) || 0;
+      var needleLive = "";
+      try {
+        var seLive = document.getElementById("rmFilterSearch");
+        needleLive = seLive && seLive.value ? seLive.value.trim().toLowerCase() : "";
+      } catch (_) {}
+      var emptyMsg;
+      if (catalogTotal === 0) {
+        emptyMsg = "No materials listed yet.";
+      } else if (needleLive) {
+        emptyMsg = "No materials match your search. Clear the search box or try different words.";
+      } else {
+        emptyMsg =
+          "No materials match this category or filters. Choose another category, subcategory, or reset filters.";
+      }
+      g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">' + esc(emptyMsg) + "</p>";
       return;
     }
     rows.forEach(function (m) {
