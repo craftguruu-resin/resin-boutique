@@ -28,6 +28,7 @@
       <div class="vs-content">
         <div class="vrm-tabs" role="tablist" aria-label="Raw materials sections">
           <button type="button" class="vrm-tab is-active" id="vrmTabManage" role="tab" aria-selected="true" data-vrm-tab="manage">Manage products</button>
+          <button type="button" class="vrm-tab" id="vrmTabInventory" role="tab" aria-selected="false" data-vrm-tab="inventory">Stock &amp; placement</button>
           <button type="button" class="vrm-tab" id="vrmTabForm" role="tab" aria-selected="false" data-vrm-tab="form">Add / edit product</button>
         </div>
 
@@ -36,6 +37,18 @@
             <div class="vrm-manage-head">
               <h2 class="vs-card__title" style="margin: 0">All raw materials</h2>
               <div class="vrm-manage-toolbar">
+                <div class="vs-field" style="margin: 0; min-width: 11rem">
+                  <label for="vrmFilterBase">Base category</label>
+                  <select id="vrmFilterBase" class="vs-input">
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="margin: 0; min-width: 11rem">
+                  <label for="vrmFilterSub">Subcategory</label>
+                  <select id="vrmFilterSub" class="vs-input" disabled>
+                    <option value="">All</option>
+                  </select>
+                </div>
                 <div class="vs-field vrm-search-field" style="margin: 0">
                   <label for="vrmSearch" class="visually-hidden">Search materials</label>
                   <input
@@ -68,6 +81,49 @@
           </div>
         </div>
 
+        <div id="vrmPanelInventory" class="vrm-panel" role="tabpanel" aria-labelledby="vrmTabInventory" hidden>
+          <div class="vs-card">
+            <h2 class="vs-card__title" style="margin-top: 0">Stock &amp; placement</h2>
+            <p class="vs-muted" style="margin-top: 0">
+              Choose category → subcategory (if any) → product, then update on-hand note or quantity for the shelf. Saves the same product record (merges with existing options).
+            </p>
+            <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem">
+              <div class="vs-field" style="flex: 1; min-width: 11rem">
+                <label for="vrmInvBase">Base category</label>
+                <select id="vrmInvBase" class="vs-input">
+                  <option value="">Select…</option>
+                </select>
+              </div>
+              <div class="vs-field" style="flex: 1; min-width: 11rem">
+                <label for="vrmInvSub">Subcategory</label>
+                <select id="vrmInvSub" class="vs-input" disabled>
+                  <option value="">—</option>
+                </select>
+              </div>
+              <div class="vs-field" style="flex: 2; min-width: 14rem">
+                <label for="vrmInvProduct">Product</label>
+                <select id="vrmInvProduct" class="vs-input" disabled>
+                  <option value="">Select category first</option>
+                </select>
+              </div>
+            </div>
+            <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem">
+              <div class="vs-field" style="flex: 1; min-width: 8rem">
+                <label for="vrmInvQty">Qty on hand (optional)</label>
+                <input type="number" id="vrmInvQty" class="vs-input" min="0" step="1" placeholder="e.g. 24" />
+              </div>
+              <div class="vs-field" style="flex: 2; min-width: 12rem">
+                <label for="vrmInvNote">Shelf / bin note</label>
+                <input type="text" id="vrmInvNote" class="vs-input" maxlength="500" placeholder="Aisle, batch, reorder flag…" />
+              </div>
+            </div>
+            <div class="vs-row-actions" style="margin-top: 1rem">
+              <button type="button" class="vs-btn vs-btn--primary" id="vrmInvSave">Save stock fields</button>
+            </div>
+            <p id="vrmInvMsg" class="vs-muted" style="display: none; margin-top: 0.75rem"></p>
+          </div>
+        </div>
+
         <div id="vrmPanelForm" class="vrm-panel" role="tabpanel" aria-labelledby="vrmTabForm" hidden>
           <div class="vs-card" style="padding: 0.85rem 1rem">
             <h2 class="vs-card__title" style="margin-top: 0" id="vrmFormTitle">Add raw material product</h2>
@@ -83,6 +139,30 @@
                 <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.78rem">
                   Letters, numbers, spaces, hyphen, dot, underscore; stored uppercase. Must be unique. Required when editing.
                 </p>
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+                <div class="vs-field" style="flex: 1; min-width: 11rem">
+                  <label for="vrmBaseCat">Base category</label>
+                  <select id="vrmBaseCat" class="vs-input">
+                    <option value="">Select…</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="flex: 1; min-width: 11rem">
+                  <label for="vrmSubCat">Subcategory</label>
+                  <select id="vrmSubCat" class="vs-input">
+                    <option value="">None / N.A.</option>
+                  </select>
+                </div>
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+                <div class="vs-field" style="flex: 1; min-width: 8rem">
+                  <label for="vrmStockQty">Qty on hand (optional)</label>
+                  <input type="number" id="vrmStockQty" class="vs-input" min="0" step="1" placeholder="Warehouse" />
+                </div>
+                <div class="vs-field" style="flex: 2; min-width: 12rem">
+                  <label for="vrmStockNote">Shelf note (optional)</label>
+                  <input type="text" id="vrmStockNote" class="vs-input" maxlength="500" />
+                </div>
               </div>
               <div class="vs-field" style="margin-top: 0.5rem">
                 <label for="vrmDesc">Description</label>

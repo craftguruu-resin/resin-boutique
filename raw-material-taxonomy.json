@@ -1,0 +1,329 @@
+{
+  "version": 1,
+  "generatedFrom": "/Users/deveshjangid/Downloads/Craftguruindia",
+  "categories": [
+    {
+      "id": "basic-resin-material",
+      "name": "Basic Resin Material",
+      "image": "media/raw-material-categories/base-basic-resin-material.jpg",
+      "subcategories": []
+    },
+    {
+      "id": "clock-material",
+      "name": "Clock Material",
+      "image": "media/raw-material-categories/base-clock-material.jpg",
+      "subcategories": [
+        {
+          "id": "clock-machine",
+          "name": "Clock Machine",
+          "image": ""
+        },
+        {
+          "id": "clock-needles",
+          "name": "Clock Needles",
+          "image": ""
+        },
+        {
+          "id": "clock-numbers",
+          "name": "Clock Numbers",
+          "image": ""
+        },
+        {
+          "id": "other-clock-accessories",
+          "name": "Other Clock Accessories",
+          "image": "media/raw-material-categories/sub-clock-material-other-clock-accessories.jpg"
+        }
+      ]
+    },
+    {
+      "id": "cutouts",
+      "name": "Cutouts",
+      "image": "media/raw-material-categories/base-cutouts.jpg",
+      "subcategories": [
+        {
+          "id": "acrylic-cutouts",
+          "name": "Acrylic Cutouts",
+          "image": ""
+        },
+        {
+          "id": "mdf-cutouts",
+          "name": "Mdf Cutouts",
+          "image": "media/raw-material-categories/sub-cutouts-mdf-cutouts.jpg"
+        }
+      ]
+    },
+    {
+      "id": "dryed-flowers",
+      "name": "Dryed Flowers",
+      "image": "media/raw-material-categories/base-dryed-flowers.jpg",
+      "subcategories": [
+        {
+          "id": "dry-flowers",
+          "name": "Dry Flowers",
+          "image": "media/raw-material-categories/sub-dryed-flowers-dry-flowers.jpg"
+        },
+        {
+          "id": "pressed-flower",
+          "name": "Pressed Flower",
+          "image": ""
+        }
+      ]
+    },
+    {
+      "id": "glitters-beads-and-decoration",
+      "name": "Glitters Beads And Decoration",
+      "image": "",
+      "subcategories": []
+    },
+    {
+      "id": "handles",
+      "name": "Handles",
+      "image": "media/raw-material-categories/base-handles.jpg",
+      "subcategories": []
+    },
+    {
+      "id": "jewellery-and-keychain-material",
+      "name": "Jewellery And Keychain Material",
+      "image": "media/raw-material-categories/base-jewellery-and-keychain-material.jpg",
+      "subcategories": [
+        {
+          "id": "bazels",
+          "name": "Bazels",
+          "image": ""
+        },
+        {
+          "id": "broch-pin",
+          "name": "Broch Pin",
+          "image": ""
+        },
+        {
+          "id": "chains",
+          "name": "Chains",
+          "image": ""
+        },
+        {
+          "id": "keychains-and-hooks",
+          "name": "Keychains and Hooks",
+          "image": "media/raw-material-categories/sub-jewellery-and-keychain-material-keychains-and-hooks.jpg"
+        },
+        {
+          "id": "tessels",
+          "name": "Tessels",
+          "image": "media/raw-material-categories/sub-jewellery-and-keychain-material-tessels.jpg"
+        }
+      ]
+    },
+    {
+      "id": "packing-material",
+      "name": "Packing Material",
+      "image": "media/raw-material-categories/base-packing-material.jpg",
+      "subcategories": []
+    },
+    {
+      "id": "pouring-and-mixing",
+      "name": "Pouring And Mixing",
+      "image": "media/raw-material-categories/base-pouring-and-mixing.jpg",
+      "subcategories": []
+    },
+    {
+      "id": "resin-and-pigments",
+      "name": "Resin And Pigments",
+      "image": "media/raw-material-categories/base-resin-and-pigments.jpg",
+      "subcategories": [
+        {
+          "id": "2-1-resin",
+          "name": "2-1 Resin",
+          "image": "media/raw-material-categories/sub-resin-and-pigments-2-1-resin.jpg"
+        },
+        {
+          "id": "3-1-resin",
+          "name": "3-1 Resin",
+          "image": ""
+        },
+        {
+          "id": "ink-pigments",
+          "name": "Ink Pigments",
+          "image": ""
+        },
+        {
+          "id": "liquid-pigments",
+          "name": "Liquid Pigments",
+          "image": ""
+        },
+        {
+          "id": "peste-pigments",
+          "name": "Peste pigments",
+          "image": ""
+        },
+        {
+          "id": "powder-pigments",
+          "name": "Powder pigments",
+          "image": "media/raw-material-categories/sub-resin-and-pigments-powder-pigments.jpg"
+        },
+        {
+          "id": "uv-resin",
+          "name": "UV Resin",
+          "image": "media/raw-material-categories/sub-resin-and-pigments-uv-resin.png"
+        }
+      ]
+    },
+    {
+      "id": "resin-learning-kit",
+      "name": "Resin Learning Kit",
+      "image": "",
+      "subcategories": [
+        {
+          "id": "resin-clock-learning-kit",
+          "name": "Resin Clock Learning Kit",
+          "image": ""
+        },
+        {
+          "id": "resin-coaster-learning-kit",
+          "name": "Resin Coaster Learning Kit",
+          "image": ""
+        },
+        {
+          "id": "resin-jewellery-learning-kit",
+          "name": "Resin Jewellery Learning Kit",
+          "image": ""
+        },
+        {
+          "id": "resin-keychain-learning-kit",
+          "name": "Resin Keychain Learning Kit",
+          "image": ""
+        },
+        {
+          "id": "resin-photo-frame-learning-kit",
+          "name": "Resin Photo Frame Learning Kit",
+          "image": ""
+        },
+        {
+          "id": "resin-rakhi-diy-kit",
+          "name": "Resin Rakhi Diy Kit",
+          "image": ""
+        }
+      ]
+    },
+    {
+      "id": "safty-and-cleaning-material",
+      "name": "Safty And Cleaning Material",
+      "image": "media/raw-material-categories/base-safty-and-cleaning-material.png",
+      "subcategories": []
+    },
+    {
+      "id": "sea-shells",
+      "name": "Sea Shells",
+      "image": "",
+      "subcategories": []
+    },
+    {
+      "id": "silicon-molds",
+      "name": "Silicon Molds",
+      "image": "media/raw-material-categories/base-silicon-molds.png",
+      "subcategories": []
+    },
+    {
+      "id": "stands-and-hanging-hooks",
+      "name": "Stands And  Hanging Hooks",
+      "image": "media/raw-material-categories/base-stands-and-hanging-hooks.jpg",
+      "subcategories": [
+        {
+          "id": "acrylic-stand",
+          "name": "Acrylic Stand",
+          "image": "media/raw-material-categories/sub-stands-and-hanging-hooks-acrylic-stand.jpg"
+        },
+        {
+          "id": "mdf-stands",
+          "name": "Mdf Stands",
+          "image": "media/raw-material-categories/sub-stands-and-hanging-hooks-mdf-stands.png"
+        },
+        {
+          "id": "metal-hooks-and-buffers",
+          "name": "Metal Hooks And Buffers",
+          "image": "media/raw-material-categories/sub-stands-and-hanging-hooks-metal-hooks-and-buffers.webp"
+        },
+        {
+          "id": "metal-stand",
+          "name": "Metal Stand",
+          "image": "media/raw-material-categories/sub-stands-and-hanging-hooks-metal-stand.jpg"
+        },
+        {
+          "id": "wooden-stand",
+          "name": "Wooden Stand",
+          "image": "media/raw-material-categories/sub-stands-and-hanging-hooks-wooden-stand.png"
+        }
+      ]
+    },
+    {
+      "id": "stickers-and-cards",
+      "name": "Stickers And Cards",
+      "image": "",
+      "subcategories": [
+        {
+          "id": "bookmark-cards",
+          "name": "Bookmark Cards",
+          "image": ""
+        },
+        {
+          "id": "embossed-stickers",
+          "name": "Embossed Stickers",
+          "image": ""
+        },
+        {
+          "id": "insert-sheet",
+          "name": "Insert Sheet",
+          "image": ""
+        },
+        {
+          "id": "keychain-cards",
+          "name": "Keychain Cards",
+          "image": ""
+        },
+        {
+          "id": "metal-stickers",
+          "name": "Metal Stickers",
+          "image": ""
+        },
+        {
+          "id": "thank-you-stickers",
+          "name": "Thank You Stickers",
+          "image": ""
+        },
+        {
+          "id": "transprent-stickers",
+          "name": "Transprent Stickers",
+          "image": ""
+        },
+        {
+          "id": "uv-stickers",
+          "name": "UV Stickers",
+          "image": ""
+        }
+      ]
+    },
+    {
+      "id": "stones-and-chips",
+      "name": "Stones And Chips",
+      "image": "",
+      "subcategories": []
+    },
+    {
+      "id": "tools",
+      "name": "Tools",
+      "image": "",
+      "subcategories": []
+    },
+    {
+      "id": "vermala-preservation",
+      "name": "Vermala Preservation",
+      "image": "",
+      "subcategories": []
+    },
+    {
+      "id": "wooden-raw-frames-special-for-vermala-preservation",
+      "name": "Wooden Raw Frames Special For Vermala Preservation",
+      "image": "media/raw-material-categories/base-wooden-raw-frames-special-for-vermala-preservation.jpg",
+      "subcategories": []
+    }
+  ]
+}

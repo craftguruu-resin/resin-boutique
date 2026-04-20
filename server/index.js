@@ -1745,9 +1745,11 @@ app.get("/api/catalog/hero-slides", function (_req, res) {
   });
 });
 
-/** Public: resin raw materials (vendor-managed). */
-app.get("/api/catalog/raw-materials", function (_req, res) {
-  rawMaterialsDb.listActive(function (e, list) {
+/** Public: resin raw materials (vendor-managed). Query: base, sub (category slugs from raw-material-taxonomy.json). */
+app.get("/api/catalog/raw-materials", function (req, res) {
+  var base = String((req.query && req.query.base) || "").trim();
+  var sub = String((req.query && req.query.sub) || "").trim();
+  rawMaterialsDb.listActive({ base: base, sub: sub }, function (e, list) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
@@ -2152,7 +2154,9 @@ app.get("/api/vendor/raw-materials", function (req, res) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
     var q = String((req.query && req.query.q) || "").trim();
-    rawMaterialsDb.listAll(q, function (e2, list) {
+    var base = String((req.query && req.query.base) || "").trim();
+    var sub = String((req.query && req.query.sub) || "").trim();
+    rawMaterialsDb.listAll({ q: q, base: base, sub: sub }, function (e2, list) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
@@ -2188,6 +2192,8 @@ function rawMaterialPayloadFromBody(b, file) {
     imageBuffer: file && file.buffer,
     mime: file && file.mimetype,
     imageUrl: firstField(b && b.imageUrl),
+    baseCategorySlug: firstField(b && b.baseCategorySlug),
+    subcategorySlug: firstField(b && b.subcategorySlug),
   };
 }
 
@@ -2216,6 +2222,8 @@ app.post(
             options: jb.options,
             imageUrl: jb.imageUrl,
             imageBuffer: null,
+            baseCategorySlug: jb.baseCategorySlug,
+            subcategorySlug: jb.subcategorySlug,
           },
           function (e2, row) {
             if (e2) {
@@ -2286,6 +2294,8 @@ app.put(
             mrpInr: jb.mrpInr,
             options: jb.options,
             imageUrl: jb.imageUrl,
+            baseCategorySlug: jb.baseCategorySlug,
+            subcategorySlug: jb.subcategorySlug,
           },
           function (e2, row) {
             if (e2) {

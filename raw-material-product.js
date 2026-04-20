@@ -811,11 +811,19 @@
       state.material = null;
       document.title = "Product — Craft guru";
       render();
+      var nav0 = document.getElementById("rmNavTree");
+      if (nav0 && window.RmShopNav) {
+        window.RmShopNav.mount(nav0, { activeBase: "", activeSub: "" });
+      }
       return;
     }
     if (!b) {
       state.material = null;
       render();
+      var nav1 = document.getElementById("rmNavTree");
+      if (nav1 && window.RmShopNav) {
+        window.RmShopNav.mount(nav1, { activeBase: "", activeSub: "" });
+      }
       return;
     }
     fetch(b + "/api/catalog/raw-materials/" + encodeURIComponent(id), { cache: "no-store" })
@@ -834,10 +842,23 @@
           document.title = (state.material.name || "Product") + " — Craft guru";
         }
         render();
+        var navEl = document.getElementById("rmNavTree");
+        if (state.material && navEl && window.RmShopNav) {
+          window.RmShopNav.mount(navEl, {
+            activeBase: state.material.baseCategorySlug || "",
+            activeSub: state.material.subcategorySlug || "",
+          });
+        } else if (navEl && window.RmShopNav) {
+          window.RmShopNav.mount(navEl, { activeBase: "", activeSub: "" });
+        }
       })
       .catch(function () {
         state.material = null;
         render();
+        var navEl2 = document.getElementById("rmNavTree");
+        if (navEl2 && window.RmShopNav) {
+          window.RmShopNav.mount(navEl2, { activeBase: "", activeSub: "" });
+        }
       });
   }
 

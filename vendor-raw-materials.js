@@ -5,6 +5,196 @@
   if (!V) return;
 
   var rawList = [];
+  var vrmTaxonomy = null;
+
+  function taxonomyCategories() {
+    return (vrmTaxonomy && vrmTaxonomy.categories) || [];
+  }
+
+  function fetchTaxonomyVendor() {
+    if (vrmTaxonomy) return Promise.resolve(vrmTaxonomy);
+    return fetch(V.vendorPageHref("raw-material-taxonomy.json"), { cache: "no-store" })
+      .then(function (r) {
+        return r.json();
+      })
+      .then(function (doc) {
+        vrmTaxonomy = doc;
+        return doc;
+      });
+  }
+
+  function populateBaseSelect(sel, selectedVal) {
+    if (!sel) return;
+    var cats = taxonomyCategories();
+    var cur = selectedVal || sel.value || "";
+    sel.innerHTML = '<option value="">Select…</option>';
+    cats.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      if (c.id === cur) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function refillSubSelect(baseSel, subSel, selectedSub) {
+    if (!baseSel || !subSel) return;
+    var bid = baseSel.value;
+    subSel.innerHTML = '<option value="">None / N.A.</option>';
+    if (!bid) {
+      subSel.disabled = true;
+      return;
+    }
+    var cat = null;
+    var cats = taxonomyCategories();
+    for (var i = 0; i < cats.length; i++) {
+      if (cats[i].id === bid) {
+        cat = cats[i];
+        break;
+      }
+    }
+    var subs = (cat && cat.subcategories) || [];
+    if (!subs.length) {
+      subSel.disabled = true;
+      return;
+    }
+    subSel.disabled = false;
+    subs.forEach(function (s) {
+      var o = document.createElement("option");
+      o.value = s.id;
+      o.textContent = s.name;
+      if (s.id === selectedSub) o.selected = true;
+      subSel.appendChild(o);
+    });
+  }
+
+  function setVendorFormCategories(baseVal, subVal) {
+    var bc = document.getElementById("vrmBaseCat");
+    var sc = document.getElementById("vrmSubCat");
+    populateBaseSelect(bc, baseVal);
+    refillSubSelect(bc, sc, subVal);
+  }
+
+  function wireFilterToolbarFromTaxonomy() {
+    var fb = document.getElementById("vrmFilterBase");
+    var fs = document.getElementById("vrmFilterSub");
+    if (!fb || !fs) return;
+    var cats = taxonomyCategories();
+    fb.innerHTML = '<option value="">All</option>';
+    cats.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      fb.appendChild(o);
+    });
+    if (!fb.dataset.rmWired) {
+      fb.dataset.rmWired = "1";
+      fb.addEventListener("change", function () {
+        refillSubSelect(fb, fs, "");
+        loadList().catch(function () {});
+      });
+      fs.addEventListener("change", function () {
+        loadList().catch(function () {});
+      });
+    }
+    refillSubSelect(fb, fs, "");
+  }
+
+  function wireInventoryTab() {
+    var ib = document.getElementById("vrmInvBase");
+    var isu = document.getElementById("vrmInvSub");
+    var ip = document.getElementById("vrmInvProduct");
+    if (!ib || !isu || !ip) return;
+    populateBaseSelect(ib, "");
+    if (!ib.dataset.rmWired) {
+      ib.dataset.rmWired = "1";
+      ib.addEventListener("change", function () {
+        refillSubSelect(ib, isu, "");
+        refillInvProductSelect();
+      });
+      isu.addEventListener("change", refillInvProductSelect);
+    }
+    function refillInvProductSelect() {
+      var bid = ib.value;
+      var sid = isu.disabled ? "" : isu.value;
+      ip.innerHTML = '<option value="">Select product…</option>';
+      if (!bid) {
+        ip.disabled = true;
+        return;
+      }
+      ip.disabled = false;
+      rawList.forEach(function (m) {
+        if (String(m.baseCategorySlug || "") !== bid) return;
+        if (sid && String(m.subcategorySlug || "") !== sid) return;
+        var o = document.createElement("option");
+        o.value = m.id;
+        o.textContent = (m.sku ? m.sku + " · " : "") + (m.name || m.id);
+        ip.appendChild(o);
+      });
+    }
+    var saveBtn = document.getElementById("vrmInvSave");
+    if (saveBtn && !saveBtn.dataset.rmWired) {
+      saveBtn.dataset.rmWired = "1";
+      saveBtn.addEventListener("click", function () {
+        var id = ip.value;
+        var msg = document.getElementById("vrmInvMsg");
+        if (!id) {
+          if (msg) {
+            msg.style.display = "block";
+            msg.style.color = "#b42318";
+            msg.textContent = "Select a product.";
+          }
+          return;
+        }
+        var m = null;
+        for (var i = 0; i < rawList.length; i++) {
+          if (rawList[i].id === id) m = rawList[i];
+        }
+        if (!m) return;
+        var opt = JSON.parse(JSON.stringify(m.options || {}));
+        var qEl = document.getElementById("vrmInvQty");
+        var nEl = document.getElementById("vrmInvNote");
+        var qv = qEl && qEl.value.trim() !== "" ? Number(qEl.value) : null;
+        opt.vendorInventory = {
+          qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
+          note: nEl ? nEl.value.trim().slice(0, 500) : "",
+        };
+        var ibv = ib.value.trim();
+        var isv = isu.disabled ? "" : isu.value.trim();
+        var payload = {
+          name: m.name,
+          description: m.description || "",
+          note: m.note || "",
+          sku: m.sku,
+          priceInr: m.priceInr,
+          mrpInr: m.mrpInr,
+          options: opt,
+          baseCategorySlug: ibv || m.baseCategorySlug || "",
+          subcategorySlug: isv || m.subcategorySlug || "",
+        };
+        if (m.image && (m.image.indexOf("http") === 0 || m.image.indexOf("//") === 0)) {
+          payload.imageUrl = m.image;
+        }
+        postJson("PUT", base() + "/api/vendor/raw-materials/" + encodeURIComponent(id), payload)
+          .then(function () {
+            if (msg) {
+              msg.style.display = "block";
+              msg.style.color = "";
+              msg.textContent = "Saved.";
+            }
+            return loadList();
+          })
+          .catch(function (e) {
+            if (msg) {
+              msg.style.display = "block";
+              msg.style.color = "#b42318";
+              msg.textContent = String((e && e.message) || e);
+            }
+          });
+      });
+    }
+    refillInvProductSelect();
+  }
 
   function findOpt(list, id) {
     if (!id || !list) return null;
@@ -58,6 +248,7 @@
 
   function setVrmTab(which) {
     var manage = document.getElementById("vrmPanelManage");
+    var inv = document.getElementById("vrmPanelInventory");
     var form = document.getElementById("vrmPanelForm");
     document.querySelectorAll(".vrm-tab").forEach(function (btn) {
       var on = btn.getAttribute("data-vrm-tab") === which;
@@ -67,6 +258,10 @@
     if (manage) {
       manage.classList.toggle("is-active", which === "manage");
       manage.hidden = which !== "manage";
+    }
+    if (inv) {
+      inv.classList.toggle("is-active", which === "inventory");
+      inv.hidden = which !== "inventory";
     }
     if (form) {
       form.classList.toggle("is-active", which === "form");
@@ -644,6 +839,11 @@
     document.getElementById("vrmTrust").value = (opt.trustBullets || []).join("\n");
     var gg = document.getElementById("vrmGalleryImages");
     if (gg) gg.value = (opt.galleryImages || []).join("\n");
+    var vi = opt.vendorInventory || {};
+    var sq = document.getElementById("vrmStockQty");
+    var sn = document.getElementById("vrmStockNote");
+    if (sq) sq.value = vi.qtyOnHand != null && Number.isFinite(Number(vi.qtyOnHand)) ? String(vi.qtyOnHand) : "";
+    if (sn) sn.value = vi.note || "";
     renderOptionBlocks();
     var sr = document.getElementById("vrmSizeRows");
     if (sr) sr.innerHTML = "";
@@ -672,6 +872,9 @@
     var uS = document.getElementById("vrmUseSize").checked;
     var uQ = document.getElementById("vrmUseQty").checked;
     var uC = document.getElementById("vrmUseColor").checked;
+    var sn = document.getElementById("vrmStockNote");
+    var sq = document.getElementById("vrmStockQty");
+    var qv = sq && sq.value.trim() !== "" ? Number(sq.value) : null;
     var trust = document
       .getElementById("vrmTrust")
       .value.split("\n")
@@ -700,6 +903,10 @@
       qtyOptions: uQ ? readRows("#vrmQtyRows", "qty") : [],
       colors: uC ? readRows("#vrmColorRows", "color") : [],
       galleryImages: galleryImages,
+      vendorInventory: {
+        qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
+        note: sn ? sn.value.trim().slice(0, 500) : "",
+      },
     };
     return o;
   }
@@ -719,6 +926,11 @@
     document.getElementById("vrmQtyBlock").innerHTML = "";
     document.getElementById("vrmColorsBlock").innerHTML = "";
     renderOptionBlocks();
+    setVendorFormCategories("", "");
+    var sq0 = document.getElementById("vrmStockQty");
+    var sn0 = document.getElementById("vrmStockNote");
+    if (sq0) sq0.value = "";
+    if (sn0) sn0.value = "";
   }
 
   function startEdit(id) {
@@ -741,6 +953,7 @@
     document.getElementById("vrmImageUrl").value =
       m.image && (m.image.indexOf("http") === 0 || m.image.indexOf("//") === 0) ? m.image : "";
     fillEditorsFromOptions(m.options || {});
+    setVendorFormCategories(m.baseCategorySlug || "", m.subcategorySlug || "");
     setVrmTab("form");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -802,7 +1015,16 @@
     showMsg("", false);
     var qEl = document.getElementById("vrmSearch");
     var q = qEl ? qEl.value.trim() : "";
-    var url = base() + "/api/vendor/raw-materials" + (q ? "?q=" + encodeURIComponent(q) : "");
+    var fb = document.getElementById("vrmFilterBase");
+    var fs = document.getElementById("vrmFilterSub");
+    var ub = fb ? fb.value.trim() : "";
+    var us = fs && !fs.disabled ? fs.value.trim() : "";
+    var params = new URLSearchParams();
+    if (q) params.set("q", q);
+    if (ub) params.set("base", ub);
+    if (us) params.set("sub", us);
+    var qs = params.toString();
+    var url = base() + "/api/vendor/raw-materials" + (qs ? "?" + qs : "");
     return fetch(url, { headers: V.authHeaders(), cache: "no-store" })
       .then(function (res) {
         return res.text().then(function (text) {
@@ -959,6 +1181,11 @@
         showMsg("SKU is required when editing an existing product.", true);
         return;
       }
+      var bc = document.getElementById("vrmBaseCat");
+      if (!editId && !(bc && bc.value)) {
+        showMsg("Choose a base category (from your Craftguru folder taxonomy).", true);
+        return;
+      }
       var options = readOptionsFromForm();
       var file = document.getElementById("vrmImage").files && document.getElementById("vrmImage").files[0];
       var imageUrl = document.getElementById("vrmImageUrl").value.trim();
@@ -975,6 +1202,11 @@
         if (mrpV) fd.set("mrpInr", mrpV);
         fd.set("options", JSON.stringify(options));
         if (imageUrl) fd.set("imageUrl", imageUrl);
+        fd.set("baseCategorySlug", (bc && bc.value.trim()) || "");
+        fd.set(
+          "subcategorySlug",
+          (document.getElementById("vrmSubCat") && document.getElementById("vrmSubCat").value) || ""
+        );
         fd.set("image", file, file.name);
         var mu = editId
           ? base() + "/api/vendor/raw-materials/" + encodeURIComponent(editId)
@@ -993,6 +1225,7 @@
         return;
       }
 
+      var sc = document.getElementById("vrmSubCat");
       var payload = {
         name: document.getElementById("vrmName").value.trim(),
         sku: skuVal,
@@ -1001,6 +1234,8 @@
         priceInr: Number(document.getElementById("vrmPrice").value) || 0,
         mrpInr: document.getElementById("vrmMrp").value.trim() ? Number(document.getElementById("vrmMrp").value) : null,
         options: options,
+        baseCategorySlug: (bc && bc.value.trim()) || "",
+        subcategorySlug: sc && sc.value ? sc.value.trim() : "",
       };
       if (imageUrl) payload.imageUrl = imageUrl;
 
@@ -1050,7 +1285,28 @@
       }
     });
 
-    loadList().catch(function () {});
+    fetchTaxonomyVendor()
+      .then(function () {
+        wireFilterToolbarFromTaxonomy();
+        wireInventoryTab();
+        var bc = document.getElementById("vrmBaseCat");
+        var sc = document.getElementById("vrmSubCat");
+        if (bc && sc) {
+          populateBaseSelect(bc, "");
+          if (!bc.dataset.rmFormCat) {
+            bc.dataset.rmFormCat = "1";
+            bc.addEventListener("change", function () {
+              refillSubSelect(bc, sc, "");
+            });
+          }
+          refillSubSelect(bc, sc, "");
+        }
+      })
+      .catch(function () {})
+      .then(function () {
+        return loadList();
+      })
+      .catch(function () {});
   }
 
   if (document.readyState === "loading") {

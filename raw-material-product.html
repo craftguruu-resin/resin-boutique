@@ -85,7 +85,15 @@
         <p class="crumb crumb--fx">
           <a href="index.html">Home</a> <span aria-hidden="true">/</span> <a href="raw-material-shop.html">Resin raw material</a> <span aria-hidden="true">/</span> Product
         </p>
-        <div id="rmPdpRoot"></div>
+        <div class="rm-shop-layout rm-shop-layout--pdp" id="rmShopLayout">
+          <aside class="rm-nav-tree-wrap" aria-label="Material categories">
+            <p class="rm-nav-tree__title">Categories</p>
+            <nav class="rm-nav-tree" id="rmNavTree"></nav>
+          </aside>
+          <div class="rm-shop-layout__main rm-shop-layout__main--pdp">
+            <div id="rmPdpRoot"></div>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -133,6 +141,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
+  <script src="raw-material-shop-nav.js"></script>
   <script src="raw-material-product.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

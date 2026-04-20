@@ -121,8 +121,178 @@
   }
 
   var lastMaterials = [];
+  var allMaterials = [];
   var sortWired = false;
+  var filterWired = false;
   var DEFAULT_SORT = "name-asc";
+
+  function qsParams() {
+    try {
+      var u = new URL(window.location.href);
+      return {
+        base: (u.searchParams.get("base") || "").trim(),
+        sub: (u.searchParams.get("sub") || "").trim(),
+      };
+    } catch (_) {
+      return { base: "", sub: "" };
+    }
+  }
+
+  function materialsMatchFilters(m, base, sub, needle) {
+    var b = String(base || "").trim();
+    var s = String(sub || "").trim();
+    var n = String(needle || "")
+      .trim()
+      .toLowerCase();
+    if (b && String(m.baseCategorySlug || "").trim() !== b) return false;
+    if (s && String(m.subcategorySlug || "").trim() !== s) return false;
+    if (n) {
+      var sku = String(m.sku || "").toLowerCase();
+      var name = String(m.name || "").toLowerCase();
+      if (name.indexOf(n) < 0 && sku.indexOf(n) < 0) return false;
+    }
+    return true;
+  }
+
+  function renderBestSellers(all) {
+    var el = document.getElementById("rmBestGrid");
+    if (!el) return;
+    var list = (all || []).slice();
+    var tagged = list.filter(function (m) {
+      var badge = (m.options && m.options.badge) || "";
+      return /best|popular|top/i.test(String(badge));
+    });
+    var pick = tagged.length ? tagged.slice(0, 6) : list.slice(0, 6);
+    el.innerHTML = "";
+    if (!pick.length) {
+      el.innerHTML = '<p class="rm-best-sellers__empty">Listings will appear here once materials are published.</p>';
+      return;
+    }
+    pick.forEach(function (m) {
+      var card = document.createElement("article");
+      card.className = "rm-best-card";
+      var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
+      var img = m.image ? imgSrc(m.image) : "";
+      var meta = minOfferMeta(m);
+      card.innerHTML =
+        '<a href="' +
+        escAttr(href) +
+        '">' +
+        (img ? '<div class="rm-best-card__img"><img src="' + escAttr(img) + '" alt="" loading="lazy" width="200" height="160" /></div>' : "") +
+        '<div class="rm-best-card__body"><h3 class="rm-best-card__title">' +
+        esc(m.name || "") +
+        "</h3>" +
+        '<p class="rm-best-card__price">' +
+        esc(fmtPrice(meta.min)) +
+        "</p></div></a>";
+      el.appendChild(card);
+    });
+  }
+
+  function fillFilterSelectsFromTaxonomy(doc) {
+    var baseSel = document.getElementById("rmFilterBase");
+    var subSel = document.getElementById("rmFilterSub");
+    if (!baseSel || !subSel) return;
+    var par = qsParams();
+    var cats = (doc && doc.categories) || [];
+    baseSel.innerHTML = '<option value="">All categories</option>';
+    cats.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name;
+      if (par.base === c.id) o.selected = true;
+      baseSel.appendChild(o);
+    });
+    function refillSub() {
+      var bid = baseSel.value;
+      subSel.innerHTML = '<option value="">All</option>';
+      subSel.disabled = !bid;
+      if (!bid) return;
+      var cat = null;
+      for (var ci = 0; ci < cats.length; ci++) {
+        if (cats[ci].id === bid) {
+          cat = cats[ci];
+          break;
+        }
+      }
+      var subs = (cat && cat.subcategories) || [];
+      subs.forEach(function (s) {
+        var o2 = document.createElement("option");
+        o2.value = s.id;
+        o2.textContent = s.name;
+        if (par.sub === s.id && par.base === bid) o2.selected = true;
+        subSel.appendChild(o2);
+      });
+    }
+    baseSel.addEventListener("change", refillSub);
+    refillSub();
+    var searchEl = document.getElementById("rmFilterSearch");
+    if (searchEl && !searchEl.dataset.rmInit) {
+      searchEl.dataset.rmInit = "1";
+      searchEl.value = "";
+    }
+  }
+
+  function renderCategoryChips(doc) {
+    var wrap = document.getElementById("rmCategoryChips");
+    if (!wrap) return;
+    var cats = (doc && doc.categories) || [];
+    wrap.innerHTML = "";
+    cats.forEach(function (c) {
+      var a = document.createElement("a");
+      a.className = "rm-category-chip";
+      a.href = window.RmShopNav ? window.RmShopNav.shopHref(c.id, "") : "#";
+      if (c.image) {
+        a.innerHTML =
+          '<span class="rm-category-chip__img"><img src="' +
+          escAttr(c.image) +
+          '" alt="" width="48" height="48" loading="lazy" /></span><span class="rm-category-chip__lab">' +
+          esc(c.name) +
+          "</span>";
+      } else {
+        a.innerHTML = '<span class="rm-category-chip__lab">' + esc(c.name) + "</span>";
+      }
+      wrap.appendChild(a);
+    });
+  }
+
+  function wireFiltersOnce() {
+    if (filterWired) return;
+    filterWired = true;
+    var apply = document.getElementById("rmFilterApply");
+    var clear = document.getElementById("rmFilterClear");
+    var baseSel = document.getElementById("rmFilterBase");
+    var subSel = document.getElementById("rmFilterSub");
+    var searchEl = document.getElementById("rmFilterSearch");
+    function go() {
+      var b = baseSel ? baseSel.value : "";
+      var s = subSel && !subSel.disabled ? subSel.value : "";
+      var u = "raw-material-shop.html";
+      var parts = [];
+      if (b) parts.push("base=" + encodeURIComponent(b));
+      if (s) parts.push("sub=" + encodeURIComponent(s));
+      if (parts.length) u += "?" + parts.join("&");
+      window.location.href = u;
+    }
+    if (apply) apply.addEventListener("click", go);
+    if (clear) {
+      clear.addEventListener("click", function () {
+        window.location.href = "raw-material-shop.html";
+      });
+    }
+    if (searchEl) {
+      searchEl.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          var needle = searchEl.value.trim().toLowerCase();
+          var rows = allMaterials.filter(function (m) {
+            return materialsMatchFilters(m, baseSel ? baseSel.value : "", subSel && !subSel.disabled ? subSel.value : "", needle);
+          });
+          render(rows);
+        }
+      });
+    }
+  }
 
   function sortSelect() {
     return document.getElementById("rmSortSelect");
@@ -204,8 +374,24 @@
 
   function load() {
     var b = apiBase();
+    var nav = document.getElementById("rmNavTree");
+    var par = qsParams();
+    if (nav && window.RmShopNav) {
+      window.RmShopNav.mount(nav, { activeBase: par.base, activeSub: par.sub });
+    }
+    if (window.RmShopNav && window.RmShopNav.fetchTaxonomy) {
+      window.RmShopNav
+        .fetchTaxonomy()
+        .then(function (doc) {
+          fillFilterSelectsFromTaxonomy(doc);
+          renderCategoryChips(doc);
+        })
+        .catch(function () {});
+    }
+    wireFiltersOnce();
     if (!b) {
       render([]);
+      renderBestSellers([]);
       return;
     }
     fetch(b + "/api/catalog/raw-materials", { cache: "no-store" })
@@ -214,13 +400,27 @@
       })
       .then(function (j) {
         if (!j || !j.ok) {
+          allMaterials = [];
           render([]);
+          renderBestSellers([]);
           return;
         }
-        render(j.materials || []);
+        allMaterials = j.materials || [];
+        renderBestSellers(allMaterials);
+        var needle = "";
+        try {
+          var se = document.getElementById("rmFilterSearch");
+          needle = se && se.value ? se.value.trim().toLowerCase() : "";
+        } catch (_) {}
+        var rows = allMaterials.filter(function (m) {
+          return materialsMatchFilters(m, par.base, par.sub, needle);
+        });
+        render(rows);
       })
       .catch(function () {
+        allMaterials = [];
         render([]);
+        renderBestSellers([]);
       });
   }
 

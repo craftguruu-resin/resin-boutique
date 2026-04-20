@@ -81,6 +81,10 @@ function ensureVendorInventoryColumns() {
     "UPDATE raw_materials SET sku = regexp_replace(id, '^raw-mat--', 'RM-', 'i') WHERE trim(coalesce(sku, '')) = ''",
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_materials_sku_lower ON raw_materials (lower(trim(sku)))",
     "ALTER TABLE raw_materials ALTER COLUMN image_path TYPE TEXT USING image_path::text",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS base_category_slug VARCHAR(80) NOT NULL DEFAULT ''",
+    "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS subcategory_slug VARCHAR(80) NOT NULL DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS idx_raw_materials_base_cat ON raw_materials (base_category_slug)",
+    "CREATE INDEX IF NOT EXISTS idx_raw_materials_sub_cat ON raw_materials (subcategory_slug)",
     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
     "CREATE TABLE IF NOT EXISTS guest_email_otps (" +
       "id BIGSERIAL PRIMARY KEY," +

@@ -8,6 +8,14 @@ var sharp = require("sharp");
 var catalogFromData = require("./catalog-from-data.js");
 var mediaPath = require("./media-path.js");
 
+function sanitizeRmCategorySlug(raw) {
+  return String(raw || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 80);
+}
+
 function slugify(s) {
   return String(s || "")
     .trim()
@@ -162,6 +170,12 @@ function normalizeOptions(o) {
   var reviewCount =
     Number.isFinite(rcRaw) && rcRaw > 0 ? Math.min(999999, Math.round(rcRaw)) : null;
   var detailBody = String(src.detailBody || "").trim().slice(0, 4000);
+  var viSrc = src.vendorInventory && typeof src.vendorInventory === "object" ? src.vendorInventory : {};
+  var qtyHand = Number(viSrc.qtyOnHand);
+  var vendorInventory = {
+    qtyOnHand: Number.isFinite(qtyHand) && qtyHand >= 0 ? Math.min(99999999, Math.round(qtyHand)) : null,
+    note: String(viSrc.note || "").trim().slice(0, 500),
+  };
   var galSrc = Array.isArray(src.galleryImages) ? src.galleryImages : [];
   var galleryImages = galSrc
     .map(function (u) {
@@ -218,6 +232,7 @@ function normalizeOptions(o) {
     useColor: useColor,
     badge: badge,
     heroImage: heroImage,
+    vendorInventory: vendorInventory,
     trustBullets: trustBullets,
     sizes: sizes,
     qtyOptions: qtyOptions,
@@ -250,6 +265,7 @@ function mapRow(row) {
       reviewCount: null,
       detailBody: "",
       galleryImages: [],
+      vendorInventory: { qtyOnHand: null, note: "" },
     };
   }
   var price = row.price_inr != null ? Number(row.price_inr) : 0;
@@ -264,21 +280,48 @@ function mapRow(row) {
     isActive: row.is_active !== false,
     priceInr: Number.isFinite(price) ? Math.round(price * 100) / 100 : 0,
     mrpInr: mrp != null && Number.isFinite(mrp) ? Math.round(mrp * 100) / 100 : null,
+    baseCategorySlug: String(row.base_category_slug || "").trim(),
+    subcategorySlug: String(row.subcategory_slug || "").trim(),
     options: opts,
   };
 }
 
-function listActive(cb) {
+function listActive(filter, cb) {
+  if (typeof filter === "function") {
+    cb = filter;
+    filter = {};
+  }
+  var f = filter && typeof filter === "object" ? filter : {};
+  var base = String(f.base || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 80);
+  var sub = String(f.sub || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 80);
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
       cb(null, []);
     });
   }
+  var sql =
+    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug FROM raw_materials WHERE is_active = true";
+  var params = [];
+  if (base) {
+    params.push(base);
+    sql += " AND base_category_slug = $" + params.length;
+  }
+  if (sub) {
+    params.push(sub);
+    sql += " AND subcategory_slug = $" + params.length;
+  }
+  sql += " ORDER BY updated_at DESC";
   pool
-    .query(
-      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE is_active = true ORDER BY updated_at DESC"
-    )
+    .query(sql, params)
     .then(function (r) {
       cb(null, (r.rows || []).map(mapRow));
     })
@@ -286,9 +329,15 @@ function listActive(cb) {
 }
 
 function listAll(search, cb) {
+  var opts = {};
   if (typeof search === "function") {
     cb = search;
     search = "";
+  } else if (search && typeof search === "object" && typeof cb === "function") {
+    opts = search;
+    search = String(opts.q || opts.search || "").trim();
+  } else {
+    search = String(search || "").trim();
   }
   var pool = poolMod.getPool();
   if (!pool) {
@@ -297,13 +346,35 @@ function listAll(search, cb) {
     });
   }
   var needle = String(search || "").trim().slice(0, 200);
+  var base = String(opts.base || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 80);
+  var sub = String(opts.sub || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, "")
+    .slice(0, 80);
   var sql =
-    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, updated_at FROM raw_materials";
+    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, updated_at, base_category_slug, subcategory_slug FROM raw_materials";
   var params = [];
+  var wh = [];
   var pat = iLikeContainsPattern(needle);
   if (pat) {
-    sql += " WHERE (name ILIKE $1 OR sku ILIKE $1 OR id ILIKE $1 OR description ILIKE $1)";
     params.push(pat);
+    wh.push("(name ILIKE $" + params.length + " OR sku ILIKE $" + params.length + " OR id ILIKE $" + params.length + " OR description ILIKE $" + params.length + ")");
+  }
+  if (base) {
+    params.push(base);
+    wh.push("base_category_slug = $" + params.length);
+  }
+  if (sub) {
+    params.push(sub);
+    wh.push("subcategory_slug = $" + params.length);
+  }
+  if (wh.length) {
+    sql += " WHERE " + wh.join(" AND ");
   }
   sql += " ORDER BY updated_at DESC";
   pool
@@ -324,7 +395,7 @@ function getActiveById(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1 AND is_active = true",
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug FROM raw_materials WHERE id = $1 AND is_active = true",
       [rid]
     )
     .then(function (r) {
@@ -344,7 +415,7 @@ function getByIdForVendor(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json FROM raw_materials WHERE id = $1",
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug FROM raw_materials WHERE id = $1",
       [rid]
     )
     .then(function (r) {
@@ -416,6 +487,9 @@ function createRow(opts, cb) {
     });
   }
 
+  var baseSlugIns = sanitizeRmCategorySlug(opts && opts.baseCategorySlug);
+  var subSlugIns = sanitizeRmCategorySlug(opts && opts.subcategorySlug);
+
   var buf = opts && opts.imageBuffer;
   var url = opts && opts.imageUrl ? String(opts.imageUrl).trim() : "";
   var heroFromOpts = resolveHeroImagePath(normOpts);
@@ -426,8 +500,8 @@ function createRow(opts, cb) {
       var newId = "raw-mat--" + crypto.randomBytes(6).toString("hex");
       pool
         .query(
-          "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9) RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json",
-          [newId, name, desc, imagePath, note, priceInr, mrpInr, JSON.stringify(normOpts), skuFinal]
+          "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku, base_category_slug, subcategory_slug) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9, $10, $11) RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug",
+          [newId, name, desc, imagePath, note, priceInr, mrpInr, JSON.stringify(normOpts), skuFinal, baseSlugIns, subSlugIns]
         )
         .then(function (r) {
           try {
@@ -523,6 +597,9 @@ function updateRow(id, opts, cb) {
     });
   }
 
+  var baseSlugUp = sanitizeRmCategorySlug(opts && opts.baseCategorySlug);
+  var subSlugUp = sanitizeRmCategorySlug(opts && opts.subcategorySlug);
+
   assertSkuUniqueForUpdate(pool, rid, skuUpd, function (errU) {
     if (errU) return cb(errU);
 
@@ -531,12 +608,12 @@ function updateRow(id, opts, cb) {
       var sql;
       if (imagePath != null) {
         sql =
-          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, image_path = $9, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
-        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid, imagePath];
+          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, base_category_slug = $10, subcategory_slug = $11, image_path = $9, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug";
+        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid, imagePath, baseSlugUp, subSlugUp];
       } else {
         sql =
-          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json";
-        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid];
+          "UPDATE raw_materials SET name = $1, description = $2, note = $3, price_inr = $4, mrp_inr = $5, options_json = $6::jsonb, sku = $7, base_category_slug = $9, subcategory_slug = $10, updated_at = now() WHERE id = $8 RETURNING id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug";
+        params = [name, desc, note, priceInr, mrpInr, JSON.stringify(normOpts), skuUpd, rid, baseSlugUp, subSlugUp];
       }
       pool
         .query(sql, params)
@@ -672,6 +749,8 @@ function seedDemoMaterialsPromise(pool) {
     {
       id: DEMO_IDS[0],
       sku: "RM-DEMO-POUR",
+      baseCategorySlug: "resin-and-pigments",
+      subcategorySlug: "",
       name: "Oh My Pour! Crystal Clear Resin",
       description:
         "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
@@ -685,8 +764,20 @@ function seedDemoMaterialsPromise(pool) {
   return Promise.all(
     demos.map(function (d) {
       return pool.query(
-        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9) ON CONFLICT (id) DO NOTHING",
-        [d.id, d.name, d.description, d.image, d.note, d.price, d.mrp, JSON.stringify(d.options), d.sku]
+        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku, base_category_slug, subcategory_slug) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9, $10, $11) ON CONFLICT (id) DO NOTHING",
+        [
+          d.id,
+          d.name,
+          d.description,
+          d.image,
+          d.note,
+          d.price,
+          d.mrp,
+          JSON.stringify(d.options),
+          d.sku,
+          d.baseCategorySlug || "resin-and-pigments",
+          d.subcategorySlug || "",
+        ]
       );
     })
   ).then(function () {});

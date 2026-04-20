@@ -103,16 +103,12 @@
             <p class="band-sub">Browse vendor-listed resin supplies. Same checkout and orders as the main catalogue.</p>
           </div>
         </div>
-        <div class="rm-landing">
-          <aside class="rm-rail" aria-label="On this page">
-            <p class="rm-rail__label">On this page</p>
-            <ul class="rm-rail__list">
-              <li><a href="#rm-hero">Discover</a></li>
-              <li><a href="#rm-shop">Products</a></li>
-              <li><a href="#rm-toolbar">Sort</a></li>
-            </ul>
+        <div class="rm-shop-layout" id="rmShopLayout">
+          <aside class="rm-nav-tree-wrap" aria-label="Material categories">
+            <p class="rm-nav-tree__title">Categories</p>
+            <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
-          <div>
+          <div class="rm-shop-layout__main">
             <div class="rm-hero" id="rm-hero">
               <div class="rm-hero__blob" aria-hidden="true"></div>
               <div class="rm-hero__inner">
@@ -151,8 +147,31 @@
                 />
               </div>
             </div>
+            <section class="rm-best-sellers" id="rmBestSellers" aria-labelledby="rmBestHeading">
+              <div class="rm-best-sellers__head">
+                <h2 id="rmBestHeading" class="rm-best-sellers__title">Popular picks</h2>
+                <p class="rm-best-sellers__sub">Highlighted and fast-moving raw materials from the shop.</p>
+              </div>
+              <div class="rm-best-sellers__grid" id="rmBestGrid"></div>
+            </section>
             <div id="rm-shop">
-              <div id="rm-toolbar" class="category-toolbar" aria-label="Sort materials">
+              <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter and sort materials">
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmFilterBase">Base category</label>
+                  <select id="rmFilterBase" class="category-toolbar__select">
+                    <option value="">All categories</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmFilterSub">Subcategory</label>
+                  <select id="rmFilterSub" class="category-toolbar__select" disabled>
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group category-toolbar__group--grow">
+                  <label class="category-toolbar__label" for="rmFilterSearch">Search name or SKU</label>
+                  <input type="search" id="rmFilterSearch" class="category-toolbar__search" placeholder="Type to filter…" autocomplete="off" />
+                </div>
                 <div class="category-toolbar__group">
                   <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
                   <select id="rmSortSelect" class="category-toolbar__select">
@@ -160,7 +179,12 @@
                     <option value="name-desc">Name · Z → A</option>
                   </select>
                 </div>
+                <div class="category-toolbar__group">
+                  <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply</button>
+                  <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset</button>
+                </div>
               </div>
+              <div class="rm-category-chips" id="rmCategoryChips" aria-label="Jump to category"></div>
               <div class="rm-grid-cards" id="rmGrid"></div>
             </div>
           </div>
@@ -276,6 +300,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
+  <script src="raw-material-shop-nav.js"></script>
   <script src="raw-material.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
