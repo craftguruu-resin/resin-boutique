@@ -233,61 +233,6 @@
     return true;
   }
 
-  function renderBestSellers(all) {
-    var el = document.getElementById("rmBestGrid");
-    if (!el) return;
-    var list = (all || []).slice();
-    function badgeScore(m) {
-      var badge = String((m.options && m.options.badge) || "");
-      if (/best|popular|pick|new|top/i.test(badge)) return 2;
-      if (m.image) return 1;
-      return 0;
-    }
-    list.sort(function (a, b) {
-      return badgeScore(b) - badgeScore(a);
-    });
-    var tagged = list.filter(function (m) {
-      var badge = (m.options && m.options.badge) || "";
-      return /best|popular|pick|new|top/i.test(String(badge));
-    });
-    var pick = [];
-    var seen = Object.create(null);
-    function addUnique(m) {
-      if (!m || !m.id || seen[m.id]) return;
-      seen[m.id] = 1;
-      pick.push(m);
-    }
-    tagged.forEach(addUnique);
-    list.forEach(function (m) {
-      if (pick.length >= 8) return;
-      addUnique(m);
-    });
-    el.innerHTML = "";
-    if (!pick.length) {
-      el.innerHTML = '<p class="rm-best-sellers__empty">Listings will appear here once materials are published.</p>';
-      return;
-    }
-    pick.forEach(function (m) {
-      var card = document.createElement("article");
-      card.className = "rm-best-card";
-      var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
-      var img = m.image ? imgSrc(m.image) : "";
-      var meta = minOfferMeta(m);
-      card.innerHTML =
-        '<a href="' +
-        escAttr(href) +
-        '">' +
-        (img ? '<div class="rm-best-card__img"><img src="' + escAttr(img) + '" alt="" loading="lazy" width="200" height="160" /></div>' : "") +
-        '<div class="rm-best-card__body"><h3 class="rm-best-card__title">' +
-        esc(m.name || "") +
-        "</h3>" +
-        '<p class="rm-best-card__price">' +
-        esc(fmtPrice(meta.min)) +
-        "</p></div></a>";
-      el.appendChild(card);
-    });
-  }
-
   function fillFilterSelectsFromTaxonomy(doc) {
     rmShopHydratingFilters = true;
     try {
@@ -620,7 +565,6 @@
         }
       }
 
-      renderBestSellers(allMaterials);
       if (rmShopTaxDoc && isRawMaterialShopHome()) {
         renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
       }

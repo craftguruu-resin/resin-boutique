@@ -250,7 +250,7 @@
 }
 
 .rm-product-panel {
-  margin-top: 1.75rem;
+  margin-top: 1.35rem;
   padding: 1.25rem 1.35rem;
   border-radius: 20px;
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.95));
@@ -284,13 +284,14 @@ a.rm-empty-link:hover {
   overflow: hidden;
   background: #fff;
   border: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 14px 40px rgba(15, 23, 42, 0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.05);
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+  contain: layout style;
 }
 
 .rm-card-shop:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 22px 50px rgba(15, 23, 42, 0.1);
+  border-color: rgba(59, 111, 217, 0.28);
+  box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
 }
 
 .rm-card-shop a {
@@ -882,11 +883,18 @@ a.rm-empty-link:hover {
 .rm-nav-tree-wrap {
   position: sticky;
   top: 5.5rem;
+  align-self: start;
+  max-height: calc(100vh - 6.25rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 1rem 1.1rem;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(15, 23, 42, 0.08);
   box-shadow: 0 18px 50px rgba(15, 23, 42, 0.06);
+  scrollbar-gutter: stable;
 }
 
 .rm-nav-tree__title {
@@ -1154,6 +1162,29 @@ a.rm-empty-link:hover {
   color: #0f172a;
 }
 
+/* Lighter hovers on category cards (global storefront styles are heavier). */
+.rm-cat-hub .featured-cat-card {
+  transition: border-color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.rm-cat-hub .featured-cat-card:hover {
+  transform: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 14px 36px rgba(15, 23, 42, 0.07);
+}
+
+.rm-cat-hub .featured-cat-card:hover .featured-cat-card__media img {
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-card-shop,
+  .rm-cat-hub .featured-cat-card {
+    transition: none;
+  }
+}
+
 @media (max-width: 900px) {
   .rm-shop-layout {
     grid-template-columns: 1fr;
@@ -1161,5 +1192,6 @@ a.rm-empty-link:hover {
 
   .rm-nav-tree-wrap {
     position: static;
+    max-height: min(42vh, 20rem);
   }
 }
