@@ -174,8 +174,11 @@
     var home = isRawMaterialShopHome();
     var hub = document.querySelector(".rm-cat-hub");
     var tb = document.getElementById("rm-shop");
+    var hero = document.getElementById("rm-hero");
     if (hub) hub.toggleAttribute("hidden", !home);
     if (tb) tb.toggleAttribute("hidden", !home);
+    /* Banner only on shop “home” (no category drill-in); catalog / listing shows products only. */
+    if (hero) hero.toggleAttribute("hidden", !home);
   }
 
   function readHubFilterFromDom() {

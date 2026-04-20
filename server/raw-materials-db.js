@@ -768,7 +768,8 @@ function seedMinimalOptions(badge) {
 }
 
 function showcaseLuminaOptions() {
-  var hero = "media/raw-material-shop-hero-home-banner.png";
+  /* Shop marketing banner belongs on raw-material-shop home only — not on PDP/cards. */
+  var pdpThumb = "media/raw-materials/rm-seed-2-1-art-resin.jpg";
   return {
     brandLine: "CRAFT GURU",
     ratingScore: "4.8",
@@ -779,7 +780,7 @@ function showcaseLuminaOptions() {
     useQty: false,
     useColor: true,
     badge: "BEST SELLER",
-    heroImage: hero,
+    heroImage: pdpThumb,
     trustBullets: [
       "Safe & non-toxic when cured",
       "Lab-formulated in Jaipur",
@@ -796,19 +797,19 @@ function showcaseLuminaOptions() {
         id: "co-indigo",
         label: "Indigo label",
         hex: "#312e81",
-        image: hero,
+        image: "",
       },
       {
         id: "co-forest",
         label: "Forest label",
         hex: "#15803d",
-        image: hero,
+        image: "",
       },
       {
         id: "co-amber",
         label: "Amber label",
         hex: "#d97706",
-        image: hero,
+        image: "",
       },
     ],
   };
@@ -820,7 +821,7 @@ function showcaseLuminaOptions() {
  * @returns {Promise<void>}
  */
 function seedDemoMaterialsPromise(pool) {
-  var hero = "media/raw-material-shop-hero-home-banner.png";
+  var demoPourCardImage = "media/raw-materials/rm-seed-2-1-art-resin.jpg";
   var demos = [
     {
       id: DEMO_IDS[0],
@@ -831,7 +832,7 @@ function seedDemoMaterialsPromise(pool) {
       description:
         "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
       note: "Ships free the week you pay on orders over ₹1500 · WhatsApp +91-8824350056 to confirm batch timing.",
-      image: hero,
+      image: demoPourCardImage,
       price: 1200,
       mrp: 2049,
       options: showcaseLuminaOptions(),
