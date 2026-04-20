@@ -6,6 +6,7 @@ var bcrypt = require("bcryptjs");
 var poolMod = require("./pool.js");
 var catalogFromData = require("../catalog-from-data.js");
 var rawMaterialsDb = require("../raw-materials-db.js");
+var photoFramesDb = require("../photo-frames-db.js");
 var schemaHotfix = require("./schema-hotfix.js");
 
 /**
@@ -33,6 +34,9 @@ function migrate(cb) {
     })
     .then(function () {
       return rawMaterialsDb.seedDemoMaterialsPromise(p);
+    })
+    .then(function () {
+      return photoFramesDb.seedDemoPhotoFramesPromise(p);
     })
     .then(function () {
       cb();

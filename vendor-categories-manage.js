@@ -108,6 +108,14 @@
     }).then(V.parseApiJson);
   }
 
+  function deletePfMaterials(base, sub) {
+    var q = "?base=" + encodeURIComponent(base) + (sub ? "&sub=" + encodeURIComponent(sub) : "");
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/photo-frame-nav/materials" + q), {
+      method: "DELETE",
+      headers: V.authHeaders(),
+    }).then(V.parseApiJson);
+  }
+
   function refreshAll() {
     setMsg("Loading…");
     return loadResin()
@@ -795,21 +803,46 @@
       return;
     }
     if (subVal === CAT_ONLY) {
-      doc2.categories = (doc2.categories || []).filter(function (c) {
-        return String(c.id) !== catId;
-      });
-    } else {
-      grp2.subcategories = (grp2.subcategories || []).filter(function (s) {
-        return String(s.id) !== subVal;
-      });
+      deletePfMaterials(catId, "")
+        .then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Delete photo frame products failed");
+          }
+          doc2.categories = (doc2.categories || []).filter(function (c) {
+            return String(c.id) !== catId;
+          });
+          return putPf(doc2);
+        })
+        .then(function (x2) {
+          if (!x2.okHttp || !x2.json || !x2.json.ok) {
+            throw new Error((x2.json && x2.json.error) || "Save failed");
+          }
+          pfNav = doc2;
+          setMsg("Base group and linked photo frame products removed.");
+          fillPfUnderSelect();
+          return loadPf().then(onEditDomainChange);
+        })
+        .catch(function (e) {
+          setMsg(String((e && e.message) || e), true);
+        });
+      return;
     }
-    putPf(doc2)
+    deletePfMaterials(catId, subVal)
       .then(function (x) {
         if (!x.okHttp || !x.json || !x.json.ok) {
-          throw new Error((x.json && x.json.error) || "Save failed");
+          throw new Error((x.json && x.json.error) || "Delete photo frame products failed");
+        }
+        grp2.subcategories = (grp2.subcategories || []).filter(function (s) {
+          return String(s.id) !== subVal;
+        });
+        return putPf(doc2);
+      })
+      .then(function (x2) {
+        if (!x2.okHttp || !x2.json || !x2.json.ok) {
+          throw new Error((x2.json && x2.json.error) || "Save failed");
         }
         pfNav = doc2;
-        setMsg("Removed.");
+        setMsg("Line and linked photo frame products removed.");
         fillPfUnderSelect();
         return loadPf().then(onEditDomainChange);
       })

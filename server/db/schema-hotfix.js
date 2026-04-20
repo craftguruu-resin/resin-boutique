@@ -91,6 +91,26 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE raw_materials ADD COLUMN IF NOT EXISTS subcategory_slug VARCHAR(80) NOT NULL DEFAULT ''",
     "CREATE INDEX IF NOT EXISTS idx_raw_materials_base_cat ON raw_materials (base_category_slug)",
     "CREATE INDEX IF NOT EXISTS idx_raw_materials_sub_cat ON raw_materials (subcategory_slug)",
+    "CREATE TABLE IF NOT EXISTS photo_frame_products (" +
+      "id VARCHAR(120) PRIMARY KEY," +
+      "name VARCHAR(500) NOT NULL," +
+      "description TEXT NOT NULL DEFAULT ''," +
+      "image_path TEXT NOT NULL DEFAULT ''," +
+      "note VARCHAR(300) NOT NULL DEFAULT ''," +
+      "is_active BOOLEAN NOT NULL DEFAULT true," +
+      "created_at TIMESTAMPTZ NOT NULL DEFAULT now()," +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+      ")",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS price_inr NUMERIC(12, 2) NOT NULL DEFAULT 0",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS mrp_inr NUMERIC(12, 2)",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
+    "UPDATE photo_frame_products SET sku = regexp_replace(id, '^pf-prod--', 'PF-', 'i') WHERE trim(coalesce(sku, '')) = ''",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_photo_frame_products_sku_lower ON photo_frame_products (lower(trim(sku)))",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS base_category_slug VARCHAR(80) NOT NULL DEFAULT ''",
+    "ALTER TABLE photo_frame_products ADD COLUMN IF NOT EXISTS subcategory_slug VARCHAR(80) NOT NULL DEFAULT ''",
+    "CREATE INDEX IF NOT EXISTS idx_photo_frame_products_base_cat ON photo_frame_products (base_category_slug)",
+    "CREATE INDEX IF NOT EXISTS idx_photo_frame_products_sub_cat ON photo_frame_products (subcategory_slug)",
     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS sku VARCHAR(120) NOT NULL DEFAULT ''",
     "CREATE TABLE IF NOT EXISTS guest_email_otps (" +
       "id BIGSERIAL PRIMARY KEY," +

@@ -44,6 +44,15 @@ function rawMaterialsMediaFsRoot() {
   return path.join(REPO_ROOT, "media", "raw-materials");
 }
 
+/** Vendor-managed photo frame product images: /media/photo-frame-products/... */
+function photoFrameProductsMediaFsRoot() {
+  var only = envResolved("PHOTO_FRAME_PRODUCTS_MEDIA_ROOT");
+  if (only) return only;
+  var base = uploadedMediaBase();
+  if (base) return path.join(base, "photo-frame-products");
+  return path.join(REPO_ROOT, "media", "photo-frame-products");
+}
+
 /**
  * Resolve repo-relative media paths to absolute paths for sharp/fs reads.
  * Catalog, hero, and raw-materials honor UPLOADED_MEDIA_ROOT / per-type *_ROOT env vars.
@@ -65,6 +74,10 @@ function absoluteMediaPath(rel) {
     var rsub = n.slice("media/raw-materials/".length);
     return path.join(rawMaterialsMediaFsRoot(), rsub);
   }
+  if (n.indexOf("media/photo-frame-products/") === 0) {
+    var pfsub = n.slice("media/photo-frame-products/".length);
+    return path.join(photoFrameProductsMediaFsRoot(), pfsub);
+  }
   return path.join(REPO_ROOT, n);
 }
 
@@ -74,7 +87,8 @@ function hasExternalUploadRoot() {
     envResolved("CATALOG_MEDIA_ROOT") ||
     envResolved("UPLOADED_MEDIA_ROOT") ||
     envResolved("HERO_MEDIA_ROOT") ||
-    envResolved("RAW_MATERIALS_MEDIA_ROOT")
+    envResolved("RAW_MATERIALS_MEDIA_ROOT") ||
+    envResolved("PHOTO_FRAME_PRODUCTS_MEDIA_ROOT")
   );
 }
 
@@ -84,6 +98,7 @@ module.exports = {
   catalogMediaFsRoot: catalogMediaFsRoot,
   heroMediaFsRoot: heroMediaFsRoot,
   rawMaterialsMediaFsRoot: rawMaterialsMediaFsRoot,
+  photoFrameProductsMediaFsRoot: photoFrameProductsMediaFsRoot,
   absoluteMediaPath: absoluteMediaPath,
   hasExternalUploadRoot: hasExternalUploadRoot,
 };

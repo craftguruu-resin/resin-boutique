@@ -20,6 +20,7 @@ var vendorProductsDb = require("./vendor-products-db.js");
 var catalogMediaPath = require("./media-path.js");
 var storefrontHeroDb = require("./storefront-hero-db.js");
 var rawMaterialsDb = require("./raw-materials-db.js");
+var photoFramesDb = require("./photo-frames-db.js");
 var vendorSiteDocsDb = require("./vendor-site-docs-db.js");
 var vendorCategoriesDb = require("./vendor-categories-db.js");
 var multer = require("multer");
@@ -1770,6 +1771,27 @@ app.delete("/api/vendor/raw-material-taxonomy/materials", function (req, res) {
   });
 });
 
+/** Vendor: delete photo frame product DB rows for a nav base (and optional sub) before updating photo-frame nav JSON. */
+app.delete("/api/vendor/photo-frame-nav/materials", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var base = String((req.query && req.query.base) || "").trim();
+    var sub = String((req.query && req.query.sub) || "").trim();
+    photoFramesDb.deleteMaterialsByTaxonomySlot(base, sub, function (e2, n) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String((e2 && e2.message) || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, deleted: n || 0 });
+    });
+  });
+});
+
 app.get("/api/vendor/photo-frame-nav", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
     if (err) {
@@ -2173,6 +2195,34 @@ app.get("/api/catalog/raw-materials", function (req, res) {
 app.get("/api/catalog/raw-materials/:id", function (req, res) {
   var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
   rawMaterialsDb.getActiveById(id, function (e, row) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    if (!row) {
+      return res.status(404).json({ ok: false, error: "Not found" });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, material: row });
+  });
+});
+
+/** Public: vendor-managed resin photo frames (same payload shape as raw materials). Query: base, sub from photo-frame nav categories. */
+app.get("/api/catalog/photo-frame-products", function (req, res) {
+  var base = String((req.query && req.query.base) || "").trim();
+  var sub = String((req.query && req.query.sub) || "").trim();
+  var q = String((req.query && req.query.q) || "").trim();
+  photoFramesDb.listActive({ base: base, sub: sub, q: q }, function (e, list) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, materials: list || [] });
+  });
+});
+
+app.get("/api/catalog/photo-frame-products/:id", function (req, res) {
+  var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+  photoFramesDb.getActiveById(id, function (e, row) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
@@ -2613,6 +2663,8 @@ function rawMaterialPayloadFromBody(b, file) {
   };
 }
 
+var photoFramePayloadFromBody = rawMaterialPayloadFromBody;
+
 app.post(
   "/api/vendor/raw-materials",
   productImageUpload.single("image"),
@@ -2787,6 +2839,212 @@ app.delete("/api/vendor/raw-materials/:id", function (req, res) {
     }
     var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
     rawMaterialsDb.deleteRow(id, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("Not found") >= 0 ? 404 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.get("/api/vendor/photo-frame-products", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var q = String((req.query && req.query.q) || "").trim();
+    var base = String((req.query && req.query.base) || "").trim();
+    var sub = String((req.query && req.query.sub) || "").trim();
+    photoFramesDb.listAll({ q: q, base: base, sub: sub }, function (e2, list) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, materials: list || [] });
+    });
+  });
+});
+
+app.post(
+  "/api/vendor/photo-frame-products",
+  productImageUpload.single("image"),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      var ct = String((req.headers && req.headers["content-type"]) || "").toLowerCase();
+      if (ct.indexOf("application/json") === 0) {
+        var jb = req.body || {};
+        photoFramesDb.createRow(
+          {
+            name: jb.name,
+            description: jb.description,
+            note: jb.note,
+            sku: jb.sku,
+            priceInr: jb.priceInr,
+            mrpInr: jb.mrpInr,
+            options: jb.options,
+            imageUrl: jb.imageUrl,
+            imageBuffer: null,
+            baseCategorySlug: jb.baseCategorySlug,
+            subcategorySlug: jb.subcategorySlug,
+          },
+          function (e2, row) {
+            if (e2) {
+              var msg = String((e2 && e2.message) || e2);
+              var code =
+                msg.indexOf("required") >= 0 ||
+                msg.indexOf("Add a main image") >= 0 ||
+                msg.indexOf("Quantity") >= 0 ||
+                msg.indexOf("Colour") >= 0 ||
+                msg.indexOf("SKU") >= 0
+                  ? 400
+                  : 500;
+              return res.status(code).json({ ok: false, error: msg });
+            }
+            res.setHeader("Cache-Control", "no-store");
+            res.json({ ok: true, material: row });
+          }
+        );
+        return;
+      }
+      var b = req.body || {};
+      photoFramesDb.createRow(
+        photoFramePayloadFromBody(b, req.file),
+        function (e2, row) {
+          if (e2) {
+            var msg2 = String((e2 && e2.message) || e2);
+            var code2 =
+              msg2.indexOf("required") >= 0 ||
+              msg2.indexOf("Add a main image") >= 0 ||
+              msg2.indexOf("Quantity") >= 0 ||
+              msg2.indexOf("Colour") >= 0 ||
+              msg2.indexOf("SKU") >= 0
+                ? 400
+                : 500;
+            return res.status(code2).json({ ok: false, error: msg2 });
+          }
+          res.setHeader("Cache-Control", "no-store");
+          res.json({ ok: true, material: row });
+        }
+      );
+    });
+  }
+);
+
+app.put(
+  "/api/vendor/photo-frame-products/:id",
+  productImageUpload.single("image"),
+  function (req, res) {
+    vendorAuth.tokenValid(req, function (err, ok) {
+      if (err) {
+        return res.status(500).json({ ok: false, error: String(err.message || err) });
+      }
+      if (!ok) {
+        return res.status(401).json({ ok: false, error: "Unauthorized" });
+      }
+      var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+      var ct = String((req.headers && req.headers["content-type"]) || "").toLowerCase();
+      if (ct.indexOf("application/json") === 0) {
+        var jb = req.body || {};
+        photoFramesDb.updateRow(
+          id,
+          {
+            name: jb.name,
+            description: jb.description,
+            note: jb.note,
+            sku: jb.sku,
+            priceInr: jb.priceInr,
+            mrpInr: jb.mrpInr,
+            options: jb.options,
+            imageUrl: jb.imageUrl,
+            baseCategorySlug: jb.baseCategorySlug,
+            subcategorySlug: jb.subcategorySlug,
+          },
+          function (e2, row) {
+            if (e2) {
+              var msg = String((e2 && e2.message) || e2);
+              var code =
+                msg.indexOf("Not found") >= 0
+                  ? 404
+                  : msg.indexOf("Quantity") >= 0 ||
+                      msg.indexOf("Colour") >= 0 ||
+                      msg.indexOf("SKU") >= 0 ||
+                      msg.indexOf("Name is") >= 0
+                    ? 400
+                    : 500;
+              return res.status(code).json({ ok: false, error: msg });
+            }
+            res.setHeader("Cache-Control", "no-store");
+            res.json({ ok: true, material: row });
+          }
+        );
+        return;
+      }
+      photoFramesDb.updateRow(id, photoFramePayloadFromBody(req.body || {}, req.file), function (e2, row) {
+        if (e2) {
+          var msg2 = String((e2 && e2.message) || e2);
+          var code2 =
+            msg2.indexOf("Not found") >= 0
+              ? 404
+              : msg2.indexOf("Quantity") >= 0 ||
+                  msg2.indexOf("Colour") >= 0 ||
+                  msg2.indexOf("SKU") >= 0 ||
+                  msg2.indexOf("Name is") >= 0
+                ? 400
+                : 500;
+          return res.status(code2).json({ ok: false, error: msg2 });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, material: row });
+      });
+    });
+  }
+);
+
+app.post("/api/vendor/photo-frame-products/:id/active", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+    var active = req.body && req.body.active;
+    if (typeof active !== "boolean") {
+      return res.status(400).json({ ok: false, error: "Body must include active: true or false" });
+    }
+    photoFramesDb.setActive(id, active, function (e2) {
+      if (e2) {
+        return res.status(400).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.delete("/api/vendor/photo-frame-products/:id", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var id = decodeURIComponent(String((req.params && req.params.id) || "").trim());
+    photoFramesDb.deleteRow(id, function (e2) {
       if (e2) {
         var msg = String((e2 && e2.message) || e2);
         var code = msg.indexOf("Not found") >= 0 ? 404 : 500;
@@ -3204,6 +3462,7 @@ app.get("/vendororder", function (_req, res) {
 app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot()));
 app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot()));
 app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot()));
+app.use("/media/photo-frame-products", express.static(catalogMediaPath.photoFrameProductsMediaFsRoot()));
 app.use(express.static(siteRoot));
 
 function onServerListen() {
@@ -3222,7 +3481,9 @@ function onServerListen() {
         " | hero=" +
         catalogMediaPath.heroMediaFsRoot() +
         " | raw-materials=" +
-        catalogMediaPath.rawMaterialsMediaFsRoot()
+        catalogMediaPath.rawMaterialsMediaFsRoot() +
+        " | photo-frame-products=" +
+        catalogMediaPath.photoFrameProductsMediaFsRoot()
     );
   } else if (poolMod.isEnabled() && String(process.env.NODE_ENV || "").toLowerCase() === "production") {
     console.warn(

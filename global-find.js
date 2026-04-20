@@ -82,6 +82,14 @@
         hint.textContent =
           "Matches resin supplies only (not the main resin gift catalog). On the shop, this also narrows the grid below.";
       }
+    } else if (m === "photo-frame") {
+      kicker.textContent = "Photo frames";
+      query.placeholder = "Filter by name, SKU, or id…";
+      if (wrap) wrap.hidden = true;
+      if (hint) {
+        hint.textContent =
+          "Vendor-managed resin photo frames. On the shop, this also narrows the grid below.";
+      }
     }
   }
 

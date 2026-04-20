@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photo frames — Resin keepsakes — Craft guru</title>
+  <title>Shop resin photo frames — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="raw-material-pages.css" />
 </head>
-<body class="subpage">
+<body class="subpage rm-page-wide">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -34,13 +35,13 @@
     </a>
     <nav class="nav-dock nav-dock--fx" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
-      <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
-      <a href="photo-frames.html" class="nav-dock-link is-active">Photo frames</a>
+      <a href="photo-frame-shop.html" class="nav-dock-link is-active">Photo frames shop</a>
+      <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
       <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
     <div class="site-top-end">
-      <div class="global-find" id="globalFindRoot" data-find-mode="category">
+      <div class="global-find" id="globalFindRoot" data-find-mode="photo-frame">
         <button
           type="button"
           class="global-find__trigger"
@@ -94,36 +95,109 @@
     <section class="band-shop band-shop--flush">
       <div class="band-shop-inner">
         <p class="crumb crumb--fx">
-          <a href="index.html">Home</a> <span aria-hidden="true">/</span> Photo frames
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span> <a href="raw-material.html">Photo frames shop</a> <span aria-hidden="true">/</span> Shop
         </p>
-        <div class="pf-home-hero" aria-labelledby="pfHomeHeroHeading">
-          <h1 id="pfHomeHeroHeading" class="visually-hidden">Photo frames — Craft Guru, create memories in resin</h1>
-          <div class="pf-home-hero__media">
-            <img
-              src="media/photo-frames-hero-home-banner.png"
-              width="1536"
-              height="1024"
-              alt="Hand-poured resin photo frames and keepsakes — ocean, floral, and sunset designs on a warm wooden table with candlelight"
-              decoding="async"
-              fetchpriority="high"
-            />
-          </div>
-          <div class="pf-home-hero__actions">
-            <a class="pf-home-hero__btn pf-home-hero__btn--primary" href="photo-frame-shop.html">Shop photo frames</a>
-            <a class="pf-home-hero__btn pf-home-hero__btn--ghost" href="return-gifts.html">Return gifts</a>
-          </div>
-        </div>
-        <div class="section-head section-head--solo pf-home-below">
+        <div class="section-head section-head--solo">
           <div>
-            <h2 class="band-title band-title--fx">Browse by line</h2>
-            <p class="band-sub">
-              Every piece is poured and finished in Jaipur — beach scenes, florals, ring platters, clocks, and more. Pick a line to open the same catalogue tiles and checkout you use across Craftguru.
-            </p>
+            <h1 class="band-title band-title--fx">Material shop</h1>
+            <p class="band-sub">Browse vendor-listed resin supplies. Same checkout and orders as the main catalogue.</p>
           </div>
         </div>
-        <ul class="pf-home-link-grid" id="photoFrameNavGrid" aria-label="Photo frame catalogue lines">
-          <li class="pf-home-link-grid__loading">Loading lines…</li>
-        </ul>
+        <div class="rm-shop-layout" id="rmShopLayout">
+          <aside class="rm-nav-tree-wrap" aria-label="Material categories">
+            <p class="rm-nav-tree__title">Categories</p>
+            <nav class="rm-nav-tree" id="rmNavTree"></nav>
+          </aside>
+          <div class="rm-shop-layout__main">
+            <div class="rm-hero" id="rm-hero">
+              <div class="rm-hero__blob" aria-hidden="true"></div>
+              <div class="rm-hero__inner">
+                <p class="rm-hero__kicker">Craft Guru</p>
+                <h2 class="rm-hero__title-stack">
+                  <span class="rm-hero__title-line1">Your Resin Art Supply Destination</span>
+                  <span class="rm-hero__title-line2">Epoxy, pigments, molds &amp; studio essentials</span>
+                </h2>
+                <p class="rm-hero__sub">
+                  Browse vendor-listed resins and supplies with the same checkout as the main catalogue — crystal-clear epoxy, colour systems, glitters, and tools for serious pours.
+                </p>
+                <a class="rm-hero__cta" href="#rm-shop">Shop now</a>
+              </div>
+              <div class="rm-hero__visual">
+                <img
+                  src="media/raw-material-shop-hero-home-banner.png"
+                  width="1376"
+                  height="768"
+                  alt="Craft Guru — your resin art supply destination: epoxy, pigments, molds, and hand-poured pieces"
+                  decoding="async"
+                />
+              </div>
+            </div>
+            <div id="rm-shop">
+              <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter Shop by category">
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmFilterBase">Base category</label>
+                  <select id="rmFilterBase" class="category-toolbar__select">
+                    <option value="">All categories</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmFilterSub">Subcategory</label>
+                  <select id="rmFilterSub" class="category-toolbar__select" disabled>
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group category-toolbar__group--grow">
+                  <label class="category-toolbar__label" for="rmFilterSearch">Search name or SKU</label>
+                  <input type="search" id="rmFilterSearch" class="category-toolbar__search" placeholder="Search, then Apply" autocomplete="off" />
+                </div>
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmFilterPriceMax">Max “from” price</label>
+                  <select id="rmFilterPriceMax" class="category-toolbar__select">
+                    <option value="">Any price</option>
+                    <option value="35">≤ ₹35</option>
+                    <option value="50">≤ ₹50</option>
+                    <option value="75">≤ ₹75</option>
+                    <option value="100">≤ ₹100</option>
+                    <option value="150">≤ ₹150</option>
+                    <option value="250">≤ ₹250</option>
+                    <option value="500">≤ ₹500</option>
+                    <option value="1000">≤ ₹1,000</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group">
+                  <label class="category-toolbar__label" for="rmSortSelect">Sort category cards</label>
+                  <select id="rmSortSelect" class="category-toolbar__select">
+                    <option value="name-asc">Name · A → Z</option>
+                    <option value="name-desc">Name · Z → A</option>
+                    <option value="price-asc">Price · low → high</option>
+                    <option value="price-desc">Price · high → low</option>
+                  </select>
+                </div>
+                <div class="category-toolbar__group category-toolbar__group--actions">
+                  <label class="category-toolbar__label" for="rmFilterApply">Shop by category</label>
+                  <div class="category-toolbar__btn-row">
+                    <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply to Shop by category</button>
+                    <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset category filter</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <section class="rm-cat-hub" aria-labelledby="rmCatHubHeading">
+              <div class="rm-cat-hub__head">
+                <h2 id="rmCatHubHeading" class="rm-best-sellers__title">Shop by category</h2>
+                <p class="rm-best-sellers__sub">Same card layout as the main Craftguru storefront — open a family of materials.</p>
+              </div>
+              <div class="featured-cat-grid" id="rmCategoryHub"></div>
+            </section>
+            <section class="rm-product-panel" id="rmProductPanel" aria-labelledby="rmProductsHeading">
+              <div class="rm-product-panel__head">
+                <h2 id="rmProductsHeading" class="rm-best-sellers__title">Materials in this category</h2>
+                <p class="rm-best-sellers__sub">Opens when you choose a category or subcategory from the cards or the sidebar — not from the filter bar above.</p>
+              </div>
+              <div class="rm-grid-cards" id="rmGrid"></div>
+            </section>
+          </div>
+        </div>
       </div>
     </section>
   </main>
@@ -142,8 +216,17 @@
       </div>
       <div class="footer-sitemap__col">
         <h3 class="footer-sitemap__title">Main menu</h3>
-        <ul class="footer-sitemap__list" id="photoFrameNavList">
-          <li class="footer-sitemap__loading">Loading links…</li>
+        <ul class="footer-sitemap__list">
+          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
+          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
+          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
+          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
+          <li><a href="category.html?cat=resin-customised-frames">Varmala Preservation</a></li>
+          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
+          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
+          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
         </ul>
       </div>
       <div class="footer-sitemap__col">
@@ -226,7 +309,8 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
-  <script src="photo-frame-nav.js"></script>
+  <script src="photo-frame-shop-nav.js"></script>
+  <script src="photo-frame-shop.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>

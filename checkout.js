@@ -968,7 +968,9 @@
       var wrap = document.createElement("div");
       wrap.className = "checkout-snip-wrap";
       var href =
-        String(line.id || "").indexOf("raw-mat--") === 0
+        String(line.id || "").indexOf("pf-prod--") === 0
+          ? "photo-frame-product.html?id=" + encodeURIComponent(line.id)
+          : String(line.id || "").indexOf("raw-mat--") === 0
           ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
           : "product.html?id=" + encodeURIComponent(line.id);
       var imgHtml = imgRel
@@ -1031,7 +1033,9 @@
       var lineAmt = (line.price || 0) * (line.qty || 1);
       var imgRel = getLineImage(line);
       var href =
-        String(line.id || "").indexOf("raw-mat--") === 0
+        String(line.id || "").indexOf("pf-prod--") === 0
+          ? "photo-frame-product.html?id=" + encodeURIComponent(line.id)
+          : String(line.id || "").indexOf("raw-mat--") === 0
           ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
           : "product.html?id=" + encodeURIComponent(line.id);
       var li = document.createElement("li");

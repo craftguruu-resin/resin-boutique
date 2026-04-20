@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Photo frames — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="photoFrames">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Resin photo frames</h1>
+          <p class="vs-topbar__sub">
+            Guest shop SKUs: size and pack rows can each carry their own price (optional — blank falls back to default price below). Colours use the picker; paste HTTPS / Cloudinary URLs for images.
+            <a href="vendor-categories-manage.html">Edit category tree &amp; nav images</a>
+          </p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vpfRefresh">Refresh</button>
+        </div>
+      </header>
+      <div class="vs-content">
+        <div class="vpf-tabs" role="tablist" aria-label="Photo frames sections">
+          <button type="button" class="vpf-tab is-active" id="vpfTabManage" role="tab" aria-selected="true" data-vpf-tab="manage">Manage products</button>
+          <button type="button" class="vpf-tab" id="vpfTabInventory" role="tab" aria-selected="false" data-vpf-tab="inventory">Stock &amp; placement</button>
+          <button type="button" class="vpf-tab" id="vpfTabForm" role="tab" aria-selected="false" data-vpf-tab="form">Add / edit product</button>
+        </div>
+
+        <div id="vpfPanelManage" class="vpf-panel is-active" role="tabpanel" aria-labelledby="vpfTabManage">
+          <div class="vs-card vpf-manage-card">
+            <div class="vpf-manage-head">
+              <h2 class="vs-card__title" style="margin: 0">All photo frame products</h2>
+              <div class="vpf-manage-toolbar">
+                <div class="vs-field" style="margin: 0; min-width: 11rem">
+                  <label for="vpfFilterBase">Base category</label>
+                  <select id="vpfFilterBase" class="vs-input">
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="margin: 0; min-width: 11rem">
+                  <label for="vpfFilterSub">Subcategory</label>
+                  <select id="vpfFilterSub" class="vs-input" disabled>
+                    <option value="">All</option>
+                  </select>
+                </div>
+                <div class="vs-field vpf-search-field" style="margin: 0">
+                  <label for="vpfSearch" class="visually-hidden">Search products</label>
+                  <input
+                    type="search"
+                    id="vpfSearch"
+                    class="vpf-search-input"
+                    placeholder="Search by name, SKU, or ID…"
+                    autocomplete="off"
+                  />
+                </div>
+                <button type="button" class="vs-btn vs-btn--primary" id="vpfAddNew">+ Add new product</button>
+              </div>
+            </div>
+            <p id="vpfEmpty" class="vs-muted">Loading…</p>
+            <div class="vs-table-wrap">
+              <table class="vs-table" id="vpfTable" style="display: none">
+                <thead>
+                  <tr>
+                    <th>Image</th>
+                    <th>Name</th>
+                    <th>SKU</th>
+                    <th>From price</th>
+                    <th>Active</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="vpfTbody"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div id="vpfPanelInventory" class="vpf-panel" role="tabpanel" aria-labelledby="vpfTabInventory" hidden>
+          <div class="vs-card">
+            <h2 class="vs-card__title" style="margin-top: 0">Stock &amp; placement</h2>
+            <p class="vs-muted" style="margin-top: 0">
+              Choose category → subcategory (if any) → product, then update on-hand note or quantity for the shelf. Saves the same product record (merges with existing options).
+            </p>
+            <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem">
+              <div class="vs-field" style="flex: 1; min-width: 11rem">
+                <label for="vpfInvBase">Base category</label>
+                <select id="vpfInvBase" class="vs-input">
+                  <option value="">Select…</option>
+                </select>
+              </div>
+              <div class="vs-field" style="flex: 1; min-width: 11rem">
+                <label for="vpfInvSub">Subcategory</label>
+                <select id="vpfInvSub" class="vs-input" disabled>
+                  <option value="">—</option>
+                </select>
+              </div>
+              <div class="vs-field" style="flex: 2; min-width: 14rem">
+                <label for="vpfInvProduct">Product</label>
+                <select id="vpfInvProduct" class="vs-input" disabled>
+                  <option value="">Select category first</option>
+                </select>
+              </div>
+            </div>
+            <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.75rem">
+              <div class="vs-field" style="flex: 1; min-width: 8rem">
+                <label for="vpfInvQty">Qty on hand (optional)</label>
+                <input type="number" id="vpfInvQty" class="vs-input" min="0" step="1" placeholder="e.g. 24" />
+              </div>
+              <div class="vs-field" style="flex: 2; min-width: 12rem">
+                <label for="vpfInvNote">Shelf / bin note</label>
+                <input type="text" id="vpfInvNote" class="vs-input" maxlength="500" placeholder="Aisle, batch, reorder flag…" />
+              </div>
+            </div>
+            <div class="vs-row-actions" style="margin-top: 1rem">
+              <button type="button" class="vs-btn vs-btn--primary" id="vpfInvSave">Save stock fields</button>
+            </div>
+            <p id="vpfInvMsg" class="vs-muted" style="display: none; margin-top: 0.75rem"></p>
+          </div>
+        </div>
+
+        <div id="vpfPanelForm" class="vpf-panel" role="tabpanel" aria-labelledby="vpfTabForm" hidden>
+          <div class="vs-card" style="padding: 0.85rem 1rem">
+            <h2 class="vs-card__title" style="margin-top: 0" id="vpfFormTitle">Add photo frame product</h2>
+            <form id="vpfForm">
+              <input type="hidden" id="vpfEditingId" value="" />
+              <div class="vs-field">
+                <label for="vpfName">Name</label>
+                <input type="text" id="vpfName" maxlength="500" required />
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfSku">SKU</label>
+                <input type="text" id="vpfSku" maxlength="120" placeholder="e.g. PF-FRAME-8X10 (optional when adding — auto-generated if empty)" />
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.78rem">
+                  Letters, numbers, spaces, hyphen, dot, underscore; stored uppercase. Must be unique. Required when editing.
+                </p>
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+                <div class="vs-field" style="flex: 1; min-width: 11rem">
+                  <label for="vpfBaseCat">Base category</label>
+                  <select id="vpfBaseCat" class="vs-input">
+                    <option value="">Select…</option>
+                  </select>
+                </div>
+                <div class="vs-field" style="flex: 1; min-width: 11rem">
+                  <label for="vpfSubCat">Subcategory</label>
+                  <select id="vpfSubCat" class="vs-input">
+                    <option value="">None / N.A.</option>
+                  </select>
+                </div>
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+                <div class="vs-field" style="flex: 1; min-width: 8rem">
+                  <label for="vpfStockQty">Qty on hand (optional)</label>
+                  <input type="number" id="vpfStockQty" class="vs-input" min="0" step="1" placeholder="Warehouse" />
+                </div>
+                <div class="vs-field" style="flex: 2; min-width: 12rem">
+                  <label for="vpfStockNote">Shelf note (optional)</label>
+                  <input type="text" id="vpfStockNote" class="vs-input" maxlength="500" />
+                </div>
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfDesc">Description</label>
+                <textarea id="vpfDesc" rows="3" maxlength="4000" placeholder="Shown on product page"></textarea>
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfNote">Short note (shipping / lead time)</label>
+                <input type="text" id="vpfNote" maxlength="300" />
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.5rem">
+                <div class="vs-field" style="flex: 1; min-width: 140px">
+                  <label for="vpfPrice">Default price (INR)</label>
+                  <input type="number" id="vpfPrice" min="0" step="0.01" required />
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.78rem">Used when a size or pack row leaves price blank. Guest PDP defaults to the cheapest size × pack combo.</p>
+                </div>
+                <div class="vs-field" style="flex: 1; min-width: 140px">
+                  <label for="vpfMrp">Default MRP (optional)</label>
+                  <input type="number" id="vpfMrp" min="0" step="0.01" placeholder="Strike-through" />
+                </div>
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfHero">Hero image URL (HTTPS / Cloudinary)</label>
+                <input type="url" id="vpfHero" placeholder="https://res.cloudinary.com/..." />
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfBadge">Badge (optional)</label>
+                <input type="text" id="vpfBadge" maxlength="80" placeholder="e.g. BEST SELLER" />
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfTrust">Trust line bullets (one per line)</label>
+                <textarea id="vpfTrust" rows="3" maxlength="800" placeholder="Safe &amp; non-toxic&#10;Lab tested"></textarea>
+              </div>
+              <fieldset class="vs-field" style="margin-top: 0.65rem; border: 1px solid rgba(15,23,42,0.1); border-radius: 10px; padding: 0.65rem 0.85rem">
+                <legend class="vs-muted" style="padding: 0 0.35rem">Variant controls (pick any combination)</legend>
+                <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vpfUseSize" checked /> Size (label + optional price/MRP + image each)</label>
+                <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vpfUseQty" /> Pack / quantity presets (at least 3 when enabled)</label>
+                <label style="display: block; margin: 0.25rem 0"><input type="checkbox" id="vpfUseColor" checked /> Colour swatches (1–5; picker + label + optional image each)</label>
+              </fieldset>
+              <div id="vpfSizesBlock" style="margin-top: 0.75rem"></div>
+              <div id="vpfQtyBlock" style="margin-top: 0.75rem"></div>
+              <div id="vpfColorsBlock" style="margin-top: 0.75rem"></div>
+              <div class="vs-field" style="margin-top: 0.75rem">
+                <label for="vpfGalleryImages">Extra gallery images (optional)</label>
+                <textarea id="vpfGalleryImages" rows="3" maxlength="8000" placeholder="One HTTPS URL per line — extra angles or multi-photo PDP when you are not using colour images."></textarea>
+              </div>
+              <div class="vs-field" style="margin-top: 0.75rem">
+                <label for="vpfImageUrl">Main / fallback image URL (HTTPS)</label>
+                <input type="url" id="vpfImageUrl" placeholder="If empty, hero or first swatch image is used" />
+              </div>
+              <div class="vs-field" style="margin-top: 0.5rem">
+                <label for="vpfImage">Or upload photo (JPEG/PNG/WebP)</label>
+                <input type="file" id="vpfImage" accept="image/jpeg,image/png,image/webp" />
+              </div>
+              <div class="vs-row-actions" style="margin-top: 0.85rem; display: flex; gap: 0.5rem; flex-wrap: wrap">
+                <button type="submit" class="vs-btn vs-btn--primary" id="vpfSubmit">Save product</button>
+                <button type="button" class="vs-btn vs-btn--ghost" id="vpfCancelEdit" style="display: none">Cancel edit</button>
+              </div>
+            </form>
+            <p id="vpfMsg" class="vs-muted" style="display: none; margin-top: 0.65rem"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-photo-frames.js"></script>
+</body>
+</html>

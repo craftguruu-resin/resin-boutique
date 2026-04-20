@@ -41,15 +41,22 @@
     return (
       pn === "raw-material-shop.html" ||
       pn === "raw-material-product.html" ||
-      pn === "raw-material.html"
+      pn === "raw-material.html" ||
+      pn === "photo-frame-shop.html" ||
+      pn === "photo-frame-product.html"
     );
   }
 
   function rawMaterialsSearchFetchUrl(q) {
     var root = catalogJsonApiBase();
-    var path = "/api/catalog/raw-materials?q=" + encodeURIComponent(q);
+    var pn = currentPageName();
+    var isPhotoFrame =
+      pn === "photo-frame-shop.html" || pn === "photo-frame-product.html";
+    var path =
+      (isPhotoFrame ? "/api/catalog/photo-frame-products?q=" : "/api/catalog/raw-materials?q=") +
+      encodeURIComponent(q);
     try {
-      if (currentPageName() === "raw-material-shop.html") {
+      if (pn === "raw-material-shop.html" || pn === "photo-frame-shop.html") {
         var u = new URL(window.location.href);
         var b = u.searchParams.get("base") || "";
         var s = u.searchParams.get("sub") || "";
@@ -84,6 +91,8 @@
     if (pn === "checkout.html") return;
     if (pn === "raw-material-product.html") return;
     if (pn === "raw-material-shop.html") return;
+    if (pn === "photo-frame-product.html") return;
+    if (pn === "photo-frame-shop.html") return;
     var main = document.querySelector("main.sub-main");
     if (!main) return;
     var D = window.RESIN_DATA;
@@ -141,6 +150,7 @@
 
     [
       ["raw-material-shop.html", "Resin raw material"],
+      ["photo-frame-shop.html", "Photo frames shop"],
       ["photo-frames.html", "Photo frames"],
       ["return-gifts.html", "Return gifts"],
     ].forEach(function (pair) {
@@ -170,7 +180,14 @@
     var wrap = document.createElement("div");
     wrap.id = "guestHeaderSearch";
     wrap.className = "guest-header-search";
-    var ph = headerSearchUsesRawMaterialsApi() ? "Search raw materials…" : "Search resin catalog…";
+    var ph = "Search resin catalog…";
+    if (headerSearchUsesRawMaterialsApi()) {
+      var pnx = currentPageName();
+      ph =
+        pnx === "photo-frame-shop.html" || pnx === "photo-frame-product.html"
+          ? "Search photo frames…"
+          : "Search raw materials…";
+    }
     wrap.innerHTML =
       '<span class="guest-header-search__icon" aria-hidden="true">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
@@ -225,12 +242,16 @@
         res.hidden = false;
         return;
       }
+      var pnHit = currentPageName();
+      var isPfHit = pnHit === "photo-frame-shop.html" || pnHit === "photo-frame-product.html";
+      var pdpHref = isPfHit ? "photo-frame-product.html?id=" : "raw-material-product.html?id=";
+      var subDefault = isPfHit ? "Photo frame" : "Raw material";
       res.innerHTML = list
         .map(function (m) {
-          var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
+          var href = pdpHref + encodeURIComponent(m.id);
           var img = m.image && D2 && D2.imageUrl ? D2.imageUrl(m.image) : String((m && m.image) || "").trim();
           var sub =
-            [m.baseCategorySlug, m.subcategorySlug].filter(Boolean).join(" · ") || "Raw material";
+            [m.baseCategorySlug, m.subcategorySlug].filter(Boolean).join(" · ") || subDefault;
           return (
             '<a class="guest-header-search__hit" href="' +
             escapeAttr(href) +

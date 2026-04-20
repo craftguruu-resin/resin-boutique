@@ -51,6 +51,7 @@
         p === "vendor-products-manage.html" ||
         p === "vendor-hero.html" ||
         p === "vendor-raw-materials.html" ||
+        p === "vendor-photo-frames.html" ||
         p === "vendor-inventory.html" ||
         p === "vendor-categories-manage.html"
       ) {
@@ -355,6 +356,7 @@
       link("categories", vendorPageHref("vendor-categories-manage.html"), "Categories", "▦") +
       link("hero", vendorPageHref("vendor-hero.html"), "Hero images", "◎") +
       link("raw", vendorPageHref("vendor-raw-materials.html"), "Raw materials", "◆") +
+      link("photoFrames", vendorPageHref("vendor-photo-frames.html"), "Photo frames", "▢") +
       link("returns", vendorPageHref("vendor-returns.html"), "Returns", "↩") +
       "</ul>" +
       "<div class='vs-sidebar__foot'>" +
