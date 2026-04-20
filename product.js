@@ -195,27 +195,25 @@
 
   var PLACEHOLDER_REL = "media/placeholder-product.svg";
 
-  /** Main hero URL plus extra gallery URLs only (no duplicate of hero in the strip). */
-  function productHeroAndExtras(p) {
-    if (!p) return { hero: resolveCatalogImg(PLACEHOLDER_REL), extras: [] };
+  /** Deduped main + gallery URLs (order: primary image first, then extras). Used for hero + right-hand thumbnails so the base shot is always selectable. */
+  function productGalleryUrls(p) {
+    if (!p) return [resolveCatalogImg(PLACEHOLDER_REL)];
     var extra = p.gallery || p.galleryImages;
     if (!Array.isArray(extra)) extra = [];
     var seen = Object.create(null);
-    var ordered = [];
+    var out = [];
     function push(u) {
       var abs = resolveCatalogImg(u);
       if (!abs || seen[abs]) return;
       seen[abs] = 1;
-      ordered.push(abs);
+      out.push(abs);
     }
     push(p.image);
     extra.forEach(function (x) {
       push(x);
     });
-    var hero = ordered.length ? ordered[0] : "";
-    if (!hero) hero = resolveCatalogImg(PLACEHOLDER_REL);
-    var extras = ordered.slice(1);
-    return { hero: hero, extras: extras };
+    if (!out.length) out.push(resolveCatalogImg(PLACEHOLDER_REL));
+    return out;
   }
 
   function wireProductCatalogGalleryOnce() {
@@ -255,32 +253,32 @@
   function setupProductGallery() {
     wireProductCatalogGalleryOnce();
     if (!product) return;
-    var hx = productHeroAndExtras(product);
-    var heroUrl = hx.hero;
-    var extras = hx.extras;
-    galleryState.urls = [heroUrl].concat(extras);
+    var urls = productGalleryUrls(product);
+    galleryState.urls = urls;
     galleryState.idx = 0;
     var wrap = document.getElementById("productCatalogGallery");
     var col = document.getElementById("productGalleryThumbs");
     var track = document.getElementById("productGalleryTrack");
     var img = document.getElementById("productImage");
     if (!wrap || !col || !track || !img) return;
-    var multi = extras.length > 0;
+    var multi = urls.length > 1;
     col.hidden = !multi;
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
-    img.src = heroUrl;
+    img.src = urls[0] || "";
     if (!multi) {
       track.innerHTML = "";
       return;
     }
-    track.innerHTML = extras
+    track.innerHTML = urls
       .map(function (u, i) {
-        var realIdx = i + 1;
         return (
           '<button type="button" role="tab" class="product-catalog-gallery__thumb' +
+          (i === 0 ? " is-active" : "") +
           '" data-idx="' +
-          realIdx +
-          '" aria-selected="false"><img src="' +
+          i +
+          '" aria-selected="' +
+          (i === 0 ? "true" : "false") +
+          '"><img src="' +
           escapeAttr(u) +
           '" alt="" loading="lazy" width="72" height="72" /></button>'
         );

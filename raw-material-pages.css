@@ -885,6 +885,7 @@ a.rm-empty-link:hover {
 
 .rm-shop-layout__main {
   min-width: 0;
+  width: 100%;
 }
 
 .rm-nav-tree-wrap {
