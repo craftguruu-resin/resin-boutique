@@ -88,10 +88,12 @@
     if (!host || !opts) return;
     var id = opts.id;
     var name = String(opts.name || "Craftguru piece");
-    var url = absProductUrl(id);
+    var overrideUrl = opts.productUrl != null ? String(opts.productUrl).trim() : "";
+    var url = overrideUrl ? overrideUrl : absProductUrl(id);
     var text = encodeURIComponent(name + "\n" + url);
     var ddId = "productShareMenu-" + String(id || "x").replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
-    host.className = "product-share-bar";
+    var keepRmPdp = host.classList && host.classList.contains("product-share-bar--rm-pdp");
+    host.className = "product-share-bar" + (keepRmPdp ? " product-share-bar--rm-pdp" : "");
     host.innerHTML =
       '<button type="button" class="product-share-bar__toggle" aria-expanded="false" aria-haspopup="true" aria-controls="' +
       ddId +

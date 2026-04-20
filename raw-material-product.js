@@ -252,6 +252,7 @@
     var needNav = galleryUrlCount > 1;
     if (!!root.querySelector("#rmPdpPrev") !== needNav) return true;
     if (!root.querySelector("#rmPdpHeroImg") && galleryUrlCount > 0) return true;
+    if (!root.querySelector("#rmPdpShareHost")) return true;
     return false;
   }
 
@@ -531,6 +532,24 @@
   }
 
   /** Split vendor description on blank lines for readable multi-paragraph layout. */
+  function mountRmPdpShare(root) {
+    if (!root || !state.material) return;
+    var host = root.querySelector("#rmPdpShareHost");
+    if (!host || !window.CRAFTGURU_SHARE || !window.CRAFTGURU_SHARE.mountProductShare) return;
+    var mid = String(state.material.id || "");
+    var pageUrl;
+    try {
+      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), window.location.href).href;
+    } catch (_) {
+      pageUrl = "raw-material-product.html?id=" + encodeURIComponent(mid);
+    }
+    window.CRAFTGURU_SHARE.mountProductShare(host, {
+      id: mid,
+      name: state.material.name || "Material",
+      productUrl: pageUrl,
+    });
+  }
+
   function formatDescParagraphs(raw) {
     var s = String(raw == null ? "" : raw)
       .replace(/\r\n/g, "\n")
@@ -755,6 +774,7 @@
       "<h1 class=\"rm-pdp__title\">" +
       esc(m.name) +
       "</h1>" +
+      '<div class="rm-pdp__meta-rating-row">' +
       '<div class="rm-pdp__stars-wrap">' +
       '<div class="rm-pdp__stars" aria-label="Customer rating">' +
       "★★★★★ " +
@@ -764,6 +784,8 @@
       ' <span class="rm-pdp__reviews">(' +
       esc(String(revN)) +
       " reviews)</span></div></div>" +
+      '<div class="product-share-bar product-share-bar--rm-pdp" id="rmPdpShareHost" aria-label="Share this material"></div>' +
+      "</div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="rmPdpPrice">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +
@@ -814,6 +836,7 @@
       patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
     }
     wirePdpRootOnce(root);
+    mountRmPdpShare(root);
     fadeHeroImageIn(root);
   }
 

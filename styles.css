@@ -2472,6 +2472,25 @@ body.product-page--oos .btn-add-lg {
   font-weight: 700;
 }
 
+.product-meta-share-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1.25rem;
+}
+
+.product-meta-share-row .product-meta-line {
+  margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.product-meta-share-row .product-share-bar {
+  margin: 0;
+  flex: 0 0 auto;
+}
+
 .glass-panel {
   background: rgba(255, 255, 255, 0.55);
   backdrop-filter: blur(18px);
