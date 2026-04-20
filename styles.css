@@ -2303,6 +2303,99 @@ body.product-page--oos .btn-add-lg {
   gap: 1.25rem;
 }
 
+.product-catalog-gallery {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.product-catalog-gallery--multi {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: clamp(0.65rem, 1.5vw, 1.1rem);
+  align-items: stretch;
+}
+
+.product-catalog-gallery__thumb-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: min(420px, 52vh);
+  min-height: 0;
+}
+
+.product-catalog-gallery__track {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.2rem;
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(12, 18, 34, 0.06);
+}
+
+.product-catalog-gallery__nav {
+  flex: 0 0 auto;
+  border-radius: 10px;
+  border: 1px solid rgba(12, 18, 34, 0.1);
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(26, 32, 44, 0.55);
+  font-size: 0.65rem;
+  line-height: 1;
+  padding: 0.28rem 0.15rem;
+  cursor: pointer;
+}
+
+.product-catalog-gallery__nav:hover {
+  border-color: rgba(91, 33, 182, 0.35);
+  color: #5b21b6;
+}
+
+.product-catalog-gallery__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  margin: 0;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(12, 18, 34, 0.05);
+}
+
+.product-catalog-gallery__thumb.is-active {
+  border-color: #5b21b6;
+  box-shadow: 0 0 0 3px rgba(91, 33, 182, 0.14);
+}
+
+.product-catalog-gallery__thumb img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  height: auto;
+  object-fit: cover;
+}
+
+.product-catalog-gallery__hero {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .product-catalog-gallery--multi {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .product-catalog-gallery__thumb-col {
+    max-height: min(320px, 45vh);
+  }
+}
+
 .qty-dock--under-photo {
   width: 100%;
 }
@@ -5897,6 +5990,11 @@ a.home-auth-btn {
   object-position: 50% 42%;
   position: relative;
   z-index: 1;
+}
+
+/* Wide homepage hero banner — bias crop toward logo + product row inside circular frame */
+.hero-atelier__photo-disc .hero-atelier__photo-img--resin-supplies-hero {
+  object-position: 50% 55%;
 }
 
 .hero-atelier__photo-ring > img {

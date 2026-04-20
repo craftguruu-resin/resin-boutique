@@ -74,6 +74,14 @@
       query.placeholder = "Find on Home, then Enter…";
       if (wrap) wrap.hidden = true;
       if (hint) hint.textContent = "";
+    } else if (m === "raw-material") {
+      kicker.textContent = "Raw materials";
+      query.placeholder = "Filter by name, SKU, or id…";
+      if (wrap) wrap.hidden = true;
+      if (hint) {
+        hint.textContent =
+          "Matches resin supplies only (not the main resin gift catalog). On the shop, this also narrows the grid below.";
+      }
     }
   }
 

@@ -50,7 +50,9 @@
         p === "vendor-portal.html" ||
         p === "vendor-products-manage.html" ||
         p === "vendor-hero.html" ||
-        p === "vendor-raw-materials.html"
+        p === "vendor-raw-materials.html" ||
+        p === "vendor-inventory.html" ||
+        p === "vendor-categories-manage.html"
       ) {
         return true;
       }
@@ -350,6 +352,7 @@
       link("tags", vendorPageHref("vendor-tags.html"), "Orders &amp; tags", "◇") +
       link("inventory", vendorPageHref("vendor-inventory.html"), "Inventory", "◫") +
       link("products", vendorPageHref("vendor-products-manage.html"), "Products", "✎") +
+      link("categories", vendorPageHref("vendor-categories-manage.html"), "Categories", "▦") +
       link("hero", vendorPageHref("vendor-hero.html"), "Hero images", "◎") +
       link("raw", vendorPageHref("vendor-raw-materials.html"), "Raw materials", "◆") +
       link("returns", vendorPageHref("vendor-returns.html"), "Returns", "↩") +

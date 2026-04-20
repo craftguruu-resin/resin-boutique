@@ -170,7 +170,7 @@
 
   /** Bundled catalog rows: name & images stay on data.js; prices, return gift, and size labels are editable here. */
   function setCatalogFormDisabled(on) {
-    ["vpmName", "vpmImage", "vpmImageUrl"].forEach(function (id) {
+    ["vpmName", "vpmImage", "vpmImageUrl", "vpmGallery"].forEach(function (id) {
       var el = document.getElementById(id);
       if (el) el.disabled = !!on;
     });
@@ -204,6 +204,11 @@
     if (iu) {
       var im = String((p && p.image) || "").trim();
       iu.value = /^https:\/\//i.test(im) ? im : "";
+    }
+    var gal = document.getElementById("vpmGallery");
+    if (gal) {
+      var g = p && p.gallery;
+      gal.value = Array.isArray(g) && g.length ? g.join("\n") : "";
     }
     var rgY = document.getElementById("vpmReturnGiftYes");
     var rgN = document.getElementById("vpmReturnGiftNo");
@@ -392,6 +397,8 @@
       }
       fd.set("imageUrl", imageUrl);
     }
+    var galleryTxt = String((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || "");
+    fd.set("gallery", galleryTxt);
     var file = document.getElementById("vpmImage").files && document.getElementById("vpmImage").files[0];
     if (file) fd.set("image", file, file.name);
 

@@ -140,6 +140,15 @@ CREATE TABLE IF NOT EXISTS categories (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS vendor_owned BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS nav_image VARCHAR(500) NOT NULL DEFAULT '';
+
+CREATE TABLE IF NOT EXISTS vendor_site_docs (
+  doc_key VARCHAR(80) PRIMARY KEY,
+  doc JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 CREATE TABLE IF NOT EXISTS products (
   id VARCHAR(220) PRIMARY KEY,
   name VARCHAR(500) NOT NULL,
@@ -155,6 +164,8 @@ CREATE TABLE IF NOT EXISTS products (
 CREATE INDEX IF NOT EXISTS idx_products_category ON products (category_id);
 
 ALTER TABLE products ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+ALTER TABLE products ADD COLUMN IF NOT EXISTS gallery_paths JSONB NOT NULL DEFAULT '[]'::jsonb;
 
 -- Storefront live prices (merged over data.js in the browser). One row per catalog product id.
 CREATE TABLE IF NOT EXISTS catalog_price_overrides (

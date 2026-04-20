@@ -66,7 +66,35 @@
     return String(subs[0].id || "").trim();
   }
 
+  function catalogApiBase() {
+    var M = window.CraftguruCatalogMerge;
+    if (M && typeof M.getApiBase === "function") {
+      var b = String(M.getApiBase() || "")
+        .trim()
+        .replace(/\/+$/, "");
+      if (b) return b;
+    }
+    return "";
+  }
+
   function fetchTaxonomy() {
+    var base = catalogApiBase();
+    if (base) {
+      return fetch(base + "/api/catalog/raw-material-taxonomy", { cache: "no-store" })
+        .then(function (r) {
+          return r.json();
+        })
+        .then(function (j) {
+          if (j && j.ok && j.taxonomy) return j.taxonomy;
+          throw new Error("taxonomy api");
+        })
+        .catch(function () {
+          return fetch("raw-material-taxonomy.json", { cache: "no-store" }).then(function (r2) {
+            if (!r2.ok) throw new Error("taxonomy");
+            return r2.json();
+          });
+        });
+    }
     return fetch("raw-material-taxonomy.json", { cache: "no-store" }).then(function (r) {
       if (!r.ok) throw new Error("taxonomy");
       return r.json();

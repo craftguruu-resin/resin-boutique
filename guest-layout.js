@@ -20,8 +20,64 @@
     }
   }
 
+  function catalogJsonApiBase() {
+    var M = window.CraftguruCatalogMerge;
+    if (M && typeof M.getApiBase === "function") {
+      var b = String(M.getApiBase() || "")
+        .trim()
+        .replace(/\/+$/, "");
+      if (b) return b;
+    }
+    try {
+      if (window.location && window.location.protocol !== "file:") {
+        return String(window.location.origin || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    return "";
+  }
+
+  function headerSearchUsesRawMaterialsApi() {
+    var pn = currentPageName();
+    return (
+      pn === "raw-material-shop.html" ||
+      pn === "raw-material-product.html" ||
+      pn === "raw-material.html"
+    );
+  }
+
+  function rawMaterialsSearchFetchUrl(q) {
+    var root = catalogJsonApiBase();
+    var path = "/api/catalog/raw-materials?q=" + encodeURIComponent(q);
+    try {
+      if (currentPageName() === "raw-material-shop.html") {
+        var u = new URL(window.location.href);
+        var b = u.searchParams.get("base") || "";
+        var s = u.searchParams.get("sub") || "";
+        if (b) path += "&base=" + encodeURIComponent(b);
+        if (s) path += "&sub=" + encodeURIComponent(s);
+      }
+    } catch (_) {}
+    return root ? root + path : path;
+  }
+
+  function removeGuestCategoryRail() {
+    var main = document.querySelector("main.sub-main");
+    if (!main) return;
+    var rail = document.getElementById("guestPageCategoryRail");
+    var wrap = main.querySelector(".guest-main-with-rail-inner");
+    if (wrap) {
+      while (wrap.firstChild) {
+        main.insertBefore(wrap.firstChild, wrap);
+      }
+      wrap.remove();
+    }
+    if (rail) {
+      rail.remove();
+    }
+  }
+
   function injectCategoryRail() {
-    if (document.getElementById("guestPageCategoryRail")) return;
+    removeGuestCategoryRail();
     var pn = currentPageName();
     if (pn === "index.html") return;
     if (pn === "account.html") return;
@@ -59,7 +115,21 @@
       var a = document.createElement("a");
       a.className = "category-pill category-pill--rail";
       a.href = "category.html?cat=" + encodeURIComponent(c.id);
-      a.textContent = c.label || c.id;
+      var navImg = String((c.nav_image != null && c.nav_image) || (c.navImage != null && c.navImage) || "").trim();
+      if (navImg && D.imageUrl) {
+        var img = document.createElement("img");
+        img.src = D.imageUrl(navImg);
+        img.alt = "";
+        img.width = 28;
+        img.height = 28;
+        img.loading = "lazy";
+        img.style.objectFit = "cover";
+        img.style.borderRadius = "6px";
+        img.style.marginRight = "0.4rem";
+        img.style.verticalAlign = "middle";
+        a.appendChild(img);
+      }
+      a.appendChild(document.createTextNode(c.label || c.id));
       if (pn === "category.html") {
         try {
           var u = new URLSearchParams(window.location.search);
@@ -100,6 +170,7 @@
     var wrap = document.createElement("div");
     wrap.id = "guestHeaderSearch";
     wrap.className = "guest-header-search";
+    var ph = headerSearchUsesRawMaterialsApi() ? "Search raw materials…" : "Search resin catalog…";
     wrap.innerHTML =
       '<span class="guest-header-search__icon" aria-hidden="true">' +
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">' +
@@ -107,7 +178,9 @@
       '<path d="M14.6 14.6L20 20" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />' +
       "</svg></span>" +
       '<label class="guest-header-search__lbl visually-hidden" for="guestCatalogSearchInput">Search catalog</label>' +
-      '<input type="search" id="guestCatalogSearchInput" class="guest-header-search__input" placeholder="Search pieces…" autocomplete="off" />' +
+      '<input type="search" id="guestCatalogSearchInput" class="guest-header-search__input" placeholder="' +
+      escapeAttr(ph) +
+      '" autocomplete="off" />' +
       '<div id="guestCatalogSearchResults" class="guest-header-search__results" hidden></div>';
     cluster.appendChild(wrap);
 
@@ -115,15 +188,7 @@
     var res = document.getElementById("guestCatalogSearchResults");
     if (!inp || !res) return;
 
-    function runSearch() {
-      var D2 = window.RESIN_DATA;
-      var q = String(inp.value || "").trim();
-      if (!q || !D2 || typeof D2.searchCatalogPartial !== "function") {
-        res.hidden = true;
-        res.innerHTML = "";
-        return;
-      }
-      var items = D2.searchCatalogPartial(q, 14);
+    function renderResinCatalogHits(items, D2) {
       if (!items.length) {
         res.innerHTML = '<p class="guest-header-search__empty">No matches.</p>';
         res.hidden = false;
@@ -133,11 +198,8 @@
         .map(function (p) {
           var href = "product.html?id=" + encodeURIComponent(p.id);
           var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
-          var rowCls = "guest-header-search__hit";
           return (
-            '<a class="' +
-            rowCls +
-            '" href="' +
+            '<a class="guest-header-search__hit" href="' +
             escapeAttr(href) +
             '">' +
             (img
@@ -154,6 +216,75 @@
         })
         .join("");
       res.hidden = false;
+    }
+
+    function renderRawMaterialHits(materials, D2) {
+      var list = (materials || []).slice(0, 14);
+      if (!list.length) {
+        res.innerHTML = '<p class="guest-header-search__empty">No matches.</p>';
+        res.hidden = false;
+        return;
+      }
+      res.innerHTML = list
+        .map(function (m) {
+          var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
+          var img = m.image && D2 && D2.imageUrl ? D2.imageUrl(m.image) : String((m && m.image) || "").trim();
+          var sub =
+            [m.baseCategorySlug, m.subcategorySlug].filter(Boolean).join(" · ") || "Raw material";
+          return (
+            '<a class="guest-header-search__hit" href="' +
+            escapeAttr(href) +
+            '">' +
+            (img
+              ? '<span class="guest-header-search__hit-img"><img src="' +
+                escapeAttr(img) +
+                '" alt="" width="40" height="40" loading="lazy" /></span>'
+              : "") +
+            '<span class="guest-header-search__hit-txt"><strong>' +
+            escapeHtml(m.name || "Material") +
+            "</strong><span class=\"guest-header-search__hit-sub\">" +
+            escapeHtml(sub) +
+            "</span></span></a>"
+          );
+        })
+        .join("");
+      res.hidden = false;
+    }
+
+    function runSearch() {
+      var D2 = window.RESIN_DATA;
+      var q = String(inp.value || "").trim();
+      if (!q) {
+        res.hidden = true;
+        res.innerHTML = "";
+        return;
+      }
+      if (headerSearchUsesRawMaterialsApi()) {
+        fetch(rawMaterialsSearchFetchUrl(q), { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (j) {
+            if (!j || !j.ok) {
+              res.innerHTML = '<p class="guest-header-search__empty">No matches.</p>';
+              res.hidden = false;
+              return;
+            }
+            renderRawMaterialHits(j.materials || [], D2);
+          })
+          .catch(function () {
+            res.innerHTML = '<p class="guest-header-search__empty">Search unavailable.</p>';
+            res.hidden = false;
+          });
+        return;
+      }
+      if (!D2 || typeof D2.searchCatalogPartial !== "function") {
+        res.hidden = true;
+        res.innerHTML = "";
+        return;
+      }
+      var items = D2.searchCatalogPartial(q, 14);
+      renderResinCatalogHits(items, D2);
     }
 
     var t = null;
@@ -245,6 +376,13 @@
     injectHeaderSearch();
     injectStorefrontAuthChrome();
   }
+
+  window.addEventListener("craftguruCatalogCategoriesMerged", function () {
+    try {
+      removeGuestCategoryRail();
+      injectCategoryRail();
+    } catch (_) {}
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

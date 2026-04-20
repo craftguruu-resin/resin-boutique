@@ -22,6 +22,7 @@
           <h1 class="vs-topbar__title">Update or discontinue products</h1>
           <p class="vs-topbar__sub">
             Full guest storefront list (built-in catalog + products you added). Search by name, id, or studio SKU. Use <strong>Discontinue</strong> or <strong>Set active</strong> to control the guest shop listing. <strong>Delete</strong> next to those actions removes vendor-added products entirely, or clears saved database overrides for bundled catalog items (defaults apply; the item remains in the site catalog). Names and photos only for products you added.
+            <a href="vendor-categories-manage.html">Categories &amp; raw material taxonomy</a>
           </p>
         </div>
         <div class="vs-topbar__actions">
@@ -115,6 +116,13 @@
             <input type="url" id="vpmImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
             <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
               Paste an HTTPS link from Cloudinary (or similar) to avoid storing the file on Render. If you also choose a file above, the file wins.
+            </p>
+          </div>
+          <div class="vs-field" style="margin-top: 0.75rem">
+            <label for="vpmGallery">Extra gallery images (optional)</label>
+            <textarea id="vpmGallery" rows="5" maxlength="12000" placeholder="One HTTPS image URL per line (same as raw material listings)."></textarea>
+            <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
+              Shown on the product page as thumbnails with the main image. Catalog-only rows keep images in the bundled site data; this field applies when you edit a vendor-created product.
             </p>
           </div>
           <div class="vpm-return-gift-block vpm-return-gift-block--toolbar" style="margin-top: 0.75rem">

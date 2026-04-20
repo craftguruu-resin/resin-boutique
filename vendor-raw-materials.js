@@ -13,13 +13,27 @@
 
   function fetchTaxonomyVendor() {
     if (vrmTaxonomy) return Promise.resolve(vrmTaxonomy);
-    return fetch(V.vendorPageHref("raw-material-taxonomy.json"), { cache: "no-store" })
-      .then(function (r) {
-        return r.json();
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/raw-material-taxonomy"), {
+      headers: V.authHeaders(),
+      cache: "no-store",
+    })
+      .then(V.parseApiJson)
+      .then(function (x) {
+        if (!x.okHttp || !x.json || !x.json.ok || !x.json.taxonomy) {
+          throw new Error("taxonomy vendor");
+        }
+        vrmTaxonomy = x.json.taxonomy;
+        return vrmTaxonomy;
       })
-      .then(function (doc) {
-        vrmTaxonomy = doc;
-        return doc;
+      .catch(function () {
+        return fetch(V.vendorPageHref("raw-material-taxonomy.json"), { cache: "no-store" })
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (doc) {
+            vrmTaxonomy = doc;
+            return doc;
+          });
       });
   }
 

@@ -20,6 +20,8 @@ var vendorProductsDb = require("./vendor-products-db.js");
 var catalogMediaPath = require("./media-path.js");
 var storefrontHeroDb = require("./storefront-hero-db.js");
 var rawMaterialsDb = require("./raw-materials-db.js");
+var vendorSiteDocsDb = require("./vendor-site-docs-db.js");
+var vendorCategoriesDb = require("./vendor-categories-db.js");
 var multer = require("multer");
 var sharp = require("sharp");
 
@@ -267,7 +269,13 @@ function normalizeSubcategoryEntry(x) {
     (x.label != null && String(x.label).trim()) ||
     (x.name != null && String(x.name).trim()) ||
     id;
-  return { id: id, label: label.slice(0, 200) };
+  var out = { id: id, label: label.slice(0, 200) };
+  var img =
+    (x.image != null && String(x.image).trim()) || (x.photo != null && String(x.photo).trim()) || "";
+  if (img) {
+    out.image = img.slice(0, 500);
+  }
+  return out;
 }
 
 function normalizeCategorySubcategories(sub) {
@@ -291,9 +299,26 @@ function mergeSubcategoryListsUnion(dbSubs, catalogSubs) {
       var s = normalizeSubcategoryEntry(raw);
       if (!s || !s.id) return;
       var id = String(s.id).trim().slice(0, 80);
-      if (!id || seen[id]) return;
+      if (!id) return;
+      if (seen[id]) {
+        for (var i = 0; i < out.length; i++) {
+          if (out[i].id === id) {
+            if (s.image && !out[i].image) {
+              out[i].image = String(s.image).trim().slice(0, 500);
+            }
+            if (out[i].label === out[i].id && s.label && s.label !== s.id) {
+              out[i].label = String(s.label).slice(0, 200);
+            }
+          }
+        }
+        return;
+      }
       seen[id] = true;
-      out.push({ id: id, label: String(s.label || id).slice(0, 200) });
+      var o = { id: id, label: String(s.label || id).slice(0, 200) };
+      if (s.image) {
+        o.image = String(s.image).trim().slice(0, 500);
+      }
+      out.push(o);
     });
   }
   pushList(dbSubs);
@@ -311,6 +336,8 @@ function mergeCategoriesDbWithCatalog(dbRows) {
       label: row.label,
       folder: row.folder || "",
       subcategories: normalizeCategorySubcategories(row.subcategories),
+      nav_image: String((row.nav_image != null && row.nav_image) || "").trim(),
+      vendor_owned: Boolean(row.vendor_owned),
     };
   });
   var catalogList = [];
@@ -332,6 +359,8 @@ function mergeCategoriesDbWithCatalog(dbRows) {
         label: c.label || cid,
         folder: c.folder || "",
         subcategories: fromDataSubs,
+        nav_image: "",
+        vendor_owned: false,
       };
     } else {
       map[cid].subcategories = mergeSubcategoryListsUnion(map[cid].subcategories || [], fromDataSubs);
@@ -1427,6 +1456,8 @@ app.get("/api/vendor/categories", function (_req, res) {
           label: c.label,
           folder: c.folder || "",
           subcategories: normalizeCategorySubcategories(c.subcategories),
+          nav_image: "",
+          vendor_owned: false,
         };
       });
       list.sort(function (a, b) {
@@ -1445,7 +1476,9 @@ app.get("/api/vendor/categories", function (_req, res) {
   }
   poolMod
     .getPool()
-    .query("SELECT id, label, folder, subcategories FROM categories ORDER BY label ASC")
+    .query(
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image FROM categories ORDER BY label ASC"
+    )
     .then(function (r) {
       var rows = r.rows.map(function (row) {
         return {
@@ -1453,6 +1486,8 @@ app.get("/api/vendor/categories", function (_req, res) {
           label: row.label,
           folder: row.folder || "",
           subcategories: normalizeCategorySubcategories(row.subcategories),
+          nav_image: String(row.nav_image || "").trim(),
+          vendor_owned: Boolean(row.vendor_owned),
         };
       });
       var merged = mergeCategoriesDbWithCatalog(rows);
@@ -1471,6 +1506,150 @@ app.get("/api/vendor/categories", function (_req, res) {
       }
       res.status(500).json({ ok: false, error: String((e && e.message) || e) });
     });
+});
+
+app.post("/api/vendor/categories", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    if (!poolMod.isEnabled()) {
+      return res.status(503).json({ ok: false, error: "Database not configured" });
+    }
+    vendorCategoriesDb.createCategory(poolMod.getPool(), req.body || {}, function (e2, row) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code =
+          msg.indexOf("required") >= 0 ||
+          msg.indexOf("Invalid") >= 0 ||
+          msg.indexOf("reserved") >= 0 ||
+          msg.indexOf("already exists") >= 0 ||
+          msg.indexOf("Another slug") >= 0
+            ? 400
+            : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, category: row });
+    });
+  });
+});
+
+app.patch("/api/vendor/categories/:id", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    if (!poolMod.isEnabled()) {
+      return res.status(503).json({ ok: false, error: "Database not configured" });
+    }
+    var cid = decodeURIComponent(String((req.params && req.params.id) || "").trim()).slice(0, 80);
+    vendorCategoriesDb.updateCategory(poolMod.getPool(), cid, req.body || {}, function (e2, row) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("not found") >= 0 ? 404 : msg.indexOf("required") >= 0 || msg.indexOf("Invalid") >= 0 ? 400 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, category: row });
+    });
+  });
+});
+
+app.delete("/api/vendor/categories/:id/subcategories/:subId", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    if (!poolMod.isEnabled()) {
+      return res.status(503).json({ ok: false, error: "Database not configured" });
+    }
+    var cid = decodeURIComponent(String((req.params && req.params.id) || "").trim()).slice(0, 80);
+    var sid = decodeURIComponent(String((req.params && req.params.subId) || "").trim()).slice(0, 80);
+    vendorCategoriesDb.deleteSubcategory(poolMod.getPool(), cid, sid, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("not found") >= 0 ? 404 : 400;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.delete("/api/vendor/categories/:id", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    if (!poolMod.isEnabled()) {
+      return res.status(503).json({ ok: false, error: "Database not configured" });
+    }
+    var cid = decodeURIComponent(String((req.params && req.params.id) || "").trim()).slice(0, 80);
+    vendorCategoriesDb.deleteVendorOwnedCategory(poolMod.getPool(), cid, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = e2.code === "NOT_FOUND" ? 404 : e2.code === "FORBIDDEN" ? 403 : 400;
+        if (msg.indexOf("not found") >= 0) code = 404;
+        if (msg.indexOf("built-in") >= 0 || msg.indexOf("Cannot delete") >= 0) code = 403;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
+app.get("/api/vendor/raw-material-taxonomy", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    vendorSiteDocsDb.getRawMaterialTaxonomyMerged(function (e2, doc) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, taxonomy: doc });
+    });
+  });
+});
+
+app.put("/api/vendor/raw-material-taxonomy", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var doc = req.body && req.body.taxonomy != null ? req.body.taxonomy : req.body;
+    vendorSiteDocsDb.saveRawMaterialTaxonomy(doc, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("Invalid") >= 0 ? 400 : msg.indexOf("not configured") >= 0 ? 503 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
 });
 
 /** DB catalog products under a category (parent → child for studio inventory). */
@@ -1720,6 +1899,70 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
   });
 });
 
+/** Public: merged resin categories (data.js + Postgres overlays and vendor-owned rows). */
+app.get("/api/catalog/categories", function (_req, res) {
+  function fromDataJsOnly() {
+    try {
+      var list = catalogFromData.getCategoriesList().map(function (c) {
+        if (!c) return c;
+        return {
+          id: c.id,
+          label: c.label,
+          folder: c.folder || "",
+          subcategories: normalizeCategorySubcategories(c.subcategories),
+          nav_image: "",
+          vendor_owned: false,
+        };
+      });
+      list.sort(function (a, b) {
+        return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
+      });
+      return { ok: true, source: "data_js", categories: list };
+    } catch (e) {
+      return { ok: false, error: String(e.message || e) };
+    }
+  }
+  if (!poolMod.isEnabled()) {
+    var fd = fromDataJsOnly();
+    if (!fd.ok) return res.status(500).json(fd);
+    res.setHeader("Cache-Control", "public, max-age=60");
+    return res.json(fd);
+  }
+  poolMod
+    .getPool()
+    .query(
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image FROM categories ORDER BY label ASC"
+    )
+    .then(function (r) {
+      var merged = mergeCategoriesDbWithCatalog(r.rows);
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        ok: true,
+        source: r.rows.length ? "database+merged" : "data_js",
+        categories: merged,
+      });
+    })
+    .catch(function (e) {
+      var fd3 = fromDataJsOnly();
+      if (fd3.ok) {
+        res.setHeader("Cache-Control", "public, max-age=60");
+        return res.json(fd3);
+      }
+      res.status(500).json({ ok: false, error: String((e && e.message) || e) });
+    });
+});
+
+/** Public: raw material shop taxonomy (JSON file, or vendor override from Postgres). */
+app.get("/api/catalog/raw-material-taxonomy", function (_req, res) {
+  vendorSiteDocsDb.getRawMaterialTaxonomyMerged(function (e, doc) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, taxonomy: doc });
+  });
+});
+
 /** Public: configurable hero slides (empty = storefront uses defaults). When custom hero is off, slides are hidden but settings are still returned. */
 app.get("/api/catalog/hero-slides", function (_req, res) {
   storefrontHeroDb.listSlidesWithSettings(function (e, pack) {
@@ -1749,7 +1992,8 @@ app.get("/api/catalog/hero-slides", function (_req, res) {
 app.get("/api/catalog/raw-materials", function (req, res) {
   var base = String((req.query && req.query.base) || "").trim();
   var sub = String((req.query && req.query.sub) || "").trim();
-  rawMaterialsDb.listActive({ base: base, sub: sub }, function (e, list) {
+  var q = String((req.query && req.query.q) || "").trim();
+  rawMaterialsDb.listActive({ base: base, sub: sub, q: q }, function (e, list) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
@@ -1789,20 +2033,24 @@ app.post(
         if (v == null) return null;
         return Array.isArray(v) ? v[0] : v;
       }
+      var createBody = {
+        name: firstField(b.name),
+        categoryId: firstField(b.categoryId),
+        priceS: firstField(b.priceS),
+        priceM: firstField(b.priceM),
+        priceL: firstField(b.priceL),
+        sizeLabelS: firstField(b.sizeLabelS),
+        sizeLabelM: firstField(b.sizeLabelM),
+        sizeLabelL: firstField(b.sizeLabelL),
+        imageBuffer: req.file && req.file.buffer,
+        mime: req.file && req.file.mimetype,
+        imageUrl: firstField(b.imageUrl),
+      };
+      if (b.gallery !== undefined) {
+        createBody.galleryText = firstField(b.gallery);
+      }
       vendorProductsDb.createVendorProduct(
-        {
-          name: firstField(b.name),
-          categoryId: firstField(b.categoryId),
-          priceS: firstField(b.priceS),
-          priceM: firstField(b.priceM),
-          priceL: firstField(b.priceL),
-          sizeLabelS: firstField(b.sizeLabelS),
-          sizeLabelM: firstField(b.sizeLabelM),
-          sizeLabelL: firstField(b.sizeLabelL),
-          imageBuffer: req.file && req.file.buffer,
-          mime: req.file && req.file.mimetype,
-          imageUrl: firstField(b.imageUrl),
-        },
+        createBody,
         function (e2, row) {
           if (e2) {
             var msg = String((e2 && e2.message) || e2);
@@ -1854,37 +2102,37 @@ app.put(
         if (v == null) return null;
         return Array.isArray(v) ? v[0] : v;
       }
-      vendorProductsDb.updateVendorProductById(
-        productId,
-        {
-          name: firstField(b.name),
-          priceS: firstField(b.priceS),
-          priceM: firstField(b.priceM),
-          priceL: firstField(b.priceL),
-          sizeLabelS: firstField(b.sizeLabelS),
-          sizeLabelM: firstField(b.sizeLabelM),
-          sizeLabelL: firstField(b.sizeLabelL),
-          imageBuffer: req.file && req.file.buffer,
-          mime: req.file && req.file.mimetype,
-          imageUrl: firstField(b.imageUrl),
-          returnGift:
-            b.returnGift !== undefined
-              ? String(b.returnGift) === "true" || b.returnGift === true
-              : b.return_gift !== undefined
-                ? String(b.return_gift) === "true" || b.return_gift === true
-                : undefined,
-        },
-        function (e2, row) {
-          if (e2) {
-            var msg = String((e2 && e2.message) || e2);
-            var code =
-              msg.indexOf("required") >= 0 || msg.indexOf("Unknown") >= 0 || msg.indexOf("Built-in") >= 0 ? 400 : 500;
-            return res.status(code).json({ ok: false, error: msg });
-          }
-          res.setHeader("Cache-Control", "no-store");
-          res.json({ ok: true, product: row });
+      var putBody = {
+        name: firstField(b.name),
+        priceS: firstField(b.priceS),
+        priceM: firstField(b.priceM),
+        priceL: firstField(b.priceL),
+        sizeLabelS: firstField(b.sizeLabelS),
+        sizeLabelM: firstField(b.sizeLabelM),
+        sizeLabelL: firstField(b.sizeLabelL),
+        imageBuffer: req.file && req.file.buffer,
+        mime: req.file && req.file.mimetype,
+        imageUrl: firstField(b.imageUrl),
+        returnGift:
+          b.returnGift !== undefined
+            ? String(b.returnGift) === "true" || b.returnGift === true
+            : b.return_gift !== undefined
+              ? String(b.return_gift) === "true" || b.return_gift === true
+              : undefined,
+      };
+      if (b.gallery !== undefined) {
+        putBody.gallery = firstField(b.gallery);
+      }
+      vendorProductsDb.updateVendorProductById(productId, putBody, function (e2, row) {
+        if (e2) {
+          var msg = String((e2 && e2.message) || e2);
+          var code =
+            msg.indexOf("required") >= 0 || msg.indexOf("Unknown") >= 0 || msg.indexOf("Built-in") >= 0 ? 400 : 500;
+          return res.status(code).json({ ok: false, error: msg });
         }
-      );
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, product: row });
+      });
     });
   }
 );

@@ -22,7 +22,10 @@
       <header class="vs-topbar">
         <div>
           <h1 class="vs-topbar__title">Inventory</h1>
-          <p class="vs-topbar__sub">Track stock for resin, pigments, and supplies you purchase for production.</p>
+          <p class="vs-topbar__sub">
+            Track stock for resin, pigments, and supplies you purchase for production.
+            <a href="vendor-categories-manage.html">Manage categories &amp; raw nav</a>
+          </p>
         </div>
         <div class="vs-topbar__actions">
           <button type="button" class="vs-btn" id="viRefreshBtn">Refresh</button>
@@ -232,6 +235,13 @@
                 <div class="vs-field" style="grid-column: 1 / -1">
                   <label for="viApImage">Product photo (JPEG or PNG)</label>
                   <input type="file" id="viApImage" accept="image/jpeg,image/png,image/webp" />
+                </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApGallery">Extra gallery images (optional)</label>
+                  <textarea id="viApGallery" rows="4" maxlength="12000" placeholder="One HTTPS image URL per line (Cloudinary, etc.)."></textarea>
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                    Same as raw material listings: extra photos appear on the storefront product page.
+                  </p>
                 </div>
               </div>
               <button type="button" class="vs-btn vs-btn--primary" id="viApSubmit">Create product</button>

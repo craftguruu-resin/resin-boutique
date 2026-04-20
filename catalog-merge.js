@@ -73,8 +73,22 @@
   function runMerge() {
     var base = billApiBase();
     if (!base) return Promise.resolve();
-    // Vendor-only catalog rows must exist in PRODUCTS before price_overrides (prices, etc.) can apply to their ids.
-    return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" })
+    return fetch(base + "/api/catalog/categories", { cache: "no-store" })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (jc) {
+        if (jc && jc.ok && jc.categories && typeof D.applyCategoriesMerge === "function") {
+          D.applyCategoriesMerge(jc.categories);
+        }
+        try {
+          window.dispatchEvent(new CustomEvent("craftguruCatalogCategoriesMerged"));
+        } catch (_) {}
+      })
+      .catch(function () {})
+      .then(function () {
+        return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" });
+      })
       .then(function (res) {
         return res.json();
       })

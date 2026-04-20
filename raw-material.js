@@ -150,6 +150,7 @@
   var rmShopTaxDoc = null;
   /** Hub-only filter from toolbar (not URL). Cleared by Reset. */
   var rmShopHubFilter = null;
+  var rmShopSpaWired = false;
 
   function qsParams() {
     try {
@@ -537,51 +538,113 @@
     });
   }
 
+  function applyShopShellFromParams() {
+    var par = qsParams();
+    var tax = rmShopTaxDoc;
+    if (tax && window.RmShopNav && par.base && !par.sub) {
+      var catList = (tax.categories) || [];
+      var cFound = null;
+      for (var ci = 0; ci < catList.length; ci++) {
+        if (catList[ci].id === par.base) {
+          cFound = catList[ci];
+          break;
+        }
+      }
+      var sc = (cFound && cFound.subcategories) || [];
+      if (sc.length > 1 && typeof window.RmShopNav.preferredListingSub === "function") {
+        var dsub = window.RmShopNav.preferredListingSub(par.base, cFound, allMaterials);
+        if (dsub) {
+          window.location.replace(window.RmShopNav.shopHref(par.base, dsub));
+          return;
+        }
+      }
+    }
+
+    if (tax && isRawMaterialShopHome()) {
+      renderRmCategoryHub(tax, allMaterials, rmShopHubFilter);
+    }
+    toggleRmShopHomeOnlySections();
+    var navEl = document.getElementById("rmNavTree");
+    if (navEl && window.RmShopNav) {
+      window.RmShopNav.mount(navEl, {
+        activeBase: par.base,
+        activeSub: par.sub,
+        materials: allMaterials,
+      });
+    }
+    var needle = "";
+    try {
+      var gq = document.getElementById("globalFindQuery");
+      if (gq) needle = String(gq.value || "").trim();
+    } catch (_) {}
+    var rows = allMaterials.filter(function (m) {
+      return materialsMatchFilters(m, par.base, par.sub, needle);
+    });
+    render(rows);
+  }
+
+  function wireRmShopSpaNavOnce() {
+    if (rmShopSpaWired) return;
+    if (!document.getElementById("rmNavTree")) return;
+    rmShopSpaWired = true;
+    document.body.addEventListener(
+      "click",
+      function (e) {
+        var navRoot = document.getElementById("rmNavTree");
+        if (!navRoot || !navRoot.contains(e.target)) return;
+        var a = e.target && e.target.closest && e.target.closest("a.rm-nav-tree__link");
+        if (!a || !a.getAttribute("href")) return;
+        if (e.defaultPrevented) return;
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var href = a.getAttribute("href") || "";
+        if (href.indexOf("raw-material-shop.html") < 0) return;
+        try {
+          var abs = new URL(a.href, window.location.href);
+          if (abs.origin !== window.location.origin) return;
+          var file = abs.pathname
+            .split("/")
+            .filter(Boolean)
+            .pop();
+          if (!file || file.split("?")[0] !== "raw-material-shop.html") return;
+        } catch (_) {
+          return;
+        }
+        e.preventDefault();
+        var u = new URL(a.href, window.location.href);
+        history.pushState({}, "", u.pathname + u.search + u.hash);
+        applyShopShellFromParams();
+      },
+      true
+    );
+    window.addEventListener("popstate", function () {
+      applyShopShellFromParams();
+    });
+  }
+
+  function applyMaterials(doc, materials) {
+    allMaterials = materials || [];
+    if (doc) rmShopTaxDoc = doc;
+    applyShopShellFromParams();
+    wireRmShopSpaNavOnce();
+  }
+
+  function wireRmHeaderGlobalFindOnce() {
+    var gq = document.getElementById("globalFindQuery");
+    if (!gq || gq.dataset.rmNeedleWired === "1") return;
+    gq.dataset.rmNeedleWired = "1";
+    var t = null;
+    gq.addEventListener("input", function () {
+      clearTimeout(t);
+      t = setTimeout(function () {
+        applyShopShellFromParams();
+      }, 160);
+    });
+  }
+
   function load() {
     toggleRmShopHomeOnlySections();
     wireFiltersOnce();
-
-    function applyMaterials(doc, materials) {
-      allMaterials = materials || [];
-      if (doc) rmShopTaxDoc = doc;
-
-      var par = qsParams();
-      if (doc && window.RmShopNav && par.base && !par.sub) {
-        var catList = (doc.categories) || [];
-        var cFound = null;
-        for (var ci = 0; ci < catList.length; ci++) {
-          if (catList[ci].id === par.base) {
-            cFound = catList[ci];
-            break;
-          }
-        }
-        var sc = (cFound && cFound.subcategories) || [];
-        if (sc.length > 1 && typeof window.RmShopNav.preferredListingSub === "function") {
-          var dsub = window.RmShopNav.preferredListingSub(par.base, cFound, allMaterials);
-          if (dsub) {
-            window.location.replace(window.RmShopNav.shopHref(par.base, dsub));
-            return;
-          }
-        }
-      }
-
-      if (rmShopTaxDoc && isRawMaterialShopHome()) {
-        renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
-      }
-      toggleRmShopHomeOnlySections();
-      var navEl = document.getElementById("rmNavTree");
-      if (navEl && window.RmShopNav) {
-        window.RmShopNav.mount(navEl, {
-          activeBase: par.base,
-          activeSub: par.sub,
-          materials: allMaterials,
-        });
-      }
-      var rows = allMaterials.filter(function (m) {
-        return materialsMatchFilters(m, par.base, par.sub, "");
-      });
-      render(rows);
-    }
+    wireRmHeaderGlobalFindOnce();
 
     var taxP = Promise.resolve(null);
     if (window.RmShopNav && window.RmShopNav.fetchTaxonomy) {

@@ -302,6 +302,7 @@ function listActive(filter, cb) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 80);
+  var pat = iLikeContainsPattern(String(f.q || f.query || "").trim());
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
@@ -318,6 +319,20 @@ function listActive(filter, cb) {
   if (sub) {
     params.push(sub);
     sql += " AND subcategory_slug = $" + params.length;
+  }
+  if (pat) {
+    params.push(pat);
+    var n = params.length;
+    sql +=
+      " AND (name ILIKE $" +
+      n +
+      " OR sku ILIKE $" +
+      n +
+      " OR CAST(id AS TEXT) ILIKE $" +
+      n +
+      " OR COALESCE(description, '') ILIKE $" +
+      n +
+      ")";
   }
   sql += " ORDER BY updated_at DESC";
   pool
@@ -713,7 +728,7 @@ function seedMinimalOptions(badge) {
 }
 
 function showcaseLuminaOptions() {
-  var hero = "media/raw-material-shop-hero-craftguru.png";
+  var hero = "media/raw-material-shop-hero-home-banner.png";
   return {
     brandLine: "CRAFT GURU",
     ratingScore: "4.8",
@@ -765,7 +780,7 @@ function showcaseLuminaOptions() {
  * @returns {Promise<void>}
  */
 function seedDemoMaterialsPromise(pool) {
-  var hero = "media/raw-material-shop-hero-craftguru.png";
+  var hero = "media/raw-material-shop-hero-home-banner.png";
   var demos = [
     {
       id: DEMO_IDS[0],

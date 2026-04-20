@@ -198,8 +198,10 @@
 
 .rm-hero__visual img {
   width: 100%;
-  max-height: 340px;
-  object-fit: contain;
+  max-height: min(380px, 52vh);
+  object-fit: cover;
+  object-position: 50% 45%;
+  border-radius: 18px;
   display: block;
   filter: drop-shadow(0 22px 40px rgba(15, 23, 42, 0.15));
 }

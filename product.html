@@ -94,12 +94,21 @@
 
       <div class="product-layout product-layout--split product-layout--buy-tight">
         <div class="product-visual product-visual--fx">
-          <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
-            <div class="product-hero-img__glow" aria-hidden="true"></div>
-            <img id="productImage" src="" alt="" width="800" height="900" />
-            <p class="product-hero-img__zoom-hint" id="productZoomHint">
-              Scroll on the image to zoom in or out. Drag to move when zoomed. Double-click the image to reset.
-            </p>
+          <div class="product-catalog-gallery" id="productCatalogGallery">
+            <div class="product-catalog-gallery__thumb-col" id="productGalleryThumbs" hidden aria-label="Product gallery thumbnails">
+              <button type="button" class="product-catalog-gallery__nav product-catalog-gallery__nav--up" id="productGalleryUp" aria-label="Scroll thumbnails up">▲</button>
+              <div class="product-catalog-gallery__track" id="productGalleryTrack"></div>
+              <button type="button" class="product-catalog-gallery__nav product-catalog-gallery__nav--down" id="productGalleryDown" aria-label="Scroll thumbnails down">▼</button>
+            </div>
+            <div class="product-catalog-gallery__hero">
+              <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
+                <div class="product-hero-img__glow" aria-hidden="true"></div>
+                <img id="productImage" src="" alt="" width="800" height="900" />
+                <p class="product-hero-img__zoom-hint" id="productZoomHint">
+                  Scroll on the image to zoom in or out. Drag to move when zoomed. Double-click the image to reset.
+                </p>
+              </div>
+            </div>
           </div>
           <section class="product-overview product-overview--under-visual glass-panel" aria-labelledby="overview-h">
             <h2 class="product-overview__h" id="overview-h">About this piece</h2>

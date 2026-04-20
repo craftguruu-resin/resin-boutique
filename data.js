@@ -366,14 +366,18 @@
   }
 
   /** Guest search: partial token match across listed catalog products (name, id, category label). */
-  function searchCatalogPartial(queryRaw, limit) {
+  function searchCatalogPartial(queryRaw, limit, opts) {
     var cap = Math.min(40, Math.max(1, limit || 12));
     var q = String(queryRaw || "").trim();
     if (!q) return [];
+    var o = opts && typeof opts === "object" ? opts : {};
     var out = [];
     for (var i = 0; i < PRODUCTS.length && out.length < cap; i++) {
       var p = PRODUCTS[i];
       if (!isListedProduct(p)) continue;
+      var pid = String(p.id || "");
+      if (pid.indexOf("raw-mat--") === 0) continue;
+      if (o.excludeCategoryIds && o.excludeCategoryIds.indexOf(p.category) >= 0) continue;
       var hay = (p.name + " " + p.id + " " + getCategoryLabel(p.category)).toLowerCase();
       if (partialTokenMatchCatalog(hay, q)) out.push(p);
     }
@@ -426,9 +430,112 @@
       if (row.returnGift === true) {
         p.returnGift = true;
       }
+      p.vendorCatalogRow = true;
+      var g = row.gallery || row.galleryImages;
+      if (Array.isArray(g) && g.length) {
+        p.gallery = g
+          .map(function (u) {
+            return String(u || "").trim();
+          })
+          .filter(Boolean)
+          .slice(0, 24);
+      }
       n++;
     });
     return n;
+  }
+
+  /**
+   * Replace merged category list from the API (vendor + DB + data.js on server).
+   * Rebuilds BY_CAT / BY_CAT_SUB; drops vendor-only catalog rows whose category disappeared.
+   */
+  function applyCategoriesMerge(list) {
+    if (!Array.isArray(list) || !list.length) {
+      return 0;
+    }
+    var allow = Object.create(null);
+    list.forEach(function (c) {
+      if (c && c.id) {
+        allow[c.id] = 1;
+      }
+    });
+    for (var ri = PRODUCTS.length - 1; ri >= 0; ri--) {
+      var pr = PRODUCTS[ri];
+      if (pr.vendorCatalogRow && !allow[pr.category]) {
+        var rid = pr.id;
+        PRODUCTS.splice(ri, 1);
+        delete BY_ID[rid];
+      }
+    }
+    CATEGORIES.length = 0;
+    list.forEach(function (c) {
+      if (!c || !c.id) {
+        return;
+      }
+      var subsRaw = Array.isArray(c.subcategories) ? c.subcategories : [];
+      var subs = subsRaw.length
+        ? subsRaw
+            .map(function (s) {
+              if (!s || !s.id) {
+                return null;
+              }
+              var o = { id: String(s.id).slice(0, 80), label: String(s.label || s.name || s.id).slice(0, 200) };
+              var im = (s.image != null && String(s.image).trim()) || (s.photo != null && String(s.photo).trim()) || "";
+              if (im) {
+                o.image = im.slice(0, 500);
+              }
+              return o;
+            })
+            .filter(Boolean)
+        : [{ id: "all", label: "All" }];
+      if (!subs.some(function (x) {
+        return x.id === "all";
+      })) {
+        subs.unshift({ id: "all", label: "All" });
+      }
+      var row = {
+        id: String(c.id).slice(0, 80),
+        label: String(c.label || c.id).slice(0, 300),
+        folder: String(c.folder || "").slice(0, 300),
+        subcategories: subs,
+      };
+      var nav = (c.nav_image != null && String(c.nav_image).trim()) || (c.navImage != null && String(c.navImage).trim()) || "";
+      if (nav) {
+        row.nav_image = nav.slice(0, 500);
+      }
+      CATEGORIES.push(row);
+    });
+    BY_CAT = {};
+    BY_CAT_SUB = {};
+    CATEGORIES.forEach(function (cat) {
+      BY_CAT[cat.id] = [];
+      BY_CAT_SUB[cat.id] = {};
+      (cat.subcategories || []).forEach(function (s) {
+        if (s && s.id) {
+          BY_CAT_SUB[cat.id][s.id] = [];
+        }
+      });
+    });
+    PRODUCTS.forEach(function (p) {
+      var cat = p.category;
+      var sub = p.subcategory || "all";
+      if (!BY_CAT[cat]) {
+        BY_CAT[cat] = [];
+      }
+      if (BY_CAT[cat].indexOf(p.id) === -1) {
+        BY_CAT[cat].push(p.id);
+      }
+      if (!BY_CAT_SUB[cat]) {
+        BY_CAT_SUB[cat] = {};
+      }
+      if (!BY_CAT_SUB[cat][sub]) {
+        BY_CAT_SUB[cat][sub] = [];
+      }
+      if (BY_CAT_SUB[cat][sub].indexOf(p.id) === -1) {
+        BY_CAT_SUB[cat][sub].push(p.id);
+      }
+    });
+    return CATEGORIES.length;
   }
 
   global.RESIN_DATA = {
@@ -456,6 +563,7 @@
     imageUrl: imageUrl,
     applyPriceOverrides: applyPriceOverrides,
     applyVendorProductsMerge: applyVendorProductsMerge,
+    applyCategoriesMerge: applyCategoriesMerge,
     searchCatalogPartial: searchCatalogPartial,
   };
 })(typeof window !== 'undefined' ? window : this);

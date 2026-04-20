@@ -37,6 +37,38 @@ function ensureProductsSizeLabelsColumn(cb) {
     });
 }
 
+var productsGalleryPromise = null;
+function ensureProductsGalleryColumn(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null);
+    });
+  }
+  if (!productsGalleryPromise) {
+    productsGalleryPromise = pool
+      .query("ALTER TABLE products ADD COLUMN IF NOT EXISTS gallery_paths JSONB NOT NULL DEFAULT '[]'::jsonb")
+      .catch(function (err) {
+        productsGalleryPromise = null;
+        return Promise.reject(err);
+      });
+  }
+  productsGalleryPromise
+    .then(function () {
+      cb(null);
+    })
+    .catch(function (e) {
+      cb(e);
+    });
+}
+
+function ensureProductSchema(cb) {
+  ensureProductsSizeLabelsColumn(function (e1) {
+    if (e1) return cb(e1);
+    ensureProductsGalleryColumn(cb);
+  });
+}
+
 /** Accepts CDN URLs (Cloudinary, R2, etc.). Rejects non-HTTPS and obvious SSRF targets. */
 function normalizeHttpsImageUrl(raw) {
   var u = String(raw || "").trim().slice(0, 2000);
@@ -50,6 +82,57 @@ function normalizeHttpsImageUrl(raw) {
   } catch (_) {
     return "";
   }
+}
+
+function parseGalleryPaths(row) {
+  var g = row && (row.gallery_paths != null ? row.gallery_paths : row.galleryPaths);
+  if (g == null) return [];
+  if (typeof g === "string") {
+    try {
+      g = JSON.parse(g);
+    } catch (_) {
+      return [];
+    }
+  }
+  if (!Array.isArray(g)) return [];
+  return g
+    .map(function (x) {
+      return String(x || "").trim();
+    })
+    .filter(Boolean)
+    .slice(0, 24);
+}
+
+function normalizeGalleryLines(text) {
+  var lines = String(text || "")
+    .split(/\r?\n/)
+    .map(function (s) {
+      return s.trim();
+    })
+    .filter(Boolean);
+  var out = [];
+  var seen = Object.create(null);
+  for (var i = 0; i < lines.length && out.length < 24; i++) {
+    var u = normalizeHttpsImageUrl(lines[i]);
+    if (u && !seen[u]) {
+      seen[u] = 1;
+      out.push(u);
+      continue;
+    }
+    var p = String(lines[i] || "").trim();
+    if (p.indexOf("media/") === 0 && p.length < 500 && !seen[p]) {
+      seen[p] = 1;
+      out.push(p);
+    }
+  }
+  return JSON.stringify(out);
+}
+
+function galleryJsonFromOpts(opts) {
+  if (opts && Array.isArray(opts.gallery)) {
+    return normalizeGalleryLines(opts.gallery.map(String).join("\n"));
+  }
+  return normalizeGalleryLines(String((opts && opts.galleryText) != null ? opts.galleryText : ""));
 }
 
 function slugify(s) {
@@ -230,6 +313,10 @@ function mapRowToClient(row) {
   if (row.listing_return_gift === true || row.listingReturnGift === true || row.returnGift === true) {
     out.returnGift = true;
   }
+  var gallery = parseGalleryPaths(row);
+  if (gallery.length) {
+    out.gallery = gallery;
+  }
   return out;
 }
 
@@ -241,7 +328,7 @@ function listExtraProductsForStorefront(cb) {
       cb(null, []);
     });
   }
-  ensureProductsSizeLabelsColumn(function (e0) {
+  ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
     var staticIds;
     try {
@@ -255,7 +342,7 @@ function listExtraProductsForStorefront(cb) {
     }
     pool
       .query(
-        "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.prices, p.size_labels, p.is_active, " +
+        "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.gallery_paths, p.prices, p.size_labels, p.is_active, " +
           "COALESCE(co.return_gift, false) AS listing_return_gift " +
           "FROM products p " +
           "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
@@ -283,7 +370,7 @@ function createVendorProduct(opts, cb) {
       cb(new Error("Database not configured"));
     });
   }
-  ensureProductsSizeLabelsColumn(function (e0) {
+  ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
     createVendorProductAfterSchema(opts, cb);
   });
@@ -337,6 +424,7 @@ function createVendorProductAfterSchema(opts, cb) {
 
     var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
     var sizeLabelsJson = JSON.stringify(buildSizeLabelsObject(opts));
+    var galleryPathsJson = galleryJsonFromOpts(opts);
 
     function commitInsert(imagePathVal, absImageForRollback, cbOut) {
       pool
@@ -346,13 +434,13 @@ function createVendorProductAfterSchema(opts, cb) {
             .query("BEGIN")
             .then(function () {
               return client.query(
-                "INSERT INTO products (id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active) " +
-                  "VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, true) " +
+                "INSERT INTO products (id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active) " +
+                  "VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, true) " +
                   "ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, category_id = EXCLUDED.category_id, " +
-                  "subcategory_id = EXCLUDED.subcategory_id, image_path = EXCLUDED.image_path, prices = EXCLUDED.prices, " +
+                  "subcategory_id = EXCLUDED.subcategory_id, image_path = EXCLUDED.image_path, gallery_paths = EXCLUDED.gallery_paths, prices = EXCLUDED.prices, " +
                   "size_labels = EXCLUDED.size_labels, " +
-                  "is_active = true, updated_at = now() RETURNING id, name, category_id, subcategory_id, image_path, prices, size_labels",
-                [productId, name, categoryId, subDb, imagePathVal, pricesJson, sizeLabelsJson]
+                  "is_active = true, updated_at = now() RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels",
+                [productId, name, categoryId, subDb, imagePathVal, galleryPathsJson, pricesJson, sizeLabelsJson]
               );
             })
             .then(function (insRes) {
@@ -377,7 +465,7 @@ function createVendorProductAfterSchema(opts, cb) {
               catalogFromData.invalidateCache();
               var row0 = insRes && insRes.rows && insRes.rows[0];
               var mapped = row0 ? mapRowToClient(row0) : null;
-              cbOut(null, {
+              var outCreate = {
                 id: productId,
                 name: name,
                 category: categoryId,
@@ -385,7 +473,11 @@ function createVendorProductAfterSchema(opts, cb) {
                 image: imagePathVal,
                 prices: { s: priceS, m: priceM, l: priceL },
                 sizeLabels: (mapped && mapped.sizeLabels) || buildSizeLabelsObject(opts),
-              });
+              };
+              if (mapped && mapped.gallery && mapped.gallery.length) {
+                outCreate.gallery = mapped.gallery;
+              }
+              cbOut(null, outCreate);
             })
             .catch(function (err) {
               return client
@@ -597,7 +689,7 @@ function listVendorManagedProducts(cb) {
       cb(null, []);
     });
   }
-  ensureProductsSizeLabelsColumn(function (e0) {
+  ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
     var staticIds;
     try {
@@ -609,7 +701,7 @@ function listVendorManagedProducts(cb) {
     }
     pool
       .query(
-        "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products ORDER BY updated_at DESC"
+        "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active FROM products ORDER BY updated_at DESC"
       )
       .then(function (r) {
         var out = [];
@@ -750,11 +842,11 @@ function updateVendorProductById(productId, opts, cb) {
         cb(new Error("Database not configured"));
       });
     }
-    ensureProductsSizeLabelsColumn(function (e00) {
+    ensureProductSchema(function (e00) {
       if (e00) return cb(e00);
       pool
         .query(
-          "SELECT id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active FROM products WHERE id = $1 LIMIT 1",
+          "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active FROM products WHERE id = $1 LIMIT 1",
           [id]
         )
         .then(function (r) {
@@ -795,6 +887,10 @@ function updateVendorProductById(productId, opts, cb) {
               : row.size_labels || {}
         );
         var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
+        var galleryPathsJson = JSON.stringify(parseGalleryPaths(row));
+        if (opts && Object.prototype.hasOwnProperty.call(opts, "gallery")) {
+          galleryPathsJson = normalizeGalleryLines(String(opts.gallery || ""));
+        }
         var buf = opts && opts.imageBuffer;
         var extUrl = normalizeHttpsImageUrl(opts && opts.imageUrl);
         var imageUrlRaw = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : "";
@@ -848,9 +944,16 @@ function updateVendorProductById(productId, opts, cb) {
                 .then(function () {
                   return client
                     .query(
-                      "UPDATE products SET name = $2, image_path = $3, prices = $4::jsonb, size_labels = $5::jsonb, updated_at = now() WHERE id = $1 " +
-                        "RETURNING id, name, category_id, subcategory_id, image_path, prices, size_labels, is_active",
-                      [id, name, relImage || String(row.image_path || "").trim(), pricesJson, sizeLabelsJson]
+                      "UPDATE products SET name = $2, image_path = $3, prices = $4::jsonb, size_labels = $5::jsonb, gallery_paths = $6::jsonb, updated_at = now() WHERE id = $1 " +
+                        "RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active",
+                      [
+                        id,
+                        name,
+                        relImage || String(row.image_path || "").trim(),
+                        pricesJson,
+                        sizeLabelsJson,
+                        galleryPathsJson,
+                      ]
                     )
                     .then(function (upd) {
                       return client
