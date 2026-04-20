@@ -185,10 +185,12 @@
     var baseSel = document.getElementById("rmFilterBase");
     var subSel = document.getElementById("rmFilterSub");
     var searchEl = document.getElementById("rmFilterSearch");
+    var priceEl = document.getElementById("rmFilterPriceMax");
     return {
       base: baseSel ? String(baseSel.value || "").trim() : "",
       sub: subSel && !subSel.disabled ? String(subSel.value || "").trim() : "",
       needle: searchEl ? String(searchEl.value || "").trim() : "",
+      priceMax: priceEl ? String(priceEl.value || "").trim() : "",
     };
   }
 
@@ -199,8 +201,16 @@
     var n = String(h.needle || "")
       .trim()
       .toLowerCase();
-    if (!b && !s && !n) return null;
-    return { base: b, sub: s, needle: n };
+    var capRaw = h.priceMax;
+    var capN = capRaw != null && String(capRaw).trim() !== "" ? Number(capRaw) : NaN;
+    var hasCap = Number.isFinite(capN) && capN > 0;
+    if (!b && !s && !n && !hasCap) return null;
+    var out = {};
+    if (b) out.base = b;
+    if (s) out.sub = s;
+    if (n) out.needle = n;
+    if (hasCap) out.priceMax = capN;
+    return out;
   }
 
   function materialMatchesHubFilter(m, hub) {
@@ -218,7 +228,30 @@
       var idl = String(m.id || "").toLowerCase();
       if (name.indexOf(n) < 0 && sku.indexOf(n) < 0 && idl.indexOf(n) < 0) return false;
     }
+    if (hub.priceMax != null && Number.isFinite(Number(hub.priceMax)) && Number(hub.priceMax) > 0) {
+      var cap = Number(hub.priceMax);
+      var minP = minOfferMeta(m).min;
+      if (!Number.isFinite(minP) || minP > cap) return false;
+    }
     return true;
+  }
+
+  function materialBelongsToHubCategory(m, c, cats) {
+    if (String(m.baseCategorySlug || "").trim() === c.id) return true;
+    if (inferredHubCategoryId(m, cats) === c.id) return true;
+    return false;
+  }
+
+  function minPriceForCategoryHubCard(c, mats, cats, hubN) {
+    var best = Infinity;
+    for (var i = 0; i < mats.length; i++) {
+      var m = mats[i];
+      if (!materialMatchesHubFilter(m, hubN)) continue;
+      if (!materialBelongsToHubCategory(m, c, cats)) continue;
+      var p = minOfferMeta(m).min;
+      if (Number.isFinite(p) && p < best) best = p;
+    }
+    return best === Infinity ? 0 : best;
   }
 
   function materialsMatchFilters(m, base, sub, needle) {
@@ -332,11 +365,7 @@
     for (var i = 0; i < mats.length; i++) {
       var m = mats[i];
       if (!materialMatchesHubFilter(m, hubN)) continue;
-      if (String(m.baseCategorySlug || "").trim() === c.id) {
-        n++;
-        continue;
-      }
-      if (inferredHubCategoryId(m, cats) === c.id) n++;
+      if (materialBelongsToHubCategory(m, c, cats)) n++;
     }
     return n;
   }
@@ -357,6 +386,33 @@
     } else if (hubN && hubN.needle && !hubN.base) {
       catsToShow = cats.filter(function (c) {
         return countMaterialsForHubCard(c, mats, cats, hubN) > 0;
+      });
+    }
+    var sortCtl = document.getElementById("rmSortSelect");
+    var sortVal = (sortCtl && sortCtl.value) || DEFAULT_SORT;
+    if (sortVal === "price-asc") {
+      catsToShow.sort(function (a, b) {
+        return (
+          minPriceForCategoryHubCard(a, mats, cats, hubN) - minPriceForCategoryHubCard(b, mats, cats, hubN)
+        );
+      });
+    } else if (sortVal === "price-desc") {
+      catsToShow.sort(function (a, b) {
+        return (
+          minPriceForCategoryHubCard(b, mats, cats, hubN) - minPriceForCategoryHubCard(a, mats, cats, hubN)
+        );
+      });
+    } else if (sortVal === "name-desc") {
+      catsToShow.sort(function (a, b) {
+        return String((b && b.name) || "").localeCompare(String((a && a.name) || ""), undefined, {
+          sensitivity: "base",
+        });
+      });
+    } else {
+      catsToShow.sort(function (a, b) {
+        return String((a && a.name) || "").localeCompare(String((b && b.name) || ""), undefined, {
+          sensitivity: "base",
+        });
       });
     }
     catsToShow.forEach(function (c, idx) {
@@ -428,6 +484,10 @@
         rmShopHubFilter = null;
         var se = document.getElementById("rmFilterSearch");
         if (se) se.value = "";
+        var pm = document.getElementById("rmFilterPriceMax");
+        if (pm) pm.value = "";
+        var sortEl = document.getElementById("rmSortSelect");
+        if (sortEl) sortEl.value = DEFAULT_SORT;
         if (rmShopTaxDoc) {
           fillFilterSelectsFromTaxonomy(rmShopTaxDoc);
           renderRmCategoryHub(rmShopTaxDoc, allMaterials, null);
@@ -457,6 +517,14 @@
       arr.sort(function (a, b) {
         return String((b && b.name) || "").localeCompare(String((a && a.name) || ""), undefined, { sensitivity: "base" });
       });
+    } else if (sort === "price-asc") {
+      arr.sort(function (a, b) {
+        return minOfferMeta(a).min - minOfferMeta(b).min;
+      });
+    } else if (sort === "price-desc") {
+      arr.sort(function (a, b) {
+        return minOfferMeta(b).min - minOfferMeta(a).min;
+      });
     } else {
       arr.sort(function (a, b) {
         return String((a && a.name) || "").localeCompare(String((b && b.name) || ""), undefined, { sensitivity: "base" });
@@ -472,6 +540,9 @@
     sortWired = true;
     sel.addEventListener("change", function () {
       render(lastMaterials);
+      if (rmShopTaxDoc) {
+        renderRmCategoryHub(rmShopTaxDoc, allMaterials, rmShopHubFilter);
+      }
     });
   }
 

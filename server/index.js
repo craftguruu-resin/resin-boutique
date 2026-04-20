@@ -387,6 +387,53 @@ function mergeCategoriesDbWithCatalog(dbRows) {
     });
 }
 
+function humanizeSubcategoryId(id) {
+  var s = String(id || "")
+    .replace(/-/g, " ")
+    .trim();
+  if (!s) return "Line";
+  return s.replace(/\b[a-z]/g, function (ch) {
+    return ch.toUpperCase();
+  });
+}
+
+/** Adds subcategory ids present on products but missing from merged rows (helps vendor UI when data.js only lists "all"). */
+function appendProductDerivedSubcategories(rows) {
+  var products;
+  try {
+    products = catalogFromData.getProductsSummary() || [];
+  } catch (_) {
+    return rows;
+  }
+  var byCat = Object.create(null);
+  products.forEach(function (p) {
+    if (!p || !p.category) return;
+    var sid = String(p.subcategory != null ? p.subcategory : "all").trim() || "all";
+    if (!sid || sid === "all") return;
+    var cid = String(p.category).trim().slice(0, 80);
+    if (!cid) return;
+    if (!byCat[cid]) byCat[cid] = Object.create(null);
+    byCat[cid][sid.slice(0, 80)] = 1;
+  });
+  (rows || []).forEach(function (row) {
+    if (!row || !row.id) return;
+    var extraIds = byCat[String(row.id).trim().slice(0, 80)];
+    if (!extraIds) return;
+    var subs = Array.isArray(row.subcategories) ? row.subcategories.slice() : [];
+    var seen = Object.create(null);
+    subs.forEach(function (s) {
+      if (s && s.id) seen[String(s.id)] = 1;
+    });
+    Object.keys(extraIds).forEach(function (subId) {
+      if (seen[subId]) return;
+      seen[subId] = 1;
+      subs.push({ id: subId, label: humanizeSubcategoryId(subId) });
+    });
+    row.subcategories = subs;
+  });
+  return rows;
+}
+
 function createMailTransport() {
   try {
     if (process.env.SMTP_HOST) {
@@ -1463,6 +1510,7 @@ app.get("/api/vendor/categories", function (_req, res) {
       list.sort(function (a, b) {
         return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
       });
+      appendProductDerivedSubcategories(list);
       return { ok: true, source: "data_js", categories: list };
     } catch (e) {
       return { ok: false, error: String(e.message || e) };
@@ -1491,6 +1539,7 @@ app.get("/api/vendor/categories", function (_req, res) {
         };
       });
       var merged = mergeCategoriesDbWithCatalog(rows);
+      appendProductDerivedSubcategories(merged);
       res.setHeader("Cache-Control", "no-store");
       res.json({
         ok: true,

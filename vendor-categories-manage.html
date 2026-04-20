@@ -75,7 +75,7 @@
 
         <section class="vs-card vcm-panel" aria-labelledby="vcmEditHeading">
           <h2 id="vcmEditHeading" class="vcm-section-title">Edit or delete</h2>
-          <p class="vcm-domain-hint">Select the same domain, then category and subcategory. Load the row, change name or image (and link for photo frame), then save — or delete to remove from the site.</p>
+          <p class="vcm-domain-hint">Select domain, category, and optional line. Names update from your selection; use <strong>Load selection</strong> to refresh image and shop link from the server, then save. Subcategories for storefront categories also include any lines used on products, even if they were not listed in the original catalogue.</p>
           <div class="vcm-split">
             <div class="vs-field" style="margin: 0">
               <label for="vcmEditDomain">Domain</label>
@@ -94,8 +94,12 @@
               <select id="vcmEditSub" class="vs-input"></select>
             </div>
             <div class="vs-field" style="margin: 0">
-              <label for="vcmEditName">Display name</label>
-              <input id="vcmEditName" class="vs-input" type="text" maxlength="200" autocomplete="off" />
+              <label for="vcmEditCatName">Category / group name</label>
+              <input id="vcmEditCatName" class="vs-input" type="text" maxlength="200" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditSubName">Subcategory / line name</label>
+              <input id="vcmEditSubName" class="vs-input" type="text" maxlength="200" autocomplete="off" placeholder="Select a sub line to edit its name" />
             </div>
             <div class="vs-field" style="margin: 0">
               <label for="vcmEditImg">Image URL</label>

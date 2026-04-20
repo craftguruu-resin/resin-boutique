@@ -1169,6 +1169,25 @@ a.rm-empty-link:hover {
   color: #0f172a;
 }
 
+.rm-filter-toolbar .category-toolbar__group--actions {
+  flex: 0 1 auto;
+  min-width: min(100%, 22rem);
+}
+
+.rm-filter-toolbar .category-toolbar__btn-row {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rm-filter-toolbar .category-toolbar__btn-row .category-toolbar__btn {
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 /* Lighter hovers on category cards (global storefront styles are heavier). */
 .rm-cat-hub .featured-cat-card {
   transition: border-color 0.12s ease, box-shadow 0.12s ease;

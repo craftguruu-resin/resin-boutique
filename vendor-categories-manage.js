@@ -9,6 +9,14 @@
   var pfNav = { version: 1, categories: [] };
   var CAT_ONLY = "__category_only__";
 
+  function catNameInput() {
+    return document.getElementById("vcmEditCatName");
+  }
+
+  function subNameInput() {
+    return document.getElementById("vcmEditSubName");
+  }
+
   function setMsg(t, isErr) {
     var el = document.getElementById("vcmMsg");
     if (!el) return;
@@ -182,6 +190,83 @@
     onEditCatChange();
   }
 
+  /** Keep category + line name fields in sync with dropdowns (no server round-trip). */
+  function hydrateEditFieldsFromSelection() {
+    var cn = catNameInput();
+    var sn = subNameInput();
+    if (!cn || !sn) return;
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var catId = String(document.getElementById("vcmEditCat").value || "");
+    var subVal = String(document.getElementById("vcmEditSub").value || "");
+    if (!catId) {
+      cn.value = "";
+      sn.value = "";
+      sn.disabled = true;
+      sn.placeholder = "Select a category first";
+      return;
+    }
+    if (d === "resin-products") {
+      var c = resinCategories.find(function (x) {
+        return String(x.id) === catId;
+      });
+      cn.value = (c && c.label) || "";
+      if (subVal === CAT_ONLY) {
+        sn.value = "";
+        sn.disabled = true;
+        sn.placeholder = "Entire category — pick a line to edit its name";
+      } else {
+        var s = (c && c.subcategories && c.subcategories.find(function (y) {
+          return String(y.id) === subVal;
+        })) || {};
+        sn.disabled = false;
+        sn.placeholder = "Subcategory / line name";
+        sn.value = s.label || "";
+      }
+      return;
+    }
+    if (d === "resin-raw-material") {
+      var c2 = (rmTaxonomy.categories || []).find(function (x) {
+        return String(x.id) === catId;
+      });
+      cn.value = (c2 && c2.name) || "";
+      if (subVal === CAT_ONLY) {
+        sn.value = "";
+        sn.disabled = true;
+        sn.placeholder = "Entire category — pick a line to edit its name";
+      } else {
+        var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
+          return String(y.id) === subVal;
+        })) || {};
+        sn.disabled = false;
+        sn.placeholder = "Subcategory / line name";
+        sn.value = s2.name || "";
+      }
+      return;
+    }
+    if (d === "resin-photo-frame") {
+      var c3 = (pfNav.categories || []).find(function (x) {
+        return String(x.id) === catId;
+      });
+      cn.value = (c3 && c3.name) || "";
+      if (subVal === CAT_ONLY) {
+        sn.value = "";
+        sn.disabled = true;
+        sn.placeholder = "Entire group — pick a line to edit its name";
+      } else {
+        var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
+          return String(y.id) === subVal;
+        })) || {};
+        sn.disabled = false;
+        sn.placeholder = "Line name";
+        sn.value = s3.name || "";
+      }
+      return;
+    }
+    cn.value = "";
+    sn.value = "";
+    sn.disabled = true;
+  }
+
   function onEditCatChange() {
     var d = String(document.getElementById("vcmEditDomain").value || "");
     var catId = String(document.getElementById("vcmEditCat").value || "");
@@ -233,6 +318,7 @@
         subSel.appendChild(o);
       });
     }
+    hydrateEditFieldsFromSelection();
   }
 
   function clearCreateForm() {
@@ -247,6 +333,7 @@
   document.getElementById("vcmCreateDomain").addEventListener("change", onCreateDomainChange);
   document.getElementById("vcmEditDomain").addEventListener("change", onEditDomainChange);
   document.getElementById("vcmEditCat").addEventListener("change", onEditCatChange);
+  document.getElementById("vcmEditSub").addEventListener("change", hydrateEditFieldsFromSelection);
 
   document.getElementById("vcmCreateSubmit").addEventListener("click", function () {
     var domain = String(document.getElementById("vcmCreateDomain").value || "");
@@ -389,14 +476,13 @@
       var c = resinCategories.find(function (x) {
         return String(x.id) === catId;
       });
+      hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
-        document.getElementById("vcmEditName").value = (c && c.label) || "";
         document.getElementById("vcmEditImg").value = (c && c.nav_image) || "";
       } else {
         var s = (c && c.subcategories && c.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
-        document.getElementById("vcmEditName").value = s.label || "";
         document.getElementById("vcmEditImg").value = s.image || "";
       }
       document.getElementById("vcmEditHref").value = "";
@@ -407,14 +493,13 @@
       var c2 = (rmTaxonomy.categories || []).find(function (x) {
         return String(x.id) === catId;
       });
+      hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
-        document.getElementById("vcmEditName").value = (c2 && c2.name) || "";
         document.getElementById("vcmEditImg").value = (c2 && c2.image) || "";
       } else {
         var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
-        document.getElementById("vcmEditName").value = s2.name || "";
         document.getElementById("vcmEditImg").value = s2.image || "";
       }
       document.getElementById("vcmEditHref").value = "";
@@ -425,15 +510,14 @@
       var c3 = (pfNav.categories || []).find(function (x) {
         return String(x.id) === catId;
       });
+      hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
-        document.getElementById("vcmEditName").value = (c3 && c3.name) || "";
         document.getElementById("vcmEditImg").value = (c3 && c3.image) || "";
         document.getElementById("vcmEditHref").value = "";
       } else {
         var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
-        document.getElementById("vcmEditName").value = s3.name || "";
         document.getElementById("vcmEditImg").value = s3.image || "";
         document.getElementById("vcmEditHref").value = (s3.href != null && String(s3.href)) || "";
       }
@@ -447,15 +531,20 @@
     var d = String(document.getElementById("vcmEditDomain").value || "");
     var catId = String(document.getElementById("vcmEditCat").value || "");
     var subVal = String(document.getElementById("vcmEditSub").value || "");
-    var name = String(document.getElementById("vcmEditName").value || "").trim();
+    var catName = String(catNameInput() && catNameInput().value || "").trim();
+    var subName = String(subNameInput() && subNameInput().value || "").trim();
     var img = String(document.getElementById("vcmEditImg").value || "").trim();
     var hrefE = String(document.getElementById("vcmEditHref").value || "").trim();
     if (!catId) {
       setMsg("Pick a category.", true);
       return;
     }
-    if (!name) {
-      setMsg("Name is required.", true);
+    if (!catName) {
+      setMsg("Category / group name is required.", true);
+      return;
+    }
+    if (subVal !== CAT_ONLY && !subName) {
+      setMsg("Subcategory / line name is required when a line is selected.", true);
       return;
     }
     setMsg("Saving…");
@@ -464,7 +553,7 @@
         V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
           method: "PATCH",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify({ label: name, navImage: img }),
+          body: JSON.stringify({ label: catName, navImage: img }),
         })
           .then(V.parseApiJson)
           .then(function (x) {
@@ -490,13 +579,13 @@
         setMsg("Subcategory not found.", true);
         return;
       }
-      subs[ix].label = name;
+      subs[ix].label = subName;
       if (img) subs[ix].image = img;
       else delete subs[ix].image;
       V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
         method: "PATCH",
         headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-        body: JSON.stringify({ subcategories: subs }),
+        body: JSON.stringify({ label: catName, subcategories: subs }),
       })
         .then(V.parseApiJson)
         .then(function (x) {
@@ -520,8 +609,8 @@
         setMsg("Category not found.", true);
         return;
       }
+      grp.name = catName;
       if (subVal === CAT_ONLY) {
-        grp.name = name;
         grp.image = img;
       } else {
         var sx = (grp.subcategories || []).find(function (y) {
@@ -531,7 +620,7 @@
           setMsg("Subcategory not found.", true);
           return;
         }
-        sx.name = name;
+        sx.name = subName;
         sx.image = img;
       }
       putRm(doc)
@@ -560,8 +649,8 @@
       setMsg("Group not found.", true);
       return;
     }
+    grp2.name = catName;
     if (subVal === CAT_ONLY) {
-      grp2.name = name;
       grp2.image = img;
     } else {
       var sx2 = (grp2.subcategories || []).find(function (y) {
@@ -571,12 +660,12 @@
         setMsg("Line not found.", true);
         return;
       }
-      sx2.name = name;
+      sx2.name = subName;
       sx2.image = img;
       if (hrefE) {
         sx2.href = hrefE;
       } else if (!String(sx2.href || "").trim()) {
-        sx2.href = "category.html?cat=" + slugify(name);
+        sx2.href = "category.html?cat=" + slugify(subName);
       }
     }
     putPf(doc2)
