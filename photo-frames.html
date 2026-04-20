@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -121,17 +121,8 @@
       </div>
       <div class="footer-sitemap__col">
         <h3 class="footer-sitemap__title">Main menu</h3>
-        <ul class="footer-sitemap__list">
-          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
-          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
-          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
-          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
-          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
-          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
-          <li><a href="category.html?cat=resin-customised-frames">Varmala Preservation</a></li>
-          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
-          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
-          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
+        <ul class="footer-sitemap__list" id="photoFrameNavList">
+          <li class="footer-sitemap__loading">Loading links…</li>
         </ul>
       </div>
       <div class="footer-sitemap__col">
@@ -214,6 +205,7 @@
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>
+  <script src="photo-frame-nav.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
   </script>

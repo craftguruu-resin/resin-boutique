@@ -1652,6 +1652,66 @@ app.put("/api/vendor/raw-material-taxonomy", function (req, res) {
   });
 });
 
+/** Vendor: delete raw material DB rows for a taxonomy base (and optional sub) before updating taxonomy JSON. */
+app.delete("/api/vendor/raw-material-taxonomy/materials", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var base = String((req.query && req.query.base) || "").trim();
+    var sub = String((req.query && req.query.sub) || "").trim();
+    rawMaterialsDb.deleteMaterialsByTaxonomySlot(base, sub, function (e2, n) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String((e2 && e2.message) || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, deleted: n || 0 });
+    });
+  });
+});
+
+app.get("/api/vendor/photo-frame-nav", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    vendorSiteDocsDb.getPhotoFrameNavMerged(function (e2, doc) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, nav: doc });
+    });
+  });
+});
+
+app.put("/api/vendor/photo-frame-nav", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var doc = req.body && req.body.nav != null ? req.body.nav : req.body;
+    vendorSiteDocsDb.savePhotoFrameNav(doc, function (e2) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("Invalid") >= 0 ? 400 : msg.indexOf("not configured") >= 0 ? 503 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true });
+    });
+  });
+});
+
 /** DB catalog products under a category (parent → child for studio inventory). */
 app.get("/api/vendor/db-products", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
@@ -1960,6 +2020,17 @@ app.get("/api/catalog/raw-material-taxonomy", function (_req, res) {
     }
     res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, taxonomy: doc });
+  });
+});
+
+/** Public: photo frames footer / nav links (JSON file or vendor override). */
+app.get("/api/catalog/photo-frame-nav", function (_req, res) {
+  vendorSiteDocsDb.getPhotoFrameNavMerged(function (e, doc) {
+    if (e) {
+      return res.status(500).json({ ok: false, error: String(e.message || e) });
+    }
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, nav: doc });
   });
 });
 

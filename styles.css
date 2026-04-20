@@ -5992,11 +5992,6 @@ a.home-auth-btn {
   z-index: 1;
 }
 
-/* Wide homepage hero banner — bias crop toward logo + product row inside circular frame */
-.hero-atelier__photo-disc .hero-atelier__photo-img--resin-supplies-hero {
-  object-position: 50% 55%;
-}
-
 .hero-atelier__photo-ring > img {
   display: block;
   width: 100%;

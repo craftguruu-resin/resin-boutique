@@ -660,6 +660,46 @@ function updateRow(id, opts, cb) {
   });
 }
 
+/**
+ * Remove raw material rows tied to taxonomy slugs (vendor category cleanup).
+ * @param {string} baseSlug
+ * @param {string} [subSlug] empty = all rows for base
+ * @param {(err?: Error, deleted?: number) => void} cb
+ */
+function deleteMaterialsByTaxonomySlot(baseSlug, subSlug, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  var b = sanitizeRmCategorySlug(baseSlug);
+  if (!b) {
+    return process.nextTick(function () {
+      cb(new Error("base slug is required"));
+    });
+  }
+  var s = subSlug != null ? sanitizeRmCategorySlug(subSlug) : "";
+  var q;
+  var params;
+  if (s) {
+    q = "DELETE FROM raw_materials WHERE base_category_slug = $1 AND subcategory_slug = $2";
+    params = [b, s];
+  } else {
+    q = "DELETE FROM raw_materials WHERE base_category_slug = $1";
+    params = [b];
+  }
+  pool
+    .query(q, params)
+    .then(function (r) {
+      try {
+        catalogFromData.invalidateCache();
+      } catch (_) {}
+      cb(null, r.rowCount || 0);
+    })
+    .catch(cb);
+}
+
 function deleteRow(id, cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -932,6 +972,7 @@ module.exports = {
   updateRow: updateRow,
   deleteRow: deleteRow,
   setActive: setActive,
+  deleteMaterialsByTaxonomySlot: deleteMaterialsByTaxonomySlot,
   seedDemoMaterialsPromise: seedDemoMaterialsPromise,
   DEMO_IDS: DEMO_IDS,
 };

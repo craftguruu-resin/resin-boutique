@@ -1650,3 +1650,35 @@ a.vd-kpi-card--link:focus-visible {
   font-weight: 600;
   color: var(--vs-indigo);
 }
+
+/* Categories & nav management (vendor-categories-manage) */
+.vendor-saas .vcm-panels {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.vendor-saas .vcm-panel .vcm-section-title {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--vs-text);
+}
+
+.vendor-saas .vcm-domain-hint {
+  margin: 0 0 1rem;
+  font-size: 0.84rem;
+  line-height: 1.5;
+  color: var(--vs-muted);
+}
+
+.vendor-saas .vcm-split {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: 0.75rem 1rem;
+  align-items: end;
+}
+
+.vendor-saas .vcm-field-full {
+  grid-column: 1 / -1;
+}

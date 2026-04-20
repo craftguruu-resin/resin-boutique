@@ -5,6 +5,9 @@
   if (!V) return;
 
   var resinCategories = [];
+  var rmTaxonomy = { version: 1, categories: [] };
+  var pfNav = { version: 1, categories: [] };
+  var CAT_ONLY = "__category_only__";
 
   function setMsg(t, isErr) {
     var el = document.getElementById("vcmMsg");
@@ -13,14 +16,21 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
-  function parseSubsField(text) {
-    var raw = String(text || "").trim();
-    if (!raw) return null;
+  function slugify(s) {
+    var t = String(s || "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72);
+    return t || "item";
+  }
+
+  function clone(o) {
     try {
-      var j = JSON.parse(raw);
-      return Array.isArray(j) ? j : null;
+      return JSON.parse(JSON.stringify(o || {}));
     } catch (_) {
-      return false;
+      return {};
     }
   }
 
@@ -35,7 +45,6 @@
           throw new Error((x.json && x.json.error) || "Categories failed");
         }
         resinCategories = x.json.categories || [];
-        renderResin();
       });
   }
 
@@ -47,96 +56,48 @@
       .then(V.parseApiJson)
       .then(function (x) {
         if (!x.okHttp || !x.json || !x.json.ok || !x.json.taxonomy) {
-          throw new Error((x.json && x.json.error) || "Taxonomy failed");
+          throw new Error((x.json && x.json.error) || "Raw taxonomy failed");
         }
-        var ta = document.getElementById("vcmRmJson");
-        if (ta) {
-          ta.value = JSON.stringify(x.json.taxonomy, null, 2);
-        }
+        rmTaxonomy = x.json.taxonomy;
       });
   }
 
-  function esc(s) {
-    return String(s == null ? "")
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/"/g, "&quot;");
+  function loadPf() {
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/photo-frame-nav"), {
+      headers: V.authHeaders(),
+      cache: "no-store",
+    })
+      .then(V.parseApiJson)
+      .then(function (x) {
+        if (!x.okHttp || !x.json || !x.json.ok || !x.json.nav) {
+          throw new Error((x.json && x.json.error) || "Photo frame nav failed");
+        }
+        pfNav = x.json.nav;
+      });
   }
 
-  function renderResin() {
-    var host = document.getElementById("vcmResinList");
-    if (!host) return;
-    if (!resinCategories.length) {
-      host.innerHTML = "<p class='vs-muted'>No categories.</p>";
-      return;
-    }
-    var rows = resinCategories
-      .map(function (c) {
-        var vo = c.vendor_owned ? " <span class='vs-muted'>(vendor)</span>" : "";
-        var subs = (c.subcategories || [])
-          .map(function (s) {
-            return (
-              esc(s.id) +
-              (s.id === "all" ?
-                ""
-              : ' <button type="button" class="vs-btn vs-btn--ghost vs-btn--sm vcm-del-sub" data-cat="' +
-                  esc(c.id) +
-                  '" data-sub="' +
-                  esc(s.id) +
-                  '">Remove sub</button>')
-            );
-          })
-          .join("<br />");
-        var del =
-          c.vendor_owned ?
-            '<button type="button" class="vs-btn vs-btn--ghost vcm-del-cat" data-cat="' + esc(c.id) + '">Delete category</button>'
-          : '<span class="vs-muted">Built-in — delete disabled</span>';
-        return (
-          "<div class='vs-card vcm-cat-card' style='margin:0.5rem 0;padding:0.65rem 0.85rem' data-cat='" +
-          esc(c.id) +
-          "'>" +
-          "<div class='vs-row-actions' style='flex-wrap:wrap;gap:0.5rem;align-items:flex-start'>" +
-          "<strong>" +
-          esc(c.label) +
-          "</strong> <code>" +
-          esc(c.id) +
-          "</code>" +
-          vo +
-          "</div>" +
-          "<div class='vs-muted' style='font-size:0.85rem;margin:0.35rem 0'>Subs: " +
-          subs +
-          "</div>" +
-          "<div class='vs-row-actions' style='flex-wrap:wrap;gap:0.5rem;align-items:flex-end;margin-top:0.35rem'>" +
-          "<div class='vs-field' style='margin:0;min-width:7rem'><label>Label<br /><input class='vs-input vcm-lbl' type='text' value='" +
-          esc(c.label) +
-          "' maxlength='200'/></label></div>" +
-          "<div class='vs-field' style='margin:0;min-width:7rem'><label>Folder<br /><input class='vs-input vcm-fld' type='text' value='" +
-          esc(c.folder || "") +
-          "' maxlength='200'/></label></div>" +
-          "<div class='vs-field' style='margin:0;flex:1;min-width:10rem'><label>Image URL<br /><input class='vs-input vcm-nav' type='text' value='" +
-          esc(c.nav_image || "") +
-          "' maxlength='500'/></label></div>" +
-          "<button type='button' class='vs-btn vs-btn--primary vcm-save-cat' data-cat='" +
-          esc(c.id) +
-          "'>Save</button>" +
-          del +
-          "</div>" +
-          "<div class='vs-field' style='margin:0.35rem 0 0'>" +
-          "<label>Sub-folders JSON<br /><textarea class='vs-input vcm-subs' rows='2' style='font-family:ui-monospace,monospace;font-size:0.78rem'></textarea></label></div>" +
-          "</div>"
-        );
-      })
-      .join("");
-    host.innerHTML = rows;
-    resinCategories.forEach(function (c, idx) {
-      var cards = host.querySelectorAll(".vcm-cat-card");
-      var card = cards[idx];
-      if (!card) return;
-      var tx = card.querySelector("textarea.vcm-subs");
-      if (tx) {
-        tx.value = JSON.stringify(c.subcategories || [], null, 2);
-      }
-    });
+  function putRm(doc) {
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/raw-material-taxonomy"), {
+      method: "PUT",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: JSON.stringify({ taxonomy: doc }),
+    }).then(V.parseApiJson);
+  }
+
+  function putPf(doc) {
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/photo-frame-nav"), {
+      method: "PUT",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: JSON.stringify({ nav: doc }),
+    }).then(V.parseApiJson);
+  }
+
+  function deleteRmMaterials(base, sub) {
+    var q = "?base=" + encodeURIComponent(base) + (sub ? "&sub=" + encodeURIComponent(sub) : "");
+    return V.vendorFetch(V.vendorApiUrl("/api/vendor/raw-material-taxonomy/materials" + q), {
+      method: "DELETE",
+      headers: V.authHeaders(),
+    }).then(V.parseApiJson);
   }
 
   function refreshAll() {
@@ -146,137 +107,477 @@
         return loadRm();
       })
       .then(function () {
+        return loadPf();
+      })
+      .then(function () {
         setMsg("");
+        fillPfUnderSelect();
+        onEditDomainChange();
       })
       .catch(function (e) {
         setMsg(String((e && e.message) || e), true);
       });
   }
 
-  document.getElementById("vcmRefresh") &&
-    document.getElementById("vcmRefresh").addEventListener("click", function () {
-      refreshAll();
+  function fillPfUnderSelect() {
+    var sel = document.getElementById("vcmPfUnder");
+    if (!sel) return;
+    sel.innerHTML = "";
+    (pfNav.categories || []).forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.name || c.id;
+      sel.appendChild(o);
     });
+  }
 
-  document.getElementById("vcmCreateBtn") &&
-    document.getElementById("vcmCreateBtn").addEventListener("click", function () {
-      var label = String(document.getElementById("vcmNewLabel").value || "").trim();
-      var idOpt = String(document.getElementById("vcmNewId").value || "").trim();
-      var folder = String(document.getElementById("vcmNewFolder").value || "").trim();
-      var nav = String(document.getElementById("vcmNewNav").value || "").trim();
-      var subsParsed = parseSubsField(document.getElementById("vcmNewSubs").value);
-      if (subsParsed === false) {
-        setMsg("Sub-folders must be valid JSON array.", true);
-        return;
+  function onCreateDomainChange() {
+    var d = String(document.getElementById("vcmCreateDomain").value || "");
+    var hrefWrap = document.getElementById("vcmCreateHrefWrap");
+    var pfUnder = document.getElementById("vcmPfUnderWrap");
+    if (hrefWrap) hrefWrap.hidden = d !== "resin-photo-frame";
+    if (pfUnder) pfUnder.hidden = d !== "resin-photo-frame";
+  }
+
+  function onEditDomainChange() {
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var hrefWrap = document.getElementById("vcmEditHrefWrap");
+    if (hrefWrap) hrefWrap.hidden = d !== "resin-photo-frame";
+    var catSel = document.getElementById("vcmEditCat");
+    var subSel = document.getElementById("vcmEditSub");
+    if (!catSel || !subSel) return;
+    catSel.innerHTML = "";
+    subSel.innerHTML = "";
+    if (d === "resin-products") {
+      resinCategories.forEach(function (c) {
+        var o = document.createElement("option");
+        o.value = c.id;
+        o.textContent = (c.label || c.id) + (c.vendor_owned ? " (vendor)" : "");
+        catSel.appendChild(o);
+      });
+    } else if (d === "resin-raw-material") {
+      (rmTaxonomy.categories || []).forEach(function (c) {
+        var o = document.createElement("option");
+        o.value = c.id;
+        o.textContent = c.name || c.id;
+        catSel.appendChild(o);
+      });
+    } else {
+      (pfNav.categories || []).forEach(function (c) {
+        var o = document.createElement("option");
+        o.value = c.id;
+        o.textContent = c.name || c.id;
+        catSel.appendChild(o);
+      });
+    }
+    onEditCatChange();
+  }
+
+  function onEditCatChange() {
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var catId = String(document.getElementById("vcmEditCat").value || "");
+    var subSel = document.getElementById("vcmEditSub");
+    if (!subSel) return;
+    subSel.innerHTML = "";
+    var ph = document.createElement("option");
+    ph.value = CAT_ONLY;
+    ph.textContent = "— Entire category / group —";
+    subSel.appendChild(ph);
+    if (!catId) return;
+    if (d === "resin-products") {
+      var c = resinCategories.find(function (x) {
+        return x.id === catId;
+      });
+      (c && c.subcategories ? c.subcategories : []).forEach(function (s) {
+        if (!s || s.id === "all") return;
+        var o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.label || s.id;
+        subSel.appendChild(o);
+      });
+    } else if (d === "resin-raw-material") {
+      var c2 = (rmTaxonomy.categories || []).find(function (x) {
+        return x.id === catId;
+      });
+      (c2 && c2.subcategories ? c2.subcategories : []).forEach(function (s) {
+        if (!s) return;
+        var o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.name || s.id;
+        subSel.appendChild(o);
+      });
+    } else {
+      var c3 = (pfNav.categories || []).find(function (x) {
+        return x.id === catId;
+      });
+      (c3 && c3.subcategories ? c3.subcategories : []).forEach(function (s) {
+        if (!s) return;
+        var o = document.createElement("option");
+        o.value = s.id;
+        o.textContent = s.name || s.id;
+        subSel.appendChild(o);
+      });
+    }
+  }
+
+  function clearCreateForm() {
+    document.getElementById("vcmCreateCatName").value = "";
+    document.getElementById("vcmCreateSubName").value = "";
+    document.getElementById("vcmCreateCatImg").value = "";
+    document.getElementById("vcmCreateSubImg").value = "";
+    var h = document.getElementById("vcmCreateHref");
+    if (h) h.value = "";
+  }
+
+  document.getElementById("vcmCreateDomain").addEventListener("change", onCreateDomainChange);
+  document.getElementById("vcmEditDomain").addEventListener("change", onEditDomainChange);
+  document.getElementById("vcmEditCat").addEventListener("change", onEditCatChange);
+
+  document.getElementById("vcmCreateSubmit").addEventListener("click", function () {
+    var domain = String(document.getElementById("vcmCreateDomain").value || "");
+    var catName = String(document.getElementById("vcmCreateCatName").value || "").trim();
+    var subName = String(document.getElementById("vcmCreateSubName").value || "").trim();
+    var catImg = String(document.getElementById("vcmCreateCatImg").value || "").trim();
+    var subImg = String(document.getElementById("vcmCreateSubImg").value || "").trim();
+    if (!catName) {
+      setMsg("Enter a category or group name.", true);
+      return;
+    }
+    setMsg("Saving…");
+    if (domain === "resin-products") {
+      var subs = [{ id: "all", label: "All" }];
+      if (subName) {
+        var sid = slugify(subName);
+        var o = { id: sid, label: subName };
+        if (subImg) o.image = subImg;
+        subs.push(o);
       }
-      if (!label) {
-        setMsg("Label is required.", true);
-        return;
-      }
-      var body = { label: label, navImage: nav };
-      if (idOpt) body.id = idOpt;
-      if (folder) body.folder = folder;
-      if (subsParsed) body.subcategories = subsParsed;
-      setMsg("Creating…");
       V.vendorFetch(V.vendorApiUrl("/api/vendor/categories"), {
         method: "POST",
         headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          label: catName,
+          folder: catName,
+          navImage: catImg,
+          subcategories: subs,
+        }),
       })
         .then(V.parseApiJson)
         .then(function (x) {
           if (!x.okHttp || !x.json || !x.json.ok) {
             throw new Error((x.json && x.json.error) || "Create failed");
           }
-          document.getElementById("vcmNewLabel").value = "";
-          document.getElementById("vcmNewId").value = "";
-          document.getElementById("vcmNewFolder").value = "";
-          document.getElementById("vcmNewNav").value = "";
-          document.getElementById("vcmNewSubs").value = "";
-          setMsg("Category created.");
-          return loadResin();
+          setMsg("Resin product category created.");
+          clearCreateForm();
+          return loadResin().then(onEditDomainChange);
         })
         .catch(function (e) {
           setMsg(String((e && e.message) || e), true);
         });
-    });
-
-  document.getElementById("vcmRmSave") &&
-    document.getElementById("vcmRmSave").addEventListener("click", function () {
-      var ta = document.getElementById("vcmRmJson");
-      var raw = String((ta && ta.value) || "").trim();
-      var doc;
-      try {
-        doc = JSON.parse(raw);
-      } catch (_) {
-        setMsg("Invalid JSON.", true);
-        return;
+      return;
+    }
+    if (domain === "resin-raw-material") {
+      var doc = clone(rmTaxonomy);
+      doc.categories = doc.categories || [];
+      var bid = slugify(catName);
+      var grp = doc.categories.find(function (c) {
+        return c.id === bid;
+      });
+      if (!grp) {
+        grp = { id: bid, name: catName, image: catImg || "", subcategories: [] };
+        doc.categories.push(grp);
+      } else {
+        if (catImg) grp.image = catImg;
+        grp.name = catName;
       }
-      setMsg("Saving taxonomy…");
-      V.vendorFetch(V.vendorApiUrl("/api/vendor/raw-material-taxonomy"), {
-        method: "PUT",
-        headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-        body: JSON.stringify({ taxonomy: doc }),
-      })
-        .then(V.parseApiJson)
+      if (subName) {
+        var sid2 = slugify(subName);
+        grp.subcategories = grp.subcategories || [];
+        if (!grp.subcategories.some(function (s) {
+          return s.id === sid2;
+        })) {
+          var row = { id: sid2, name: subName, image: subImg || "" };
+          grp.subcategories.push(row);
+        }
+      }
+      putRm(doc)
         .then(function (x) {
           if (!x.okHttp || !x.json || !x.json.ok) {
             throw new Error((x.json && x.json.error) || "Save failed");
           }
-          setMsg("Raw material taxonomy saved.");
+          setMsg("Raw material taxonomy updated.");
+          rmTaxonomy = doc;
+          clearCreateForm();
+          return loadRm().then(onEditDomainChange);
         })
         .catch(function (e) {
           setMsg(String((e && e.message) || e), true);
         });
+      return;
+    }
+    var hrefVal = String(document.getElementById("vcmCreateHref").value || "").trim();
+    if (!hrefVal) {
+      setMsg("Photo frame lines need a shop link (e.g. category.html?cat=…).", true);
+      return;
+    }
+    var doc2 = clone(pfNav);
+    doc2.categories = doc2.categories || [];
+    var underSel = document.getElementById("vcmPfUnder");
+    var underId = underSel && underSel.value ? underSel.value : (doc2.categories[0] && doc2.categories[0].id);
+    var grp2 = doc2.categories.find(function (c) {
+      return c.id === underId;
     });
-
-  document.getElementById("vcmResinList") &&
-    document.getElementById("vcmResinList").addEventListener("click", function (ev) {
-      var t = ev.target;
-      if (!t || !t.getAttribute) return;
-      if (t.classList.contains("vcm-save-cat")) {
-        var cid = t.getAttribute("data-cat");
-        var card = t.closest(".vcm-cat-card");
-        if (!card) return;
-        var lbl = card.querySelector(".vcm-lbl");
-        var fld = card.querySelector(".vcm-fld");
-        var nav = card.querySelector(".vcm-nav");
-        var tx = card.querySelector("textarea.vcm-subs");
-        var subsParsed = tx ? parseSubsField(tx.value) : null;
-        if (subsParsed === false) {
-          setMsg("Sub-folders JSON invalid for " + cid, true);
-          return;
+    if (!grp2) {
+      grp2 = {
+        id: slugify(catName),
+        name: catName,
+        image: catImg || "",
+        subcategories: [],
+      };
+      doc2.categories.push(grp2);
+    }
+    grp2.subcategories = grp2.subcategories || [];
+    var lineLabel = subName || catName;
+    var lid = slugify(lineLabel + "-" + hrefVal).slice(0, 72);
+    grp2.subcategories.push({
+      id: lid,
+      name: lineLabel,
+      image: subImg || catImg || "",
+      href: hrefVal,
+    });
+    putPf(doc2)
+      .then(function (x) {
+        if (!x.okHttp || !x.json || !x.json.ok) {
+          throw new Error((x.json && x.json.error) || "Save failed");
         }
-        var body = {
-          label: String((lbl && lbl.value) || "").trim(),
-          folder: String((fld && fld.value) || "").trim(),
-          navImage: String((nav && nav.value) || "").trim(),
-        };
-        if (subsParsed) body.subcategories = subsParsed;
-        setMsg("Saving " + cid + "…");
-        V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(cid)), {
+        setMsg("Photo frame links updated.");
+        pfNav = doc2;
+        clearCreateForm();
+        fillPfUnderSelect();
+        return loadPf().then(onEditDomainChange);
+      })
+      .catch(function (e) {
+        setMsg(String((e && e.message) || e), true);
+      });
+  });
+
+  document.getElementById("vcmEditLoad").addEventListener("click", function () {
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var catId = String(document.getElementById("vcmEditCat").value || "");
+    var subVal = String(document.getElementById("vcmEditSub").value || "");
+    if (!catId) {
+      setMsg("Pick a category.", true);
+      return;
+    }
+    if (d === "resin-products") {
+      var c = resinCategories.find(function (x) {
+        return x.id === catId;
+      });
+      if (subVal === CAT_ONLY) {
+        document.getElementById("vcmEditName").value = (c && c.label) || "";
+        document.getElementById("vcmEditImg").value = (c && c.nav_image) || "";
+      } else {
+        var s = (c && c.subcategories && c.subcategories.find(function (y) {
+          return y.id === subVal;
+        })) || {};
+        document.getElementById("vcmEditName").value = s.label || "";
+        document.getElementById("vcmEditImg").value = s.image || "";
+      }
+      document.getElementById("vcmEditHref").value = "";
+      setMsg("Loaded.");
+      return;
+    }
+    if (d === "resin-raw-material") {
+      var c2 = (rmTaxonomy.categories || []).find(function (x) {
+        return x.id === catId;
+      });
+      if (subVal === CAT_ONLY) {
+        document.getElementById("vcmEditName").value = (c2 && c2.name) || "";
+        document.getElementById("vcmEditImg").value = (c2 && c2.image) || "";
+      } else {
+        var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
+          return y.id === subVal;
+        })) || {};
+        document.getElementById("vcmEditName").value = s2.name || "";
+        document.getElementById("vcmEditImg").value = s2.image || "";
+      }
+      document.getElementById("vcmEditHref").value = "";
+      setMsg("Loaded.");
+      return;
+    }
+    var c3 = (pfNav.categories || []).find(function (x) {
+      return x.id === catId;
+    });
+    if (subVal === CAT_ONLY) {
+      document.getElementById("vcmEditName").value = (c3 && c3.name) || "";
+      document.getElementById("vcmEditImg").value = (c3 && c3.image) || "";
+      document.getElementById("vcmEditHref").value = "";
+    } else {
+      var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
+        return y.id === subVal;
+      })) || {};
+      document.getElementById("vcmEditName").value = s3.name || "";
+      document.getElementById("vcmEditImg").value = s3.image || "";
+      document.getElementById("vcmEditHref").value = (s3.href != null && String(s3.href)) || "";
+    }
+    setMsg("Loaded.");
+  });
+
+  document.getElementById("vcmEditSave").addEventListener("click", function () {
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var catId = String(document.getElementById("vcmEditCat").value || "");
+    var subVal = String(document.getElementById("vcmEditSub").value || "");
+    var name = String(document.getElementById("vcmEditName").value || "").trim();
+    var img = String(document.getElementById("vcmEditImg").value || "").trim();
+    var hrefE = String(document.getElementById("vcmEditHref").value || "").trim();
+    if (!catId) {
+      setMsg("Pick a category.", true);
+      return;
+    }
+    if (!name) {
+      setMsg("Name is required.", true);
+      return;
+    }
+    setMsg("Saving…");
+    if (d === "resin-products") {
+      if (subVal === CAT_ONLY) {
+        V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
           method: "PATCH",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify(body),
+          body: JSON.stringify({ label: name, navImage: img }),
         })
           .then(V.parseApiJson)
           .then(function (x) {
             if (!x.okHttp || !x.json || !x.json.ok) {
               throw new Error((x.json && x.json.error) || "Save failed");
             }
-            setMsg("Saved " + cid + ".");
-            return loadResin();
+            setMsg("Saved.");
+            return loadResin().then(onEditDomainChange);
           })
           .catch(function (e) {
             setMsg(String((e && e.message) || e), true);
           });
         return;
       }
-      if (t.classList.contains("vcm-del-cat")) {
-        var cid2 = t.getAttribute("data-cat");
-        if (!window.confirm("Delete category " + cid2 + " and all its database products and overrides?")) return;
-        setMsg("Deleting…");
-        V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(cid2)), {
+      var c = resinCategories.find(function (x) {
+        return x.id === catId;
+      });
+      var subs = clone(c && c.subcategories) || [];
+      var ix = subs.findIndex(function (s) {
+        return s.id === subVal;
+      });
+      if (ix < 0) {
+        setMsg("Subcategory not found.", true);
+        return;
+      }
+      subs[ix].label = name;
+      if (img) subs[ix].image = img;
+      else delete subs[ix].image;
+      V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
+        method: "PATCH",
+        headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+        body: JSON.stringify({ subcategories: subs }),
+      })
+        .then(V.parseApiJson)
+        .then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Save failed");
+          }
+          setMsg("Saved.");
+          return loadResin().then(onEditDomainChange);
+        })
+        .catch(function (e) {
+          setMsg(String((e && e.message) || e), true);
+        });
+      return;
+    }
+    if (d === "resin-raw-material") {
+      var doc = clone(rmTaxonomy);
+      var grp = (doc.categories || []).find(function (x) {
+        return x.id === catId;
+      });
+      if (!grp) {
+        setMsg("Category not found.", true);
+        return;
+      }
+      if (subVal === CAT_ONLY) {
+        grp.name = name;
+        grp.image = img;
+      } else {
+        var sx = (grp.subcategories || []).find(function (y) {
+          return y.id === subVal;
+        });
+        if (!sx) {
+          setMsg("Subcategory not found.", true);
+          return;
+        }
+        sx.name = name;
+        sx.image = img;
+      }
+      putRm(doc)
+        .then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Save failed");
+          }
+          rmTaxonomy = doc;
+          setMsg("Saved.");
+          return loadRm().then(onEditDomainChange);
+        })
+        .catch(function (e) {
+          setMsg(String((e && e.message) || e), true);
+        });
+      return;
+    }
+    var doc2 = clone(pfNav);
+    var grp2 = (doc2.categories || []).find(function (x) {
+      return x.id === catId;
+    });
+    if (!grp2) {
+      setMsg("Group not found.", true);
+      return;
+    }
+    if (subVal === CAT_ONLY) {
+      grp2.name = name;
+      grp2.image = img;
+    } else {
+      var sx2 = (grp2.subcategories || []).find(function (y) {
+        return y.id === subVal;
+      });
+      if (!sx2) {
+        setMsg("Line not found.", true);
+        return;
+      }
+      sx2.name = name;
+      sx2.image = img;
+      if (hrefE) sx2.href = hrefE;
+    }
+    putPf(doc2)
+      .then(function (x) {
+        if (!x.okHttp || !x.json || !x.json.ok) {
+          throw new Error((x.json && x.json.error) || "Save failed");
+        }
+        pfNav = doc2;
+        setMsg("Saved.");
+        return loadPf().then(onEditDomainChange);
+      })
+      .catch(function (e) {
+        setMsg(String((e && e.message) || e), true);
+      });
+  });
+
+  document.getElementById("vcmEditDelete").addEventListener("click", function () {
+    var d = String(document.getElementById("vcmEditDomain").value || "");
+    var catId = String(document.getElementById("vcmEditCat").value || "");
+    var subVal = String(document.getElementById("vcmEditSub").value || "");
+    if (!catId) {
+      setMsg("Pick a category.", true);
+      return;
+    }
+    if (!window.confirm("Delete this from the live site? This cannot be undone.")) return;
+    setMsg("Deleting…");
+    if (d === "resin-products") {
+      if (subVal === CAT_ONLY) {
+        V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
           method: "DELETE",
           headers: V.authHeaders(),
         })
@@ -285,38 +586,121 @@
             if (!x.okHttp || !x.json || !x.json.ok) {
               throw new Error((x.json && x.json.error) || "Delete failed");
             }
-            setMsg("Deleted " + cid2 + ".");
-            return loadResin();
+            setMsg("Deleted.");
+            return loadResin().then(onEditDomainChange);
           })
           .catch(function (e) {
             setMsg(String((e && e.message) || e), true);
           });
         return;
       }
-      if (t.classList.contains("vcm-del-sub")) {
-        var c3 = t.getAttribute("data-cat");
-        var s3 = t.getAttribute("data-sub");
-        if (!window.confirm("Remove subfolder " + s3 + " from " + c3 + "? Listings move to All.")) return;
-        setMsg("Removing sub…");
-        V.vendorFetch(
-          V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(c3) + "/subcategories/" + encodeURIComponent(s3)),
-          { method: "DELETE", headers: V.authHeaders() }
-        )
-          .then(V.parseApiJson)
+      V.vendorFetch(
+        V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId) + "/subcategories/" + encodeURIComponent(subVal)),
+        { method: "DELETE", headers: V.authHeaders() }
+      )
+        .then(V.parseApiJson)
+        .then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Delete failed");
+          }
+          setMsg("Subcategory removed.");
+          return loadResin().then(onEditDomainChange);
+        })
+        .catch(function (e) {
+          setMsg(String((e && e.message) || e), true);
+        });
+      return;
+    }
+    if (d === "resin-raw-material") {
+      var docRm = clone(rmTaxonomy);
+      if (subVal === CAT_ONLY) {
+        deleteRmMaterials(catId, "")
           .then(function (x) {
             if (!x.okHttp || !x.json || !x.json.ok) {
-              throw new Error((x.json && x.json.error) || "Remove failed");
+              throw new Error((x.json && x.json.error) || "Delete materials failed");
             }
-            setMsg("Removed " + s3 + ".");
-            return loadResin();
+            docRm.categories = (docRm.categories || []).filter(function (c) {
+              return c.id !== catId;
+            });
+            return putRm(docRm);
+          })
+          .then(function (x2) {
+            if (!x2.okHttp || !x2.json || !x2.json.ok) {
+              throw new Error((x2.json && x2.json.error) || "Save taxonomy failed");
+            }
+            rmTaxonomy = docRm;
+            setMsg("Base category and linked materials removed.");
+            return loadRm().then(onEditDomainChange);
           })
           .catch(function (e) {
             setMsg(String((e && e.message) || e), true);
           });
+        return;
       }
+      deleteRmMaterials(catId, subVal)
+        .then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Delete materials failed");
+          }
+          var grp = (docRm.categories || []).find(function (c) {
+            return c.id === catId;
+          });
+          if (grp && grp.subcategories) {
+            grp.subcategories = grp.subcategories.filter(function (s) {
+              return s.id !== subVal;
+            });
+          }
+          return putRm(docRm);
+        })
+        .then(function (x2) {
+          if (!x2.okHttp || !x2.json || !x2.json.ok) {
+            throw new Error((x2.json && x2.json.error) || "Save taxonomy failed");
+          }
+          rmTaxonomy = docRm;
+          setMsg("Subcategory and linked materials removed.");
+          return loadRm().then(onEditDomainChange);
+        })
+        .catch(function (e) {
+          setMsg(String((e && e.message) || e), true);
+        });
+      return;
+    }
+    var doc2 = clone(pfNav);
+    var grp2 = (doc2.categories || []).find(function (x) {
+      return x.id === catId;
     });
+    if (!grp2) {
+      setMsg("Group not found.", true);
+      return;
+    }
+    if (subVal === CAT_ONLY) {
+      doc2.categories = (doc2.categories || []).filter(function (c) {
+        return c.id !== catId;
+      });
+    } else {
+      grp2.subcategories = (grp2.subcategories || []).filter(function (s) {
+        return s.id !== subVal;
+      });
+    }
+    putPf(doc2)
+      .then(function (x) {
+        if (!x.okHttp || !x.json || !x.json.ok) {
+          throw new Error((x.json && x.json.error) || "Save failed");
+        }
+        pfNav = doc2;
+        setMsg("Removed.");
+        fillPfUnderSelect();
+        return loadPf().then(onEditDomainChange);
+      })
+      .catch(function (e) {
+        setMsg(String((e && e.message) || e), true);
+      });
+  });
+
+  document.getElementById("vcmRefresh").addEventListener("click", refreshAll);
 
   document.addEventListener("DOMContentLoaded", function () {
+    onCreateDomainChange();
     refreshAll();
   });
 })();

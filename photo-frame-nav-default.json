@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "categories": [
+    {
+      "id": "photo-frame-lines",
+      "name": "Photo frame catalog",
+      "image": "",
+      "subcategories": [
+        {
+          "id": "resin-coasters",
+          "name": "Resin Coasters",
+          "image": "",
+          "href": "category.html?cat=resin-coasters"
+        },
+        {
+          "id": "ring-platter",
+          "name": "Ring Platter",
+          "image": "",
+          "href": "category.html?cat=resin-customised-frames"
+        },
+        {
+          "id": "resin-keychains",
+          "name": "Resin Keychains",
+          "image": "",
+          "href": "category.html?cat=resin-keychains"
+        },
+        {
+          "id": "resin-nameplates",
+          "name": "Resin Nameplates",
+          "image": "",
+          "href": "category.html?cat=resin-name-plates"
+        },
+        {
+          "id": "resin-photo-frame",
+          "name": "Resin Photo Frame",
+          "image": "",
+          "href": "category.html?cat=resin-customised-frames"
+        },
+        {
+          "id": "resin-pooja-platter",
+          "name": "Resin Pooja Platter",
+          "image": "",
+          "href": "category.html?cat=resin-pooja-plate"
+        },
+        {
+          "id": "varmala-preservation",
+          "name": "Varmala Preservation",
+          "image": "",
+          "href": "category.html?cat=resin-customised-frames"
+        },
+        {
+          "id": "resin-wall-clock",
+          "name": "Resin Wall Clock",
+          "image": "",
+          "href": "category.html?cat=resin-clocks"
+        },
+        {
+          "id": "resin-mantra-frame",
+          "name": "Resin Mantra Frame",
+          "image": "",
+          "href": "category.html?cat=resin-mantra-frame"
+        },
+        {
+          "id": "resin-tray",
+          "name": "Resin Tray",
+          "image": "",
+          "href": "category.html?cat=resin-cutlery-and-tissue-holder"
+        }
+      ]
+    }
+  ]
+}

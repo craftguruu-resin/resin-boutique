@@ -16,10 +16,9 @@
     <div class="vs-main">
       <header class="vs-topbar">
         <div>
-          <h1 class="vs-topbar__title">Categories &amp; raw material nav</h1>
+          <h1 class="vs-topbar__title">Categories &amp; navigation</h1>
           <p class="vs-topbar__sub">
-            <strong>Resin storefront:</strong> add new categories (with optional sub-folders), rename or set a rail image URL, or remove a vendor-created category (built-in categories cannot be deleted; you can still edit labels and sub-folders in the database).
-            <strong>Raw material shop:</strong> replace the left-nav taxonomy JSON (same shape as <code>raw-material-taxonomy.json</code>) so the guest raw material pages and vendor raw forms stay aligned.
+            Choose <strong>Resin products</strong> (storefront catalogue), <strong>Resin raw material</strong> (raw shop sidebar), or <strong>Resin photo frame</strong> (photo frames page links). Create with names and image URLs; edits and deletes sync to the guest site after the next page load or catalog refresh.
           </p>
         </div>
         <div class="vs-topbar__actions">
@@ -27,53 +26,92 @@
         </div>
       </header>
 
-      <div class="vs-content">
+      <div class="vs-content vcm-panels">
         <p id="vcmMsg" class="vs-muted" style="margin-top: 0; min-height: 1.25rem" role="status"></p>
 
-        <div class="vs-card" style="margin-bottom: 1rem; padding: 0.85rem 1rem">
-          <h2 class="vs-card__title" style="margin-top: 0">Resin catalog categories</h2>
-          <p class="vs-muted" style="margin-top: 0">
-            New category <strong>ids</strong> must not collide with built-in <code>data.js</code> ids. Deleting a vendor-owned category removes its rows in <code>products</code>, price overrides, and linked inventory pointers.
+        <section class="vs-card vcm-panel" aria-labelledby="vcmCreateHeading">
+          <h2 id="vcmCreateHeading" class="vcm-section-title">Create category or line</h2>
+          <p class="vcm-domain-hint" id="vcmCreateHint">
+            Pick a domain, enter names, then paste image URLs (https or a path like <code>/media/…</code>). Subcategory is optional for resin products and raw material bases.
           </p>
-          <div class="vs-row-actions" style="flex-wrap: wrap; gap: 0.65rem; align-items: flex-end; margin-bottom: 0.75rem">
-            <div class="vs-field" style="margin: 0; min-width: 8rem">
-              <label for="vcmNewId">New id (slug)</label>
-              <input id="vcmNewId" type="text" maxlength="72" placeholder="auto from label if empty" autocomplete="off" />
+          <div class="vcm-split">
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmCreateDomain">Domain</label>
+              <select id="vcmCreateDomain" class="vs-input">
+                <option value="resin-products">Resin products (storefront)</option>
+                <option value="resin-raw-material">Resin raw material (shop nav)</option>
+                <option value="resin-photo-frame">Resin photo frame (page links)</option>
+              </select>
             </div>
-            <div class="vs-field" style="margin: 0; flex: 1; min-width: 10rem">
-              <label for="vcmNewLabel">Label</label>
-              <input id="vcmNewLabel" type="text" maxlength="200" placeholder="Shown in shop" autocomplete="off" />
+            <div class="vs-field" style="margin: 0" id="vcmPfUnderWrap" hidden>
+              <label for="vcmPfUnder">Add link under group</label>
+              <select id="vcmPfUnder" class="vs-input"></select>
             </div>
-            <div class="vs-field" style="margin: 0; flex: 1; min-width: 10rem">
-              <label for="vcmNewFolder">Folder label (optional)</label>
-              <input id="vcmNewFolder" type="text" maxlength="200" autocomplete="off" />
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmCreateCatName">Category / group name</label>
+              <input id="vcmCreateCatName" class="vs-input" type="text" maxlength="200" placeholder="e.g. Pigments or Photo frame catalog" autocomplete="off" />
             </div>
-            <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem">
-              <label for="vcmNewNav">Category image URL (optional)</label>
-              <input id="vcmNewNav" type="url" maxlength="500" placeholder="https://… or /media/…" autocomplete="off" />
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmCreateSubName">Subcategory / line name</label>
+              <input id="vcmCreateSubName" class="vs-input" type="text" maxlength="200" placeholder="Optional — e.g. Summer line" autocomplete="off" />
             </div>
-            <button type="button" class="vs-btn vs-btn--primary" id="vcmCreateBtn">Create category</button>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmCreateCatImg">Category / group image URL</label>
+              <input id="vcmCreateCatImg" class="vs-input" type="text" maxlength="500" placeholder="https://… or /media/…" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmCreateSubImg">Subcategory / line image URL</label>
+              <input id="vcmCreateSubImg" class="vs-input" type="text" maxlength="500" placeholder="Optional" autocomplete="off" />
+            </div>
+            <div class="vs-field vcm-field-full" id="vcmCreateHrefWrap" style="margin: 0" hidden>
+              <label for="vcmCreateHref">Shop link (where this line goes)</label>
+              <input id="vcmCreateHref" class="vs-input" type="text" maxlength="500" placeholder="category.html?cat=resin-customised-frames" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0; align-self: flex-end">
+              <button type="button" class="vs-btn vs-btn--primary" id="vcmCreateSubmit">Create</button>
+            </div>
           </div>
-          <div class="vs-field" style="margin-bottom: 0.75rem">
-            <label for="vcmNewSubs">Sub-folders JSON (optional)</label>
-            <textarea id="vcmNewSubs" rows="3" class="vs-input" placeholder='[{"id":"summer","label":"Summer"},{"id":"winter","label":"Winter"}]'></textarea>
-          </div>
-          <div id="vcmResinList"></div>
-        </div>
+        </section>
 
-        <div class="vs-card" style="padding: 0.85rem 1rem">
-          <h2 class="vs-card__title" style="margin-top: 0">Raw material taxonomy (guest left nav)</h2>
-          <p class="vs-muted" style="margin-top: 0">
-            Saved to the database and served to guests at <code>/api/catalog/raw-material-taxonomy</code>. Invalid JSON will be rejected. After saving, refresh raw material shop pages to see changes.
-          </p>
-          <div class="vs-field">
-            <label for="vcmRmJson">taxonomy JSON</label>
-            <textarea id="vcmRmJson" rows="18" class="vs-input" style="font-family: ui-monospace, monospace; font-size: 0.8rem"></textarea>
+        <section class="vs-card vcm-panel" aria-labelledby="vcmEditHeading">
+          <h2 id="vcmEditHeading" class="vcm-section-title">Edit or delete</h2>
+          <p class="vcm-domain-hint">Select the same domain, then category and subcategory. Load the row, change name or image (and link for photo frame), then save — or delete to remove from the site.</p>
+          <div class="vcm-split">
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditDomain">Domain</label>
+              <select id="vcmEditDomain" class="vs-input">
+                <option value="resin-products">Resin products</option>
+                <option value="resin-raw-material">Resin raw material</option>
+                <option value="resin-photo-frame">Resin photo frame</option>
+              </select>
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditCat">Category / group</label>
+              <select id="vcmEditCat" class="vs-input"></select>
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditSub">Subcategory / line</label>
+              <select id="vcmEditSub" class="vs-input"></select>
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditName">Display name</label>
+              <input id="vcmEditName" class="vs-input" type="text" maxlength="200" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vcmEditImg">Image URL</label>
+              <input id="vcmEditImg" class="vs-input" type="text" maxlength="500" autocomplete="off" />
+            </div>
+            <div class="vs-field vcm-field-full" id="vcmEditHrefWrap" style="margin: 0" hidden>
+              <label for="vcmEditHref">Shop link</label>
+              <input id="vcmEditHref" class="vs-input" type="text" maxlength="500" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; align-self: flex-end">
+              <button type="button" class="vs-btn" id="vcmEditLoad">Load selection</button>
+              <button type="button" class="vs-btn vs-btn--primary" id="vcmEditSave">Save changes</button>
+              <button type="button" class="vs-btn vs-btn--ghost" id="vcmEditDelete">Delete</button>
+            </div>
           </div>
-          <div class="vs-row-actions" style="margin-top: 0.65rem">
-            <button type="button" class="vs-btn vs-btn--primary" id="vcmRmSave">Save raw taxonomy</button>
-          </div>
-        </div>
+        </section>
       </div>
     </div>
   </div>
