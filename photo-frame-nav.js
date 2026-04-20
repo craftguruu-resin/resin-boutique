@@ -57,11 +57,15 @@
   }
 
   function run() {
-    var listEl = document.getElementById("photoFrameNavList");
-    if (!listEl) return;
+    var listEls = [document.getElementById("photoFrameNavList"), document.getElementById("photoFrameNavGrid")].filter(
+      Boolean
+    );
+    if (!listEls.length) return;
     var base = apiBase();
     if (!base) {
-      listEl.innerHTML = "<li>Configure API (data-bill-api-base) to load links.</li>";
+      listEls.forEach(function (el) {
+        el.innerHTML = "<li>Configure API (data-bill-api-base) to load links.</li>";
+      });
       return;
     }
     fetch(base + "/api/catalog/photo-frame-nav", { cache: "no-store" })
@@ -70,13 +74,19 @@
       })
       .then(function (j) {
         if (!j || !j.ok || !j.nav) {
-          listEl.innerHTML = "<li>Links unavailable.</li>";
+          listEls.forEach(function (el) {
+            el.innerHTML = "<li>Links unavailable.</li>";
+          });
           return;
         }
-        render(listEl, j.nav);
+        listEls.forEach(function (el) {
+          render(el, j.nav);
+        });
       })
       .catch(function () {
-        listEl.innerHTML = "<li>Links unavailable.</li>";
+        listEls.forEach(function (el) {
+          el.innerHTML = "<li>Links unavailable.</li>";
+        });
       });
   }
 

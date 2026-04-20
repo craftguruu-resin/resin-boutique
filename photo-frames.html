@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photo frames — Craft guru</title>
+  <title>Photo frames — Resin keepsakes — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -96,13 +96,34 @@
         <p class="crumb crumb--fx">
           <a href="index.html">Home</a> <span aria-hidden="true">/</span> Photo frames
         </p>
-        <div class="section-head section-head--solo">
-          <div>
-            <h1 class="band-title band-title--fx">Photo frames</h1>
-            <p class="band-sub">This page is reserved for upcoming resin frame stories and lookbooks.</p>
+        <div class="pf-home-hero" aria-labelledby="pfHomeHeroHeading">
+          <h1 id="pfHomeHeroHeading" class="visually-hidden">Photo frames — Craft Guru, create memories in resin</h1>
+          <div class="pf-home-hero__media">
+            <img
+              src="media/photo-frames-hero-home-banner.png"
+              width="1536"
+              height="1024"
+              alt="Hand-poured resin photo frames and keepsakes — ocean, floral, and sunset designs on a warm wooden table with candlelight"
+              decoding="async"
+              fetchpriority="high"
+            />
+          </div>
+          <div class="pf-home-hero__actions">
+            <a class="pf-home-hero__btn pf-home-hero__btn--primary" href="category.html?cat=resin-customised-frames">Shop resin frames</a>
+            <a class="pf-home-hero__btn pf-home-hero__btn--ghost" href="return-gifts.html">Return gifts</a>
           </div>
         </div>
-        <p class="band-empty" style="margin-top: 1rem">Content coming soon.</p>
+        <div class="section-head section-head--solo pf-home-below">
+          <div>
+            <h2 class="band-title band-title--fx">Browse by line</h2>
+            <p class="band-sub">
+              Every piece is poured and finished in Jaipur — beach scenes, florals, ring platters, clocks, and more. Pick a line to open the same catalogue tiles and checkout you use across Craftguru.
+            </p>
+          </div>
+        </div>
+        <ul class="pf-home-link-grid" id="photoFrameNavGrid" aria-label="Photo frame catalogue lines">
+          <li class="pf-home-link-grid__loading">Loading lines…</li>
+        </ul>
       </div>
     </section>
   </main>
