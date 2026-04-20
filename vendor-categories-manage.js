@@ -425,12 +425,8 @@
         });
       return;
     }
-    var hrefVal = String(document.getElementById("vcmCreateHref").value || "").trim();
-    if (!hrefVal) {
-      hrefVal = "category.html?cat=" + slugify(subName || catName);
-      var hrefInput = document.getElementById("vcmCreateHref");
-      if (hrefInput) hrefInput.value = hrefVal;
-    }
+    var hrefInput0 = document.getElementById("vcmCreateHref");
+    var hrefFromUser = hrefInput0 ? String(hrefInput0.value || "").trim() : "";
     var doc2 = clone(pfNav);
     doc2.categories = doc2.categories || [];
     var underSel = document.getElementById("vcmPfUnder");
@@ -449,7 +445,17 @@
     }
     grp2.subcategories = grp2.subcategories || [];
     var lineLabel = subName || catName;
-    var lid = slugify(lineLabel + "-" + hrefVal).slice(0, 72);
+    var catSlug = slugify(subName || catName);
+    var lid = slugify(lineLabel + "-" + (hrefFromUser || catSlug || "line")).slice(0, 72);
+    var hrefVal = hrefFromUser;
+    if (!hrefVal) {
+      hrefVal =
+        "photo-frame-shop.html?base=" +
+        encodeURIComponent(String(grp2.id || "").trim()) +
+        "&sub=" +
+        encodeURIComponent(lid);
+      if (hrefInput0) hrefInput0.value = hrefVal;
+    }
     grp2.subcategories.push({
       id: lid,
       name: lineLabel,
@@ -673,7 +679,11 @@
       if (hrefE) {
         sx2.href = hrefE;
       } else if (!String(sx2.href || "").trim()) {
-        sx2.href = "category.html?cat=" + slugify(subName);
+        sx2.href =
+          "photo-frame-shop.html?base=" +
+          encodeURIComponent(String(catId || "").trim()) +
+          "&sub=" +
+          encodeURIComponent(String(subVal || "").trim());
       }
     }
     putPf(doc2)

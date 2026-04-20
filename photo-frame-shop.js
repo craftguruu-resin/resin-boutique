@@ -521,15 +521,15 @@
       var hasBrowse = !!(parLive.base || parLive.sub);
       var emptyMsg;
       if (catalogTotal === 0) {
-        emptyMsg = "No materials listed yet.";
+        emptyMsg = "No photo frames listed yet. Add products in Vendor → Photo frames (API must be reachable from this page).";
       } else if (!hasBrowse) {
         emptyMsg =
-          "Choose a category or subcategory from Shop by category or the sidebar to see products here. The filter bar only narrows the category cards on the shop home.";
+          "No photo frames match the header search. Clear the search box above to see all listings, or pick a category in the sidebar.";
       } else {
         g.innerHTML =
           '<p class="band-empty" style="grid-column:1/-1">' +
           esc(
-            "No materials match this category or filters. Choose another category, subcategory, or reset filters."
+            "No photo frames match this category or filters. Choose another category, subcategory, or reset filters."
           ) +
           ' <a class="rm-empty-link" href="photo-frame-shop.html">Back to photo frame shop home</a></p>';
         return;
@@ -559,7 +559,7 @@
         '<div class="rm-card-shop__body">' +
         '<span class="rm-card-shop__brand">Craft Guru</span>' +
         "<h3 class=\"rm-card-shop__title\">" +
-        esc(m.name || "Material") +
+        esc(m.name || "Photo frame") +
         "</h3>" +
         (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
         '<div class="rm-card-shop__row">' +
@@ -660,6 +660,15 @@
   function applyMaterials(doc, materials) {
     allMaterials = materials || [];
     if (doc) rmShopTaxDoc = doc;
+    var navEl = document.getElementById("rmNavTree");
+    if (navEl && navEl.dataset.rmNavBuilt === "1") {
+      var prevN = navEl.dataset.rmMatCount;
+      var nextN = String((allMaterials && allMaterials.length) || 0);
+      if (prevN !== nextN) {
+        navEl.removeAttribute("data-rm-nav-built");
+      }
+      navEl.dataset.rmMatCount = nextN;
+    }
     applyShopShellFromParams();
     wireRmShopSpaNavOnce();
   }

@@ -18,22 +18,47 @@
   }
 
   function esc(s) {
-    return String(s == null ? "")
+    return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function shopLineHref(baseId, subId) {
+    var b = String(baseId || "").trim();
+    var s = String(subId || "").trim();
+    if (!b) return "";
+    if (s) {
+      return (
+        "photo-frame-shop.html?base=" +
+        encodeURIComponent(b) +
+        "&sub=" +
+        encodeURIComponent(s)
+      );
+    }
+    return "photo-frame-shop.html?base=" + encodeURIComponent(b);
   }
 
   function flattenNav(doc) {
     var out = [];
     var cats = (doc && doc.categories) || [];
     cats.forEach(function (c) {
+      if (!c || !c.id) return;
       var subs = (c && c.subcategories) || [];
+      if (!subs.length && c.name) {
+        out.push({
+          name: String(c.name || "").trim(),
+          href: shopLineHref(c.id, ""),
+        });
+        return;
+      }
       subs.forEach(function (s) {
         if (!s || !s.name) return;
         var href = String((s.href != null && s.href) || "").trim();
         if (!href && s.id) {
-          href = "category.html?cat=" + encodeURIComponent(String(s.id).trim());
+          href = shopLineHref(c.id, s.id);
+        } else if (href.indexOf("category.html?cat=") === 0) {
+          href = shopLineHref(c.id, s.id);
         }
         if (!href) return;
         out.push({ name: String(s.name || "").trim(), href: href });
