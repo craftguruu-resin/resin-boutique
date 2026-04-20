@@ -193,22 +193,29 @@
     return D.imageUrl ? D.imageUrl(s) : s;
   }
 
-  function productGalleryUrls(p) {
-    if (!p) return [];
-    var main = resolveCatalogImg(p.image);
+  var PLACEHOLDER_REL = "media/placeholder-product.svg";
+
+  /** Main hero URL plus extra gallery URLs only (no duplicate of hero in the strip). */
+  function productHeroAndExtras(p) {
+    if (!p) return { hero: resolveCatalogImg(PLACEHOLDER_REL), extras: [] };
     var extra = p.gallery || p.galleryImages;
     if (!Array.isArray(extra)) extra = [];
     var seen = Object.create(null);
-    var out = [];
+    var ordered = [];
     function push(u) {
       var abs = resolveCatalogImg(u);
       if (!abs || seen[abs]) return;
       seen[abs] = 1;
-      out.push(abs);
+      ordered.push(abs);
     }
-    push(main);
-    extra.forEach(push);
-    return out;
+    push(p.image);
+    extra.forEach(function (x) {
+      push(x);
+    });
+    var hero = ordered.length ? ordered[0] : "";
+    if (!hero) hero = resolveCatalogImg(PLACEHOLDER_REL);
+    var extras = ordered.slice(1);
+    return { hero: hero, extras: extras };
   }
 
   function wireProductCatalogGalleryOnce() {
@@ -248,38 +255,37 @@
   function setupProductGallery() {
     wireProductCatalogGalleryOnce();
     if (!product) return;
-    var urls = productGalleryUrls(product);
-    galleryState.urls = urls;
+    var hx = productHeroAndExtras(product);
+    var heroUrl = hx.hero;
+    var extras = hx.extras;
+    galleryState.urls = [heroUrl].concat(extras);
     galleryState.idx = 0;
     var wrap = document.getElementById("productCatalogGallery");
     var col = document.getElementById("productGalleryThumbs");
     var track = document.getElementById("productGalleryTrack");
     var img = document.getElementById("productImage");
     if (!wrap || !col || !track || !img) return;
-    var multi = urls.length > 1;
+    var multi = extras.length > 0;
     col.hidden = !multi;
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
+    img.src = heroUrl;
     if (!multi) {
       track.innerHTML = "";
-      if (urls[0]) img.src = urls[0];
       return;
     }
-    track.innerHTML = urls
+    track.innerHTML = extras
       .map(function (u, i) {
+        var realIdx = i + 1;
         return (
           '<button type="button" role="tab" class="product-catalog-gallery__thumb' +
-          (i === 0 ? " is-active" : "") +
           '" data-idx="' +
-          i +
-          '" aria-selected="' +
-          (i === 0 ? "true" : "false") +
-          '"><img src="' +
+          realIdx +
+          '" aria-selected="false"><img src="' +
           escapeAttr(u) +
           '" alt="" loading="lazy" width="72" height="72" /></button>'
         );
       })
       .join("");
-    if (urls[0]) img.src = urls[0];
   }
 
   function escapeHtml(s) {

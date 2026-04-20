@@ -5,38 +5,7 @@
       "id": "photo-frame-lines",
       "name": "Photo frame catalog",
       "image": "",
-      "subcategories": [
-        {
-          "id": "ring-platter",
-          "name": "Ring Platter",
-          "image": "",
-          "href": "category.html?cat=resin-customised-frames"
-        },
-        {
-          "id": "resin-nameplates",
-          "name": "Resin Nameplates",
-          "image": "",
-          "href": "category.html?cat=resin-name-plates"
-        },
-        {
-          "id": "resin-photo-frame",
-          "name": "Resin Photo Frame",
-          "image": "",
-          "href": "category.html?cat=resin-customised-frames"
-        },
-        {
-          "id": "varmala-preservation",
-          "name": "Varmala Preservation",
-          "image": "",
-          "href": "category.html?cat=resin-customised-frames"
-        },
-        {
-          "id": "resin-mantra-frame",
-          "name": "Resin Mantra Frame",
-          "image": "",
-          "href": "category.html?cat=resin-mantra-frame"
-        }
-      ]
+      "subcategories": []
     }
   ]
 }

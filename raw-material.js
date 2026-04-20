@@ -236,10 +236,9 @@
     return true;
   }
 
-  function materialBelongsToHubCategory(m, c, cats) {
-    if (String(m.baseCategorySlug || "").trim() === c.id) return true;
-    if (inferredHubCategoryId(m, cats) === c.id) return true;
-    return false;
+  /** Hub cards count only materials with an explicit base taxonomy slug (no name-based guessing). */
+  function materialBelongsToHubCategory(m, c) {
+    return String(m.baseCategorySlug || "").trim() === c.id;
   }
 
   function minPriceForCategoryHubCard(c, mats, cats, hubN) {
@@ -247,7 +246,7 @@
     for (var i = 0; i < mats.length; i++) {
       var m = mats[i];
       if (!materialMatchesHubFilter(m, hubN)) continue;
-      if (!materialBelongsToHubCategory(m, c, cats)) continue;
+      if (!materialBelongsToHubCategory(m, c)) continue;
       var p = minOfferMeta(m).min;
       if (Number.isFinite(p) && p < best) best = p;
     }
@@ -265,7 +264,8 @@
     if (n) {
       var sku = String(m.sku || "").toLowerCase();
       var name = String(m.name || "").toLowerCase();
-      if (name.indexOf(n) < 0 && sku.indexOf(n) < 0) return false;
+      var idl = String(m.id || "").toLowerCase();
+      if (name.indexOf(n) < 0 && sku.indexOf(n) < 0 && idl.indexOf(n) < 0) return false;
     }
     return true;
   }
@@ -322,50 +322,12 @@
     }
   }
 
-  var HUB_STOP = {
-    resin: 1,
-    material: 1,
-    materials: 1,
-    crystal: 1,
-    craft: 1,
-    guru: 1,
-    clear: 1,
-    epoxy: 1,
-    high: 1,
-    grade: 1,
-    studio: 1,
-  };
-
-  /** When DB rows lack base_category_slug, attribute at most one hub bucket from the product name (avoids double-counting). */
-  function inferredHubCategoryId(m, cats) {
-    if (String(m.baseCategorySlug || "").trim()) return null;
-    var name = String(m.name || "").toLowerCase();
-    if (!name) return null;
-    var hits = [];
-    for (var ci = 0; ci < cats.length; ci++) {
-      var c = cats[ci];
-      var parts = String(c.name || "")
-        .toLowerCase()
-        .split(/[^a-z0-9]+/)
-        .filter(function (t) {
-          return t.length > 4 && !HUB_STOP[t];
-        });
-      for (var pi = 0; pi < parts.length; pi++) {
-        if (name.indexOf(parts[pi]) >= 0) {
-          hits.push(c.id);
-          break;
-        }
-      }
-    }
-    return hits.length === 1 ? hits[0] : null;
-  }
-
   function countMaterialsForHubCard(c, mats, cats, hubN) {
     var n = 0;
     for (var i = 0; i < mats.length; i++) {
       var m = mats[i];
       if (!materialMatchesHubFilter(m, hubN)) continue;
-      if (materialBelongsToHubCategory(m, c, cats)) n++;
+      if (materialBelongsToHubCategory(m, c)) n++;
     }
     return n;
   }

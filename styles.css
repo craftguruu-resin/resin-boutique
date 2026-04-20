@@ -2312,7 +2312,7 @@ body.product-page--oos .btn-add-lg {
 
 .product-catalog-gallery--multi {
   display: grid;
-  grid-template-columns: 76px minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 76px;
   gap: clamp(0.65rem, 1.5vw, 1.1rem);
   align-items: stretch;
 }
@@ -2388,7 +2388,7 @@ body.product-page--oos .btn-add-lg {
 
 @media (max-width: 640px) {
   .product-catalog-gallery--multi {
-    grid-template-columns: 64px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 64px;
   }
 
   .product-catalog-gallery__thumb-col {

@@ -434,6 +434,48 @@ function appendProductDerivedSubcategories(rows) {
   return rows;
 }
 
+/** Add distinct (category_id, subcategory_id) pairs from Postgres products for vendor category UI. */
+function appendSubcategoriesFromVendorDbProducts(pool, mergedCategories) {
+  if (!pool || !mergedCategories || !mergedCategories.length) {
+    return Promise.resolve(mergedCategories);
+  }
+  return pool
+    .query(
+      "SELECT DISTINCT category_id AS cid, subcategory_id AS sid FROM products " +
+        "WHERE TRIM(COALESCE(subcategory_id, '')) <> '' AND LOWER(TRIM(subcategory_id)) <> 'all'"
+    )
+    .then(function (r) {
+      var byCat = Object.create(null);
+      (r.rows || []).forEach(function (row) {
+        var cid = String(row.cid || "").trim().slice(0, 80);
+        var sid = String(row.sid || "").trim().slice(0, 80);
+        if (!cid || !sid) return;
+        if (!byCat[cid]) byCat[cid] = Object.create(null);
+        byCat[cid][sid.slice(0, 80)] = 1;
+      });
+      mergedCategories.forEach(function (cat) {
+        if (!cat || !cat.id) return;
+        var extra = byCat[String(cat.id).trim().slice(0, 80)];
+        if (!extra) return;
+        var subs = Array.isArray(cat.subcategories) ? cat.subcategories.slice() : [];
+        var seen = Object.create(null);
+        subs.forEach(function (s) {
+          if (s && s.id) seen[String(s.id)] = 1;
+        });
+        Object.keys(extra).forEach(function (subId) {
+          if (seen[subId]) return;
+          seen[subId] = 1;
+          subs.push({ id: subId, label: humanizeSubcategoryId(subId) });
+        });
+        cat.subcategories = subs;
+      });
+      return mergedCategories;
+    })
+    .catch(function () {
+      return mergedCategories;
+    });
+}
+
 function createMailTransport() {
   try {
     if (process.env.SMTP_HOST) {
@@ -1528,6 +1570,7 @@ app.get("/api/vendor/categories", function (_req, res) {
       "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image FROM categories ORDER BY label ASC"
     )
     .then(function (r) {
+      var dbRowCount = r.rows.length;
       var rows = r.rows.map(function (row) {
         return {
           id: row.id,
@@ -1540,11 +1583,16 @@ app.get("/api/vendor/categories", function (_req, res) {
       });
       var merged = mergeCategoriesDbWithCatalog(rows);
       appendProductDerivedSubcategories(merged);
+      return appendSubcategoriesFromVendorDbProducts(poolMod.getPool(), merged).then(function (m) {
+        return { merged: m, source: dbRowCount ? "database+merged" : "data_js" };
+      });
+    })
+    .then(function (pack) {
       res.setHeader("Cache-Control", "no-store");
       res.json({
         ok: true,
-        source: rows.length ? "database+merged" : "data_js",
-        categories: merged,
+        source: pack.source,
+        categories: pack.merged,
       });
     })
     .catch(function (e) {
