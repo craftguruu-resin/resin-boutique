@@ -101,9 +101,59 @@
     });
   }
 
+  function hrefParams(href) {
+    try {
+      var u = new URL(href, window.location.href);
+      return {
+        base: (u.searchParams.get("base") || "").trim(),
+        sub: (u.searchParams.get("sub") || "").trim(),
+      };
+    } catch (_) {
+      return { base: "", sub: "" };
+    }
+  }
+
+  /**
+   * Update active link styles without replacing the tree (keeps scroll + avoids flicker).
+   * @param {HTMLElement} el
+   * @param {{ activeBase?: string, activeSub?: string }} ctx
+   */
+  function updateActive(el, ctx) {
+    if (!el) return;
+    ctx = ctx || {};
+    var activeBase = String(ctx.activeBase || "").trim();
+    var activeSub = String(ctx.activeSub || "").trim();
+    el.querySelectorAll(".rm-nav-tree__link.is-active").forEach(function (a) {
+      a.classList.remove("is-active");
+    });
+    el.querySelectorAll("a.rm-nav-tree__link").forEach(function (a) {
+      var p = hrefParams(a.getAttribute("href") || "");
+      if (p.base === activeBase && p.sub === activeSub) {
+        a.classList.add("is-active");
+      }
+    });
+  }
+
+  function wireNavDelegationOnce(el) {
+    if (!el || el.dataset.rmNavChevDelegation === "1") return;
+    el.dataset.rmNavChevDelegation = "1";
+    el.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest && e.target.closest(".rm-nav-tree__chev");
+      if (!btn || !el.contains(btn)) return;
+      e.preventDefault();
+      var bid = btn.getAttribute("data-base");
+      var ul = el.querySelector('[data-subs-for="' + bid + '"]');
+      var open = !btn.classList.contains("is-open");
+      btn.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+      if (ul) ul.classList.toggle("is-open", open);
+      toggleExpanded(bid, open);
+    });
+  }
+
   /**
    * @param {HTMLElement} el
-   * @param {{ activeBase?: string, activeSub?: string, materials?: unknown[] }} ctx
+   * @param {{ activeBase?: string, activeSub?: string, materials?: unknown[], forceRebuild?: boolean }} ctx
    */
   function mount(el, ctx) {
     ctx = ctx || {};
@@ -111,6 +161,10 @@
     var activeSub = String(ctx.activeSub || "").trim();
     var materials = Array.isArray(ctx.materials) ? ctx.materials : [];
     if (!el) return Promise.resolve(null);
+    if (el.dataset.rmNavBuilt === "1" && !ctx.forceRebuild) {
+      updateActive(el, { activeBase: activeBase, activeSub: activeSub });
+      return Promise.resolve(null);
+    }
     return fetchTaxonomy().then(function (doc) {
       var cats = (doc && doc.categories) || [];
       var expanded = readExpanded();
@@ -180,20 +234,9 @@
       });
       html += "</ul>";
       el.innerHTML = html;
-
-      el.querySelectorAll(".rm-nav-tree__chev").forEach(function (btn) {
-        btn.addEventListener("click", function (e) {
-          e.preventDefault();
-          var bid = btn.getAttribute("data-base");
-          var ul = el.querySelector('[data-subs-for="' + bid + '"]');
-          var open = !btn.classList.contains("is-open");
-          btn.classList.toggle("is-open", open);
-          btn.setAttribute("aria-expanded", open ? "true" : "false");
-          if (ul) ul.classList.toggle("is-open", open);
-          toggleExpanded(bid, open);
-        });
-      });
-
+      el.dataset.rmNavBuilt = "1";
+      wireNavDelegationOnce(el);
+      updateActive(el, { activeBase: activeBase, activeSub: activeSub });
       return doc;
     });
   }
@@ -201,6 +244,7 @@
   window.RmShopNav = {
     fetchTaxonomy: fetchTaxonomy,
     mount: mount,
+    updateActive: updateActive,
     shopHref: shopHref,
     preferredListingSub: preferredListingSub,
   };

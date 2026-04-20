@@ -454,3 +454,10 @@
     display: none;
   }
 }
+
+/* Use available horizontal space when PDP is shown with rm-page-wide layout */
+body.rm-page-wide .rm-pdp--modern {
+  max-width: none;
+  width: 100%;
+  margin-inline: 0;
+}
