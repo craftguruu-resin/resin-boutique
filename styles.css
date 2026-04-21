@@ -5786,7 +5786,7 @@ a.home-auth-btn {
   position: relative;
   width: 100%;
   box-sizing: border-box;
-  /* Locked box: guest uploads cannot change layout — image is clipped inside via object-fit: cover */
+  /* Locked max height + width; image uses object-fit: contain so uploads are never cropped */
   height: min(72vh, 640px);
   min-height: min(72vh, 640px);
   max-height: min(72vh, 640px);
@@ -5815,7 +5815,7 @@ a.home-auth-btn {
   max-width: 100%;
   max-height: 100%;
   margin: 0;
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
   transform: translateX(0);
   opacity: 1;
