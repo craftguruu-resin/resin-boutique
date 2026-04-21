@@ -71,6 +71,76 @@
     return String((c && c.image) || "").trim();
   }
 
+  function qsLine() {
+    try {
+      var u = new URL(window.location.href);
+      return {
+        base: (u.searchParams.get("base") || "").trim(),
+        sub: (u.searchParams.get("sub") || "").trim(),
+      };
+    } catch (_) {
+      return { base: "", sub: "" };
+    }
+  }
+
+  function hrefMatchesLine(href, cur) {
+    try {
+      var u = new URL(href, window.location.href);
+      var b = (u.searchParams.get("base") || "").trim();
+      var s = (u.searchParams.get("sub") || "").trim();
+      return b === cur.base && s === cur.sub;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /**
+   * Guest left rail on photo-frames.html: list every vendor line (even one) above Shop by category.
+   */
+  function mountPfCategoryRail(doc) {
+    var aside = document.getElementById("guestPageCategoryRail");
+    if (!aside) return;
+    var old = aside.querySelector("#pfRailLines");
+    if (old) old.remove();
+    var links = flattenNav(doc);
+    if (!links.length) return;
+    var cur = qsLine();
+    var block = document.createElement("div");
+    block.id = "pfRailLines";
+    block.className = "pf-rail-lines";
+    var lab = document.createElement("p");
+    lab.className = "home-category-rail__label pf-rail-lines__label";
+    lab.textContent = "Photo frame lines";
+    var nav = document.createElement("div");
+    nav.className = "pf-rail-lines__grid category-grid category-grid--rail";
+    nav.setAttribute("role", "navigation");
+    nav.setAttribute("aria-label", "Photo frame catalogue lines");
+    links.forEach(function (x) {
+      var a = document.createElement("a");
+      a.className = "category-pill category-pill--rail pf-rail-lines__pill";
+      a.href = x.href;
+      var imgRel = String(x.image || "").trim();
+      if (imgRel) {
+        var im = document.createElement("img");
+        im.src = imgUrl(imgRel);
+        im.alt = "";
+        im.width = 28;
+        im.height = 28;
+        im.loading = "lazy";
+        im.className = "pf-rail-lines__pill-img";
+        a.appendChild(im);
+      }
+      a.appendChild(document.createTextNode(x.name));
+      if (hrefMatchesLine(x.href, cur)) a.classList.add("is-active");
+      nav.appendChild(a);
+    });
+    block.appendChild(lab);
+    block.appendChild(nav);
+    aside.insertBefore(block, aside.firstChild);
+  }
+
+  var lastPfNavDoc = null;
+
   function flattenNav(doc) {
     var out = [];
     var cats = (doc && doc.categories) || [];
@@ -160,21 +230,51 @@
       })
       .then(function (j) {
         if (!j || !j.ok || !j.nav) {
+          lastPfNavDoc = null;
           listEls.forEach(function (el) {
             el.innerHTML = "<li>Links unavailable.</li>";
           });
           return;
         }
+        lastPfNavDoc = j.nav;
         listEls.forEach(function (el) {
           render(el, j.nav);
         });
+        try {
+          mountPfCategoryRail(j.nav);
+        } catch (_) {}
+        setTimeout(function () {
+          if (lastPfNavDoc && document.getElementById("guestPageCategoryRail") && !document.getElementById("pfRailLines")) {
+            try {
+              mountPfCategoryRail(lastPfNavDoc);
+            } catch (_) {}
+          }
+        }, 50);
       })
       .catch(function () {
+        lastPfNavDoc = null;
         listEls.forEach(function (el) {
           el.innerHTML = "<li>Links unavailable.</li>";
         });
       });
   }
+
+  window.addEventListener("popstate", function () {
+    if (lastPfNavDoc) {
+      try {
+        mountPfCategoryRail(lastPfNavDoc);
+      } catch (_) {}
+    }
+  });
+
+  window.addEventListener("craftguruCatalogCategoriesMerged", function () {
+    if (!lastPfNavDoc) return;
+    try {
+      requestAnimationFrame(function () {
+        mountPfCategoryRail(lastPfNavDoc);
+      });
+    } catch (_) {}
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", run);

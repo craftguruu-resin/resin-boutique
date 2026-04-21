@@ -1110,3 +1110,36 @@ html.auth-google-ui-off .auth-or-divider {
   font-size: 0.9rem;
 }
 
+/* Photo frame vendor lines in the guest left rail (photo-frames.html) */
+.pf-rail-lines {
+  position: relative;
+  z-index: 2;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.pf-rail-lines__label {
+  margin-bottom: 0.55rem;
+}
+
+.pf-rail-lines__grid {
+  margin-bottom: 0;
+}
+
+.pf-rail-lines__pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pf-rail-lines__pill-img {
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+body.guest-site:not(.page-home) .guest-page-category-rail .pf-rail-lines__pill {
+  justify-content: flex-start;
+}
+
