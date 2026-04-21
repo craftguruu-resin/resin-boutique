@@ -131,13 +131,39 @@
   function pdpUrlForProductId(id) {
     var sid = String(id == null ? "" : id).trim();
     if (!sid) return "";
+    /* Same-directory relative URL — works on static hosts and avoids pathname/base bugs. */
+    return "photo-frame-product.html?id=" + encodeURIComponent(sid);
+  }
+
+  function pdpAbsUrlFromHref(href) {
     try {
-      var u = new URL("photo-frame-product.html", window.location.href);
-      u.searchParams.set("id", sid);
-      return u.pathname + u.search + u.hash;
+      return new URL(href, window.location.href).href;
     } catch (_) {
-      return "photo-frame-product.html?id=" + encodeURIComponent(sid);
+      return href;
     }
+  }
+
+  /** Ensures product cards navigate even if another handler interferes with default <a> behavior. */
+  function wirePfBrowsePdpClicksOnce() {
+    var g = document.getElementById("pfBrowseGrid");
+    if (!g || g.dataset.pfBrowsePdpWire === "1") return;
+    g.dataset.pfBrowsePdpWire = "1";
+    g.addEventListener(
+      "click",
+      function (e) {
+        var a = e.target && e.target.closest && e.target.closest("a[data-pf-pdp]");
+        if (!a || !g.contains(a)) return;
+        if (e.defaultPrevented) return;
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var href = a.getAttribute("href") || "";
+        if (!href || href.indexOf("photo-frame-product") < 0) return;
+        var dest = pdpAbsUrlFromHref(href);
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.assign(dest);
+      },
+      true
+    );
   }
 
   function productsUrl(par) {
@@ -162,13 +188,7 @@
     if (grid) grid.toggleAttribute("hidden", !!on);
     var h = document.getElementById("pfBrowseHeading");
     if (h && titleText) h.textContent = titleText;
-    if (on && sec) {
-      try {
-        requestAnimationFrame(function () {
-          sec.scrollIntoView({ behavior: "smooth", block: "start" });
-        });
-      } catch (_) {}
-    }
+    /* Avoid smooth scrollIntoView: it can overlap with taps and feels like “stuck” navigation. */
   }
 
   function renderProducts(list) {
@@ -207,6 +227,7 @@
         "</span></div></div></a>";
       g.appendChild(card);
     });
+    wirePfBrowsePdpClicksOnce();
   }
 
   function run() {
