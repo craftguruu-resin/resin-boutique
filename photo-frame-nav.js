@@ -1,6 +1,16 @@
 (function () {
   "use strict";
 
+  /** When true, no vendor lines are shown (Browse by line, footer links, left-rail block). Set false to restore. */
+  window.CRAFT_PF_NAV_LINES_HIDDEN = true;
+
+  function stripPfRailLines() {
+    var aside = document.getElementById("guestPageCategoryRail");
+    if (!aside) return;
+    var old = aside.querySelector("#pfRailLines");
+    if (old) old.remove();
+  }
+
   function apiBase() {
     var M = window.CraftguruCatalogMerge;
     if (M && typeof M.getApiBase === "function") {
@@ -249,6 +259,19 @@
       Boolean
     );
     if (!listEls.length) return;
+    if (!window.CRAFT_PF_NAV_LINES_HIDDEN) {
+      document.body.classList.remove("pf-nav-lines-empty");
+    }
+    if (window.CRAFT_PF_NAV_LINES_HIDDEN) {
+      lastPfNavDoc = null;
+      document.body.classList.add("pf-nav-lines-empty");
+      listEls.forEach(function (el) {
+        el.innerHTML = "";
+      });
+      stripPfRailLines();
+      return;
+    }
+    document.body.classList.remove("pf-nav-lines-empty");
     var base = apiBase();
     if (!base) {
       listEls.forEach(function (el) {

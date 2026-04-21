@@ -1155,3 +1155,9 @@ body.guest-site:not(.page-home) .guest-page-category-rail .pf-rail-lines__pill {
   justify-content: flex-start;
 }
 
+/* Photo frames: hide “Browse by line” block while CRAFT_PF_NAV_LINES_HIDDEN is on (photo-frame-nav.js). */
+body.pf-nav-lines-empty .pf-home-below,
+body.pf-nav-lines-empty #photoFrameNavGrid {
+  display: none !important;
+}
+

@@ -1,6 +1,9 @@
 (function () {
   "use strict";
 
+  /** Match photo-frame-nav.js: hide shop/PDP category tree until lines return. */
+  window.CRAFT_PF_NAV_LINES_HIDDEN = true;
+
   var LS_KEY = "craftguruPfNavExpanded";
 
   function esc(s) {
@@ -161,6 +164,13 @@
     var activeSub = String(ctx.activeSub || "").trim();
     var materials = Array.isArray(ctx.materials) ? ctx.materials : [];
     if (!el) return Promise.resolve(null);
+    if (window.CRAFT_PF_NAV_LINES_HIDDEN) {
+      el.innerHTML = '<ul class="rm-nav-tree__root"></ul>';
+      el.dataset.rmNavBuilt = "1";
+      wireNavDelegationOnce(el);
+      updateActive(el, { activeBase: activeBase, activeSub: activeSub });
+      return Promise.resolve(null);
+    }
     if (el.dataset.rmNavBuilt === "1" && !ctx.forceRebuild) {
       updateActive(el, { activeBase: activeBase, activeSub: activeSub });
       return Promise.resolve(null);

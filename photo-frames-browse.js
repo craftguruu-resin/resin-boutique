@@ -231,6 +231,12 @@
   }
 
   function run() {
+    if (window.CRAFT_PF_NAV_LINES_HIDDEN) {
+      setBrowseVisible(false, "");
+      var nr = document.getElementById("navDockPhotoFrames");
+      if (nr) nr.setAttribute("href", "photo-frames.html");
+      return;
+    }
     syncNavPhotoFramesLink();
     var par = qsParams();
     var has = !!(par.base || par.sub);
