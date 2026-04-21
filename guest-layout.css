@@ -180,6 +180,18 @@ body.guest-site .guest-page-category-rail {
   align-self: flex-start;
   z-index: 2;
   overflow: auto;
+  /* Let clicks reach the main column when the rail overlaps wide cards (Browse by line). */
+  pointer-events: none;
+}
+
+body.guest-site .guest-page-category-rail .category-grid--rail,
+body.guest-site .guest-page-category-rail .pf-rail-lines {
+  pointer-events: auto;
+}
+
+body.guest-site .guest-page-category-rail a,
+body.guest-site .guest-page-category-rail button {
+  pointer-events: auto;
 }
 
 body.guest-site .guest-main-with-rail-inner {

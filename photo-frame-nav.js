@@ -141,6 +141,37 @@
 
   var lastPfNavDoc = null;
 
+  function lineNavAbsUrl(href) {
+    try {
+      return new URL(href, window.location.href).href;
+    } catch (_) {
+      return href;
+    }
+  }
+
+  /** Browse-by-line cards: force navigation so ?base=&sub= always loads (rail overlap / same-doc quirks). */
+  function wirePfHomeLineGridOnce() {
+    var grid = document.getElementById("photoFrameNavGrid");
+    if (!grid || grid.dataset.pfLineNavWire === "1") return;
+    grid.dataset.pfLineNavWire = "1";
+    grid.addEventListener(
+      "click",
+      function (e) {
+        var a = e.target && e.target.closest && e.target.closest("a.pf-home-link-card");
+        if (!a || !grid.contains(a)) return;
+        if (e.defaultPrevented) return;
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+        var href = a.getAttribute("href") || "";
+        if (!href) return;
+        if (href.indexOf("photo-frames.html") < 0 && href.indexOf("photo-frame-shop.html") < 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+        window.location.assign(lineNavAbsUrl(href));
+      },
+      true
+    );
+  }
+
   function flattenNav(doc) {
     var out = [];
     var cats = (doc && doc.categories) || [];
@@ -193,7 +224,7 @@
               '" alt="" loading="lazy" width="480" height="320" /></span>'
             : '<span class="pf-home-link-card__media pf-home-link-card__media--empty" aria-hidden="true"></span>';
           return (
-            '<li><a class="pf-home-link-card" href="' +
+            '<li><a class="pf-home-link-card" data-pf-line-card="1" href="' +
             esc(x.href) +
             '">' +
             media +
@@ -203,6 +234,7 @@
           );
         })
         .join("");
+      wirePfHomeLineGridOnce();
       return;
     }
     listEl.innerHTML = links
