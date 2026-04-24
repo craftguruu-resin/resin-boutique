@@ -122,7 +122,10 @@ function ensureVendorInventoryColumns() {
       ")",
     "CREATE INDEX IF NOT EXISTS idx_guest_email_otps_lookup ON guest_email_otps (email_lower, expires_at DESC)",
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_guest_customers_email_lower_unique " +
-      "ON guest_customers (LOWER(TRIM(email)))"
+      "ON guest_customers (LOWER(TRIM(email)))",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
+    "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS line_extra JSONB",
+    "ALTER TABLE order_items ALTER COLUMN size_key TYPE VARCHAR(200) USING size_key::varchar(200)"
   ];
 
   var chain = Promise.resolve();

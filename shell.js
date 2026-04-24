@@ -73,6 +73,8 @@
         escapeAttr(line.id) +
         '" data-line-size="' +
         escapeAttr(line.size) +
+        '" data-line-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" aria-label="Decrease quantity">−</button>' +
         '<span class="cart-item-qty-num">' +
         line.qty +
@@ -81,12 +83,16 @@
         escapeAttr(line.id) +
         '" data-line-size="' +
         escapeAttr(line.size) +
+        '" data-line-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" aria-label="Increase quantity">+</button>' +
         "</div>" +
         '<button type="button" class="cart-item__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
+        '" data-remove-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
         '">×</button>' +
@@ -141,7 +147,11 @@
         if (rm) {
           e.preventDefault();
           e.stopPropagation();
-          CART.removeLine(rm.getAttribute("data-remove-id"), rm.getAttribute("data-remove-size"));
+          CART.removeLine(
+            rm.getAttribute("data-remove-id"),
+            rm.getAttribute("data-remove-size"),
+            rm.getAttribute("data-remove-extrak")
+          );
           updateBadge();
           renderDrawer();
           return;
@@ -152,8 +162,9 @@
         e.stopPropagation();
         var id = q.getAttribute("data-line-id");
         var size = q.getAttribute("data-line-size");
+        var xk = q.getAttribute("data-line-extrak");
         var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
-        CART.incrementLine(id, size, d);
+        CART.incrementLine(id, size, d, xk);
         updateBadge();
         renderDrawer();
       });

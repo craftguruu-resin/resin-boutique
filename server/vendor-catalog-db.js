@@ -25,6 +25,7 @@ function ensureCatalogOverridesColumns(cb) {
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
     ].forEach(function (sql) {
       chain = chain.then(function () {
         return pool.query(sql);
@@ -118,7 +119,7 @@ function listOverridesMap(cb) {
     if (e0) return cb(e0);
     pool
       .query(
-        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels " +
+        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json " +
           "FROM catalog_price_overrides ORDER BY product_id"
       )
       .then(function (r) {
@@ -127,6 +128,15 @@ function listOverridesMap(cb) {
           var pid = String(row.product_id != null ? row.product_id : "").trim();
           if (!pid) return;
           var sl = parseSizeLabelsCell(row.size_labels);
+          var oj = row.options_json;
+          if (oj != null && typeof oj === "string") {
+            try {
+              oj = JSON.parse(oj);
+            } catch (_) {
+              oj = {};
+            }
+          }
+          if (oj == null || typeof oj !== "object") oj = {};
           m[pid] = {
             s: row.price_s != null ? Number(row.price_s) : null,
             m: row.price_m != null ? Number(row.price_m) : null,
@@ -137,6 +147,7 @@ function listOverridesMap(cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: sl,
+            options: oj && Object.keys(oj).length ? oj : null,
           };
         });
         cb(null, m);
@@ -264,18 +275,25 @@ function upsertOverride(productId, patch, cb) {
       var curSl = cur.sizeLabels && typeof cur.sizeLabels === "object" ? cur.sizeLabels : {};
       var mergedSl = mergeSizeLabelsFromPatch(curSl, patch);
       var slJson = JSON.stringify(mergedSl || {});
+      var curOpt = cur.options && typeof cur.options === "object" && !Array.isArray(cur.options) ? cur.options : {};
+      var nextOpt = curOpt;
+      if (patch && Object.prototype.hasOwnProperty.call(patch, "options") && patch.options && typeof patch.options === "object") {
+        nextOpt = patch.options;
+      }
+      var optJson = JSON.stringify(nextOpt || {});
       pool
         .query(
-          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels) " +
-            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb) " +
+          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json) " +
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
             "out_of_stock = false, " +
-            "listed = COALESCE($12::boolean, catalog_price_overrides.listed), " +
+            "listed = COALESCE($13::boolean, catalog_price_overrides.listed), " +
             "return_gift = EXCLUDED.return_gift, " +
             "size_labels = EXCLUDED.size_labels, " +
-            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, listedUpdateParam]
+            "options_json = EXCLUDED.options_json, " +
+            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, updated_at",
+          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];
@@ -295,6 +313,7 @@ function upsertOverride(productId, patch, cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: slOut,
+            options: row.options_json && typeof row.options_json === "object" ? row.options_json : null,
             updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
           });
         })

@@ -170,7 +170,7 @@ function validateItems(items) {
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     if (!it || typeof it.name !== "string" || it.name.length > 220) return "Invalid item name";
-    if (typeof it.sizeLabel !== "string" || it.sizeLabel.length > 100) return "Invalid size";
+    if (typeof it.sizeLabel !== "string" || it.sizeLabel.length > 500) return "Invalid size";
     var q = Math.floor(Number(it.qty));
     var u = Number(it.unitPrice);
     if (!Number.isFinite(q) || q < 1 || q > 999) return "Invalid qty";
@@ -184,17 +184,43 @@ function validateItems(items) {
     if (it.sizeKey != null && typeof it.sizeKey !== "string" && typeof it.sizeKey !== "number") {
       return "Invalid size key";
     }
-    if (String(it.sizeKey || "").length > 20) return "Invalid size key";
+    if (String(it.sizeKey || "").length > 200) return "Invalid size key";
+    if (it.lineExtra != null && typeof it.lineExtra !== "object") return "Invalid line extra";
+    if (it.stockSlot != null && String(it.stockSlot).length > 1) return "Invalid stock slot";
     if (it.sku != null && typeof it.sku !== "string") return "Invalid SKU";
     if (typeof it.sku === "string" && it.sku.length > 120) return "Invalid SKU";
   }
   return null;
 }
 
+function sanitizeLineExtra(raw) {
+  if (raw == null || typeof raw !== "object") return null;
+  var o = {};
+  var np = String(raw.namePlateText != null ? raw.namePlateText : "")
+    .trim()
+    .slice(0, 2000);
+  if (np) o.namePlateText = np;
+  var ka = String(raw.keychainAlphabet != null ? raw.keychainAlphabet : "")
+    .trim()
+    .slice(0, 80);
+  if (ka) o.keychainAlphabet = ka;
+  var kn = String(raw.keychainName != null ? raw.keychainName : "")
+    .trim()
+    .slice(0, 200);
+  if (kn) o.keychainName = kn;
+  return Object.keys(o).length ? o : null;
+}
+
 function sanitizeBillItem(it) {
+  var le = sanitizeLineExtra(it && it.lineExtra);
+  var ss = String(it.stockSlot != null ? it.stockSlot : "")
+    .trim()
+    .toLowerCase()
+    .slice(0, 1);
+  if (ss !== "s" && ss !== "m" && ss !== "l") ss = "";
   return {
     name: String(it.name).slice(0, 220),
-    sizeLabel: String(it.sizeLabel || "").slice(0, 100),
+    sizeLabel: String(it.sizeLabel || "").slice(0, 500),
     qty: Math.max(1, Math.min(999, Math.floor(Number(it.qty) || 1))),
     unitPrice: Math.max(0, Math.min(999999, Number(it.unitPrice) || 0)),
     image: String(it.image || "").slice(0, 500),
@@ -202,10 +228,12 @@ function sanitizeBillItem(it) {
     sizeKey: String(it.sizeKey != null ? it.sizeKey : "")
       .trim()
       .toLowerCase()
-      .slice(0, 20),
+      .slice(0, 200),
     sku: String(it.sku != null ? it.sku : "")
       .trim()
       .slice(0, 120),
+    lineExtra: le,
+    stockSlot: ss,
   };
 }
 
@@ -2060,6 +2088,9 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (Object.keys(slOut).length) {
         o.sizeLabels = slOut;
       }
+      if (x.options && typeof x.options === "object" && Object.keys(x.options).length) {
+        o.options = x.options;
+      }
       out[key] = o;
     });
     res.setHeader("Cache-Control", "no-store");
@@ -3218,6 +3249,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         sizeLabelM: b.sizeLabelM !== undefined ? b.sizeLabelM : b.size_label_m !== undefined ? b.size_label_m : undefined,
         sizeLabelL: b.sizeLabelL !== undefined ? b.sizeLabelL : b.size_label_l !== undefined ? b.size_label_l : undefined,
         sizeLabels: b.sizeLabels !== undefined ? b.sizeLabels : undefined,
+        options: b.options !== undefined && b.options !== null && typeof b.options === "object" ? b.options : undefined,
       },
       function (e2, row) {
         if (e2) {

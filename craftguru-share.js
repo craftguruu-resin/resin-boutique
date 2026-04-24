@@ -1,6 +1,26 @@
 (function () {
   "use strict";
 
+  function showCopyFeedback(msg) {
+    var t = String(msg != null && msg !== "" ? msg : "Link copied to clipboard");
+    var el = document.getElementById("cgCopyToast");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "cgCopyToast";
+      el.className = "cg-toast";
+      el.setAttribute("role", "status");
+      el.setAttribute("aria-live", "polite");
+      document.body.appendChild(el);
+    }
+    el.textContent = t;
+    el.classList.add("is-visible");
+    var prev = el._cgToastTimer;
+    if (prev) clearTimeout(prev);
+    el._cgToastTimer = setTimeout(function () {
+      el.classList.remove("is-visible");
+    }, 2500);
+  }
+
   function absProductUrl(id) {
     var sid = encodeURIComponent(String(id || ""));
     try {
@@ -75,11 +95,18 @@
       e.stopPropagation();
       var u = c.getAttribute("data-url") || url;
       if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(u).catch(function () {
-          window.prompt("Copy this link", u);
-        });
+        navigator.clipboard
+          .writeText(u)
+          .then(function () {
+            showCopyFeedback();
+          })
+          .catch(function () {
+            window.prompt("Copy this link", u);
+            showCopyFeedback("Copy the link from the box");
+          });
       } else {
         window.prompt("Copy this link", u);
+        showCopyFeedback();
       }
     });
   }
@@ -140,11 +167,18 @@
         ev.preventDefault();
         var u = b.getAttribute("data-url") || url;
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(u).catch(function () {
-            window.prompt("Copy this link", u);
-          });
+          navigator.clipboard
+            .writeText(u)
+            .then(function () {
+              showCopyFeedback();
+            })
+            .catch(function () {
+              window.prompt("Copy this link", u);
+              showCopyFeedback("Copy the link from the box");
+            });
         } else {
           window.prompt("Copy this link", u);
+          showCopyFeedback();
         }
       });
     });
@@ -154,5 +188,6 @@
     productUrl: absProductUrl,
     mountCardShare: mountCardShare,
     mountProductShare: mountProductShare,
+    showCopyToast: showCopyFeedback,
   };
 })();

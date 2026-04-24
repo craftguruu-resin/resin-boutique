@@ -676,11 +676,23 @@
         escapeAttr(line.id) +
         '" data-later-to-cart-size="' +
         escapeAttr(line.size) +
+        '" data-later-to-cart-extrak="' +
+        escapeAttr(
+          window.RESIN_CART.lineExtraKey
+            ? window.RESIN_CART.lineExtraKey(line.lineExtra)
+            : ""
+        ) +
         '">Move to cart</button>' +
         '<button type="button" class="account-later-line__rm" data-later-rm-id="' +
         escapeAttr(line.id) +
         '" data-later-rm-size="' +
         escapeAttr(line.size) +
+        '" data-later-rm-extrak="' +
+        escapeAttr(
+          window.RESIN_CART.lineExtraKey
+            ? window.RESIN_CART.lineExtraKey(line.lineExtra)
+            : ""
+        ) +
         '" aria-label="Remove">×</button></div>';
       list.appendChild(li);
     });
@@ -1178,7 +1190,13 @@
           var id = toCart.getAttribute("data-later-to-cart-id");
           var size = toCart.getAttribute("data-later-to-cart-size");
           if (window.RESIN_CART && typeof window.RESIN_CART.moveSaveLaterToCart === "function") {
-            if (window.RESIN_CART.moveSaveLaterToCart(id, size)) {
+            if (
+              window.RESIN_CART.moveSaveLaterToCart(
+                id,
+                size,
+                toCart.getAttribute("data-later-to-cart-extrak")
+              )
+            ) {
               renderAccountSaveLater();
               if (window.RESIN_SHELL) {
                 if (window.RESIN_SHELL.updateBadge) window.RESIN_SHELL.updateBadge();
@@ -1190,7 +1208,11 @@
         }
         var rm = ev.target && ev.target.closest ? ev.target.closest("[data-later-rm-id]") : null;
         if (rm && window.RESIN_CART && typeof window.RESIN_CART.removeSaveLaterLine === "function") {
-          window.RESIN_CART.removeSaveLaterLine(rm.getAttribute("data-later-rm-id"), rm.getAttribute("data-later-rm-size"));
+          window.RESIN_CART.removeSaveLaterLine(
+            rm.getAttribute("data-later-rm-id"),
+            rm.getAttribute("data-later-rm-size"),
+            rm.getAttribute("data-later-rm-extrak")
+          );
           renderAccountSaveLater();
         }
       });

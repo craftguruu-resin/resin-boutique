@@ -18,6 +18,8 @@ function parseGuestSnapshot(raw) {
 }
 
 function normalizeSizeKey(it) {
+  var st = it && it.stockSlot != null ? String(it.stockSlot).trim().toLowerCase().slice(0, 1) : "";
+  if (st === "s" || st === "m" || st === "l") return st;
   var raw = it.sizeKey != null ? String(it.sizeKey) : "";
   raw = raw.trim().toLowerCase();
   if (raw === "s" || raw === "m" || raw === "l") return raw;
@@ -208,11 +210,26 @@ function createCheckoutParcelOrder(opts, cb) {
               var pid = String((it && it.productId) || "").trim().slice(0, 220);
               var sk = normalizeSizeKey(it || {});
               var sku = String((skuMap && skuMap[pid]) || (it && it.sku) || "").trim().slice(0, 120);
+              var lex = it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : null;
               lineQs.push(
                 client.query(
-                  "INSERT INTO order_items (order_id, line_index, name, size_label, qty, unit_price, image_url, product_id, size_key, sku) " +
-                    "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)",
-                  [orderId, i, it.name, it.sizeLabel || "", it.qty, it.unitPrice, it.image || "", pid, sk, sku]
+                  "INSERT INTO order_items (order_id, line_index, name, size_label, qty, unit_price, image_url, product_id, size_key, sku, line_extra) " +
+                    "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)",
+                  [
+                    orderId,
+                    i,
+                    it.name,
+                    it.sizeLabel || "",
+                    it.qty,
+                    it.unitPrice,
+                    it.image || "",
+                    pid,
+                    String(it.sizeKey != null ? it.sizeKey : "")
+                      .trim()
+                      .slice(0, 200),
+                    sku,
+                    lex && Object.keys(lex).length ? JSON.stringify(lex) : null,
+                  ]
                 )
               );
             }
@@ -343,13 +360,21 @@ function getOrderById(orderId, cb) {
       return pool
         .query(
           "SELECT name, size_label AS \"sizeLabel\", qty, unit_price AS \"unitPrice\", image_url AS image, " +
-            "product_id AS \"productId\", size_key AS \"sizeKey\", sku " +
+            "product_id AS \"productId\", size_key AS \"sizeKey\", sku, line_extra AS \"lineExtra\" " +
             "FROM order_items WHERE order_id = $1 ORDER BY line_index",
           [want]
         )
         .then(function (ir) {
           var guest = parseGuestSnapshot(o.guest_snapshot);
           var items = ir.rows.map(function (x) {
+            var le = x.lineExtra;
+            if (le != null && typeof le === "string") {
+              try {
+                le = JSON.parse(le);
+              } catch (_) {
+                le = null;
+              }
+            }
             return {
               name: x.name,
               sizeLabel: x.sizeLabel,
@@ -359,6 +384,7 @@ function getOrderById(orderId, cb) {
               productId: x.productId != null ? String(x.productId) : "",
               sizeKey: x.sizeKey != null ? String(x.sizeKey) : "",
               sku: x.sku != null ? String(x.sku) : "",
+              lineExtra: le && typeof le === "object" ? le : null,
             };
           });
           cb(null, {

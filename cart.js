@@ -37,8 +37,26 @@
     return Number.isFinite(x) ? x : fallback;
   }
 
+  function lineExtraKey(le) {
+    if (!le || typeof le !== "object") return "";
+    var keys = Object.keys(le).sort();
+    if (!keys.length) return "";
+    return keys
+      .map(function (k) {
+        return k + "=" + String(le[k] == null ? "" : le[k]).trim();
+      })
+      .join("&")
+      .slice(0, 2000);
+  }
+
   function lineKey(line) {
-    return String(line.id || "") + "::" + String(line.size || "");
+    return (
+      String(line.id || "") +
+      "::" +
+      String(line.size || "") +
+      "::" +
+      lineExtraKey(line && line.lineExtra)
+    );
   }
 
   function normalizeLine(line) {
@@ -47,6 +65,15 @@
     var size = String(line.size || "");
     if (!id || !size) return null;
     var vl = String(line.variantLabel || "").trim().slice(0, 400);
+    var le = null;
+    if (line.lineExtra && typeof line.lineExtra === "object" && Object.keys(line.lineExtra).length) {
+      le = line.lineExtra;
+    }
+    var stockSlot = String(line.stockSlot != null ? line.stockSlot : "")
+      .trim()
+      .toLowerCase()
+      .slice(0, 1);
+    if (stockSlot !== "s" && stockSlot !== "m" && stockSlot !== "l") stockSlot = "";
     return {
       id: id,
       size: size,
@@ -55,6 +82,8 @@
       price: safeNumber(line.price, 0),
       image: String(line.image || ""),
       qty: Math.max(1, Math.floor(safeNumber(line.qty, 1))),
+      lineExtra: le || undefined,
+      stockSlot: stockSlot || undefined,
     };
   }
 
@@ -169,25 +198,29 @@
     return lines;
   }
 
-  function removeLine(id, size) {
+  function removeLine(id, size, leKey) {
     var sid = String(id || "");
     var ss = String(size || "");
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var lines = load().filter(function (l) {
-      return !(l.id === sid && l.size === ss);
+      if (l.id !== sid || l.size !== ss) return true;
+      return lineExtraKey(l.lineExtra) !== ex;
     });
     save(lines);
     return lines;
   }
 
-  function setLineQty(id, size, qty) {
+  function setLineQty(id, size, qty, leKey) {
     var sid = String(id || "");
     var ss = String(size || "");
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var q = Math.max(0, Math.floor(safeNumber(qty, 0)));
     var lines = load();
     var changed = false;
     lines = lines
       .map(function (l) {
         if (l.id !== sid || l.size !== ss) return l;
+        if (lineExtraKey(l.lineExtra) !== ex) return l;
         changed = true;
         if (q <= 0) return null;
         var n = normalizeLine(Object.assign({}, l, { qty: q }));
@@ -198,15 +231,16 @@
     return lines;
   }
 
-  function incrementLine(id, size, delta) {
+  function incrementLine(id, size, delta, leKey) {
     var d = Math.floor(safeNumber(delta, 1));
     var lines = load();
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var hit = null;
     lines.forEach(function (l) {
-      if (l.id === String(id || "") && l.size === String(size || "")) hit = l;
+      if (l.id === String(id || "") && l.size === String(size || "") && lineExtraKey(l.lineExtra) === ex) hit = l;
     });
     if (!hit) return lines;
-    return setLineQty(id, size, Math.max(0, Math.floor(safeNumber(hit.qty, 1)) + d));
+    return setLineQty(id, size, Math.max(0, Math.floor(safeNumber(hit.qty, 1)) + d), ex);
   }
 
   function clearCart() {
@@ -243,11 +277,13 @@
     } catch (_) {}
   }
 
-  function removeSaveLaterLine(id, size) {
+  function removeSaveLaterLine(id, size, leKey) {
     var sid = String(id || "");
     var ss = String(size || "");
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var next = loadSaveLater().filter(function (l) {
-      return !(l.id === sid && l.size === ss);
+      if (l.id !== sid || l.size !== ss) return true;
+      return lineExtraKey(l.lineExtra) !== ex;
     });
     saveSaveLater(next);
     return next;
@@ -257,13 +293,18 @@
    * Move one cart line to Save for later (same qty). Removes from cart.
    * @returns {boolean} whether a line was moved
    */
-  function moveLineToSaveLater(id, size) {
+  function moveLineToSaveLater(id, size, leKey) {
     var sid = String(id || "");
     var ss = String(size || "");
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var lines = load();
     var hit = null;
     for (var i = 0; i < lines.length; i++) {
-      if (lines[i].id === sid && lines[i].size === ss) {
+      if (
+        lines[i].id === sid &&
+        lines[i].size === ss &&
+        lineExtraKey(lines[i].lineExtra) === ex
+      ) {
         hit = lines[i];
         break;
       }
@@ -285,24 +326,29 @@
       return map[x];
     });
     saveSaveLater(merged);
-    removeLine(sid, ss);
+    removeLine(sid, ss, ex);
     return true;
   }
 
-  function moveSaveLaterToCart(id, size) {
+  function moveSaveLaterToCart(id, size, leKey) {
     var sid = String(id || "");
     var ss = String(size || "");
+    var ex = leKey == null || leKey === "" ? "" : String(leKey);
     var later = loadSaveLater();
     var hit = null;
     for (var i = 0; i < later.length; i++) {
-      if (later[i].id === sid && later[i].size === ss) {
+      if (
+        later[i].id === sid &&
+        later[i].size === ss &&
+        lineExtraKey(later[i].lineExtra) === ex
+      ) {
         hit = later[i];
         break;
       }
     }
     if (!hit) return false;
     addItem(hit);
-    removeSaveLaterLine(sid, ss);
+    removeSaveLaterLine(sid, ss, ex);
     notify();
     return true;
   }
@@ -337,6 +383,7 @@
   global.RESIN_CART = {
     ANON_CART_KEY: ANON_CART_KEY,
     storageKey: storageKey,
+    lineExtraKey: lineExtraKey,
     load: load,
     save: save,
     addItem: addItem,

@@ -499,3 +499,60 @@ body.rm-page-wide .rm-pdp--modern {
   width: 100%;
   margin-inline: 0;
 }
+
+.resin-pdp-padded {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 0.5rem 2rem;
+}
+
+.page-product--resin-rm .sub-main {
+  max-width: 100%;
+}
+
+.rm-pdp__custom-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  border: 1px solid rgba(15, 23, 42, 0.15);
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.rm-pdp__bulk,
+button.rm-pdp__bulk {
+  margin-left: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.2);
+  background: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+
+#cgCopyToast.cg-toast,
+.cg-toast {
+  position: fixed;
+  z-index: 20000;
+  left: 50%;
+  bottom: 1.25rem;
+  transform: translateX(-50%) translateY(20px);
+  max-width: min(92vw, 360px);
+  padding: 0.65rem 1rem;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.92);
+  color: #f8fafc;
+  font-size: 0.9rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+#cgCopyToast.cg-toast.is-visible,
+.cg-toast.is-visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}

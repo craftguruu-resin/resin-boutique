@@ -32,6 +32,50 @@
     return q * u;
   }
 
+  function formatLineExtraBits(le) {
+    if (!le || typeof le !== "object") return [];
+    var out = [];
+    if (String(le.namePlateText || "").trim()) {
+      out.push("Name plate text: " + String(le.namePlateText).trim());
+    }
+    if (String(le.keychainAlphabet || "").trim()) {
+      out.push("Keychain letter: " + String(le.keychainAlphabet).trim());
+    }
+    if (String(le.keychainName || "").trim()) {
+      out.push("Keychain name: " + String(le.keychainName).trim());
+    }
+    return out;
+  }
+
+  function buildPersonalisationBlockHtml(order) {
+    var items = order.items || [];
+    var parts = [];
+    items.forEach(function (it, ix) {
+      var le = it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : null;
+      var bits = formatLineExtraBits(le);
+      if (!bits.length) return;
+      parts.push(
+        "<li><strong>Line " +
+        (ix + 1) +
+        " — " +
+          esc(it.name || "Item") +
+          "</strong><ul class='vendor-pe__sub'>" +
+          bits
+            .map(function (b) {
+              return "<li>" + esc(b) + "</li>";
+            })
+            .join("") +
+          "</ul></li>"
+      );
+    });
+    if (!parts.length) return "";
+    return (
+      "<div class='vendor-pe vendor-pe--order'><h3>Personalisation (name plates &amp; keychains)</h3><ol class='vendor-pe__list'>" +
+      parts.join("") +
+      "</ol></div>"
+    );
+  }
+
   function buildInlineTagBillHtml(order) {
     var g = order.guest || {};
     var items = order.items || [];
@@ -92,7 +136,8 @@
       "</div>" +
       "<div><strong>Total " +
       money(totals.total) +
-      "</strong></div></div></div>"
+      "</strong></div></div></div>" +
+      buildPersonalisationBlockHtml(order)
     );
   }
 
@@ -170,7 +215,9 @@
       "</div>" +
       "<div><strong>Total</strong> " +
       money(totals.total) +
-      "</div></div></section></body></html>"
+      "</div></div>" +
+      buildPersonalisationBlockHtml(order) +
+      "</section></body></html>"
     );
   }
 

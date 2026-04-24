@@ -636,19 +636,33 @@
       var sz = D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size;
       var disp =
         (line.variantLabel && String(line.variantLabel).trim()) || String(sz || line.size || "");
-      var sizeKey = String(line.size || "")
+      var lineSize = String(line.size || "")
+        .trim()
+        .toLowerCase();
+      var stock = String(line.stockSlot != null ? line.stockSlot : "")
         .trim()
         .toLowerCase()
         .slice(0, 1);
-      if (sizeKey !== "s" && sizeKey !== "m" && sizeKey !== "l") sizeKey = "";
+      if (stock !== "s" && stock !== "m" && stock !== "l") {
+        var m0 = lineSize.match(/^s:([sml])\b/);
+        if (m0) stock = m0[1].toLowerCase();
+        else {
+          var c0 = lineSize.slice(0, 1);
+          if (c0 === "s" || c0 === "m" || c0 === "l") stock = c0;
+        }
+        if (stock !== "s" && stock !== "m" && stock !== "l") stock = "m";
+      }
+      var sizeKey = lineSize.length ? lineSize : stock;
       return {
         productId: String(line.id || ""),
-        sizeKey: sizeKey,
+        sizeKey: String(sizeKey).slice(0, 200),
         name: String(line.name || "Item"),
         sizeLabel: String(disp).slice(0, 500),
         qty: Math.max(1, Math.floor(Number(line.qty) || 1)),
         unitPrice: Number(line.price) || 0,
         image: String(getLineImage(line) || "").slice(0, 500),
+        lineExtra: line.lineExtra && typeof line.lineExtra === "object" ? line.lineExtra : undefined,
+        stockSlot: stock,
       };
     });
   }
@@ -994,11 +1008,15 @@
         escapeAttr(line.id) +
         '" data-later-size="' +
         escapeAttr(line.size) +
+        '" data-later-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" title="Save for later">♡</button>' +
         '<button type="button" class="checkout-snip__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
+        '" data-remove-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
         ' from cart">×</button></div>';
@@ -1069,11 +1087,15 @@
         escapeAttr(line.id) +
         '" data-later-size="' +
         escapeAttr(line.size) +
+        '" data-later-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" title="Save for later">Later</button>' +
         '<button type="button" class="checkout-line__remove" data-remove-id="' +
         escapeAttr(line.id) +
         '" data-remove-size="' +
         escapeAttr(line.size) +
+        '" data-remove-extrak="' +
+        escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" title="Remove" aria-label="Remove ' +
         escapeAttr(line.name || "item") +
         '">×</button></div></div>';
@@ -1182,7 +1204,8 @@
     e.stopPropagation();
     var id = btn.getAttribute("data-remove-id");
     var size = btn.getAttribute("data-remove-size");
-    if (CART.removeLine) CART.removeLine(id, size);
+    var ex = btn.getAttribute("data-remove-extrak");
+    if (CART.removeLine) CART.removeLine(id, size, ex);
     refreshCheckout();
     if (window.RESIN_SHELL) {
       window.RESIN_SHELL.updateBadge();
@@ -1197,8 +1220,9 @@
     e.stopPropagation();
     var id = btn.getAttribute("data-later-id");
     var size = btn.getAttribute("data-later-size");
+    var ex = btn.getAttribute("data-later-extrak");
     if (!CART.moveLineToSaveLater) return;
-    var ok = CART.moveLineToSaveLater(id, size);
+    var ok = CART.moveLineToSaveLater(id, size, ex);
     if (ok) refreshCheckout();
     if (window.RESIN_SHELL) {
       window.RESIN_SHELL.updateBadge();

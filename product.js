@@ -136,6 +136,7 @@
   }
 
   function productLayoutInDocument() {
+    if (els.root && els.root.querySelector("[data-resin-pdp]")) return true;
     return !!(els.sizes && document.body.contains(els.sizes));
   }
 
@@ -170,6 +171,10 @@
       if (pendingLayoutHtml && els.root && els.root.querySelector(".product-page-awaiting-catalog")) {
         render404();
       }
+      return;
+    }
+    if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.refresh) {
+      window.RESIN_CATALOG_PDP.refresh();
       return;
     }
     if (!productLayoutInDocument()) {
@@ -421,6 +426,15 @@
   function render() {
     if (!product) {
       render404();
+      return;
+    }
+
+    if (window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
+      try {
+        window.RESIN_CATALOG_PDP.mount(product);
+      } catch (er) {
+        void er;
+      }
       return;
     }
 
