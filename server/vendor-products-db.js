@@ -10,6 +10,10 @@ var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogMediaPath = require("./media-path.js");
+var hiddenResinCatalog = require("./hidden-resin-catalog.js");
+var resinClocksTaxonomy = require("./resin-clocks-taxonomy.js");
+var resinGurujiProductsTaxonomy = require("./resin-guruji-products-taxonomy.js");
+var resinKeychainsTaxonomy = require("./resin-keychains-taxonomy.js");
 
 /** Ensures older Postgres DBs have products.size_labels before any SELECT/INSERT that uses it. */
 var productsSizeLabelsPromise = null;
@@ -294,11 +298,22 @@ function mapRowToClient(row) {
     }
   }
   sizeLabels = sizeLabels && typeof sizeLabels === "object" ? sizeLabels : {};
+  var subRaw =
+    row.subcategory_id != null && String(row.subcategory_id).trim() !== "" ? String(row.subcategory_id) : "all";
+  if (String(row.category_id || "").trim() === "resin-clocks") {
+    subRaw = resinClocksTaxonomy.normalizeResinClocksSubcategoryId(row.category_id, subRaw);
+  }
+  if (String(row.category_id || "").trim() === "resin-guruji-products") {
+    subRaw = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(row.category_id, subRaw);
+  }
+  if (String(row.category_id || "").trim() === "resin-keychains") {
+    subRaw = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId(row.category_id, subRaw);
+  }
   var out = {
     id: row.id,
     name: row.name,
     category: row.category_id,
-    subcategory: row.subcategory_id != null && String(row.subcategory_id).trim() !== "" ? String(row.subcategory_id) : "all",
+    subcategory: subRaw,
     image: row.image_path || "",
     prices: {
       s: Number(prices.s) || 0,
@@ -351,6 +366,7 @@ function listExtraProductsForStorefront(cb) {
       .then(function (r) {
         var out = [];
         r.rows.forEach(function (row) {
+          if (hiddenResinCatalog.isHiddenResinCategoryId(row.category_id)) return;
           if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
         });
         cb(null, out);
@@ -390,6 +406,11 @@ function createVendorProductAfterSchema(opts, cb) {
       cb(new Error("Name and category are required"));
     });
   }
+  if (hiddenResinCatalog.isHiddenResinCategoryId(categoryId)) {
+    return process.nextTick(function () {
+      cb(new Error("That category is not available for products"));
+    });
+  }
   var hasFile = buf && Buffer.isBuffer(buf) && buf.length >= 32;
   if (hasFile && buf.length > 12 * 1024 * 1024) {
     return process.nextTick(function () {
@@ -411,6 +432,18 @@ function createVendorProductAfterSchema(opts, cb) {
   resolveCategoryForProduct(categoryId, function (err, cat) {
     if (err) return cb(err);
     var subDb = "all";
+    if (String(categoryId) === "resin-clocks") {
+      var subOpt = (opts && (opts.subcategoryId != null ? opts.subcategoryId : opts.subcategory)) || "";
+      subDb = resinClocksTaxonomy.normalizeResinClocksSubcategoryId(categoryId, subOpt);
+    }
+    if (String(categoryId) === "resin-guruji-products") {
+      var subOptG = (opts && (opts.subcategoryId != null ? opts.subcategoryId : opts.subcategory)) || "";
+      subDb = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(categoryId, subOptG);
+    }
+    if (String(categoryId) === "resin-keychains") {
+      var subOptK = (opts && (opts.subcategoryId != null ? opts.subcategoryId : opts.subcategory)) || "";
+      subDb = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId(categoryId, subOptK);
+    }
 
     var folderLabel = String((cat && cat.folder) || cat.label || categoryId)
       .replace(/[/\\]/g, "")
@@ -633,6 +666,18 @@ function listAllProductsForManage(opts, cb) {
           if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
             row.options = ov.options;
           }
+          if (row.category === "resin-clocks") {
+            row.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", row.subcategory);
+          }
+          if (row.category === "resin-guruji-products") {
+            row.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
+              "resin-guruji-products",
+              row.subcategory
+            );
+          }
+          if (row.category === "resin-keychains") {
+            row.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId("resin-keychains", row.subcategory);
+          }
           out.push(row);
         });
 
@@ -666,6 +711,21 @@ function listAllProductsForManage(opts, cb) {
           }
           if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
             merged.options = ov.options;
+          }
+          if (merged.category === "resin-clocks") {
+            merged.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", merged.subcategory);
+          }
+          if (merged.category === "resin-guruji-products") {
+            merged.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
+              "resin-guruji-products",
+              merged.subcategory
+            );
+          }
+          if (merged.category === "resin-keychains") {
+            merged.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId(
+              "resin-keychains",
+              merged.subcategory
+            );
           }
           out.push(merged);
         });
@@ -715,6 +775,7 @@ function listVendorManagedProducts(cb) {
       .then(function (r) {
         var out = [];
         r.rows.forEach(function (row) {
+          if (hiddenResinCatalog.isHiddenResinCategoryId(row.category_id)) return;
           if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
         });
         cb(null, out);

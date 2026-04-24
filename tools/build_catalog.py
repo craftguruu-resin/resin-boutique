@@ -21,7 +21,11 @@ IMG_EXT = {
     ".PNG",
 }
 SKIP_FILES = {".ds_store", ".ds_store?"}
-SKIP_DIR_NAMES = {".ds_store", "key words"}  # case-insensitive match below
+SKIP_DIR_NAMES = {
+    ".ds_store",
+    "key words",
+    "craftguru details",  # internal / branding — not a public shop category
+}  # case-insensitive match below
 
 
 def slugify(text: str) -> str:
@@ -40,6 +44,87 @@ def should_skip_dir(name: str) -> bool:
     if name.startswith("."):
         return True
     return name.lower() in SKIP_DIR_NAMES
+
+
+RESIN_CLOCKS_SUBCATEGORIES = [
+    ("standard-resin-clock", "Standard Resin Clock"),
+    ("photo-custom-clock", "Photo Custom Clock"),
+    ("ocean-clock", "Ocean Clock"),
+    ("geode-clock", "Geode Clock"),
+    ("wood-resin-clock", "Wood Resin Clock"),
+]
+
+
+def resin_clocks_canonical_sub_id(folder_hint: str, stem: str = "") -> str:
+    """Map folder / filename text to one of the five fixed Resin Clocks subcategory ids."""
+    blob = f"{folder_hint} {stem}".lower()
+    if "geode" in blob:
+        return "geode-clock"
+    if "ocean" in blob or "ocian" in blob:
+        return "ocean-clock"
+    if "baby" in blob or "12 month" in blob or "12-month" in blob:
+        return "photo-custom-clock"
+    if "photo" in blob and "custom" in blob:
+        return "photo-custom-clock"
+    if "wood" in blob or "sea shell" in blob:
+        return "wood-resin-clock"
+    sl = slugify(folder_hint)
+    allowed = {a for a, _ in RESIN_CLOCKS_SUBCATEGORIES}
+    if sl in allowed:
+        return sl
+    return "standard-resin-clock"
+
+
+RESIN_GURUJI_SUBCATEGORIES = [
+    ("guruji-frames", "Guruji Frames"),
+    ("guruji-fridge-magnets", "Guruji Fridge Magnets"),
+    ("guruji-keychains", "Guruji Keychains"),
+]
+
+
+def resin_guruji_canonical_sub_id(folder_hint: str, stem: str = "") -> str:
+    """Map folder / filename to one of three Resin Guruji Products subcategory ids."""
+    blob = f"{folder_hint} {stem}".lower()
+    if "fridge" in blob or "magnet" in blob or "megnet" in blob:
+        return "guruji-fridge-magnets"
+    if "keychain" in blob:
+        return "guruji-keychains"
+    sl = slugify(folder_hint)
+    allowed = {a for a, _ in RESIN_GURUJI_SUBCATEGORIES}
+    if sl in allowed:
+        return sl
+    return "guruji-frames"
+
+
+RESIN_KEYCHAINS_SUBCATEGORIES = [
+    ("alphabet-keychain", "Alphabet keychain"),
+    ("shape-keychain", "Shape keychain"),
+    ("photo-or-logo-keychain", "Photo or logo Keychain"),
+    ("name-keychain", "Name keychain"),
+]
+
+
+def resin_keychains_canonical_sub_id(folder_hint: str, stem: str = "") -> str:
+    """Map folder / filename to one of four fixed Resin keychains subcategory ids."""
+    blob = f"{folder_hint} {stem}".lower()
+    if "photo" in blob or "logo" in blob:
+        return "photo-or-logo-keychain"
+    if (
+        "letter" in blob
+        or "alphab" in blob
+        or "alphabet" in blob
+        or re.search(r"(^|[^a-z])(a|b|c|g|k|p|r|s|v) letter", blob)
+    ):
+        return "alphabet-keychain"
+    if any(x in blob for x in ("shape", "heart", "round", "swastik")):
+        return "shape-keychain"
+    if "maa" in blob or "name" in blob:
+        return "name-keychain"
+    sl = slugify(folder_hint)
+    allowed = {a for a, _ in RESIN_KEYCHAINS_SUBCATEGORIES}
+    if sl in allowed:
+        return sl
+    return "shape-keychain"
 
 
 def rel_web(*parts: str) -> str:
@@ -78,9 +163,185 @@ def main() -> int:
     )
 
     for ci, folder_name in enumerate(top_dirs):
+        if should_skip_dir(folder_name):
+            continue
         cat_path = os.path.join(ROOT, folder_name)
         cat_id = slugify(folder_name)
         base = base_tiers[ci % len(base_tiers)]
+
+        if cat_id == "resin-clocks":
+            children = [x for x in os.listdir(cat_path) if not x.startswith(".")]
+            subdirs_rc = sorted(
+                [x for x in children if os.path.isdir(os.path.join(cat_path, x)) and not should_skip_dir(x)]
+            )
+            root_files_rc = sorted(
+                [x for x in children if os.path.isfile(os.path.join(cat_path, x)) and is_image(x)]
+            )
+            cat_entry_rc = {
+                "id": cat_id,
+                "label": folder_name,
+                "folder": folder_name,
+                "subcategories": [{"id": a, "label": b} for a, b in RESIN_CLOCKS_SUBCATEGORIES],
+            }
+            categories.append(cat_entry_rc)
+            by_cat[cat_id] = []
+            by_cat_sub[cat_id] = {a: [] for a, _ in RESIN_CLOCKS_SUBCATEGORIES}
+            pi_rc = 0
+
+            def emit_resin_clock_product(fname: str, folder_rel: str, hint: str) -> None:
+                nonlocal pi_rc
+                stem = os.path.splitext(fname)[0]
+                file_slug = slugify(stem)
+                if not file_slug:
+                    file_slug = f"item-{pi_rc}"
+                sub_id = resin_clocks_canonical_sub_id(hint, stem)
+                pid = f"{cat_id}--{sub_id}--{file_slug}"
+                if any(p["id"] == pid for p in products):
+                    pid = f"{pid}-{pi_rc}"
+                bump = (pi_rc % 7) * 2
+                name = stem.replace("_", " ").strip() or file_slug.replace("-", " ").title()
+                img_rel = rel_web("media", "catalog", folder_rel, fname)
+                p = {
+                    "id": pid,
+                    "name": name[:120],
+                    "category": cat_id,
+                    "subcategory": sub_id,
+                    "image": img_rel,
+                    "prices": {
+                        "s": base[0] + bump,
+                        "m": base[1] + bump,
+                        "l": base[2] + bump,
+                    },
+                }
+                products.append(p)
+                by_cat[cat_id].append(p)
+                by_cat_sub[cat_id][sub_id].append(p)
+                pi_rc += 1
+
+            for fname in root_files_rc:
+                emit_resin_clock_product(fname, folder_name, fname)
+            for sd in subdirs_rc:
+                sp = os.path.join(cat_path, sd)
+                imgs = sorted([f for f in os.listdir(sp) if os.path.isfile(os.path.join(sp, f)) and is_image(f)])
+                for fname in imgs:
+                    emit_resin_clock_product(fname, rel_web(folder_name, sd), sd)
+            continue
+
+        if cat_id == "resin-guruji-products":
+            children = [x for x in os.listdir(cat_path) if not x.startswith(".")]
+            subdirs_rg = sorted(
+                [x for x in children if os.path.isdir(os.path.join(cat_path, x)) and not should_skip_dir(x)]
+            )
+            root_files_rg = sorted(
+                [x for x in children if os.path.isfile(os.path.join(cat_path, x)) and is_image(x)]
+            )
+            cat_entry_rg = {
+                "id": cat_id,
+                "label": folder_name,
+                "folder": folder_name,
+                "subcategories": [{"id": a, "label": b} for a, b in RESIN_GURUJI_SUBCATEGORIES],
+            }
+            categories.append(cat_entry_rg)
+            by_cat[cat_id] = []
+            by_cat_sub[cat_id] = {a: [] for a, _ in RESIN_GURUJI_SUBCATEGORIES}
+            pi_rg = 0
+
+            def emit_resin_guruji_product(fname: str, folder_rel: str, hint: str) -> None:
+                nonlocal pi_rg
+                stem = os.path.splitext(fname)[0]
+                file_slug = slugify(stem)
+                if not file_slug:
+                    file_slug = f"item-{pi_rg}"
+                sub_id = resin_guruji_canonical_sub_id(hint, stem)
+                pid = f"{cat_id}--{sub_id}--{file_slug}"
+                if any(p["id"] == pid for p in products):
+                    pid = f"{pid}-{pi_rg}"
+                bump = (pi_rg % 7) * 2
+                name = stem.replace("_", " ").strip() or file_slug.replace("-", " ").title()
+                img_rel = rel_web("media", "catalog", folder_rel, fname)
+                p = {
+                    "id": pid,
+                    "name": name[:120],
+                    "category": cat_id,
+                    "subcategory": sub_id,
+                    "image": img_rel,
+                    "prices": {
+                        "s": base[0] + bump,
+                        "m": base[1] + bump,
+                        "l": base[2] + bump,
+                    },
+                }
+                products.append(p)
+                by_cat[cat_id].append(p)
+                by_cat_sub[cat_id][sub_id].append(p)
+                pi_rg += 1
+
+            for fname in root_files_rg:
+                emit_resin_guruji_product(fname, folder_name, fname)
+            for sd in subdirs_rg:
+                sp = os.path.join(cat_path, sd)
+                imgs = sorted([f for f in os.listdir(sp) if os.path.isfile(os.path.join(sp, f)) and is_image(f)])
+                for fname in imgs:
+                    emit_resin_guruji_product(fname, rel_web(folder_name, sd), sd)
+            continue
+
+        if cat_id == "resin-keychains":
+            children = [x for x in os.listdir(cat_path) if not x.startswith(".")]
+            subdirs_rk = sorted(
+                [x for x in children if os.path.isdir(os.path.join(cat_path, x)) and not should_skip_dir(x)]
+            )
+            root_files_rk = sorted(
+                [x for x in children if os.path.isfile(os.path.join(cat_path, x)) and is_image(x)]
+            )
+            cat_entry_rk = {
+                "id": cat_id,
+                "label": folder_name,
+                "folder": folder_name,
+                "subcategories": [{"id": a, "label": b} for a, b in RESIN_KEYCHAINS_SUBCATEGORIES],
+            }
+            categories.append(cat_entry_rk)
+            by_cat[cat_id] = []
+            by_cat_sub[cat_id] = {a: [] for a, _ in RESIN_KEYCHAINS_SUBCATEGORIES}
+            pi_rk = 0
+
+            def emit_resin_keychain_product(fname: str, folder_rel: str, hint: str) -> None:
+                nonlocal pi_rk
+                stem = os.path.splitext(fname)[0]
+                file_slug = slugify(stem)
+                if not file_slug:
+                    file_slug = f"item-{pi_rk}"
+                sub_id = resin_keychains_canonical_sub_id(hint, stem)
+                pid = f"{cat_id}--{sub_id}--{file_slug}"
+                if any(p["id"] == pid for p in products):
+                    pid = f"{pid}-{pi_rk}"
+                bump = (pi_rk % 7) * 2
+                name = stem.replace("_", " ").strip() or file_slug.replace("-", " ").title()
+                img_rel = rel_web("media", "catalog", folder_rel, fname)
+                p = {
+                    "id": pid,
+                    "name": name[:120],
+                    "category": cat_id,
+                    "subcategory": sub_id,
+                    "image": img_rel,
+                    "prices": {
+                        "s": base[0] + bump,
+                        "m": base[1] + bump,
+                        "l": base[2] + bump,
+                    },
+                }
+                products.append(p)
+                by_cat[cat_id].append(p)
+                by_cat_sub[cat_id][sub_id].append(p)
+                pi_rk += 1
+
+            for fname in root_files_rk:
+                emit_resin_keychain_product(fname, folder_name, fname)
+            for sd in subdirs_rk:
+                sp = os.path.join(cat_path, sd)
+                imgs = sorted([f for f in os.listdir(sp) if os.path.isfile(os.path.join(sp, f)) and is_image(f)])
+                for fname in imgs:
+                    emit_resin_keychain_product(fname, rel_web(folder_name, sd), sd)
+            continue
 
         # List immediate children
         children = [x for x in os.listdir(cat_path) if not x.startswith(".")]

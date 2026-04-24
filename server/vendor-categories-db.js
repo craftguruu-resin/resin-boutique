@@ -1,6 +1,10 @@
 "use strict";
 
 var catalogFromData = require("./catalog-from-data.js");
+var hiddenResinCatalog = require("./hidden-resin-catalog.js");
+var resinClocksTaxonomy = require("./resin-clocks-taxonomy.js");
+var resinGurujiProductsTaxonomy = require("./resin-guruji-products-taxonomy.js");
+var resinKeychainsTaxonomy = require("./resin-keychains-taxonomy.js");
 
 function staticCategoryIdSet() {
   var set = Object.create(null);
@@ -91,6 +95,11 @@ function createCategory(pool, body, cb) {
       cb(new Error("Invalid category id"));
     });
   }
+  if (hiddenResinCatalog.isHiddenResinCategoryId(id)) {
+    return process.nextTick(function () {
+      cb(new Error("This category id is reserved and cannot be used"));
+    });
+  }
   if (staticSet[id]) {
     return process.nextTick(function () {
       cb(new Error("That id is reserved for the built-in catalog; pick another slug"));
@@ -147,6 +156,15 @@ function updateCategory(pool, catId, body, cb) {
         body.subcategories != null
           ? normalizeSubcategoriesJson(body.subcategories)
           : normalizeSubcategoriesJson(row.subcategories);
+      if (catId === "resin-clocks") {
+        subs = resinClocksTaxonomy.listCanonicalSubcategories();
+      }
+      if (catId === "resin-guruji-products") {
+        subs = resinGurujiProductsTaxonomy.listCanonicalSubcategories();
+      }
+      if (catId === "resin-keychains") {
+        subs = resinKeychainsTaxonomy.listCanonicalSubcategories();
+      }
       return pool
         .query(
           "UPDATE categories SET label = $2, folder = $3, subcategories = $4::jsonb, nav_image = $5, updated_at = now() WHERE id = $1 RETURNING id, label, folder, subcategories, vendor_owned, nav_image",
@@ -174,6 +192,21 @@ function deleteSubcategory(pool, catId, subId, cb) {
       cb(new Error("Invalid category or subcategory"));
     });
   }
+  if (catId === "resin-clocks" && resinClocksTaxonomy.isAllowedSubcategoryId(subId)) {
+    return process.nextTick(function () {
+      cb(new Error("Resin Clocks only allows the five built-in lines; this subcategory cannot be removed"));
+    });
+  }
+  if (catId === "resin-guruji-products" && resinGurujiProductsTaxonomy.isAllowedSubcategoryId(subId)) {
+    return process.nextTick(function () {
+      cb(new Error("Resin Guruji Products only allows the three built-in lines; this subcategory cannot be removed"));
+    });
+  }
+  if (catId === "resin-keychains" && resinKeychainsTaxonomy.isAllowedSubcategoryId(subId)) {
+    return process.nextTick(function () {
+      cb(new Error("Resin keychains only allows the four built-in lines; this subcategory cannot be removed"));
+    });
+  }
   pool
     .query("SELECT subcategories FROM categories WHERE id = $1 LIMIT 1", [catId])
     .then(function (r) {
@@ -186,7 +219,9 @@ function deleteSubcategory(pool, catId, subId, cb) {
       if (!next.some(function (s) {
         return s.id === "all";
       })) {
-        next.unshift({ id: "all", label: "All" });
+        if (catId !== "resin-clocks" && catId !== "resin-guruji-products" && catId !== "resin-keychains") {
+          next.unshift({ id: "all", label: "All" });
+        }
       }
       return pool
         .query(
@@ -194,9 +229,11 @@ function deleteSubcategory(pool, catId, subId, cb) {
           [catId, JSON.stringify(next)]
         )
         .then(function () {
+          var fallbackSub =
+            catId === "resin-guruji-products" ? "guruji-frames" : catId === "resin-keychains" ? "shape-keychain" : "all";
           return pool.query(
-            "UPDATE products SET subcategory_id = 'all', updated_at = now() WHERE category_id = $1 AND subcategory_id = $2",
-            [catId, subId]
+            "UPDATE products SET subcategory_id = $3, updated_at = now() WHERE category_id = $1 AND subcategory_id = $2",
+            [catId, subId, fallbackSub]
           );
         })
         .then(function () {

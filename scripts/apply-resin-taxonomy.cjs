@@ -68,6 +68,20 @@ function clockSub(name) {
   return "standard-resin-clock";
 }
 
+var CLOCK_ALLOWED = {
+  "standard-resin-clock": 1,
+  "photo-custom-clock": 1,
+  "ocean-clock": 1,
+  "geode-clock": 1,
+  "wood-resin-clock": 1,
+};
+
+function normalizeResinClockSub(sub, name) {
+  var s = String(sub || "").trim();
+  if (CLOCK_ALLOWED[s]) return s;
+  return clockSub(name);
+}
+
 function gurujiSub(name) {
   var n = String(name || "").toLowerCase();
   if (n.indexOf("fridge") >= 0 || n.indexOf("megnet") >= 0 || n.indexOf("magnet") >= 0) return "guruji-fridge-magnets";
@@ -75,9 +89,28 @@ function gurujiSub(name) {
   return "guruji-frames";
 }
 
+var GURUJI_ALLOWED = {
+  "guruji-frames": 1,
+  "guruji-fridge-magnets": 1,
+  "guruji-keychains": 1,
+};
+
+function normalizeGurujiSub(sub, name) {
+  var s = String(sub || "").trim();
+  if (GURUJI_ALLOWED[s]) return s;
+  return gurujiSub(name);
+}
+
+var KEYCHAIN_ALLOWED = {
+  "alphabet-keychain": 1,
+  "shape-keychain": 1,
+  "photo-or-logo-keychain": 1,
+  "name-keychain": 1,
+};
+
 function keychainSub(name) {
   var n = String(name || "").toLowerCase();
-  if (n.indexOf("photo") >= 0) return "photo-or-logo-keychain";
+  if (n.indexOf("photo") >= 0 || n.indexOf("logo") >= 0) return "photo-or-logo-keychain";
   if (
     n.indexOf("letter") >= 0 ||
     n.indexOf("alphab") >= 0 ||
@@ -102,14 +135,15 @@ PRODUCTS.forEach(function (pr) {
     pr.category = "vermala-preservation";
     pr.subcategory = "all";
   }
-  if (pr.category === "resin-clocks" && pr.subcategory === "all") {
-    pr.subcategory = clockSub(pr.name);
+  if (pr.category === "resin-clocks") {
+    pr.subcategory = normalizeResinClockSub(pr.subcategory, pr.name);
   }
-  if (pr.category === "resin-guruji-products" && pr.subcategory === "all") {
-    pr.subcategory = gurujiSub(pr.name);
+  if (pr.category === "resin-guruji-products") {
+    pr.subcategory = normalizeGurujiSub(pr.subcategory, pr.name);
   }
-  if (pr.category === "resin-keychains" && pr.subcategory === "all") {
-    pr.subcategory = keychainSub(pr.name);
+  if (pr.category === "resin-keychains") {
+    var ks = String(pr.subcategory || "").trim();
+    pr.subcategory = KEYCHAIN_ALLOWED[ks] ? ks : keychainSub(pr.name);
   }
 });
 

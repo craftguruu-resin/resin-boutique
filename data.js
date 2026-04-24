@@ -150,8 +150,77 @@
     return c && c.subcategories ? c.subcategories : [];
   }
 
+  var DROPPED_RESIN_CATEGORY_IDS = { "craftguru-details": 1 };
+  function isDroppedResinCategory(cat) {
+    var s = String(cat || "").trim();
+    return !!(s && DROPPED_RESIN_CATEGORY_IDS[s]);
+  }
+
+  var RESIN_CLOCK_ALLOWED_SUB = {
+    "standard-resin-clock": 1,
+    "photo-custom-clock": 1,
+    "ocean-clock": 1,
+    "geode-clock": 1,
+    "wood-resin-clock": 1,
+  };
+  function normalizeResinClockProductSub(sub, name) {
+    var sid = String(sub || "").trim();
+    if (RESIN_CLOCK_ALLOWED_SUB[sid]) return sid;
+    var n = String(name || "").toLowerCase();
+    if (n.indexOf("geode") >= 0) return "geode-clock";
+    if (n.indexOf("ocean") >= 0 || n.indexOf("ocian") >= 0) return "ocean-clock";
+    if (n.indexOf("baby") >= 0 || n.indexOf("12 month") >= 0) return "photo-custom-clock";
+    if (n.indexOf("wood") >= 0 || n.indexOf("sea shell") >= 0) return "wood-resin-clock";
+    return "standard-resin-clock";
+  }
+
+  var GURUJI_ALLOWED_SUB = {
+    "guruji-frames": 1,
+    "guruji-fridge-magnets": 1,
+    "guruji-keychains": 1,
+  };
+  function normalizeGurujiProductSub(sub, name) {
+    var sid = String(sub || "").trim();
+    if (GURUJI_ALLOWED_SUB[sid]) return sid;
+    var n = String(name || "").toLowerCase();
+    if (n.indexOf("fridge") >= 0 || n.indexOf("megnet") >= 0 || n.indexOf("magnet") >= 0) return "guruji-fridge-magnets";
+    if (n.indexOf("keychain") >= 0) return "guruji-keychains";
+    return "guruji-frames";
+  }
+
+  var RESIN_KEYCHAINS_ALLOWED_SUB = {
+    "alphabet-keychain": 1,
+    "shape-keychain": 1,
+    "photo-or-logo-keychain": 1,
+    "name-keychain": 1,
+  };
+  function normalizeKeychainProductSub(sub, name) {
+    var sid = String(sub || "").trim();
+    if (RESIN_KEYCHAINS_ALLOWED_SUB[sid]) return sid;
+    var n = String(name || "").toLowerCase();
+    var lower = sid.toLowerCase();
+    if (lower === "all" || !sid) return "shape-keychain";
+    if (lower.indexOf("photo") >= 0 || lower.indexOf("logo") >= 0) return "photo-or-logo-keychain";
+    if (n.indexOf("photo") >= 0 || n.indexOf("logo") >= 0) return "photo-or-logo-keychain";
+    if (
+      n.indexOf("letter") >= 0 ||
+      n.indexOf("alphab") >= 0 ||
+      n.indexOf("alphabet") >= 0 ||
+      /(^|[^a-z])(a|b|c|g|k|p|r|s|v) letter/.test(n)
+    ) {
+      return "alphabet-keychain";
+    }
+    if (n.indexOf("shape") >= 0 || n.indexOf("heart") >= 0 || n.indexOf("round") >= 0 || n.indexOf("swastik") >= 0) {
+      return "shape-keychain";
+    }
+    if (n.indexOf("maa") >= 0 || n.indexOf("name") >= 0) return "name-keychain";
+    return "shape-keychain";
+  }
+
   function isListedProduct(p) {
-    return !!(p && p.listed !== false);
+    if (!p || p.listed === false) return false;
+    if (isDroppedResinCategory(p.category)) return false;
+    return true;
   }
 
   function countProductsInSub(catId, subId) {
@@ -395,6 +464,16 @@
       var sub = String(row.subcategory || "all").trim();
       var img = String(row.image || "").trim() || PLACEHOLDER_PRODUCT_IMAGE;
       if (!cat) return;
+      if (isDroppedResinCategory(cat)) return;
+      if (cat === "resin-clocks") {
+        sub = normalizeResinClockProductSub(sub, String(row.name || ""));
+      }
+      if (cat === "resin-guruji-products") {
+        sub = normalizeGurujiProductSub(sub, String(row.name || ""));
+      }
+      if (cat === "resin-keychains") {
+        sub = normalizeKeychainProductSub(sub, String(row.name || ""));
+      }
       var rawSl = row.sizeLabels || row.size_labels;
       if (typeof rawSl === "string") {
         try {
@@ -451,6 +530,12 @@
     if (!Array.isArray(list) || !list.length) {
       return 0;
     }
+    list = list.filter(function (c) {
+      return c && c.id && !isDroppedResinCategory(c.id);
+    });
+    if (!list.length) {
+      return 0;
+    }
     var allow = Object.create(null);
     list.forEach(function (c) {
       if (c && c.id) {
@@ -471,25 +556,49 @@
         return;
       }
       var subsRaw = Array.isArray(c.subcategories) ? c.subcategories : [];
-      var subs = subsRaw.length
-        ? subsRaw
-            .map(function (s) {
-              if (!s || !s.id) {
-                return null;
-              }
-              var o = { id: String(s.id).slice(0, 80), label: String(s.label || s.name || s.id).slice(0, 200) };
-              var im = (s.image != null && String(s.image).trim()) || (s.photo != null && String(s.photo).trim()) || "";
-              if (im) {
-                o.image = im.slice(0, 500);
-              }
-              return o;
-            })
-            .filter(Boolean)
-        : [{ id: "all", label: "All" }];
-      if (!subs.some(function (x) {
-        return x.id === "all";
-      })) {
-        subs.unshift({ id: "all", label: "All" });
+      var subs;
+      if (String(c.id).trim() === "resin-clocks") {
+        subs = [
+          { id: "standard-resin-clock", label: "Standard Resin Clock" },
+          { id: "photo-custom-clock", label: "Photo Custom Clock" },
+          { id: "ocean-clock", label: "Ocean Clock" },
+          { id: "geode-clock", label: "Geode Clock" },
+          { id: "wood-resin-clock", label: "Wood Resin Clock" },
+        ];
+      } else if (String(c.id).trim() === "resin-guruji-products") {
+        subs = [
+          { id: "guruji-frames", label: "Guruji Frames" },
+          { id: "guruji-fridge-magnets", label: "Guruji Fridge Magnets" },
+          { id: "guruji-keychains", label: "Guruji Keychains" },
+        ];
+      } else if (String(c.id).trim() === "resin-keychains") {
+        subs = [
+          { id: "alphabet-keychain", label: "Alphabet keychain" },
+          { id: "shape-keychain", label: "Shape keychain" },
+          { id: "photo-or-logo-keychain", label: "Photo or logo Keychain" },
+          { id: "name-keychain", label: "Name keychain" },
+        ];
+      } else {
+        subs = subsRaw.length
+          ? subsRaw
+              .map(function (s) {
+                if (!s || !s.id) {
+                  return null;
+                }
+                var o = { id: String(s.id).slice(0, 80), label: String(s.label || s.name || s.id).slice(0, 200) };
+                var im = (s.image != null && String(s.image).trim()) || (s.photo != null && String(s.photo).trim()) || "";
+                if (im) {
+                  o.image = im.slice(0, 500);
+                }
+                return o;
+              })
+              .filter(Boolean)
+          : [{ id: "all", label: "All" }];
+        if (!subs.some(function (x) {
+          return x.id === "all";
+        })) {
+          subs.unshift({ id: "all", label: "All" });
+        }
       }
       var row = {
         id: String(c.id).slice(0, 80),
@@ -513,6 +622,17 @@
           BY_CAT_SUB[cat.id][s.id] = [];
         }
       });
+    });
+    PRODUCTS.forEach(function (p) {
+      if (p && p.category === "resin-clocks") {
+        p.subcategory = normalizeResinClockProductSub(p.subcategory, p.name);
+      }
+      if (p && p.category === "resin-guruji-products") {
+        p.subcategory = normalizeGurujiProductSub(p.subcategory, p.name);
+      }
+      if (p && p.category === "resin-keychains") {
+        p.subcategory = normalizeKeychainProductSub(p.subcategory, p.name);
+      }
     });
     PRODUCTS.forEach(function (p) {
       var cat = p.category;
