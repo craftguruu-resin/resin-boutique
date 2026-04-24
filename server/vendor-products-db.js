@@ -627,6 +627,12 @@ function listAllProductsForManage(opts, cb) {
           if (Object.keys(comb).length) {
             row.sizeLabels = comb;
           }
+          if (p.gallery && Array.isArray(p.gallery) && p.gallery.length) {
+            row.gallery = p.gallery.slice();
+          }
+          if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
+            row.options = ov.options;
+          }
           out.push(row);
         });
 
@@ -657,6 +663,9 @@ function listAllProductsForManage(opts, cb) {
           });
           if (Object.keys(comb).length) {
             merged.sizeLabels = comb;
+          }
+          if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
+            merged.options = ov.options;
           }
           out.push(merged);
         });

@@ -38,6 +38,15 @@ function getProductsSummary() {
     if (sl && typeof sl === "object" && (sl.s || sl.m || sl.l)) {
       row.sizeLabels = sl;
     }
+    var g = p.gallery;
+    if (Array.isArray(g) && g.length) {
+      row.gallery = g
+        .map(function (x) {
+          return String(x || "").trim();
+        })
+        .filter(Boolean)
+        .slice(0, 24);
+    }
     return row;
   });
 }

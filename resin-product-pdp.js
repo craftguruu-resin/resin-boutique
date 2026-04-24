@@ -17,6 +17,7 @@
     imgIndex: 0,
     heroZoom: 1,
     _zoomUrl: "",
+    _lastHeroResolvedSrc: "",
     namePlateText: "",
     keychainAlpha: "",
     keychainName: "",
@@ -197,9 +198,24 @@
   }
 
   function productToMaterial(p) {
-    var opt = p.options && typeof p.options === "object" && (p.options.useSize || p.options.useColor || p.options.useQty)
-      ? p.options
-      : buildDefaultOptions(p);
+    var opt;
+    if (p.options && typeof p.options === "object" && (p.options.useSize || p.options.useColor || p.options.useQty)) {
+      try {
+        opt = JSON.parse(JSON.stringify(p.options));
+      } catch (_) {
+        opt = buildDefaultOptions(p);
+      }
+    } else {
+      opt = buildDefaultOptions(p);
+    }
+    var gi = Array.isArray(opt.galleryImages) ? opt.galleryImages.slice() : [];
+    if (Array.isArray(p.gallery)) {
+      p.gallery.forEach(function (u) {
+        u = String(u || "").trim();
+        if (u && gi.indexOf(u) < 0) gi.push(u);
+      });
+    }
+    opt.galleryImages = gi;
     var minP = Infinity;
     (opt.sizes || []).forEach(function (s) {
       var n = finMoney(s.priceInr);
@@ -211,10 +227,11 @@
       name: p.name,
       image: p.image,
       priceInr: minP,
-      mrpInr: null,
-      description: "",
+      mrpInr: opt.mrpInr != null ? Number(opt.mrpInr) : null,
+      description: String(p.description || opt.detailBody || "").trim(),
+      note: String(p.note || opt.shipNote || "").trim(),
       options: opt,
-      galleryImages: Array.isArray(p.gallery) ? p.gallery.slice() : [],
+      galleryImages: gi,
     };
   }
 
@@ -238,6 +255,36 @@
     try {
       window.open(u, "_blank", "noopener");
     } catch (_) {}
+  }
+
+  function fadeHeroImageIn(root) {
+    var hi = root.querySelector("#resinPdpHero");
+    if (!hi) return;
+    var src = hi.getAttribute("src") || "";
+    var prev = state._lastHeroResolvedSrc;
+    state._lastHeroResolvedSrc = src;
+    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      hi.style.opacity = "1";
+      hi.style.transition = "";
+      return;
+    }
+    hi.style.transition = "opacity 0.28s ease";
+    if (!prev || prev === src) {
+      hi.style.opacity = "1";
+      return;
+    }
+    hi.style.opacity = "0";
+    function reveal() {
+      hi.style.opacity = "1";
+    }
+    if (hi.complete && hi.naturalWidth > 0) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(reveal);
+      });
+    } else {
+      hi.addEventListener("load", reveal, { once: true });
+      hi.addEventListener("error", reveal, { once: true });
+    }
   }
 
   function normalizeHexClient(raw) {
@@ -304,6 +351,10 @@
         }
       }
     }
+    if (state._zoomUrl !== mainImg) {
+      state.heroZoom = 1;
+      state._zoomUrl = mainImg;
+    }
     var gcount = galleryUrlCountFrom(entries);
 
     var thumbs = "";
@@ -316,6 +367,8 @@
         syncAttr = ' data-gallery-sync="color" data-gallery-cid="' + escAttr(ent.cid) + '"';
       } else if (ent.kind === "size" && ent.sid) {
         syncAttr = ' data-gallery-sync="size" data-gallery-sid="' + escAttr(ent.sid) + '"';
+      } else if (ent.kind === "qty" && ent.qid) {
+        syncAttr = ' data-gallery-sync="qty" data-gallery-qid="' + escAttr(ent.qid) + '"';
       }
       thumbs +=
         '<button type="button" class="rm-pdp__thumb' +
@@ -423,6 +476,11 @@
     }
 
     var brandKicker = String(opt.brandLine || "").trim() || (D.getCategoryLabel ? D.getCategoryLabel(p.category) : "Resin");
+    var ratingNum = String(opt.ratingScore || "4.8").trim() || "4.8";
+    var revN =
+      opt.reviewCount != null && Number.isFinite(Number(opt.reviewCount))
+        ? Math.round(Number(opt.reviewCount))
+        : 214;
     var trust = (opt.trustBullets || [])
       .map(function (t) {
         return "<span>✓ " + esc(t) + "</span>";
@@ -454,13 +512,13 @@
           '<button type="button" class="rm-pdp__nav rm-pdp__nav--next" data-rm-gallery-nav="1" aria-label="Next image">›</button>'
         : "") +
       (mainImg
-        ? '<div class="rm-pdp__hero-zoom" data-rm-hero-zoom="1"><img id="resinPdpHero" src="' +
+        ? '<div class="rm-pdp__hero-zoom" id="resinPdpHeroZoom" title="Scroll to zoom in or out"><img id="resinPdpHero" src="' +
           escAttr(imgSrc(mainImg)) +
           '" alt="' +
           escAttr(m.name) +
           '" style="transform:scale(' +
           (state.heroZoom || 1) +
-          ')"/></div>'
+          ')"/></div><p class="rm-pdp__zoom-hint vs-muted" style="margin:0.35rem 0 0;font-size:0.78rem">Scroll on the image to zoom. Double-click to reset zoom when supported.</p>'
         : '<div class="band-empty">No image</div>') +
       "</div></div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
@@ -471,7 +529,12 @@
       esc(m.name) +
       "</h1>" +
       '<div class="rm-pdp__meta-rating-row">' +
-      '<div class="rm-pdp__stars-wrap"><div class="rm-pdp__stars" aria-hidden="true">★★★★★ <span class="rm-pdp__rating-num">4.8</span></div></div>' +
+      '<div class="rm-pdp__stars-wrap">' +
+      '<div class="rm-pdp__stars" aria-label="Customer rating">★★★★★ <span class="rm-pdp__rating-num">' +
+      esc(String(ratingNum)) +
+      '</span> <span class="rm-pdp__reviews">(' +
+      esc(String(revN)) +
+      " reviews)</span></div></div>" +
       '<div class="product-share-bar product-share-bar--rm-pdp" id="resinPdpShare" aria-label="Share"></div>' +
       '<button type="button" class="rm-pdp__bulk" id="resinPdpBulk">Need in bulk</button>' +
       "</div>" +
@@ -486,6 +549,11 @@
         ? '<span class="rm-pdp__save" id="resinPdpSave">' + pct + "% off</span>"
         : "") +
       "</div>" +
+      (m.description
+        ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose"><p>' +
+          esc(String(m.description).trim()).replace(/\n/g, "<br />") +
+          "</p></div></div>"
+        : "") +
       sizeHtml +
       qtyHtml +
       colHtml +
@@ -497,11 +565,14 @@
       state.lineQty +
       "</span>" +
       '<button type="button" data-rm-line-qty="1">+</button></div>' +
-      '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to cart</button></div>' +
+      '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to cart</button>' +
+      '<button type="button" class="rm-pdp__wish" id="resinPdpWish" aria-label="Save to wishlist">♡</button></div>' +
+      (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
       "</div></div></div>";
 
     root.innerHTML = html;
+    fadeHeroImageIn(root);
     if (window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       var sh = document.getElementById("resinPdpShare");
       if (sh) {
@@ -537,8 +608,12 @@
       var m = state.material;
       if (t.closest && t.closest(".rm-pdp__thumb")) {
         var b = t.closest(".rm-pdp__thumb");
-        var ix = Number(b.getAttribute("data-img-idx")) || 0;
-        state.imgIndex = ix;
+        state.imgIndex = Number(b.getAttribute("data-img-idx")) || 0;
+        var sync = b.getAttribute("data-gallery-sync");
+        if (sync === "color") state.sel.cid = b.getAttribute("data-gallery-cid") || "";
+        else if (sync === "size") state.sel.sid = b.getAttribute("data-gallery-sid") || "";
+        else if (sync === "qty") state.sel.qid = b.getAttribute("data-gallery-qid") || "";
+        state.heroZoom = 1;
         renderPdp(document.getElementById("productRoot"));
         return;
       }
@@ -574,6 +649,10 @@
       }
       if (t.getAttribute("data-qid") != null) {
         state.sel.qid = t.getAttribute("data-qid");
+        var gq = galleryEntries(m, state.sel);
+        var ixq = state.sel.cid ? indexForCid(gq, state.sel.cid) : 0;
+        state.imgIndex = ixq >= 0 ? ixq : 0;
+        state.heroZoom = 1;
         renderPdp(document.getElementById("productRoot"));
         return;
       }
@@ -606,6 +685,10 @@
         renderPdp(document.getElementById("productRoot"));
         return;
       }
+      if (t.closest("#resinPdpWish")) {
+        t.closest("#resinPdpWish").classList.toggle("is-on");
+        return;
+      }
       if (t.id === "resinPdpAdd" || (t.closest && t.closest("#resinPdpAdd"))) {
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
@@ -626,6 +709,33 @@
         return;
       }
     });
+
+    root.addEventListener("dblclick", function (ev) {
+      var hz = ev.target && ev.target.closest && ev.target.closest("#resinPdpHeroZoom");
+      if (!hz || !root.contains(hz)) return;
+      state.heroZoom = 1;
+      var hi0 = root.querySelector("#resinPdpHero");
+      if (hi0) hi0.style.transform = "scale(1)";
+      hz.style.cursor = "zoom-in";
+    });
+
+    root.addEventListener(
+      "wheel",
+      function (ev) {
+        var zoomEl = ev.target && ev.target.closest && ev.target.closest("#resinPdpHeroZoom");
+        if (!zoomEl || !state.material) return;
+        var heroImg = root.querySelector("#resinPdpHero");
+        if (!heroImg) return;
+        ev.preventDefault();
+        var z = state.heroZoom || 1;
+        var d = ev.deltaY > 0 ? -0.1 : 0.1;
+        z = Math.min(3, Math.max(1, z + d));
+        state.heroZoom = z;
+        heroImg.style.transform = "scale(" + z + ")";
+        zoomEl.style.cursor = z > 1 ? "grab" : "zoom-in";
+      },
+      { passive: false }
+    );
   }
 
   var pRef = null;
@@ -638,6 +748,7 @@
     state.namePlateText = "";
     state.keychainAlpha = "";
     state.keychainName = "";
+    state._lastHeroResolvedSrc = "";
     syncDefaults(state.material);
     document.body.classList.add("page-product--resin-rm", "rm-page-wide");
     document.title = product.name + " — Craft guru";

@@ -73,7 +73,7 @@
           <h2 class="vs-card__title" style="margin-top: 0">Edit product</h2>
           <p class="vs-muted" style="margin-top: 0">Product id: <code id="vpmEditId"></code></p>
           <p id="vpmCatalogNote" class="vs-muted" style="margin-top: 0; display: none">
-            Catalog listing: change <strong>prices</strong>, optional <strong>size labels</strong> (shown on product, cart, checkout), or <strong>discontinue / set active</strong> (syncs with inventory pickers). Name and image stay on the bundled site catalog.
+            Catalog listing: change <strong>prices</strong>, optional <strong>size labels</strong>, <strong>Advanced guest PDP</strong> (same variant UI as resin raw materials), or <strong>discontinue / set active</strong>. Name and main catalog image stay in bundled data unless you use HTTPS URLs in the advanced block.
           </p>
           <div class="vs-field">
             <label for="vpmName">Name</label>
@@ -125,6 +125,49 @@
               Shown on the product page as thumbnails with the main image. Catalog-only rows keep images in the bundled site data; this field applies when you edit a vendor-created product.
             </p>
           </div>
+
+          <details class="vpm-adv" style="margin-top: 1rem; border: 1px solid rgba(15, 23, 42, 0.1); border-radius: 10px; padding: 0.65rem 0.85rem">
+            <summary class="vs-card__title" style="cursor: pointer; font-size: 1rem; margin: 0">
+              Advanced guest PDP (same as resin raw materials)
+            </summary>
+            <p class="vs-muted" style="margin: 0.5rem 0 0.75rem">
+              Optional size, pack/quantity, and colour rows with per-row prices and image URLs. Saved to the catalog override so the resin product page uses the same layout as raw material PDPs.
+            </p>
+            <div class="vs-row" style="display: flex; flex-wrap: wrap; gap: 1rem; margin-bottom: 0.5rem">
+              <label class="vs-field" style="margin: 0; display: flex; align-items: center; gap: 0.35rem">
+                <input type="checkbox" id="vpmUseSize" />
+                <span>Size options</span>
+              </label>
+              <label class="vs-field" style="margin: 0; display: flex; align-items: center; gap: 0.35rem">
+                <input type="checkbox" id="vpmUseQty" />
+                <span>Pack / quantity</span>
+              </label>
+              <label class="vs-field" style="margin: 0; display: flex; align-items: center; gap: 0.35rem">
+                <input type="checkbox" id="vpmUseColor" />
+                <span>Colours</span>
+              </label>
+            </div>
+            <div class="vs-field" style="margin-top: 0.35rem">
+              <label for="vpmHero">Hero image URL (optional)</label>
+              <input type="url" id="vpmHero" class="vs-input" maxlength="2000" placeholder="https://…" />
+            </div>
+            <div class="vs-field" style="margin-top: 0.35rem">
+              <label for="vpmBadge">Badge text (optional)</label>
+              <input type="text" id="vpmBadge" class="vs-input" maxlength="120" placeholder="e.g. New" />
+            </div>
+            <div class="vs-field" style="margin-top: 0.35rem">
+              <label for="vpmTrust">Trust bullets (one per line)</label>
+              <textarea id="vpmTrust" rows="3" maxlength="2000" placeholder="✓ line per row"></textarea>
+            </div>
+            <div class="vs-field" style="margin-top: 0.35rem">
+              <label for="vpmOptGallery">Extra gallery URLs for PDP (optional)</label>
+              <textarea id="vpmOptGallery" rows="3" maxlength="8000" placeholder="One HTTPS URL per line — merged with colour/size images on the guest page."></textarea>
+            </div>
+            <div id="vpmSizesBlock" style="margin-top: 0.65rem"></div>
+            <div id="vpmQtyBlock" style="margin-top: 0.65rem"></div>
+            <div id="vpmColorsBlock" style="margin-top: 0.65rem"></div>
+          </details>
+
           <div class="vpm-return-gift-block vpm-return-gift-block--toolbar" style="margin-top: 0.75rem">
             <p class="vpm-return-gift-block__title">Return gift (guest)</p>
             <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Return gifts listing">
@@ -149,6 +192,7 @@
   </div>
 
   <script src="vendor-shell.js"></script>
+  <script src="vendor-catalog-pdp-options.js"></script>
   <script src="vendor-products-manage.js"></script>
 </body>
 </html>

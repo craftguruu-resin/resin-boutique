@@ -223,6 +223,9 @@
     var note = document.getElementById("vpmCatalogNote");
     if (note) note.style.display = editingSource === "catalog" ? "block" : "none";
     setCatalogFormDisabled(editingSource === "catalog");
+    if (window.VendorCatalogPdpOptions) {
+      window.VendorCatalogPdpOptions.fillEditorsFromOptions(p.options || null);
+    }
     showMsg("", false);
     try {
       card && card.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -237,6 +240,7 @@
     setCatalogFormDisabled(false);
     var note = document.getElementById("vpmCatalogNote");
     if (note) note.style.display = "none";
+    if (window.VendorCatalogPdpOptions) window.VendorCatalogPdpOptions.clearEditors();
     showMsg("", false);
   }
 
@@ -357,7 +361,11 @@
     var returnGift = !!(document.getElementById("vpmReturnGiftYes") && document.getElementById("vpmReturnGiftYes").checked);
 
     if (editingSource === "catalog") {
-      putCatalogPrices(editingId, {
+      var advOpt =
+        window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
+          ? window.VendorCatalogPdpOptions.readOptionsFromForm()
+          : undefined;
+      var catBody = {
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
@@ -365,7 +373,9 @@
         sizeLabelS: String((document.getElementById("vpmLblS") && document.getElementById("vpmLblS").value) || "").trim(),
         sizeLabelM: String((document.getElementById("vpmLblM") && document.getElementById("vpmLblM").value) || "").trim(),
         sizeLabelL: String((document.getElementById("vpmLblL") && document.getElementById("vpmLblL").value) || "").trim(),
-      })
+      };
+      if (advOpt !== undefined) catBody.options = advOpt;
+      putCatalogPrices(editingId, catBody)
         .then(function () {
           showMsg("Saved.", false);
           refreshGuestCatalogMerge();
@@ -423,7 +433,13 @@
         });
       })
       .then(function () {
-        return putCatalogPrices(editingId, { returnGift: returnGift });
+        var advOpt2 =
+          window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
+            ? window.VendorCatalogPdpOptions.readOptionsFromForm()
+            : undefined;
+        var pb = { returnGift: returnGift };
+        if (advOpt2 !== undefined) pb.options = advOpt2;
+        return putCatalogPrices(editingId, pb);
       })
       .then(function () {
         showMsg("Saved.", false);
@@ -446,6 +462,9 @@
 
   function boot() {
     if (V.injectSidebar) V.injectSidebar();
+    if (window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.boot === "function") {
+      window.VendorCatalogPdpOptions.boot();
+    }
 
     document.getElementById("vpmRefresh").addEventListener("click", function () {
       loadList();
