@@ -11,6 +11,12 @@ var t = fs.readFileSync(p, "utf8");
 
 var cStart = t.indexOf("var CATEGORIES = [");
 var cEnd = t.indexOf("];\n\n  var SIZE_LABELS");
+if (cEnd < 0) {
+  cEnd = t.indexOf("];\n\n  var PRODUCTS");
+}
+if (cEnd < 0) {
+  throw new Error("data.js: could not find end of CATEGORIES (expected SIZE_LABELS or PRODUCTS after ])");
+}
 var CATEGORIES = JSON.parse(t.slice(cStart + "var CATEGORIES = ".length, cEnd + 1));
 
 var pStart = t.indexOf("var PRODUCTS = [");
@@ -170,6 +176,12 @@ PRODUCTS.forEach(function (pr) {
 });
 
 var catLine = "  var CATEGORIES = " + JSON.stringify(CATEGORIES) + ";\n";
+var sizeLabelsLine =
+  "  var SIZE_LABELS = {\n" +
+  '    s: { key: "s", name: "Compact", hint: "Smallest pour" },\n' +
+  '    m: { key: "m", name: "Classic", hint: "Most popular" },\n' +
+  '    l: { key: "l", name: "Grand", hint: "Largest format" },\n' +
+  "  };\n\n";
 var prodLine = "  var PRODUCTS = " + JSON.stringify(PRODUCTS) + ";\n\n";
 var byIdBlock = "  var BY_ID = {};\n  PRODUCTS.forEach(function (p) { BY_ID[p.id] = p; });\n\n";
 var byCatLine = "  var BY_CAT = " + JSON.stringify(BY_CAT) + ";\n";
@@ -193,6 +205,6 @@ var afterStart = t.indexOf("  var SIZE_DEFAULT =");
 if (afterStart < 0) throw new Error("SIZE_DEFAULT not found");
 var after = t.slice(afterStart);
 
-var out = before + catLine + "\n" + prodLine + byIdBlock + byCatLine + subBlock + "\n" + after;
+var out = before + catLine + "\n" + sizeLabelsLine + prodLine + byIdBlock + byCatLine + subBlock + "\n" + after;
 fs.writeFileSync(p, out, "utf8");
 console.log("Wrote", p, "products:", PRODUCTS.length, "categories:", CATEGORIES.length);
