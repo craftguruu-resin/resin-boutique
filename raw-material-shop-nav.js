@@ -58,7 +58,14 @@
       if (!sid) continue;
       for (var j = 0; j < mats.length; j++) {
         var m = mats[j];
-        if (String(m.baseCategorySlug || "").trim() === bid && String(m.subcategorySlug || "").trim() === sid) {
+        if (
+          String(m.baseCategorySlug || "")
+            .trim()
+            .toLowerCase() === bid.toLowerCase() &&
+          String(m.subcategorySlug || "")
+            .trim()
+            .toLowerCase() === sid.toLowerCase()
+        ) {
           return sid;
         }
       }

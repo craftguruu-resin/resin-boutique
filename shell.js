@@ -35,10 +35,58 @@
     if (c) c.textContent = String(CART.countItems());
   }
 
-  function renderDrawer() {
-    var list = document.getElementById("cartList");
+  function patchCartSubtotal() {
     var sub = document.getElementById("cartSubtotal");
     if (sub) sub.textContent = CART.formatMoney(CART.subtotal());
+  }
+
+  function findCartLine(id, size, ex) {
+    var lines = CART.load();
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var xk = ex == null || ex === "" ? "" : String(ex);
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+      if (
+        l.id === sid &&
+        l.size === ss &&
+        (CART.lineExtraKey ? CART.lineExtraKey(l.lineExtra) : "") === xk
+      ) {
+        return l;
+      }
+    }
+    return null;
+  }
+
+  function patchCartLineFromButton(qBtn) {
+    var id = qBtn.getAttribute("data-line-id");
+    var size = qBtn.getAttribute("data-line-size");
+    var xk = qBtn.getAttribute("data-line-extrak");
+    var line = findCartLine(id, size, xk);
+    var li = qBtn.closest ? qBtn.closest(".cart-item") : null;
+    if (!line || !li) return false;
+    var num = li.querySelector(".cart-item-qty-num");
+    if (num) num.textContent = String(line.qty);
+    var span = li.querySelector(".cart-item-info span");
+    if (span) {
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D && D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
+      span.textContent =
+        String(sz || "") +
+        " · Qty " +
+        line.qty +
+        " · " +
+        CART.formatMoney(line.price) +
+        " each";
+    }
+    patchCartSubtotal();
+    return true;
+  }
+
+  function renderDrawer() {
+    var list = document.getElementById("cartList");
+    patchCartSubtotal();
     if (!list) return;
     var lines = CART.load();
     if (lines.length === 0) {
@@ -53,6 +101,14 @@
       var imgRel = getLineImage(line);
       var li = document.createElement("li");
       li.className = "cart-item";
+      li.setAttribute(
+        "data-cart-key",
+        String(line.id || "") +
+          "::" +
+          String(line.size || "") +
+          "::" +
+          (CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "")
+      );
       var imgBlock = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" width="56" height="56" />'
         : '<span class="cart-item__ph" aria-hidden="true"></span>';
@@ -166,7 +222,7 @@
         var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
         CART.incrementLine(id, size, d, xk);
         updateBadge();
-        renderDrawer();
+        if (!patchCartLineFromButton(q)) renderDrawer();
       });
     }
 

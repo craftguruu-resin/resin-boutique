@@ -186,12 +186,25 @@
         image: p.image,
       };
     });
+    var colors = [];
+    if (Array.isArray(p.gallery)) {
+      p.gallery.forEach(function (url, idx) {
+        url = String(url || "").trim();
+        if (!url) return;
+        colors.push({
+          id: "gal-" + idx,
+          label: "Option " + (idx + 1),
+          hex: "#b8a99a",
+          image: url,
+        });
+      });
+    }
     return {
       useSize: true,
       useQty: false,
-      useColor: false,
+      useColor: colors.length > 1,
       sizes: sizes,
-      colors: [],
+      colors: colors,
       brandLine: (D.getCategoryLabel ? D.getCategoryLabel(p.category) : "") + " · Resin",
       trustBullets: ["Hand-finished in Jaipur", "MRP includes GST", "Secure checkout"],
     };
@@ -216,6 +229,7 @@
       });
     }
     opt.galleryImages = gi;
+    if (opt.colors && opt.colors.length && !opt.useColor) opt.useColor = true;
     var minP = Infinity;
     (opt.sizes || []).forEach(function (s) {
       var n = finMoney(s.priceInr);
@@ -257,33 +271,72 @@
     } catch (_) {}
   }
 
-  function fadeHeroImageIn(root) {
+  function shellNeedsRebuild(root, m, galleryUrlCount) {
+    if (!root || !m) return true;
+    var shell = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
+    if (!shell) return true;
+    if (String(shell.getAttribute("data-resin-material-id") || "") !== String(m.id)) return true;
+    var track = root.querySelector(".rm-pdp-thumb-track");
+    var thumbN = track ? track.querySelectorAll(".rm-pdp__thumb").length : 0;
+    if (thumbN !== galleryUrlCount) return true;
+    var needNav = galleryUrlCount > 1;
+    if (!!root.querySelector(".rm-pdp__nav--prev") !== needNav) return true;
+    if (!root.querySelector("#resinPdpHero") && galleryUrlCount > 0) return true;
+    if (!root.querySelector("#resinPdpShare")) return true;
+    return false;
+  }
+
+  function patchPdpView(root, m, entries, idx, mainImg, eff, effM, pct) {
+    var resolved = mainImg ? imgSrc(mainImg) : "";
     var hi = root.querySelector("#resinPdpHero");
-    if (!hi) return;
-    var src = hi.getAttribute("src") || "";
-    var prev = state._lastHeroResolvedSrc;
-    state._lastHeroResolvedSrc = src;
-    if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      hi.style.opacity = "1";
-      hi.style.transition = "";
-      return;
+    var wrap = root.querySelector("#resinPdpHeroZoom");
+    if (hi && resolved) {
+      if (hi.getAttribute("src") !== resolved) hi.setAttribute("src", resolved);
+      hi.setAttribute("alt", m.name || "");
+      hi.style.transform = "scale(" + (state.heroZoom || 1) + ")";
+      state._lastHeroResolvedSrc = resolved;
+      if (wrap) wrap.style.cursor = state.heroZoom > 1 ? "grab" : "zoom-in";
     }
-    hi.style.transition = "opacity 0.28s ease";
-    if (!prev || prev === src) {
-      hi.style.opacity = "1";
-      return;
+    var pr = root.querySelector("#resinPdpPrice");
+    if (pr) pr.textContent = CART.formatMoney(eff);
+    var mrpEl = root.querySelector("#resinPdpMrp");
+    var saveEl = root.querySelector("#resinPdpSave");
+    var showMrp = effM != null && Number(effM) > Number(eff);
+    if (mrpEl) {
+      if (showMrp) {
+        mrpEl.textContent = CART.formatMoney(effM);
+        mrpEl.removeAttribute("hidden");
+      } else {
+        mrpEl.textContent = "";
+        mrpEl.setAttribute("hidden", "");
+      }
     }
-    hi.style.opacity = "0";
-    function reveal() {
-      hi.style.opacity = "1";
+    if (saveEl) {
+      if (pct != null) {
+        saveEl.textContent = pct + "% off";
+        saveEl.removeAttribute("hidden");
+      } else {
+        saveEl.textContent = "";
+        saveEl.setAttribute("hidden", "");
+      }
     }
-    if (hi.complete && hi.naturalWidth > 0) {
-      requestAnimationFrame(function () {
-        requestAnimationFrame(reveal);
-      });
-    } else {
-      hi.addEventListener("load", reveal, { once: true });
-      hi.addEventListener("error", reveal, { once: true });
+    root.querySelectorAll(".rm-pdp__thumb").forEach(function (btn) {
+      btn.classList.toggle("is-active", Number(btn.getAttribute("data-img-idx")) === idx);
+    });
+    root.querySelectorAll(".rm-color-swatch[data-cid]").forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-cid")) === String(state.sel.cid));
+    });
+    root.querySelectorAll('.rm-opt-pills[data-rm-opt="size"] .rm-opt-pill[data-sid]').forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-sid")) === String(state.sel.sid));
+    });
+    root.querySelectorAll('.rm-opt-pills[data-rm-opt="qty"] .rm-opt-pill[data-qid]').forEach(function (btn) {
+      btn.classList.toggle("is-on", String(btn.getAttribute("data-qid")) === String(state.sel.qid));
+    });
+    var lqv = root.querySelector("[data-rm-line-qty-val]");
+    if (lqv) lqv.textContent = String(state.lineQty);
+    if (window.RESIN_WISHLIST && state.product) {
+      var w = root.querySelector("#resinPdpWish");
+      if (w) window.RESIN_WISHLIST.syncButton(w, state.product.id);
     }
   }
 
@@ -356,6 +409,14 @@
       state._zoomUrl = mainImg;
     }
     var gcount = galleryUrlCountFrom(entries);
+    var eff = effectivePriceInr(m, state.sel);
+    var effM = effectiveMrpInr(m, state.sel);
+    var pct = discountPctFor(m, state.sel);
+
+    if (!shellNeedsRebuild(root, m, gcount)) {
+      patchPdpView(root, m, entries, idx, mainImg, eff, effM, pct);
+      return;
+    }
 
     var thumbs = "";
     for (var ti = 0; ti < entries.length; ti++) {
@@ -448,9 +509,6 @@
         "</div></div>";
     }
 
-    var eff = effectivePriceInr(m, state.sel);
-    var effM = effectiveMrpInr(m, state.sel);
-    var pct = discountPctFor(m, state.sel);
     var p = state.product;
     var customHtml = "";
     if (p && p.category === "resin-name-plates") {
@@ -497,7 +555,9 @@
       "</a> <span class=\"crumb-sep\">/</span> <span class=\"crumb-current\">" +
       esc(p.name) +
       "</span></nav>" +
-      '<div class="rm-pdp rm-pdp--modern" data-resin-pdp="1">' +
+      '<div class="rm-pdp rm-pdp--modern" data-resin-pdp="1" data-resin-material-id="' +
+      escAttr(m.id) +
+      '">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
       '<div class="rm-pdp-thumb-col">' +
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
@@ -572,7 +632,10 @@
       "</div></div></div>";
 
     root.innerHTML = html;
-    fadeHeroImageIn(root);
+    if (window.RESIN_WISHLIST && state.product) {
+      var wishBtn = document.getElementById("resinPdpWish");
+      if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id);
+    }
     if (window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       var sh = document.getElementById("resinPdpShare");
       if (sh) {
@@ -682,11 +745,16 @@
       if (t.getAttribute("data-rm-line-qty") != null) {
         var d = Number(t.getAttribute("data-rm-line-qty")) || 0;
         state.lineQty = Math.max(1, Math.min(99, state.lineQty + d));
-        renderPdp(document.getElementById("productRoot"));
+        var lqv = root.querySelector("[data-rm-line-qty-val]");
+        if (lqv) lqv.textContent = String(state.lineQty);
         return;
       }
       if (t.closest("#resinPdpWish")) {
-        t.closest("#resinPdpWish").classList.toggle("is-on");
+        var wishEl = t.closest("#resinPdpWish");
+        if (window.RESIN_WISHLIST && state.product && wishEl) {
+          window.RESIN_WISHLIST.toggle(state.product.id);
+          window.RESIN_WISHLIST.syncButton(wishEl, state.product.id);
+        }
         return;
       }
       if (t.id === "resinPdpAdd" || (t.closest && t.closest("#resinPdpAdd"))) {

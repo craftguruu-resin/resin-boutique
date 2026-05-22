@@ -226,7 +226,7 @@
         '<div class="product-card__media">' +
         '<img src="' +
         escAttr(imgSrc(p.image)) +
-        '" alt="" loading="lazy" width="600" height="450" />' +
+        '" alt="" loading="lazy" decoding="async" />' +
         "</div>" +
         "</div>" +
         '<div class="product-card-body">' +

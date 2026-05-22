@@ -123,25 +123,8 @@
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
 
-  function bindCardTilt(cards) {
-    if (prefersReducedMotion()) return;
-    cards.forEach(function (card) {
-      card.addEventListener(
-        "mousemove",
-        function (e) {
-          var r = card.getBoundingClientRect();
-          var x = (e.clientX - r.left) / r.width - 0.5;
-          var y = (e.clientY - r.top) / r.height - 0.5;
-          card.style.setProperty("--ty", (x * 11).toFixed(2) + "deg");
-          card.style.setProperty("--tx", (y * -9).toFixed(2) + "deg");
-        },
-        { passive: true }
-      );
-      card.addEventListener("mouseleave", function () {
-        card.style.setProperty("--tx", "0deg");
-        card.style.setProperty("--ty", "0deg");
-      });
-    });
+  function bindCardTilt() {
+    /* Disabled — mousemove tilt caused repaint flicker on card interaction */
   }
 
   /** Deterministic “curated” order so list does not jump when prices refresh in the background. */
@@ -471,7 +454,7 @@
         '<div class="product-card__media">' +
         '<img src="' +
         escapeAttr(imgSrc(p.image)) +
-        '" alt="" loading="lazy" width="600" height="450" />' +
+        '" alt="" loading="lazy" decoding="async" />' +
         "</div>" +
         "</div>" +
         '<div class="product-card-body">' +
@@ -500,8 +483,6 @@
         window.CRAFTGURU_SHARE.mountCardShare(sbtn, { id: p.id, name: p.name });
       }
     });
-
-    bindCardTilt(Array.prototype.slice.call(els.productGrid.querySelectorAll(".product-card")));
 
     if (els.pager) {
       els.pager.innerHTML = "";
@@ -622,8 +603,37 @@
     renderProductList(result, activeSubId, labelForList, multiSub ? subLabelForList : "");
   }
 
+  function patchProductGridPrices() {
+    if (!els.productGrid) return;
+    var cards = els.productGrid.querySelectorAll(".product-card[data-product-id]");
+    if (!cards.length) return;
+    cards.forEach(function (card) {
+      var id = card.getAttribute("data-product-id");
+      if (!id || !D.getProduct) return;
+      var p = D.getProduct(id);
+      if (!p) return;
+      var minP = minPrice(p);
+      card.setAttribute("data-min-price", String(minP));
+      var fromEl = card.querySelector(".product-card__from");
+      if (fromEl) {
+        var nSizes = D.countOfferedSizesForProduct ? D.countOfferedSizesForProduct(p) : 3;
+        fromEl.textContent =
+          "From " +
+          CART.formatMoney(minP) +
+          " · " +
+          nSizes +
+          " size" +
+          (nSizes === 1 ? "" : "s");
+      }
+    });
+  }
+
   window.addEventListener("craftguruCatalogPricesMerged", function () {
-    applyCatalogFilters(false);
+    if (els.productGrid && els.productGrid.querySelectorAll(".product-card[data-product-id]").length) {
+      patchProductGridPrices();
+    } else {
+      applyCatalogFilters(false);
+    }
   });
 
   render();

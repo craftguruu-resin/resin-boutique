@@ -310,14 +310,16 @@ a.rm-empty-link:hover {
 }
 
 .rm-card-shop__img {
-  aspect-ratio: 4/3;
+  aspect-ratio: auto;
   background: #f1f5f9;
+  line-height: 0;
 }
 
 .rm-card-shop__img img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
+  display: block;
 }
 
 .rm-card-shop__body {

@@ -220,8 +220,8 @@
     var n = String(hub.needle || "")
       .trim()
       .toLowerCase();
-    if (b && String(m.baseCategorySlug || "").trim() !== b) return false;
-    if (s && String(m.subcategorySlug || "").trim() !== s) return false;
+    if (b && !slugEq(m.baseCategorySlug, b)) return false;
+    if (s && !slugEq(m.subcategorySlug, s)) return false;
     if (n) {
       var name = String(m.name || "").toLowerCase();
       var sku = String(m.sku || "").toLowerCase();
@@ -238,7 +238,7 @@
 
   /** Hub cards count only materials with an explicit base taxonomy slug (no name-based guessing). */
   function materialBelongsToHubCategory(m, c) {
-    return String(m.baseCategorySlug || "").trim() === c.id;
+    return slugEq(m.baseCategorySlug, c.id);
   }
 
   function minPriceForCategoryHubCard(c, mats, cats, hubN) {
@@ -253,14 +253,25 @@
     return best === Infinity ? 0 : best;
   }
 
+  function slugEq(a, b) {
+    return (
+      String(a || "")
+        .trim()
+        .toLowerCase() ===
+      String(b || "")
+        .trim()
+        .toLowerCase()
+    );
+  }
+
   function materialsMatchFilters(m, base, sub, needle) {
     var b = String(base || "").trim();
     var s = String(sub || "").trim();
     var n = String(needle || "")
       .trim()
       .toLowerCase();
-    if (b && String(m.baseCategorySlug || "").trim() !== b) return false;
-    if (s && String(m.subcategorySlug || "").trim() !== s) return false;
+    if (b && !slugEq(m.baseCategorySlug, b)) return false;
+    if (s && !slugEq(m.subcategorySlug, s)) return false;
     if (n) {
       var sku = String(m.sku || "").toLowerCase();
       var name = String(m.name || "").toLowerCase();
@@ -554,7 +565,7 @@
         escAttr(href) +
         '">' +
         '<div class="rm-card-shop__img">' +
-        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" width="400" height="300" />' : "") +
+        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" decoding="async" />' : "") +
         "</div>" +
         '<div class="rm-card-shop__body">' +
         '<span class="rm-card-shop__brand">Craft Guru</span>' +
@@ -616,6 +627,11 @@
     var rows = allMaterials.filter(function (m) {
       return materialsMatchFilters(m, par.base, par.sub, needle);
     });
+    if (!rows.length && par.base && par.sub && allMaterials.length) {
+      rows = allMaterials.filter(function (m) {
+        return materialsMatchFilters(m, par.base, "", needle);
+      });
+    }
     render(rows);
   }
 

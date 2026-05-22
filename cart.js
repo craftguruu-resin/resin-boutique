@@ -380,6 +380,70 @@
     }
   }
 
+  var WISH_KEY = "resin_wishlist_v1";
+
+  function loadWishlistIds() {
+    try {
+      var raw = global.localStorage.getItem(WISH_KEY);
+      if (!raw) return [];
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      var out = [];
+      parsed.forEach(function (id) {
+        id = String(id || "").trim();
+        if (id && out.indexOf(id) < 0) out.push(id);
+      });
+      return out;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function saveWishlistIds(ids) {
+    try {
+      global.localStorage.setItem(WISH_KEY, JSON.stringify(ids || []));
+    } catch (_) {}
+    try {
+      global.dispatchEvent(new CustomEvent("resinWishlistChanged"));
+    } catch (_) {}
+  }
+
+  function hasWishlist(id) {
+    var pid = String(id || "").trim();
+    if (!pid) return false;
+    return loadWishlistIds().indexOf(pid) >= 0;
+  }
+
+  function toggleWishlist(id) {
+    var pid = String(id || "").trim();
+    if (!pid) return false;
+    var ids = loadWishlistIds();
+    var ix = ids.indexOf(pid);
+    if (ix >= 0) {
+      ids.splice(ix, 1);
+      saveWishlistIds(ids);
+      return false;
+    }
+    ids.push(pid);
+    saveWishlistIds(ids);
+    return true;
+  }
+
+  function syncWishlistButton(btn, id) {
+    if (!btn) return;
+    var on = hasWishlist(id);
+    btn.classList.toggle("is-on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.setAttribute("aria-label", on ? "Remove from wishlist" : "Save to wishlist");
+  }
+
+  global.RESIN_WISHLIST = {
+    load: loadWishlistIds,
+    has: hasWishlist,
+    toggle: toggleWishlist,
+    syncButton: syncWishlistButton,
+  };
+
   global.RESIN_CART = {
     ANON_CART_KEY: ANON_CART_KEY,
     storageKey: storageKey,

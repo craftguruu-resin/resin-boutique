@@ -303,6 +303,10 @@
     });
     var lqv = root.querySelector("#rmLineQtyVal");
     if (lqv) lqv.textContent = String(state.lineQty);
+    if (window.RESIN_WISHLIST && m) {
+      var w = root.querySelector("#rmPdpWish");
+      if (w) window.RESIN_WISHLIST.syncButton(w, m.id);
+    }
   }
 
   function wirePdpRootOnce(root) {
@@ -424,7 +428,10 @@
 
       var wish = t.closest("#rmPdpWish");
       if (wish) {
-        wish.classList.toggle("is-on");
+        if (window.RESIN_WISHLIST && state.material) {
+          window.RESIN_WISHLIST.toggle(state.material.id);
+          window.RESIN_WISHLIST.syncButton(wish, state.material.id);
+        }
         return;
       }
 

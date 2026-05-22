@@ -213,7 +213,7 @@
         escAttr(href) +
         '" data-pf-pdp="1">' +
         '<div class="rm-card-shop__img">' +
-        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" width="400" height="300" />' : "") +
+        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" decoding="async" />' : "") +
         "</div>" +
         '<div class="rm-card-shop__body">' +
         '<span class="rm-card-shop__brand">Craft Guru</span>' +

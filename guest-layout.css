@@ -16,6 +16,10 @@
   flex: 1 1 12rem;
   min-width: 0;
   max-width: min(22rem, 46vw);
+  border: 1px solid rgba(15, 18, 24, 0.1);
+  border-radius: 999px;
+  padding: 0.12rem 0.2rem 0.12rem 0.1rem;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .guest-header-search__icon {
@@ -36,7 +40,7 @@
   min-width: 0;
   width: auto;
   border-radius: 999px;
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  border: 1px solid rgba(15, 18, 24, 0.14);
   background: rgba(255, 255, 255, 0.14);
   color: var(--ink, #0f1218);
   font: inherit;
@@ -267,11 +271,11 @@ body.guest-site .global-find {
 }
 
 .product-card__media img {
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: none;
 }
 
 .product-card:hover .product-card__media img {
-  transform: scale(1.07);
+  transform: none;
 }
 
 .product-hero-img--zoomhost img {
@@ -1158,6 +1162,16 @@ body.guest-site:not(.page-home) .guest-page-category-rail .pf-rail-lines__pill {
 /* Photo frames: hide “Browse by line” block while CRAFT_PF_NAV_LINES_HIDDEN is on (photo-frame-nav.js). */
 body.pf-nav-lines-empty .pf-home-below,
 body.pf-nav-lines-empty #photoFrameNavGrid {
+  display: none !important;
+}
+
+/* Guest storefront: search-only discovery — hide sort/price/view filter toolbars */
+body:not(.vendor-saas) .cg-filter-panel,
+body:not(.vendor-saas) #homeFeaturedToolbar,
+body:not(.vendor-saas) #rgToolbar,
+body:not(.vendor-saas) .rm-filter-toolbar,
+body:not(.vendor-saas) #globalFindSortWrap,
+body:not(.vendor-saas) #globalFindCategoryFilterWrap {
   display: none !important;
 }
 

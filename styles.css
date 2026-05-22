@@ -1111,7 +1111,7 @@ main {
 
 .product-card-image {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: auto;
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: linear-gradient(160deg, #5a6a82, #3d4658);
@@ -1248,14 +1248,16 @@ main {
 
 .product-card__media {
   width: 100%;
-  height: 100%;
+  line-height: 0;
 }
 
 .product-card__media img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
   display: block;
+  vertical-align: middle;
 }
 
 /* Grey the whole photo area (image + badge read as one muted block). */
@@ -6966,7 +6968,7 @@ a.home-auth-btn {
 
 .featured-cat-card__media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: auto;
   overflow: hidden;
   border-radius: 0;
   background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
@@ -6978,8 +6980,8 @@ a.home-auth-btn {
 
 .featured-cat-card__media img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
   display: block;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }

@@ -632,7 +632,7 @@
           escapeAttr(cat.label) +
           ' — photos"><div class="featured-cat-card__media"><img src="' +
           escapeAttr(imgUrl(imgRel)) +
-          '" alt="" loading="lazy" width="640" height="480" /></div></a>'
+          '" alt="" loading="lazy" decoding="async" /></div></a>'
         : '<a class="featured-cat-card__media-hit" href="' +
           catHref +
           '" aria-label="Browse ' +
@@ -663,7 +663,6 @@
       els.productGrid.appendChild(card);
     });
     observeTiles();
-    bindCardTilt(Array.prototype.slice.call(els.productGrid.querySelectorAll(".featured-cat-card")));
     applyHomeCatalogFilter();
   }
 
@@ -776,6 +775,50 @@
     });
   }
 
+  function findHomeCartLine(id, size, ex) {
+    var lines = CART.load();
+    var sid = String(id || "");
+    var ss = String(size || "");
+    var xk = ex == null || ex === "" ? "" : String(ex);
+    for (var i = 0; i < lines.length; i++) {
+      var l = lines[i];
+      if (
+        l.id === sid &&
+        l.size === ss &&
+        (CART.lineExtraKey ? CART.lineExtraKey(l.lineExtra) : "") === xk
+      ) {
+        return l;
+      }
+    }
+    return null;
+  }
+
+  function patchHomeCartLineFromButton(qBtn) {
+    var id = qBtn.getAttribute("data-line-id");
+    var size = qBtn.getAttribute("data-line-size");
+    var xk = qBtn.getAttribute("data-line-extrak");
+    var line = findHomeCartLine(id, size, xk);
+    var li = qBtn.closest ? qBtn.closest(".cart-item") : null;
+    if (!line || !li) return false;
+    var num = li.querySelector(".cart-item-qty-num");
+    if (num) num.textContent = String(line.qty);
+    var span = li.querySelector(".cart-item-info span");
+    if (span) {
+      var sz =
+        (line.variantLabel && String(line.variantLabel).trim()) ||
+        (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
+      span.textContent =
+        String(sz || "") +
+        " · Qty " +
+        line.qty +
+        " · " +
+        CART.formatMoney(line.price) +
+        " each";
+    }
+    if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+    return true;
+  }
+
   function updateCartUI() {
     var lines = CART.load();
     var count = CART.countItems();
@@ -871,7 +914,8 @@
       var xk = q.getAttribute("data-line-extrak");
       var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
       CART.incrementLine(id, size, d, xk);
-      updateCartUI();
+      if (els.cartCount) els.cartCount.textContent = String(CART.countItems());
+      if (!patchHomeCartLineFromButton(q)) updateCartUI();
     });
   }
 
