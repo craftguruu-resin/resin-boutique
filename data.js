@@ -523,6 +523,19 @@
           .filter(Boolean)
           .slice(0, 24);
       }
+      if (row.options != null) {
+        var ro = row.options;
+        if (typeof ro === "string") {
+          try {
+            ro = JSON.parse(ro);
+          } catch (_) {
+            ro = null;
+          }
+        }
+        if (ro && typeof ro === "object" && Object.keys(ro).length) {
+          p.options = ro;
+        }
+      }
       n++;
     });
     return n;

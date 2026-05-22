@@ -88,6 +88,7 @@
     removeGuestCategoryRail();
     var pn = currentPageName();
     if (pn === "index.html") return;
+    if (pn === "about.html") return;
     if (pn === "account.html") return;
     if (pn === "checkout.html") return;
     if (pn === "raw-material-product.html") return;

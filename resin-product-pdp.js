@@ -174,6 +174,126 @@
     return String(u || "").trim();
   }
 
+  function parseOptionsRaw(raw) {
+    if (raw == null) return null;
+    if (typeof raw === "string") {
+      try {
+        raw = JSON.parse(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) return null;
+    return raw;
+  }
+
+  function normOptionRows(arr, kind) {
+    if (!Array.isArray(arr)) return [];
+    return arr
+      .map(function (row, idx) {
+        if (!row || typeof row !== "object") return null;
+        var id = String(row.id || "").trim().slice(0, 40) || (kind === "co" ? "co-" + idx : "sz-" + idx);
+        var label = String(row.label || "").trim().slice(0, 120);
+        if (!label) return null;
+        var out = {
+          id: id,
+          label: label,
+          image: String(row.image || "").trim().slice(0, 2000),
+        };
+        if (kind === "co") out.hex = normalizeHexClient(row.hex != null ? row.hex : row.Hex);
+        var pi = finMoney(row.priceInr);
+        var mi = finMoney(row.mrpInr);
+        if (pi != null) out.priceInr = pi;
+        if (mi != null) out.mrpInr = mi;
+        return out;
+      })
+      .filter(Boolean);
+  }
+
+  function hasVendorStyleOptions(raw) {
+    var o = parseOptionsRaw(raw);
+    if (!o) return false;
+    return !!(
+      o.useSize ||
+      o.useColor ||
+      o.useQty ||
+      (o.sizes && o.sizes.length) ||
+      (o.colors && o.colors.length) ||
+      (o.qtyOptions && o.qtyOptions.length)
+    );
+  }
+
+  function mergeVendorProductOptions(p, raw) {
+    var parsed = parseOptionsRaw(raw);
+    var base = buildDefaultOptions(p);
+    if (!parsed) return base;
+    if (!hasVendorStyleOptions(parsed)) return base;
+
+    var sizes = normOptionRows(parsed.sizes, "sz");
+    var colors = normOptionRows(parsed.colors, "co");
+    var qtyOptions = normOptionRows(parsed.qtyOptions, "qt");
+    var useSize = !!parsed.useSize || sizes.length > 0;
+    var useColor = !!parsed.useColor || colors.length > 0;
+    var useQty = !!parsed.useQty || qtyOptions.length > 0;
+
+    var opt = Object.assign({}, base, {
+      useSize: useSize,
+      useColor: useColor,
+      useQty: useQty,
+    });
+    if (sizes.length) opt.sizes = sizes;
+    if (colors.length) opt.colors = colors;
+    if (qtyOptions.length) opt.qtyOptions = qtyOptions;
+    if (!useSize) {
+      opt.sizes = [];
+    } else if (!opt.sizes || !opt.sizes.length) {
+      opt.sizes = base.sizes;
+    }
+    if (!useColor) opt.colors = [];
+    if (!useQty) opt.qtyOptions = [];
+
+    if (parsed.badge) opt.badge = String(parsed.badge).trim().slice(0, 80);
+    if (parsed.heroImage) opt.heroImage = String(parsed.heroImage).trim().slice(0, 2000);
+    if (parsed.brandLine) opt.brandLine = String(parsed.brandLine).trim().slice(0, 100);
+    if (parsed.detailBody) opt.detailBody = String(parsed.detailBody).trim().slice(0, 4000);
+    if (parsed.shipNote) opt.shipNote = String(parsed.shipNote).trim().slice(0, 500);
+    if (parsed.ratingScore) opt.ratingScore = String(parsed.ratingScore).trim().slice(0, 20);
+    if (parsed.reviewCount != null && Number.isFinite(Number(parsed.reviewCount))) {
+      opt.reviewCount = Math.min(999999, Math.round(Number(parsed.reviewCount)));
+    }
+    if (parsed.mrpInr != null && Number.isFinite(Number(parsed.mrpInr))) opt.mrpInr = Number(parsed.mrpInr);
+    if (Array.isArray(parsed.trustBullets) && parsed.trustBullets.length) {
+      opt.trustBullets = parsed.trustBullets
+        .map(function (t) {
+          return String(t || "").trim().slice(0, 120);
+        })
+        .filter(Boolean)
+        .slice(0, 8);
+    }
+    if (Array.isArray(parsed.galleryImages) && parsed.galleryImages.length) {
+      opt.galleryImages = parsed.galleryImages
+        .map(function (u) {
+          return String(u || "").trim();
+        })
+        .filter(Boolean)
+        .slice(0, 12);
+    }
+    return opt;
+  }
+
+  function ensureSelValid(m) {
+    var opt = m.options || {};
+    if (opt.useSize && opt.sizes && opt.sizes.length) {
+      if (!findOpt(opt.sizes, state.sel.sid)) state.sel.sid = String(opt.sizes[0].id || "");
+    }
+    if (opt.useQty && opt.qtyOptions && opt.qtyOptions.length) {
+      if (!findOpt(opt.qtyOptions, state.sel.qid)) state.sel.qid = String(opt.qtyOptions[0].id || "");
+    }
+    if (opt.useColor && opt.colors && opt.colors.length) {
+      if (!findOpt(opt.colors, state.sel.cid)) state.sel.cid = String(opt.colors[0].id || "");
+    }
+  }
+
   function buildDefaultOptions(p) {
     var keys = D.getOfferedSizeKeysForProduct
       ? D.getOfferedSizeKeysForProduct(p)
@@ -211,16 +331,9 @@
   }
 
   function productToMaterial(p) {
-    var opt;
-    if (p.options && typeof p.options === "object" && (p.options.useSize || p.options.useColor || p.options.useQty)) {
-      try {
-        opt = JSON.parse(JSON.stringify(p.options));
-      } catch (_) {
-        opt = buildDefaultOptions(p);
-      }
-    } else {
-      opt = buildDefaultOptions(p);
-    }
+    var opt = hasVendorStyleOptions(p.options)
+      ? mergeVendorProductOptions(p, p.options)
+      : buildDefaultOptions(p);
     var gi = Array.isArray(opt.galleryImages) ? opt.galleryImages.slice() : [];
     if (Array.isArray(p.gallery)) {
       p.gallery.forEach(function (u) {
@@ -249,9 +362,17 @@
     };
   }
 
-  function stockSlotFromSel(sel) {
+  function stockSlotFromSel(sel, material) {
     var s = String(sel.sid || "").toLowerCase();
     if (s === "s" || s === "m" || s === "l") return s;
+    var opt = material && material.options;
+    if (opt && opt.useSize && opt.sizes && opt.sizes.length) {
+      for (var i = 0; i < opt.sizes.length; i++) {
+        if (String(opt.sizes[i].id) === String(sel.sid)) {
+          return ["s", "m", "l"][Math.min(i, 2)] || "m";
+        }
+      }
+    }
     return "m";
   }
 
@@ -767,7 +888,7 @@
         CART.addItem({
           id: m.id,
           size: slot,
-          stockSlot: stockSlotFromSel(state.sel) || "m",
+          stockSlot: stockSlotFromSel(state.sel, m) || "m",
           variantLabel: vlabel,
           name: m.name,
           price: effectivePriceInr(m, state.sel),
@@ -839,6 +960,7 @@
         pRef = np;
         state.product = np;
         state.material = productToMaterial(np);
+        ensureSelValid(state.material);
         var r = document.getElementById("productRoot");
         if (r) {
           renderPdp(r);

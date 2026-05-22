@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  function showCopyFeedback(msg) {
-    var t = String(msg != null && msg !== "" ? msg : "Link copied to clipboard");
+  function showCopyFeedback(msg, anchorEl) {
+    var t = String(msg != null && msg !== "" ? msg : "Link copied");
     var el = document.getElementById("cgCopyToast");
     if (!el) {
       el = document.createElement("div");
@@ -13,6 +13,20 @@
       document.body.appendChild(el);
     }
     el.textContent = t;
+    if (anchorEl && anchorEl.getBoundingClientRect) {
+      var r = anchorEl.getBoundingClientRect();
+      el.setAttribute("data-cg-toast-anchored", "1");
+      el.style.left = Math.round(r.left + r.width / 2) + "px";
+      el.style.top = Math.round(r.top - 8) + "px";
+      el.style.bottom = "auto";
+      el.style.transform = "translate(-50%, calc(-100% + 6px))";
+    } else {
+      el.removeAttribute("data-cg-toast-anchored");
+      el.style.left = "50%";
+      el.style.top = "auto";
+      el.style.bottom = "1.25rem";
+      el.style.transform = "translateX(-50%) translateY(20px)";
+    }
     el.classList.add("is-visible");
     var prev = el._cgToastTimer;
     if (prev) clearTimeout(prev);
@@ -98,15 +112,15 @@
         navigator.clipboard
           .writeText(u)
           .then(function () {
-            showCopyFeedback();
+            showCopyFeedback("Link copied", c);
           })
           .catch(function () {
             window.prompt("Copy this link", u);
-            showCopyFeedback("Copy the link from the box");
+            showCopyFeedback("Copy the link from the box", c);
           });
       } else {
         window.prompt("Copy this link", u);
-        showCopyFeedback();
+        showCopyFeedback("Link copied", c);
       }
     });
   }
@@ -170,15 +184,15 @@
           navigator.clipboard
             .writeText(u)
             .then(function () {
-              showCopyFeedback();
+              showCopyFeedback("Link copied", b);
             })
             .catch(function () {
               window.prompt("Copy this link", u);
-              showCopyFeedback("Copy the link from the box");
+              showCopyFeedback("Copy the link from the box", b);
             });
         } else {
           window.prompt("Copy this link", u);
-          showCopyFeedback();
+          showCopyFeedback("Link copied", b);
         }
       });
     });

@@ -161,28 +161,8 @@
         <a class="btn-glass-dome" href="index.html#categories"><span>Browse categories</span></a>
         <a class="btn-glass-dome" href="index.html#shop"><span>Featured resin</span></a>
       </p>
-      <p class="about-studio-gate-wrap about-reveal" style="--about-d: 0.5s">
-        <button type="button" class="about-studio-gate" id="vendorStudioGateBtn" aria-haspopup="dialog" aria-controls="vendorGateModal">
-          Studio dispatch
-        </button>
-      </p>
     </article>
   </main>
-
-  <div class="vendor-gate-modal" id="vendorGateModal" hidden role="dialog" aria-modal="true" aria-labelledby="vendorGateTitle">
-    <button type="button" class="vendor-gate-modal__backdrop" id="vendorGateModalBackdrop" aria-label="Close"></button>
-    <div class="vendor-gate-modal__card">
-      <h3 class="vendor-gate-modal__title" id="vendorGateTitle">Studio sign-in</h3>
-      <p class="vendor-gate-modal__hint">Owner access — dashboard, orders, tags, inventory, and returns.</p>
-      <label class="vendor-gate-modal__label" for="vendorGateUser">Username</label>
-      <input type="text" id="vendorGateUser" class="vendor-gate-modal__input" autocomplete="username" />
-      <label class="vendor-gate-modal__label" for="vendorGatePass">Password</label>
-      <input type="password" id="vendorGatePass" class="vendor-gate-modal__input" autocomplete="current-password" />
-      <p class="vendor-gate-modal__err" id="vendorGateErr" role="alert" hidden></p>
-      <button type="button" class="checkout-submit vendor-gate-modal__primary" id="vendorGateSubmit">Open vendor desk</button>
-      <button type="button" class="vendor-gate-modal__ghost" id="vendorGateCancel">Cancel</button>
-    </div>
-  </div>
 
   <footer class="site-footer site-footer--craftguru" id="site-footer">
     <div class="footer-sitemap">
@@ -292,120 +272,6 @@
   <script src="global-find.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
-  <script>
-    (function () {
-      var TOKEN_KEY = "craftguruVendorToken";
-      var STATIC_DEV_PORTS = { "5500": 1, "5501": 1, "8080": 1, "8888": 1, "3001": 1, "5173": 1, "5174": 1, "4173": 1 };
-      function apiPortOverride() {
-        try {
-          var v = document.documentElement.getAttribute("data-bill-api-port");
-          if (v != null && String(v).trim()) {
-            var n = parseInt(String(v).trim(), 10);
-            if (isFinite(n) && n > 0 && n < 65536) return String(n);
-          }
-        } catch (_) {}
-        try {
-          var ls = localStorage.getItem("craftguruBillApiPort");
-          if (ls != null && String(ls).trim()) {
-            var n2 = parseInt(String(ls).trim(), 10);
-            if (isFinite(n2) && n2 > 0 && n2 < 65536) return String(n2);
-          }
-        } catch (_) {}
-        return "";
-      }
-      function apiBase() {
-        try {
-          var v = document.documentElement.getAttribute("data-bill-api-base");
-          if (v != null) {
-            var t = String(v).trim().replace(/\/+$/, "");
-            if (t.length) return t;
-          }
-        } catch (_) {}
-        try {
-          if (window.location && window.location.protocol !== "file:") {
-            var loc = window.location;
-            var port = loc.port || (loc.protocol === "https:" ? "443" : "80");
-            if (STATIC_DEV_PORTS[port]) {
-              var po = apiPortOverride();
-              return "http://127.0.0.1:" + (po || "3847");
-            }
-            return String(loc.origin).replace(/\/+$/, "");
-          }
-        } catch (_) {}
-        var p = apiPortOverride();
-        if (p) return "http://127.0.0.1:" + p;
-        return "http://127.0.0.1:3847";
-      }
-      var modal = document.getElementById("vendorGateModal");
-      var btn = document.getElementById("vendorStudioGateBtn");
-      var bd = document.getElementById("vendorGateModalBackdrop");
-      var cancel = document.getElementById("vendorGateCancel");
-      var submit = document.getElementById("vendorGateSubmit");
-      var user = document.getElementById("vendorGateUser");
-      var pass = document.getElementById("vendorGatePass");
-      var err = document.getElementById("vendorGateErr");
-      function openM() {
-        if (!modal) return;
-        if (err) {
-          err.setAttribute("hidden", "hidden");
-          err.textContent = "";
-        }
-        modal.removeAttribute("hidden");
-        if (user) user.focus();
-      }
-      function closeM() {
-        if (modal) modal.setAttribute("hidden", "hidden");
-      }
-      if (btn) btn.addEventListener("click", openM);
-      if (bd) bd.addEventListener("click", closeM);
-      if (cancel) cancel.addEventListener("click", closeM);
-      document.addEventListener("keydown", function (e) {
-        if (e.key === "Escape" && modal && !modal.hasAttribute("hidden")) closeM();
-      });
-      if (submit) {
-        submit.addEventListener("click", function () {
-          if (err) {
-            err.setAttribute("hidden", "hidden");
-            err.textContent = "";
-          }
-          var base = apiBase();
-          fetch(base + "/api/vendor/login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: (user && user.value) || "",
-              password: (pass && pass.value) || "",
-            }),
-          })
-            .then(function (res) {
-              return res.text().then(function (txt) {
-                var j = {};
-                try {
-                  j = JSON.parse(txt);
-                } catch (_) {}
-                if (!res.ok || !j.ok) {
-                  throw new Error((j && j.error) || txt.slice(0, 120) || "Sign-in failed");
-                }
-                return j;
-              });
-            })
-            .then(function (j) {
-              try {
-                localStorage.setItem(TOKEN_KEY, j.token || "");
-                sessionStorage.setItem(TOKEN_KEY, j.token || "");
-              } catch (_) {}
-              window.location.href = "vendor-dashboard.html";
-            })
-            .catch(function (e) {
-              if (err) {
-                err.textContent = String((e && e.message) || "Sign-in failed");
-                err.removeAttribute("hidden");
-              }
-            });
-        });
-      }
-    })();
   </script>
   <script>
     (function () {

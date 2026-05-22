@@ -547,19 +547,30 @@ button.rm-pdp__bulk {
   bottom: 1.25rem;
   transform: translateX(-50%) translateY(20px);
   max-width: min(92vw, 360px);
-  padding: 0.65rem 1rem;
+  padding: 0.45rem 0.75rem;
   border-radius: 10px;
   background: rgba(15, 23, 42, 0.92);
   color: #f8fafc;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
+#cgCopyToast.cg-toast[data-cg-toast-anchored="1"],
+.cg-toast[data-cg-toast-anchored="1"] {
+  bottom: auto;
+}
+
 #cgCopyToast.cg-toast.is-visible,
 .cg-toast.is-visible {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
+}
+
+#cgCopyToast.cg-toast[data-cg-toast-anchored="1"].is-visible,
+.cg-toast[data-cg-toast-anchored="1"].is-visible {
+  transform: translate(-50%, -100%);
 }

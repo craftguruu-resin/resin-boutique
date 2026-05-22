@@ -175,6 +175,24 @@ body.guest-site:not(.page-home) main.sub-main {
   box-sizing: border-box;
 }
 
+/* Category rail: hug pills — avoid stretch blank below nav (home split styles) */
+body.guest-site:not(.page-home) .guest-page-category-rail.home-category-rail--split {
+  align-self: flex-start;
+  min-height: 0;
+  height: auto;
+}
+
+body.guest-site:not(.page-home) .guest-page-category-rail.home-category-rail--split .category-grid--rail {
+  flex: 0 0 auto;
+  overflow-y: visible;
+  min-height: 0;
+}
+
+body.guest-site.page-product--resin-rm main.sub-main {
+  gap: 0.65rem;
+  align-items: flex-start;
+}
+
 body.guest-site .guest-page-category-rail {
   flex: 0 0 auto;
   width: min(220px, 28vw);
