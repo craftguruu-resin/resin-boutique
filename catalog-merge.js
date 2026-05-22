@@ -105,6 +105,7 @@
           try {
             window.__cgCatalogOverrides = j.overrides;
           } catch (_) {}
+          /* Applies per-product options_json to all resin product.html PDPs via product.js */
           D.applyPriceOverrides(j.overrides);
         }
       })

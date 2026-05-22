@@ -554,16 +554,8 @@
           .slice(0, 24);
       }
       if (row.options != null) {
-        var ro = row.options;
-        if (typeof ro === "string") {
-          try {
-            ro = JSON.parse(ro);
-          } catch (_) {
-            ro = null;
-          }
-        }
-        if (ro && typeof ro === "object" && Object.keys(ro).length) {
-          p.options = ro;
+        if (catalogOptionsHasPayload(row.options)) {
+          p.options = normalizeOptionsOverride(row.options);
         }
       }
       n++;
@@ -732,5 +724,7 @@
     applyVendorProductsMerge: applyVendorProductsMerge,
     applyCategoriesMerge: applyCategoriesMerge,
     searchCatalogPartial: searchCatalogPartial,
+    catalogOptionsHasPayload: catalogOptionsHasPayload,
+    normalizeOptionsOverride: normalizeOptionsOverride,
   };
 })(typeof window !== 'undefined' ? window : this);

@@ -95,10 +95,13 @@
     } catch (_) {}
   }
 
+  /** Resin-wide: any catalog product with vendor size/colour/gallery in price-overrides. */
   function productUsesVendorVariantPdp(p) {
+    if (!p || !window.RESIN_CATALOG_PDP) return false;
+    if (typeof window.RESIN_CATALOG_PDP.shouldUseVariantPdp === "function") {
+      return window.RESIN_CATALOG_PDP.shouldUseVariantPdp(p);
+    }
     return !!(
-      p &&
-      window.RESIN_CATALOG_PDP &&
       typeof window.RESIN_CATALOG_PDP.productHasVendorPdpOptions === "function" &&
       window.RESIN_CATALOG_PDP.productHasVendorPdpOptions(p)
     );
@@ -230,31 +233,7 @@
       }
       return;
     }
-    if (productUsesVendorVariantPdp(product)) {
-      if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP.refresh) {
-        window.RESIN_CATALOG_PDP.refresh();
-      } else {
-        render();
-      }
-      return;
-    }
-    if (els.root && els.root.querySelector("[data-resin-pdp]")) {
-      if (restoreProductLayout()) {
-        render();
-      }
-      return;
-    }
-    if (!productLayoutInDocument()) {
-      if (restoreProductLayout()) {
-        render();
-      }
-      return;
-    }
-    renderVendorColorOptions();
-    renderVendorSizeOptions();
-    setupProductGallery();
-    refreshSizePickPrices();
-    updatePrice();
+    render();
   }
 
   var selected = "";
@@ -1198,6 +1177,7 @@
       var nextId = new URLSearchParams(window.location.search).get("id");
       if (!nextId || nextId === id) return;
       id = nextId;
+      applyCachedCatalogOverrides();
       refreshProductRef();
       clearCatalogWaitTimer();
       if (product) {

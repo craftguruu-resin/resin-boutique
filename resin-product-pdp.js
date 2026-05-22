@@ -1,5 +1,7 @@
 /**
  * Resin catalog PDP — same layout/CSS tokens as raw-material-product.js (rm-pdp--modern).
+ * Used for every product.html?id=… resin piece when vendor price-overrides include
+ * size/colour/gallery options (not hardcoded per SKU).
  * Expects: RESIN_DATA, RESIN_CART, optional CRAFTGURU_SHARE.
  */
 (function () {
@@ -215,8 +217,11 @@
       .filter(Boolean);
   }
 
-  function hasVendorStyleOptions(raw) {
-    var o = parseOptionsRaw(raw);
+  function catalogOptionsHasPayload(opt) {
+    if (D && typeof D.catalogOptionsHasPayload === "function") {
+      return D.catalogOptionsHasPayload(opt);
+    }
+    var o = parseOptionsRaw(opt);
     if (!o) return false;
     return !!(
       o.useSize ||
@@ -226,12 +231,31 @@
       (o.colors && o.colors.length) ||
       (o.qtyOptions && o.qtyOptions.length) ||
       (Array.isArray(o.galleryImages) && o.galleryImages.length) ||
-      String(o.heroImage || "").trim()
+      String(o.heroImage || "").trim() ||
+      String(o.badge || "").trim() ||
+      (Array.isArray(o.trustBullets) && o.trustBullets.length)
     );
   }
 
+  function hasVendorStyleOptions(raw) {
+    return catalogOptionsHasPayload(raw);
+  }
+
+  /** Any bundled or vendor-added piece served on product.html (not raw-materials / photo-frames). */
+  function isResinCatalogProduct(p) {
+    if (!p || !p.id) return false;
+    var pid = String(p.id);
+    if (pid.indexOf("raw-mat--") === 0) return false;
+    return true;
+  }
+
+  /** True when this resin PDP should use variant gallery UI (same rules as vendor panel / price-overrides). */
+  function shouldUseVariantPdp(p) {
+    return isResinCatalogProduct(p) && catalogOptionsHasPayload(p && p.options);
+  }
+
   function productHasVendorPdpOptions(p) {
-    return !!(p && hasVendorStyleOptions(p.options));
+    return shouldUseVariantPdp(p);
   }
 
   function getOptionsForProduct(p) {
@@ -1044,8 +1068,11 @@
     mount: mount,
     refresh: refresh,
     productToMaterial: productToMaterial,
+    isResinCatalogProduct: isResinCatalogProduct,
+    shouldUseVariantPdp: shouldUseVariantPdp,
     productHasVendorPdpOptions: productHasVendorPdpOptions,
     getOptionsForProduct: getOptionsForProduct,
     hasVendorStyleOptions: hasVendorStyleOptions,
+    catalogOptionsHasPayload: catalogOptionsHasPayload,
   };
 })();
