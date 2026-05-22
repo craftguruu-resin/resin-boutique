@@ -347,6 +347,36 @@
     return enc;
   }
 
+  function normalizeOptionsOverride(raw) {
+    if (raw == null) return null;
+    if (typeof raw === "string") {
+      try {
+        raw = JSON.parse(raw);
+      } catch (_) {
+        return null;
+      }
+    }
+    if (typeof raw !== "object" || Array.isArray(raw)) return null;
+    return raw;
+  }
+
+  function catalogOptionsHasPayload(opt) {
+    opt = normalizeOptionsOverride(opt);
+    if (!opt) return false;
+    return !!(
+      opt.useSize ||
+      opt.useColor ||
+      opt.useQty ||
+      (Array.isArray(opt.sizes) && opt.sizes.length) ||
+      (Array.isArray(opt.colors) && opt.colors.length) ||
+      (Array.isArray(opt.qtyOptions) && opt.qtyOptions.length) ||
+      (Array.isArray(opt.galleryImages) && opt.galleryImages.length) ||
+      String(opt.heroImage || "").trim() ||
+      String(opt.badge || "").trim() ||
+      (Array.isArray(opt.trustBullets) && opt.trustBullets.length)
+    );
+  }
+
   /** Merge server-saved prices and optional per-size stock (see /api/catalog/price-overrides). Mutates catalog in memory. */
   function applyPriceOverrides(map) {
     if (!map || typeof map !== "object") return 0;
@@ -413,8 +443,8 @@
           n++;
         }
       }
-      if (o.options != null && typeof o.options === "object" && Object.keys(o.options).length) {
-        p.options = o.options;
+      if (catalogOptionsHasPayload(o.options)) {
+        p.options = normalizeOptionsOverride(o.options);
         n++;
       }
       BY_ID[p.id] = p;

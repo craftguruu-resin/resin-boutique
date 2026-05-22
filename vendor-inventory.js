@@ -940,11 +940,34 @@
     });
   });
 
+  var catalogSearchTimer = null;
+  function scheduleCatalogSearch() {
+    if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
+    catalogSearchTimer = setTimeout(function () {
+      catalogSearchTimer = null;
+      var inp = document.getElementById("viCatalogSearch");
+      catalogQ = inp && inp.value ? String(inp.value).trim() : "";
+      loadCatalogPage(true);
+    }, 220);
+  }
   on("viCatalogSearchBtn", "click", function () {
+    if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
     var inp = document.getElementById("viCatalogSearch");
     catalogQ = inp && inp.value ? String(inp.value).trim() : "";
     loadCatalogPage(true);
   });
+  var viCatalogSearchInp = document.getElementById("viCatalogSearch");
+  if (viCatalogSearchInp) {
+    viCatalogSearchInp.addEventListener("input", scheduleCatalogSearch);
+    viCatalogSearchInp.addEventListener("keydown", function (ev) {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        if (catalogSearchTimer) clearTimeout(catalogSearchTimer);
+        catalogQ = String(viCatalogSearchInp.value || "").trim();
+        loadCatalogPage(true);
+      }
+    });
+  }
 
   on("viCatalogMoreBtn", "click", function () {
     loadCatalogPage(false);

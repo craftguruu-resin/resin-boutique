@@ -85,6 +85,40 @@ function aggregateSellableStockByProductIds(ids, cb) {
  * @param {string[]} ids
  * @param {(err: Error|null, map?: Record<string, string>) => void} cb
  */
+/**
+ * Product ids whose studio inventory SKU matches a search token (vendor catalog search).
+ * @param {string} qLower — already lowercased, trimmed
+ * @param {(err: Error|null, ids?: string[]) => void} cb
+ */
+function searchProductIdsBySku(qLower, cb) {
+  var pool = poolMod.getPool();
+  var q = String(qLower || "")
+    .toLowerCase()
+    .trim()
+    .slice(0, 80);
+  if (!pool || !q) {
+    return process.nextTick(function () {
+      cb(null, []);
+    });
+  }
+  var like = "%" + q.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
+  pool
+    .query(
+      "SELECT DISTINCT product_id FROM vendor_inventory_items " +
+        "WHERE COALESCE(TRIM(product_id), '') <> '' AND LOWER(TRIM(sku)) LIKE $1 ESCAPE '\\' LIMIT 120",
+      [like]
+    )
+    .then(function (r) {
+      var out = [];
+      r.rows.forEach(function (row) {
+        var pid = String(row.product_id || "").trim();
+        if (pid && out.indexOf(pid) === -1) out.push(pid);
+      });
+      cb(null, out);
+    })
+    .catch(cb);
+}
+
 function getSkuMapForProductIds(ids, cb) {
   var pool = poolMod.getPool();
   if (!pool || !ids || !ids.length) {
@@ -786,4 +820,5 @@ module.exports = {
   updateReturnStatus,
   aggregateSellableStockByProductIds: aggregateSellableStockByProductIds,
   getSkuMapForProductIds: getSkuMapForProductIds,
+  searchProductIdsBySku: searchProductIdsBySku,
 };

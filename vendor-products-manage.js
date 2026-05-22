@@ -454,10 +454,20 @@
       });
   }
 
+  var searchDebounceTimer = null;
+
   function runSearch() {
     var el = document.getElementById("vpmSearch");
     searchQ = el ? String(el.value || "").trim() : "";
     loadList().catch(function () {});
+  }
+
+  function scheduleSearch() {
+    if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+    searchDebounceTimer = setTimeout(function () {
+      searchDebounceTimer = null;
+      runSearch();
+    }, 220);
   }
 
   function boot() {
@@ -483,12 +493,17 @@
         renderTable();
       });
     }
-    document.getElementById("vpmSearch").addEventListener("keydown", function (ev) {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        runSearch();
-      }
-    });
+    var searchInp = document.getElementById("vpmSearch");
+    if (searchInp) {
+      searchInp.addEventListener("input", scheduleSearch);
+      searchInp.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter") {
+          ev.preventDefault();
+          if (searchDebounceTimer) clearTimeout(searchDebounceTimer);
+          runSearch();
+        }
+      });
+    }
 
     document.querySelectorAll('input[name="vpmReturnGift"]').forEach(function (inp) {
       inp.addEventListener("change", syncReturnGiftVisual);

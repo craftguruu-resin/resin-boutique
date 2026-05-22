@@ -761,12 +761,36 @@
     });
   }
 
+  function showPdpAwaitingCatalog() {
+    if (!els.root) return;
+    els.root.innerHTML =
+      '<div class="resin-pdp-padded product-page-awaiting-catalog">' +
+      "<p>Loading product options…</p></div>";
+    els.root.setAttribute("data-pdp-ready", "1");
+  }
+
   function initialRender() {
     if (!id) {
       render404();
       return;
     }
     if (product) {
+      if (window.RESIN_CATALOG_PDP && window.CraftguruCatalogMerge && !window.__cgCatalogPricesMerged) {
+        showPdpAwaitingCatalog();
+        var fallbackTimer = setTimeout(function () {
+          refreshProductRef();
+          if (product) render();
+        }, 8000);
+        window.addEventListener(
+          "craftguruCatalogPricesMerged",
+          function () {
+            clearTimeout(fallbackTimer);
+            onCatalogPricesMerged();
+          },
+          { once: true }
+        );
+        return;
+      }
       render();
       return;
     }

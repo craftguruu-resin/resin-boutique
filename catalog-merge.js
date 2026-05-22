@@ -107,6 +107,7 @@
       })
       .then(function () {
         try {
+          window.__cgCatalogPricesMerged = true;
           window.dispatchEvent(new CustomEvent("craftguruCatalogPricesMerged"));
         } catch (_) {}
       })

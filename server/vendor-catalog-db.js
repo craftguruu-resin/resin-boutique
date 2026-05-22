@@ -107,6 +107,30 @@ function mergeSizeLabelsFromPatch(curSl, patch) {
   return base;
 }
 
+function catalogOptionsHasPayload(opt) {
+  if (opt == null) return false;
+  if (typeof opt === "string") {
+    try {
+      opt = JSON.parse(opt);
+    } catch (_) {
+      return false;
+    }
+  }
+  if (typeof opt !== "object" || Array.isArray(opt)) return false;
+  return !!(
+    opt.useSize ||
+    opt.useColor ||
+    opt.useQty ||
+    (Array.isArray(opt.sizes) && opt.sizes.length) ||
+    (Array.isArray(opt.colors) && opt.colors.length) ||
+    (Array.isArray(opt.qtyOptions) && opt.qtyOptions.length) ||
+    (Array.isArray(opt.galleryImages) && opt.galleryImages.length) ||
+    String(opt.heroImage || "").trim() ||
+    String(opt.badge || "").trim() ||
+    (Array.isArray(opt.trustBullets) && opt.trustBullets.length)
+  );
+}
+
 /** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, listed, returnGift, sizeLabels } */
 function listOverridesMap(cb) {
   var pool = poolMod.getPool();
@@ -147,7 +171,7 @@ function listOverridesMap(cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: sl,
-            options: oj && Object.keys(oj).length ? oj : null,
+            options: catalogOptionsHasPayload(oj) ? oj : null,
           };
         });
         cb(null, m);
@@ -378,4 +402,5 @@ module.exports = {
   listOverridesMap: listOverridesMap,
   upsertOverride: upsertOverride,
   deleteBundledCatalogOverride: deleteBundledCatalogOverride,
+  catalogOptionsHasPayload: catalogOptionsHasPayload,
 };

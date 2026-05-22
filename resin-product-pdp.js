@@ -392,11 +392,35 @@
     } catch (_) {}
   }
 
+  function optionsLayoutSig(m) {
+    var opt = m && m.options;
+    if (!opt) return "";
+    return [
+      opt.useSize ? 1 : 0,
+      opt.useColor ? 1 : 0,
+      opt.useQty ? 1 : 0,
+      (opt.sizes || []).length,
+      (opt.colors || []).length,
+      (opt.qtyOptions || []).length,
+      (opt.sizes || [])
+        .map(function (s) {
+          return String(s.id || "") + ":" + String(s.label || "");
+        })
+        .join(","),
+      (opt.colors || [])
+        .map(function (c) {
+          return String(c.id || "") + ":" + String(c.label || "");
+        })
+        .join(","),
+    ].join("|");
+  }
+
   function shellNeedsRebuild(root, m, galleryUrlCount) {
     if (!root || !m) return true;
     var shell = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
     if (!shell) return true;
     if (String(shell.getAttribute("data-resin-material-id") || "") !== String(m.id)) return true;
+    if (String(shell.getAttribute("data-resin-opt-sig") || "") !== optionsLayoutSig(m)) return true;
     var track = root.querySelector(".rm-pdp-thumb-track");
     var thumbN = track ? track.querySelectorAll(".rm-pdp__thumb").length : 0;
     if (thumbN !== galleryUrlCount) return true;
@@ -753,6 +777,8 @@
       "</div></div></div>";
 
     root.innerHTML = html;
+    var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
+    if (shellEl) shellEl.setAttribute("data-resin-opt-sig", optionsLayoutSig(m));
     if (window.RESIN_WISHLIST && state.product) {
       var wishBtn = document.getElementById("resinPdpWish");
       if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id, "catalog");
@@ -939,6 +965,7 @@
       shellEl && String(shellEl.getAttribute("data-resin-material-id") || "") === String(product.id);
     state.product = product;
     state.material = productToMaterial(product);
+    state._optSig = optionsLayoutSig(state.material);
     if (!sameShell) {
       state.namePlateText = "";
       state.keychainAlpha = "";
@@ -959,7 +986,13 @@
       if (np) {
         pRef = np;
         state.product = np;
+        var prevSig = state._optSig || "";
         state.material = productToMaterial(np);
+        var nextSig = optionsLayoutSig(state.material);
+        if (prevSig !== nextSig) {
+          syncDefaults(state.material);
+        }
+        state._optSig = nextSig;
         ensureSelValid(state.material);
         var r = document.getElementById("productRoot");
         if (r) {

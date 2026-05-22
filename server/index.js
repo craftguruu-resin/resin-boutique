@@ -2238,7 +2238,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (Object.keys(slOut).length) {
         o.sizeLabels = slOut;
       }
-      if (x.options && typeof x.options === "object" && Object.keys(x.options).length) {
+      if (vendorCatalogDb.catalogOptionsHasPayload(x.options)) {
         o.options = x.options;
       }
       out[key] = o;
@@ -3291,22 +3291,11 @@ app.get("/api/vendor/catalog-products", function (req, res) {
           var ov = omap[p.id] || {};
           return ov.listed !== false;
         });
-        vendorExtrasDb.getSkuMapForProductIds(
-          list.map(function (p) {
-            return p.id;
-          }),
-          function (eSku, skuMap) {
-            if (eSku) {
-              return res.status(500).json({ ok: false, error: String(eSku.message || eSku) });
-            }
+        function catalogProductHay(p) {
+          return (p.id + " " + p.name + " " + p.category + " " + p.subcategory).toLowerCase();
+        }
+        function respondCatalogSlice(filtered, skuMap) {
             skuMap = skuMap || {};
-            var filtered = !q
-              ? list
-              : list.filter(function (p) {
-                  var sku = skuMap[p.id] || "";
-                  var hay = (p.id + " " + p.name + " " + p.category + " " + p.subcategory + " " + sku).toLowerCase();
-                  return hay.indexOf(q) !== -1;
-                });
             var total = filtered.length;
             var slice = filtered.slice(off, off + lim);
             vendorExtrasDb.countInventoryRows(function (eMat, matCount) {
@@ -3369,12 +3358,64 @@ app.get("/api/vendor/catalog-products", function (req, res) {
                   hasStockOverride: !!(ovHasStock || hasAggStock),
                 };
               }),
+                });
+              });
             });
+        }
+        if (!q) {
+          return vendorExtrasDb.getSkuMapForProductIds(
+            list.map(function (p) {
+              return p.id;
+            }),
+            function (eSku, skuMap) {
+              if (eSku) {
+                return res.status(500).json({ ok: false, error: String(eSku.message || eSku) });
+              }
+              respondCatalogSlice(list, skuMap);
+            }
+          );
+        }
+        var listById = Object.create(null);
+        list.forEach(function (p) {
+          listById[p.id] = p;
+        });
+        var nameHits = list.filter(function (p) {
+          return catalogProductHay(p).indexOf(q) !== -1;
+        });
+        vendorExtrasDb.searchProductIdsBySku(q, function (eSku2, skuIds) {
+          if (eSku2) {
+            return res.status(500).json({ ok: false, error: String(eSku2.message || eSku2) });
+          }
+          var filtered = nameHits.slice();
+          var seen = Object.create(null);
+          nameHits.forEach(function (p) {
+            seen[p.id] = 1;
           });
+          (skuIds || []).forEach(function (pid) {
+            if (!seen[pid] && listById[pid]) {
+              seen[pid] = 1;
+              filtered.push(listById[pid]);
+            }
+          });
+          vendorExtrasDb.getSkuMapForProductIds(
+            filtered.map(function (p) {
+              return p.id;
+            }),
+            function (eSku, skuMap) {
+              if (eSku) {
+                return res.status(500).json({ ok: false, error: String(eSku.message || eSku) });
+              }
+              var withSku = filtered.filter(function (p) {
+                var sku = skuMap[p.id] || "";
+                var hay = (p.id + " " + p.name + " " + p.category + " " + p.subcategory + " " + sku).toLowerCase();
+                return hay.indexOf(q) !== -1;
+              });
+              respondCatalogSlice(withSku, skuMap);
+            }
+          );
         });
       });
     });
-  });
   });
 });
 

@@ -589,6 +589,149 @@ function assertVendorManagedProductId(productId, cb) {
   });
 }
 
+function manageRowHaystack(p) {
+  return (
+    String(p.id || "") +
+    " " +
+    String(p.name || "") +
+    " " +
+    String(p.category || "") +
+    " " +
+    String(p.subcategory || "")
+  ).toLowerCase();
+}
+
+function pushStaticManageRow(p, omap, skuMap, out) {
+  var ov = omap[p.id] || {};
+  var listed = ov.listed !== false;
+  var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
+  var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
+  var comb = {};
+  ["s", "m", "l"].forEach(function (letter) {
+    var a = ovSl[letter];
+    var b = stSl[letter];
+    var slot = a && a.name ? a : b && b.name ? b : null;
+    if (slot && slot.name) {
+      comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
+    }
+  });
+  var row = {
+    id: p.id,
+    name: p.name,
+    category: p.category,
+    subcategory: p.subcategory,
+    image: p.image,
+    prices: {
+      s: ov.s != null ? Number(ov.s) : p.prices.s,
+      m: ov.m != null ? Number(ov.m) : p.prices.m,
+      l: ov.l != null ? Number(ov.l) : p.prices.l,
+    },
+    sku: skuMap[p.id] || "",
+    returnGift: !!(ov && ov.returnGift),
+    source: "catalog",
+    isActive: listed,
+  };
+  if (Object.keys(comb).length) {
+    row.sizeLabels = comb;
+  }
+  if (p.gallery && Array.isArray(p.gallery) && p.gallery.length) {
+    row.gallery = p.gallery.slice();
+  }
+  if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
+    row.options = ov.options;
+  }
+  if (row.category === "resin-clocks") {
+    row.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", row.subcategory);
+  }
+  if (row.category === "resin-guruji-products") {
+    row.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
+      "resin-guruji-products",
+      row.subcategory
+    );
+  }
+  if (row.category === "resin-keychains") {
+    row.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId("resin-keychains", row.subcategory);
+  }
+  out.push(row);
+}
+
+function pushVendorManageRow(row, omap, skuMap, out) {
+  var ov = omap[row.id] || {};
+  var listed = ov.listed !== false;
+  var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
+  var stSl = row.sizeLabels && typeof row.sizeLabels === "object" ? row.sizeLabels : {};
+  var comb = {};
+  ["s", "m", "l"].forEach(function (letter) {
+    var a = ovSl[letter];
+    var b = stSl[letter];
+    var slot = a && a.name ? a : b && b.name ? b : null;
+    if (slot && slot.name) {
+      comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
+    }
+  });
+  var merged = Object.assign({}, row, {
+    prices: {
+      s: ov.s != null ? Number(ov.s) : row.prices.s,
+      m: ov.m != null ? Number(ov.m) : row.prices.m,
+      l: ov.l != null ? Number(ov.l) : row.prices.l,
+    },
+    sku: skuMap[row.id] || "",
+    returnGift: !!(ov && ov.returnGift),
+    source: "vendor",
+    isActive: row.is_active !== false && listed,
+  });
+  if (Object.keys(comb).length) {
+    merged.sizeLabels = comb;
+  }
+  if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
+    merged.options = ov.options;
+  }
+  if (merged.category === "resin-clocks") {
+    merged.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", merged.subcategory);
+  }
+  if (merged.category === "resin-guruji-products") {
+    merged.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
+      "resin-guruji-products",
+      merged.subcategory
+    );
+  }
+  if (merged.category === "resin-keychains") {
+    merged.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId(
+      "resin-keychains",
+      merged.subcategory
+    );
+  }
+  out.push(merged);
+}
+
+function buildManageProductsOut(staticSlice, vendorSlice, omap, skuMap) {
+  var out = [];
+  staticSlice.forEach(function (p) {
+    pushStaticManageRow(p, omap, skuMap, out);
+  });
+  vendorSlice.forEach(function (row) {
+    pushVendorManageRow(row, omap, skuMap, out);
+  });
+  return out;
+}
+
+function filterManageOutByQuery(out, ql, skuMap) {
+  if (!ql) return out;
+  return out.filter(function (p) {
+    var hay =
+      p.id +
+      " " +
+      (p.name || "") +
+      " " +
+      (p.category || "") +
+      " " +
+      (p.subcategory || "") +
+      " " +
+      (p.sku || skuMap[p.id] || "");
+    return hay.toLowerCase().indexOf(ql) !== -1;
+  });
+}
+
 /**
  * Full storefront list for the Products admin page: data.js catalog + vendor-only DB rows,
  * merged with effective prices from overrides and optional inventory SKU hints.
@@ -615,136 +758,45 @@ function listAllProductsForManage(opts, cb) {
     listVendorManagedProducts(function (e3, vendorList) {
       if (e3) return cb(e3);
       vendorList = vendorList || [];
-      var allIds = [];
+
+      function finishWithSlices(staticSlice, vendorSlice) {
+        var ids = [];
+        staticSlice.forEach(function (p) {
+          ids.push(p.id);
+        });
+        vendorSlice.forEach(function (p) {
+          ids.push(p.id);
+        });
+        vendorExtrasDb.getSkuMapForProductIds(ids, function (e4, skuMap) {
+          if (e4) return cb(e4);
+          skuMap = skuMap || {};
+          var out = buildManageProductsOut(staticSlice, vendorSlice, omap, skuMap);
+          cb(null, filterManageOutByQuery(out, ql, skuMap));
+        });
+      }
+
+      if (!ql) {
+        return finishWithSlices(staticList, vendorList);
+      }
+
+      var staticById = Object.create(null);
       staticList.forEach(function (p) {
-        allIds.push(p.id);
+        staticById[p.id] = p;
       });
-      vendorList.forEach(function (p) {
-        allIds.push(p.id);
+      var staticWork = staticList.filter(function (p) {
+        return manageRowHaystack(p).indexOf(ql) !== -1;
       });
-      vendorExtrasDb.getSkuMapForProductIds(allIds, function (e4, skuMap) {
-        if (e4) return cb(e4);
-        skuMap = skuMap || {};
-        var out = [];
-
-        staticList.forEach(function (p) {
-          var ov = omap[p.id] || {};
-          var listed = ov.listed !== false;
-          var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
-          var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
-          var comb = {};
-          ["s", "m", "l"].forEach(function (letter) {
-            var a = ovSl[letter];
-            var b = stSl[letter];
-            var slot = a && a.name ? a : b && b.name ? b : null;
-            if (slot && slot.name) {
-              comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
-            }
-          });
-          var row = {
-            id: p.id,
-            name: p.name,
-            category: p.category,
-            subcategory: p.subcategory,
-            image: p.image,
-            prices: {
-              s: ov.s != null ? Number(ov.s) : p.prices.s,
-              m: ov.m != null ? Number(ov.m) : p.prices.m,
-              l: ov.l != null ? Number(ov.l) : p.prices.l,
-            },
-            sku: skuMap[p.id] || "",
-            returnGift: !!(ov && ov.returnGift),
-            source: "catalog",
-            isActive: listed,
-          };
-          if (Object.keys(comb).length) {
-            row.sizeLabels = comb;
+      var vendorWork = vendorList.filter(function (p) {
+        return manageRowHaystack(p).indexOf(ql) !== -1;
+      });
+      vendorExtrasDb.searchProductIdsBySku(ql, function (eSku, skuIds) {
+        if (eSku) return cb(eSku);
+        (skuIds || []).forEach(function (pid) {
+          if (staticById[pid] && staticWork.indexOf(staticById[pid]) < 0) {
+            staticWork.push(staticById[pid]);
           }
-          if (p.gallery && Array.isArray(p.gallery) && p.gallery.length) {
-            row.gallery = p.gallery.slice();
-          }
-          if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
-            row.options = ov.options;
-          }
-          if (row.category === "resin-clocks") {
-            row.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", row.subcategory);
-          }
-          if (row.category === "resin-guruji-products") {
-            row.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
-              "resin-guruji-products",
-              row.subcategory
-            );
-          }
-          if (row.category === "resin-keychains") {
-            row.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId("resin-keychains", row.subcategory);
-          }
-          out.push(row);
         });
-
-        vendorList.forEach(function (row) {
-          var ov = omap[row.id] || {};
-          var listed = ov.listed !== false;
-          var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
-          var stSl = row.sizeLabels && typeof row.sizeLabels === "object" ? row.sizeLabels : {};
-          var comb = {};
-          ["s", "m", "l"].forEach(function (letter) {
-            var a = ovSl[letter];
-            var b = stSl[letter];
-            var slot = a && a.name ? a : b && b.name ? b : null;
-            if (slot && slot.name) {
-              comb[letter] = { name: String(slot.name).trim().slice(0, 120) };
-            }
-          });
-          var merged = Object.assign({}, row, {
-            prices: {
-              s: ov.s != null ? Number(ov.s) : row.prices.s,
-              m: ov.m != null ? Number(ov.m) : row.prices.m,
-              l: ov.l != null ? Number(ov.l) : row.prices.l,
-            },
-            sku: skuMap[row.id] || "",
-            returnGift: !!(ov && ov.returnGift),
-            source: "vendor",
-            isActive: row.is_active !== false && listed,
-          });
-          if (Object.keys(comb).length) {
-            merged.sizeLabels = comb;
-          }
-          if (ov.options && typeof ov.options === "object" && Object.keys(ov.options).length) {
-            merged.options = ov.options;
-          }
-          if (merged.category === "resin-clocks") {
-            merged.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", merged.subcategory);
-          }
-          if (merged.category === "resin-guruji-products") {
-            merged.subcategory = resinGurujiProductsTaxonomy.normalizeResinGurujiProductsSubcategoryId(
-              "resin-guruji-products",
-              merged.subcategory
-            );
-          }
-          if (merged.category === "resin-keychains") {
-            merged.subcategory = resinKeychainsTaxonomy.normalizeResinKeychainsSubcategoryId(
-              "resin-keychains",
-              merged.subcategory
-            );
-          }
-          out.push(merged);
-        });
-
-        if (!ql) return cb(null, out);
-        var filtered = out.filter(function (p) {
-          var hay =
-            p.id +
-            " " +
-            (p.name || "") +
-            " " +
-            (p.category || "") +
-            " " +
-            (p.subcategory || "") +
-            " " +
-            (p.sku || "");
-          return hay.toLowerCase().indexOf(ql) !== -1;
-        });
-        cb(null, filtered);
+        finishWithSlices(staticWork, vendorWork);
       });
     });
   });
