@@ -2376,6 +2376,40 @@ body.product-page--oos .btn-add-lg {
   color: #5b21b6;
 }
 
+.product-catalog-gallery__nav[hidden] {
+  display: none;
+}
+
+/* Vendor colour swatches on catalog PDP (same tokens as raw-material PDP) */
+.page-product .pd-color-dock {
+  margin-bottom: 0.85rem;
+}
+
+.page-product .pd-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.page-product .rm-color-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  border: 2px solid rgba(15, 23, 42, 0.12);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.25s ease;
+}
+
+.page-product .rm-color-swatch:hover {
+  transform: scale(1.08);
+}
+
+.page-product .rm-color-swatch.is-on {
+  box-shadow: 0 0 0 3px #fff, 0 0 0 5px #5b21b6;
+}
+
 .product-catalog-gallery__thumb {
   display: block;
   width: 100%;

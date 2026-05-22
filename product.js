@@ -84,14 +84,37 @@
   var pendingLayoutHtml = id && !product && els.root ? els.root.innerHTML : "";
   var catalogWaitTimer = null;
 
-  function useResinVariantPdp(p) {
-    var m = window.RESIN_CATALOG_PDP;
-    return !!(p && m && typeof m.productHasVendorPdpOptions === "function" && m.productHasVendorPdpOptions(p));
-  }
-
   function teardownResinPdpBodyClasses() {
     document.body.classList.remove("page-product--resin-rm", "rm-page-wide");
   }
+
+  /** Vendor PDP options from price-overrides (same normalisation as resin catalog PDP). */
+  function vendorPdpOptions(p) {
+    if (!p || !window.RESIN_CATALOG_PDP) return null;
+    if (
+      typeof window.RESIN_CATALOG_PDP.productHasVendorPdpOptions !== "function" ||
+      !window.RESIN_CATALOG_PDP.productHasVendorPdpOptions(p)
+    ) {
+      return null;
+    }
+    if (typeof window.RESIN_CATALOG_PDP.productToMaterial !== "function") return null;
+    var mat = window.RESIN_CATALOG_PDP.productToMaterial(p);
+    return mat && mat.options ? mat.options : null;
+  }
+
+  function normalizeColorHex(raw) {
+    var h = String(raw == null ? "" : raw)
+      .trim()
+      .replace(/^#/, "");
+    if (!h) return "#888888";
+    if (/^[0-9a-fA-F]{6}$/.test(h)) return "#" + h.toLowerCase();
+    if (/^[0-9a-fA-F]{3}$/.test(h)) {
+      return ("#" + h[0] + h[0] + h[1] + h[1] + h[2] + h[2]).toLowerCase();
+    }
+    return "#888888";
+  }
+
+  var selectedColorId = "";
 
   function clearCatalogWaitTimer() {
     if (catalogWaitTimer) {
@@ -187,14 +210,6 @@
       }
       return;
     }
-    if (useResinVariantPdp(product)) {
-      if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.refresh) {
-        window.RESIN_CATALOG_PDP.refresh();
-      } else {
-        render();
-      }
-      return;
-    }
     if (els.root && els.root.querySelector("[data-resin-pdp]")) {
       if (restoreProductLayout()) {
         render();
@@ -207,13 +222,15 @@
       }
       return;
     }
+    renderVendorColorOptions();
+    setupProductGallery();
     refreshSizePickPrices();
     updatePrice();
   }
 
   var selected = "";
   var selectedQty = 1;
-  var galleryState = { urls: [], idx: 0 };
+  var galleryState = { urls: [], idx: 0, colorUrlById: Object.create(null) };
 
   function resolveCatalogImg(rel) {
     if (!rel) return "";
@@ -225,18 +242,36 @@
 
   var PLACEHOLDER_REL = "media/placeholder-product.svg";
 
-  /** Deduped main + gallery URLs (order: primary image first, then extras). Used for hero + right-hand thumbnails so the base shot is always selectable. */
+  /** Deduped gallery URLs — vendor colour/size images, extra gallery lines, then catalog image. */
   function productGalleryUrls(p) {
     if (!p) return [resolveCatalogImg(PLACEHOLDER_REL)];
+    var opt = vendorPdpOptions(p);
     var extra = p.gallery || p.galleryImages;
     if (!Array.isArray(extra)) extra = [];
     var seen = Object.create(null);
     var out = [];
+    galleryState.colorUrlById = Object.create(null);
     function push(u) {
       var abs = resolveCatalogImg(u);
       if (!abs || seen[abs]) return;
       seen[abs] = 1;
       out.push(abs);
+    }
+    if (opt && opt.useColor && opt.colors && opt.colors.length) {
+      opt.colors.forEach(function (c) {
+        var u = String(c.image || "").trim();
+        if (!u) return;
+        push(u);
+        if (c.id) galleryState.colorUrlById[String(c.id)] = resolveCatalogImg(u);
+      });
+    }
+    if (opt && Array.isArray(opt.galleryImages)) {
+      opt.galleryImages.forEach(function (u) {
+        push(u);
+      });
+    }
+    if (opt && opt.heroImage) {
+      push(opt.heroImage);
     }
     push(p.image);
     extra.forEach(function (x) {
@@ -244,6 +279,40 @@
     });
     if (!out.length) out.push(resolveCatalogImg(PLACEHOLDER_REL));
     return out;
+  }
+
+  function galleryIndexForColorId(cid) {
+    if (!cid) return 0;
+    var u = galleryState.colorUrlById[String(cid)];
+    if (!u) return 0;
+    var ix = galleryState.urls.indexOf(u);
+    return ix >= 0 ? ix : 0;
+  }
+
+  function setGalleryIndex(idx) {
+    idx = Math.max(0, Math.min(galleryState.urls.length - 1, idx));
+    galleryState.idx = idx;
+    var track = document.getElementById("productGalleryTrack");
+    if (track) {
+      track.querySelectorAll(".product-catalog-gallery__thumb").forEach(function (btn) {
+        var i = Number(btn.getAttribute("data-idx")) || 0;
+        var on = i === idx;
+        btn.classList.toggle("is-active", on);
+        btn.setAttribute("aria-selected", on ? "true" : "false");
+      });
+    }
+    var hero = document.getElementById("productImage");
+    if (hero && galleryState.urls[idx]) hero.src = galleryState.urls[idx];
+  }
+
+  function updateGalleryNavVisibility() {
+    var track = document.getElementById("productGalleryTrack");
+    var up = document.getElementById("productGalleryUp");
+    var dn = document.getElementById("productGalleryDown");
+    if (!track || !up || !dn) return;
+    var needScroll = track.scrollHeight > track.clientHeight + 6;
+    up.hidden = !needScroll;
+    dn.hidden = !needScroll;
   }
 
   function wireProductCatalogGalleryOnce() {
@@ -254,18 +323,12 @@
       var b = e.target && e.target.closest && e.target.closest(".product-catalog-gallery__thumb");
       if (!b || !wrap.contains(b)) return;
       var idx = Number(b.getAttribute("data-idx")) || 0;
-      galleryState.idx = idx;
-      var track = document.getElementById("productGalleryTrack");
-      if (track) {
-        track.querySelectorAll(".product-catalog-gallery__thumb").forEach(function (btn) {
-          var i = Number(btn.getAttribute("data-idx")) || 0;
-          var on = i === idx;
-          btn.classList.toggle("is-active", on);
-          btn.setAttribute("aria-selected", on ? "true" : "false");
-        });
+      setGalleryIndex(idx);
+      var cid = b.getAttribute("data-cid");
+      if (cid) {
+        selectedColorId = String(cid);
+        renderVendorColorOptions();
       }
-      var hero = document.getElementById("productImage");
-      if (hero && galleryState.urls[idx]) hero.src = galleryState.urls[idx];
     });
     var track = document.getElementById("productGalleryTrack");
     var up = document.getElementById("productGalleryUp");
@@ -280,6 +343,101 @@
     nav(dn, 88);
   }
 
+  function renderVendorColorOptions() {
+    var opt = vendorPdpOptions(product);
+    var dock = document.getElementById("productColorDock");
+    if (!opt || !opt.useColor || !opt.colors || !opt.colors.length) {
+      if (dock) dock.hidden = true;
+      selectedColorId = "";
+      return;
+    }
+    if (!dock) {
+      dock = document.createElement("div");
+      dock.id = "productColorDock";
+      dock.className = "pd-color-dock glass-panel pd-buy-rail__colors size-dock--compact";
+      dock.innerHTML =
+        '<div class="size-dock__head size-dock__head--inline"><h2 class="size-dock__title">Colour</h2></div>' +
+        '<div class="rm-color-row pd-color-row" id="productColorOptions" role="radiogroup" aria-label="Choose colour"></div>';
+      if (els.sizeDock && els.sizeDock.parentNode) {
+        els.sizeDock.parentNode.insertBefore(dock, els.sizeDock);
+      }
+    }
+    dock.hidden = false;
+    var row = document.getElementById("productColorOptions");
+    if (!row) return;
+    if (!selectedColorId || !opt.colors.some(function (c) { return c.id === selectedColorId; })) {
+      selectedColorId = opt.colors[0] ? String(opt.colors[0].id || "") : "";
+    }
+    row.innerHTML = opt.colors
+      .map(function (c) {
+        var cid = String(c.id || "");
+        var on = cid === selectedColorId ? " is-on" : "";
+        var hx = normalizeColorHex(c.hex != null ? c.hex : c.Hex);
+        return (
+          '<button type="button" class="rm-color-swatch' +
+          on +
+          '" data-cid="' +
+          escapeAttr(cid) +
+          '" style="background-color:' +
+          escapeAttr(hx) +
+          '" title="' +
+          escapeAttr(c.label || "") +
+          '" aria-checked="' +
+          (on ? "true" : "false") +
+          '"><span class="visually-hidden">' +
+          escapeHtml(c.label || "Colour") +
+          "</span></button>"
+        );
+      })
+      .join("");
+    row.querySelectorAll(".rm-color-swatch[data-cid]").forEach(function (btn) {
+      if (btn.dataset.cgColorBound === "1") return;
+      btn.dataset.cgColorBound = "1";
+      btn.addEventListener("click", function () {
+        selectedColorId = String(btn.getAttribute("data-cid") || "");
+        row.querySelectorAll(".rm-color-swatch[data-cid]").forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle("is-on", on);
+          b.setAttribute("aria-checked", on ? "true" : "false");
+        });
+        setGalleryIndex(galleryIndexForColorId(selectedColorId));
+      });
+    });
+  }
+
+  function cartLineImage() {
+    if (!product) return "";
+    var opt = vendorPdpOptions(product);
+    if (selectedColorId && opt && opt.colors) {
+      for (var i = 0; i < opt.colors.length; i++) {
+        if (String(opt.colors[i].id) === String(selectedColorId)) {
+          var u = String(opt.colors[i].image || "").trim();
+          if (u) return resolveCatalogImg(u);
+        }
+      }
+    }
+    var ix = galleryState.idx;
+    if (galleryState.urls && galleryState.urls[ix]) return galleryState.urls[ix];
+    return resolveCatalogImg(product.image);
+  }
+
+  function cartVariantLabel() {
+    var opt = vendorPdpOptions(product);
+    if (!selectedColorId || !opt || !opt.colors) return "";
+    for (var i = 0; i < opt.colors.length; i++) {
+      if (String(opt.colors[i].id) === String(selectedColorId)) {
+        return String(opt.colors[i].label || "").trim();
+      }
+    }
+    return "";
+  }
+
+  function cartSizeKey() {
+    var base = selected || "m";
+    if (selectedColorId) return base + "|c:" + selectedColorId;
+    return base;
+  }
+
   function setupProductGallery() {
     wireProductCatalogGalleryOnce();
     if (!product) return;
@@ -290,6 +448,8 @@
     var col = document.getElementById("productGalleryThumbs");
     var track = document.getElementById("productGalleryTrack");
     var img = document.getElementById("productImage");
+    var up = document.getElementById("productGalleryUp");
+    var dn = document.getElementById("productGalleryDown");
     if (!wrap || !col || !track || !img) return;
     var multi = urls.length > 1;
     col.hidden = !multi;
@@ -297,23 +457,40 @@
     img.src = urls[0] || "";
     if (!multi) {
       track.innerHTML = "";
+      if (up) up.hidden = true;
+      if (dn) dn.hidden = true;
       return;
     }
+    var opt = vendorPdpOptions(product);
+    var cidForUrl = Object.create(null);
+    if (opt && opt.colors) {
+      opt.colors.forEach(function (c) {
+        var abs = galleryState.colorUrlById[String(c.id || "")];
+        if (abs) cidForUrl[abs] = String(c.id || "");
+      });
+    }
+    var activeIx = Math.min(galleryState.idx, urls.length - 1);
     track.innerHTML = urls
       .map(function (u, i) {
+        var cidAttr = cidForUrl[u] ? ' data-cid="' + escapeAttr(cidForUrl[u]) + '"' : "";
         return (
           '<button type="button" role="tab" class="product-catalog-gallery__thumb' +
-          (i === 0 ? " is-active" : "") +
+          (i === activeIx ? " is-active" : "") +
           '" data-idx="' +
           i +
-          '" aria-selected="' +
-          (i === 0 ? "true" : "false") +
+          '"' +
+          cidAttr +
+          ' aria-selected="' +
+          (i === activeIx ? "true" : "false") +
           '"><img src="' +
           escapeAttr(u) +
           '" alt="" loading="lazy" width="72" height="72" /></button>'
         );
       })
       .join("");
+    setGalleryIndex(activeIx);
+    updateGalleryNavVisibility();
+    requestAnimationFrame(updateGalleryNavVisibility);
   }
 
   function escapeHtml(s) {
@@ -455,20 +632,10 @@
       return;
     }
 
-    if (useResinVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
-      try {
-        window.RESIN_CATALOG_PDP.mount(product);
-      } catch (er) {
-        void er;
-      }
-      return;
-    }
-
     if (els.root && els.root.querySelector("[data-resin-pdp]") && productPageLayoutHtml) {
       restoreProductLayout();
-    } else {
-      teardownResinPdpBodyClasses();
     }
+    teardownResinPdpBodyClasses();
 
     document.title = product.name + " — Craft guru";
 
@@ -497,7 +664,11 @@
     if (els.img) {
       els.img.alt = product.name;
     }
+    renderVendorColorOptions();
     setupProductGallery();
+    if (selectedColorId) {
+      setGalleryIndex(galleryIndexForColorId(selectedColorId));
+    }
     if (els.back) {
       els.back.href = "category.html?cat=" + encodeURIComponent(product.category);
       els.back.textContent = catLabel;
@@ -596,12 +767,15 @@
         var base = product.prices[selected];
         var q = selectedQty;
         var unit = Math.round(Number(base) * 100) / 100;
+        var vlabel = cartVariantLabel();
         CART.addItem({
           id: product.id,
-          size: selected,
+          size: cartSizeKey(),
+          stockSlot: selected,
+          variantLabel: vlabel,
           name: product.name,
           price: unit,
-          image: product.image,
+          image: cartLineImage() || product.image,
           qty: q,
         });
         if (window.RESIN_SHELL) {
@@ -798,6 +972,14 @@
       return;
     }
     if (product) {
+      var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
+      if (typeof merge === "function") {
+        merge().finally(function () {
+          refreshProductRef();
+          render();
+        });
+        return;
+      }
       render();
       return;
     }
