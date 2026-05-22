@@ -192,9 +192,14 @@
     return arr
       .map(function (row, idx) {
         if (!row || typeof row !== "object") return null;
-        var id = String(row.id || "").trim().slice(0, 40) || (kind === "co" ? "co-" + idx : "sz-" + idx);
+        var id = String(row.id || "").trim().slice(0, 40) || (kind === "co" ? "co-" + idx : kind === "qt" ? "qt-" + idx : "sz-" + idx);
         var label = String(row.label || "").trim().slice(0, 120);
-        if (!label) return null;
+        if (!label) {
+          if (kind === "co" && String(row.image || "").trim()) label = "Colour " + (idx + 1);
+          else if (kind === "sz" && String(row.image || "").trim()) label = "Size " + (idx + 1);
+          else if (kind === "qt") label = "Pack " + (idx + 1);
+          else return null;
+        }
         var out = {
           id: id,
           label: label,
@@ -219,8 +224,19 @@
       o.useQty ||
       (o.sizes && o.sizes.length) ||
       (o.colors && o.colors.length) ||
-      (o.qtyOptions && o.qtyOptions.length)
+      (o.qtyOptions && o.qtyOptions.length) ||
+      (Array.isArray(o.galleryImages) && o.galleryImages.length) ||
+      String(o.heroImage || "").trim()
     );
+  }
+
+  function productHasVendorPdpOptions(p) {
+    return !!(p && hasVendorStyleOptions(p.options));
+  }
+
+  function getOptionsForProduct(p) {
+    if (!productHasVendorPdpOptions(p)) return null;
+    return productToMaterial(p).options;
   }
 
   function mergeVendorProductOptions(p, raw) {
@@ -382,6 +398,17 @@
     if (state.keychainAlpha) o.keychainAlphabet = state.keychainAlpha;
     if (state.keychainName) o.keychainName = state.keychainName;
     return Object.keys(o).length ? o : null;
+  }
+
+  function updateResinThumbNavVisibility(root) {
+    if (!root) return;
+    var track = root.querySelector(".rm-pdp-thumb-track");
+    var up = root.querySelector(".rm-pdp-thumb-nav--up");
+    var dn = root.querySelector(".rm-pdp-thumb-nav--down");
+    if (!track || !up || !dn) return;
+    var need = track.scrollHeight > track.clientHeight + 6;
+    up.hidden = !need;
+    dn.hidden = !need;
   }
 
   function showNeedBulkUrl(name) {
@@ -560,6 +587,7 @@
 
     if (!shellNeedsRebuild(root, m, gcount)) {
       patchPdpView(root, m, entries, idx, mainImg, eff, effM, pct);
+      updateResinThumbNavVisibility(root);
       return;
     }
 
@@ -779,6 +807,7 @@
     root.innerHTML = html;
     var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
     if (shellEl) shellEl.setAttribute("data-resin-opt-sig", optionsLayoutSig(m));
+    updateResinThumbNavVisibility(root);
     if (window.RESIN_WISHLIST && state.product) {
       var wishBtn = document.getElementById("resinPdpWish");
       if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id, "catalog");
@@ -809,71 +838,79 @@
     if (ina) ina.addEventListener("input", function () { state.keychainName = String(ina.value).slice(0, 200); });
   }
 
+  function scrollResinThumbStrip(root, dir) {
+    if (!root) return;
+    var track = root.querySelector(".rm-pdp-thumb-track");
+    if (!track) return;
+    var st = window.getComputedStyle(track);
+    var row = st.flexDirection === "row" || st.flexDirection === "row-reverse";
+    if (row) track.scrollBy({ left: dir * 88, behavior: "smooth" });
+    else track.scrollBy({ top: dir * 88, behavior: "smooth" });
+  }
+
   function wirePdpClicks(root) {
     if (!root || root.dataset.resinPdpWired === "1") return;
     root.dataset.resinPdpWired = "1";
     root.addEventListener("click", function (e) {
       var t = e.target;
-      if (!t || !state.material) return;
+      if (!t || !t.closest || !state.material) return;
       var m = state.material;
-      if (t.closest && t.closest(".rm-pdp__thumb")) {
-        var b = t.closest(".rm-pdp__thumb");
-        state.imgIndex = Number(b.getAttribute("data-img-idx")) || 0;
-        var sync = b.getAttribute("data-gallery-sync");
-        if (sync === "color") state.sel.cid = b.getAttribute("data-gallery-cid") || "";
-        else if (sync === "size") state.sel.sid = b.getAttribute("data-gallery-sid") || "";
-        else if (sync === "qty") state.sel.qid = b.getAttribute("data-gallery-qid") || "";
+      var pRoot = document.getElementById("productRoot");
+
+      if (t.closest(".rm-pdp-thumb-nav--up")) {
+        scrollResinThumbStrip(root, -1);
+        return;
+      }
+      if (t.closest(".rm-pdp-thumb-nav--down")) {
+        scrollResinThumbStrip(root, 1);
+        return;
+      }
+
+      var thumb = t.closest(".rm-pdp__thumb");
+      if (thumb) {
+        state.imgIndex = Number(thumb.getAttribute("data-img-idx")) || 0;
+        var sync = thumb.getAttribute("data-gallery-sync");
+        if (sync === "color") state.sel.cid = thumb.getAttribute("data-gallery-cid") || "";
+        else if (sync === "size") state.sel.sid = thumb.getAttribute("data-gallery-sid") || "";
+        else if (sync === "qty") state.sel.qid = thumb.getAttribute("data-gallery-qid") || "";
         state.heroZoom = 1;
-        renderPdp(document.getElementById("productRoot"));
+        renderPdp(pRoot);
         return;
       }
-      if (t.getAttribute("data-sid") != null) {
-        var sid = t.getAttribute("data-sid");
-        var opt = m.options || {};
-        state.sel.sid = sid;
-        if (opt.useColor && opt.colors && opt.colors.length) {
-          var g = galleryEntries(m, state.sel);
-          var hx = 0;
-          for (var gi = 0; gi < g.length; gi++) {
-            if (g[gi].kind === "size" && g[gi].sid === sid) {
-              hx = gi;
-              break;
-            }
-          }
-          state.imgIndex = hx;
-        } else {
-          for (var si = 0; si < (opt.sizes || []).length; si++) {
-            if (String(opt.sizes[si].id) === String(sid) && opt.sizes[si].image) {
-              var ent2 = galleryEntries(m, state.sel);
-              for (var ej = 0; ej < ent2.length; ej++) {
-                if (String(ent2[ej].url) === String(opt.sizes[si].image)) {
-                  state.imgIndex = ej;
-                  break;
-                }
-              }
-            }
-          }
-        }
-        renderPdp(document.getElementById("productRoot"));
-        return;
-      }
-      if (t.getAttribute("data-qid") != null) {
-        state.sel.qid = t.getAttribute("data-qid");
-        var gq = galleryEntries(m, state.sel);
-        var ixq = state.sel.cid ? indexForCid(gq, state.sel.cid) : 0;
-        state.imgIndex = ixq >= 0 ? ixq : 0;
+
+      var sw = t.closest(".rm-color-swatch[data-cid]");
+      if (sw) {
+        state.sel.cid = sw.getAttribute("data-cid") || "";
+        var g4 = galleryEntries(m, state.sel);
+        var ix4 = indexForCid(g4, state.sel.cid);
+        state.imgIndex = ix4 >= 0 ? ix4 : 0;
         state.heroZoom = 1;
-        renderPdp(document.getElementById("productRoot"));
+        renderPdp(pRoot);
         return;
       }
-      if (t.getAttribute("data-cid") != null) {
-        state.sel.cid = t.getAttribute("data-cid");
-        var g0 = galleryEntries(m, state.sel);
-        var ci = indexForCid(g0, state.sel.cid);
-        if (ci >= 0) state.imgIndex = ci;
-        renderPdp(document.getElementById("productRoot"));
+
+      var sizePill = t.closest('.rm-opt-pills[data-rm-opt="size"] .rm-opt-pill[data-sid]');
+      if (sizePill) {
+        state.sel.sid = sizePill.getAttribute("data-sid") || "";
+        var g2 = galleryEntries(m, state.sel);
+        var ix2 = state.sel.cid ? indexForCid(g2, state.sel.cid) : 0;
+        state.imgIndex = ix2 >= 0 ? ix2 : 0;
+        state.heroZoom = 1;
+        renderPdp(pRoot);
         return;
       }
+
+      var qtyPill = t.closest('.rm-opt-pills[data-rm-opt="qty"] .rm-opt-pill[data-qid]');
+      if (qtyPill) {
+        state.sel.qid = qtyPill.getAttribute("data-qid") || "";
+        var g3 = galleryEntries(m, state.sel);
+        var ix3 = state.sel.cid ? indexForCid(g3, state.sel.cid) : 0;
+        state.imgIndex = ix3 >= 0 ? ix3 : 0;
+        state.heroZoom = 1;
+        renderPdp(pRoot);
+        return;
+      }
+
       if (t.getAttribute("data-rm-gallery-nav") != null) {
         var dir = Number(t.getAttribute("data-rm-gallery-nav")) || 0;
         var g1 = galleryEntries(m, state.sel);
@@ -886,7 +923,7 @@
         if (pos < 0) pos = 0;
         var np = (pos + dir + idx.length) % idx.length;
         state.imgIndex = idx[np];
-        renderPdp(document.getElementById("productRoot"));
+        renderPdp(pRoot);
         return;
       }
       if (t.getAttribute("data-rm-line-qty") != null) {
@@ -1007,6 +1044,8 @@
     mount: mount,
     refresh: refresh,
     productToMaterial: productToMaterial,
-    productHasVendorPdpOptions: hasVendorStyleOptions,
+    productHasVendorPdpOptions: productHasVendorPdpOptions,
+    getOptionsForProduct: getOptionsForProduct,
+    hasVendorStyleOptions: hasVendorStyleOptions,
   };
 })();

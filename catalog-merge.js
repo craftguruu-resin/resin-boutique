@@ -102,6 +102,9 @@
       })
       .then(function (j) {
         if (j && j.ok && j.overrides) {
+          try {
+            window.__cgCatalogOverrides = j.overrides;
+          } catch (_) {}
           D.applyPriceOverrides(j.overrides);
         }
       })

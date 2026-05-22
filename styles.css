@@ -2410,6 +2410,26 @@ body.product-page--oos .btn-add-lg {
   box-shadow: 0 0 0 3px #fff, 0 0 0 5px #5b21b6;
 }
 
+.page-product .size-options .rm-opt-pill {
+  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.92);
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+}
+
+.page-product .size-options .rm-opt-pill.is-on {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(5, 150, 105, 0.12));
+  border-color: rgba(5, 150, 105, 0.45);
+  color: #064e3b;
+}
+
+.rm-pdp-thumb-nav[hidden] {
+  display: none;
+}
+
 .product-catalog-gallery__thumb {
   display: block;
   width: 100%;

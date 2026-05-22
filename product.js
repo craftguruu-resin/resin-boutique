@@ -88,9 +88,28 @@
     document.body.classList.remove("page-product--resin-rm", "rm-page-wide");
   }
 
+  function applyCachedCatalogOverrides() {
+    try {
+      var ov = window.__cgCatalogOverrides;
+      if (ov && D.applyPriceOverrides) D.applyPriceOverrides(ov);
+    } catch (_) {}
+  }
+
+  function productUsesVendorVariantPdp(p) {
+    return !!(
+      p &&
+      window.RESIN_CATALOG_PDP &&
+      typeof window.RESIN_CATALOG_PDP.productHasVendorPdpOptions === "function" &&
+      window.RESIN_CATALOG_PDP.productHasVendorPdpOptions(p)
+    );
+  }
+
   /** Vendor PDP options from price-overrides (same normalisation as resin catalog PDP). */
   function vendorPdpOptions(p) {
     if (!p || !window.RESIN_CATALOG_PDP) return null;
+    if (typeof window.RESIN_CATALOG_PDP.getOptionsForProduct === "function") {
+      return window.RESIN_CATALOG_PDP.getOptionsForProduct(p);
+    }
     if (
       typeof window.RESIN_CATALOG_PDP.productHasVendorPdpOptions !== "function" ||
       !window.RESIN_CATALOG_PDP.productHasVendorPdpOptions(p)
@@ -202,11 +221,20 @@
   }
 
   function onCatalogPricesMerged() {
+    applyCachedCatalogOverrides();
     refreshProductRef();
     clearCatalogWaitTimer();
     if (!product) {
       if (pendingLayoutHtml && els.root && els.root.querySelector(".product-page-awaiting-catalog")) {
         render404();
+      }
+      return;
+    }
+    if (productUsesVendorVariantPdp(product)) {
+      if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP.refresh) {
+        window.RESIN_CATALOG_PDP.refresh();
+      } else {
+        render();
       }
       return;
     }
@@ -223,12 +251,14 @@
       return;
     }
     renderVendorColorOptions();
+    renderVendorSizeOptions();
     setupProductGallery();
     refreshSizePickPrices();
     updatePrice();
   }
 
   var selected = "";
+  var selectedVendorSid = "";
   var selectedQty = 1;
   var galleryState = { urls: [], idx: 0, colorUrlById: Object.create(null) };
 
@@ -263,6 +293,11 @@
         if (!u) return;
         push(u);
         if (c.id) galleryState.colorUrlById[String(c.id)] = resolveCatalogImg(u);
+      });
+    }
+    if (opt && opt.useSize && opt.sizes && opt.sizes.length) {
+      opt.sizes.forEach(function (s) {
+        push(s.image);
       });
     }
     if (opt && Array.isArray(opt.galleryImages)) {
@@ -343,6 +378,77 @@
     nav(dn, 88);
   }
 
+  function vendorUsesCustomSizePills(opt) {
+    return !!(opt && opt.useSize && opt.sizes && opt.sizes.length);
+  }
+
+  function renderVendorSizeOptions() {
+    var opt = vendorPdpOptions(product);
+    if (!els.sizes) return;
+    if (!vendorUsesCustomSizePills(opt)) {
+      if (els.sizeDock) els.sizeDock.hidden = false;
+      return;
+    }
+    if (els.sizeDock) els.sizeDock.hidden = false;
+    if (els.sizeScale) {
+      els.sizeScale.hidden = true;
+      els.sizeScale.setAttribute("aria-hidden", "true");
+    }
+    if (!selectedVendorSid || !opt.sizes.some(function (s) { return String(s.id) === String(selectedVendorSid); })) {
+      selectedVendorSid = String(opt.sizes[0].id || "");
+    }
+    els.sizes.innerHTML = opt.sizes
+      .map(function (s) {
+        var sid = String(s.id || "");
+        var on = sid === selectedVendorSid ? " is-on" : "";
+        var pr = s.priceInr != null && Number.isFinite(Number(s.priceInr)) ? fmt(Number(s.priceInr)) : "";
+        var label = escapeHtml(s.label || sid);
+        var priceBit = pr ? ' <span class="size-pill__price">' + pr + ' <span class="currency-tag">MRP</span></span>' : "";
+        return (
+          '<button type="button" class="rm-opt-pill size-pick size-pick--pill' +
+          on +
+          '" data-vendor-sid="' +
+          escapeAttr(sid) +
+          '" role="radio" aria-checked="' +
+          (on ? "true" : "false") +
+          '"><span class="size-pill__label">' +
+          label +
+          "</span>" +
+          priceBit +
+          "</button>"
+        );
+      })
+      .join("");
+    els.sizes.querySelectorAll("[data-vendor-sid]").forEach(function (btn) {
+      if (btn.dataset.cgVendorSzBound === "1") return;
+      btn.dataset.cgVendorSzBound = "1";
+      btn.addEventListener("click", function () {
+        selectedVendorSid = String(btn.getAttribute("data-vendor-sid") || "");
+        els.sizes.querySelectorAll("[data-vendor-sid]").forEach(function (b) {
+          var on = b === btn;
+          b.classList.toggle("is-on", on);
+          b.setAttribute("aria-checked", on ? "true" : "false");
+        });
+        var opt2 = vendorPdpOptions(product);
+        if (opt2 && opt2.sizes) {
+          for (var i = 0; i < opt2.sizes.length; i++) {
+            if (String(opt2.sizes[i].id) === selectedVendorSid) {
+              var u = String(opt2.sizes[i].image || "").trim();
+              if (u) {
+                var abs = resolveCatalogImg(u);
+                var ix = galleryState.urls.indexOf(abs);
+                if (ix >= 0) setGalleryIndex(ix);
+              }
+              break;
+            }
+          }
+        }
+        updatePrice();
+      });
+    });
+    updatePrice();
+  }
+
   function renderVendorColorOptions() {
     var opt = vendorPdpOptions(product);
     var dock = document.getElementById("productColorDock");
@@ -358,8 +464,10 @@
       dock.innerHTML =
         '<div class="size-dock__head size-dock__head--inline"><h2 class="size-dock__title">Colour</h2></div>' +
         '<div class="rm-color-row pd-color-row" id="productColorOptions" role="radiogroup" aria-label="Choose colour"></div>';
-      if (els.sizeDock && els.sizeDock.parentNode) {
-        els.sizeDock.parentNode.insertBefore(dock, els.sizeDock);
+      var qtyDock = document.getElementById("qtyDock");
+      var anchor = qtyDock && qtyDock.parentNode ? qtyDock : els.sizeDock && els.sizeDock.parentNode;
+      if (anchor) {
+        anchor.insertBefore(dock, qtyDock || els.sizeDock);
       }
     }
     dock.hidden = false;
@@ -433,9 +541,47 @@
   }
 
   function cartSizeKey() {
+    var opt = vendorPdpOptions(product);
+    if (vendorUsesCustomSizePills(opt) && selectedVendorSid) {
+      var parts = ["s:" + selectedVendorSid];
+      if (selectedColorId) parts.push("c:" + selectedColorId);
+      return parts.join("|");
+    }
     var base = selected || "m";
     if (selectedColorId) return base + "|c:" + selectedColorId;
     return base;
+  }
+
+  function cartStockSlot() {
+    var opt = vendorPdpOptions(product);
+    if (vendorUsesCustomSizePills(opt) && selectedVendorSid) {
+      var sid = String(selectedVendorSid).toLowerCase();
+      if (sid === "s" || sid === "m" || sid === "l") return sid;
+      for (var i = 0; i < (opt.sizes || []).length; i++) {
+        if (String(opt.sizes[i].id) === String(selectedVendorSid)) {
+          return ["s", "m", "l"][Math.min(i, 2)] || "m";
+        }
+      }
+    }
+    return selected || "m";
+  }
+
+  function cartVariantLabelFull() {
+    var bits = [];
+    var opt = vendorPdpOptions(product);
+    if (vendorUsesCustomSizePills(opt) && selectedVendorSid) {
+      for (var i = 0; i < opt.sizes.length; i++) {
+        if (String(opt.sizes[i].id) === String(selectedVendorSid)) {
+          bits.push(String(opt.sizes[i].label || ""));
+          break;
+        }
+      }
+    } else if (els.priceSizeLabel) {
+      bits.push(String(els.priceSizeLabel.textContent || "").trim());
+    }
+    var cl = cartVariantLabel();
+    if (cl) bits.push(cl);
+    return bits.filter(Boolean).join(" · ");
   }
 
   function setupProductGallery() {
@@ -587,7 +733,23 @@
 
   function updatePrice() {
     if (!product || !els.price) return;
-    var base = product.prices[selected];
+    var opt = vendorPdpOptions(product);
+    var base;
+    if (opt && vendorUsesCustomSizePills(opt) && selectedVendorSid) {
+      for (var si = 0; si < opt.sizes.length; si++) {
+        if (String(opt.sizes[si].id) === String(selectedVendorSid)) {
+          base =
+            opt.sizes[si].priceInr != null && Number.isFinite(Number(opt.sizes[si].priceInr))
+              ? Number(opt.sizes[si].priceInr)
+              : product.prices.m;
+          if (els.priceSizeLabel) els.priceSizeLabel.textContent = String(opt.sizes[si].label || "");
+          break;
+        }
+      }
+      if (base == null || !Number.isFinite(Number(base))) base = product.prices[selected] || product.prices.m;
+    } else {
+      base = product.prices[selected];
+    }
     var q = selectedQty;
     var unit = Math.round(Number(base) * 100) / 100;
     var total = Math.round(unit * q * 100) / 100;
@@ -632,6 +794,18 @@
       return;
     }
 
+    applyCachedCatalogOverrides();
+    refreshProductRef();
+
+    if (productUsesVendorVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
+      try {
+        window.RESIN_CATALOG_PDP.mount(product);
+      } catch (er) {
+        void er;
+      }
+      return;
+    }
+
     if (els.root && els.root.querySelector("[data-resin-pdp]") && productPageLayoutHtml) {
       restoreProductLayout();
     }
@@ -664,6 +838,7 @@
     if (els.img) {
       els.img.alt = product.name;
     }
+    renderVendorSizeOptions();
     renderVendorColorOptions();
     setupProductGallery();
     if (selectedColorId) {
@@ -682,7 +857,10 @@
       selected = pickDefaultSizeKey(product, offered);
     }
 
-    if (els.sizes) {
+    var optForSizes = vendorPdpOptions(product);
+    if (vendorUsesCustomSizePills(optForSizes)) {
+      renderVendorSizeOptions();
+    } else if (els.sizes) {
       els.sizes.innerHTML = "";
       offered.forEach(function (key) {
         var labName = D.getSizeLabelNameForProduct
@@ -764,15 +942,28 @@
           window.alert("Only " + stk + " left in stock for this size. Lower the quantity or pick another size.");
           return;
         }
-        var base = product.prices[selected];
+        var optCart = vendorPdpOptions(product);
+        var unit;
+        if (vendorUsesCustomSizePills(optCart) && selectedVendorSid) {
+          for (var ci = 0; ci < optCart.sizes.length; ci++) {
+            if (String(optCart.sizes[ci].id) === String(selectedVendorSid)) {
+              unit =
+                optCart.sizes[ci].priceInr != null && Number.isFinite(Number(optCart.sizes[ci].priceInr))
+                  ? Number(optCart.sizes[ci].priceInr)
+                  : product.prices.m;
+              break;
+            }
+          }
+        } else {
+          unit = Math.round(Number(product.prices[selected]) * 100) / 100;
+        }
+        if (!Number.isFinite(unit)) unit = 0;
         var q = selectedQty;
-        var unit = Math.round(Number(base) * 100) / 100;
-        var vlabel = cartVariantLabel();
         CART.addItem({
           id: product.id,
           size: cartSizeKey(),
-          stockSlot: selected,
-          variantLabel: vlabel,
+          stockSlot: cartStockSlot(),
+          variantLabel: cartVariantLabelFull(),
           name: product.name,
           price: unit,
           image: cartLineImage() || product.image,
@@ -972,15 +1163,23 @@
       return;
     }
     if (product) {
+      applyCachedCatalogOverrides();
+      refreshProductRef();
+      render();
       var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
       if (typeof merge === "function") {
-        merge().finally(function () {
-          refreshProductRef();
-          render();
-        });
-        return;
+        merge()
+          .finally(function () {
+            applyCachedCatalogOverrides();
+            refreshProductRef();
+            render();
+          })
+          .catch(function () {
+            applyCachedCatalogOverrides();
+            refreshProductRef();
+            render();
+          });
       }
-      render();
       return;
     }
     if (pendingLayoutHtml) {
