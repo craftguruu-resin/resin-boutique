@@ -777,17 +777,23 @@
 
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogPricesMerged);
 
-  /** BFCache restore: URL id can change while JS state was frozen — reload to avoid wrong product. */
+  /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {
     if (!ev.persisted) return;
     try {
       var nextId = new URLSearchParams(window.location.search).get("id");
-      if (nextId !== id) {
-        window.location.reload();
+      if (!nextId || nextId === id) return;
+      id = nextId;
+      refreshProductRef();
+      clearCatalogWaitTimer();
+      if (product) {
+        render();
+      } else if (pendingLayoutHtml) {
+        renderLoadingForCatalog();
+      } else {
+        render404();
       }
-    } catch (_) {
-      window.location.reload();
-    }
+    } catch (_) {}
   });
 
   initialRender();

@@ -1115,6 +1115,10 @@ main {
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: linear-gradient(160deg, #5a6a82, #3d4658);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
 }
 
 .product-badge {

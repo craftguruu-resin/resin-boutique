@@ -336,7 +336,7 @@
     if (lqv) lqv.textContent = String(state.lineQty);
     if (window.RESIN_WISHLIST && state.product) {
       var w = root.querySelector("#resinPdpWish");
-      if (w) window.RESIN_WISHLIST.syncButton(w, state.product.id);
+      if (w) window.RESIN_WISHLIST.syncButton(w, state.product.id, "catalog");
     }
   }
 
@@ -634,7 +634,7 @@
     root.innerHTML = html;
     if (window.RESIN_WISHLIST && state.product) {
       var wishBtn = document.getElementById("resinPdpWish");
-      if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id);
+      if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id, "catalog");
     }
     if (window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       var sh = document.getElementById("resinPdpShare");
@@ -752,8 +752,10 @@
       if (t.closest("#resinPdpWish")) {
         var wishEl = t.closest("#resinPdpWish");
         if (window.RESIN_WISHLIST && state.product && wishEl) {
-          window.RESIN_WISHLIST.toggle(state.product.id);
-          window.RESIN_WISHLIST.syncButton(wishEl, state.product.id);
+          wishEl.setAttribute("aria-busy", "true");
+          window.RESIN_WISHLIST.toggle(state.product.id, "catalog", function () {
+            window.RESIN_WISHLIST.syncButton(wishEl, state.product.id, "catalog");
+          });
         }
         return;
       }
@@ -811,18 +813,22 @@
     pRef = product;
     var root = document.getElementById("productRoot");
     if (!root || !product) return;
+    var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
+    var sameShell =
+      shellEl && String(shellEl.getAttribute("data-resin-material-id") || "") === String(product.id);
     state.product = product;
     state.material = productToMaterial(product);
-    state.namePlateText = "";
-    state.keychainAlpha = "";
-    state.keychainName = "";
-    state._lastHeroResolvedSrc = "";
-    syncDefaults(state.material);
+    if (!sameShell) {
+      state.namePlateText = "";
+      state.keychainAlpha = "";
+      state.keychainName = "";
+      state._lastHeroResolvedSrc = "";
+      syncDefaults(state.material);
+    }
     document.body.classList.add("page-product--resin-rm", "rm-page-wide");
     document.title = product.name + " — Craft guru";
     renderPdp(root);
-    var root2 = document.getElementById("productRoot");
-    if (root2) wirePdpClicks(root2);
+    if (!root.dataset.resinPdpWired) wirePdpClicks(root);
   }
 
   function refresh() {
@@ -832,7 +838,6 @@
         pRef = np;
         state.product = np;
         state.material = productToMaterial(np);
-        syncDefaults(state.material);
         renderPdp(document.getElementById("productRoot"));
       }
     }

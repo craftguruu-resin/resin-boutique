@@ -1014,12 +1014,50 @@
   });
 
   window.addEventListener("resinCartChanged", function () {
-    updateCartUI();
+    var count = CART.countItems();
+    if (els.cartCount) els.cartCount.textContent = String(count);
+    if (!els.cartList) return;
+    var lines = CART.load();
+    if (!lines.length) {
+      updateCartUI();
+      return;
+    }
+    var drawerOpen = els.cartDrawer && els.cartDrawer.classList.contains("is-open");
+    if (!drawerOpen) {
+      if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+      return;
+    }
+    var items = els.cartList.querySelectorAll(".cart-item");
+    if (items.length !== lines.length) {
+      updateCartUI();
+      return;
+    }
+    if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
   });
+
+  function patchFeaturedCardPrices() {
+    if (!els.productGrid) return;
+    var cards = els.productGrid.querySelectorAll(".featured-cat-card[data-min-price]");
+    if (!cards.length) return false;
+    cards.forEach(function (card) {
+      var catId = "";
+      var link = card.querySelector("a.featured-cat-card__cta");
+      if (link && link.getAttribute("href")) {
+        try {
+          var u = new URL(link.href, window.location.href);
+          catId = u.searchParams.get("cat") || "";
+        } catch (_) {}
+      }
+      if (!catId) return;
+      var minFrom = minPriceInCategory(catId);
+      if (minFrom != null) card.setAttribute("data-min-price", String(minFrom));
+    });
+    return true;
+  }
 
   window.addEventListener("craftguruCatalogPricesMerged", function () {
     renderCategories();
-    renderFeatured();
+    if (!patchFeaturedCardPrices()) renderFeatured();
     paintHeroFloatCatalog();
     bootConfigurableHero();
     renderHeroSpotlight();

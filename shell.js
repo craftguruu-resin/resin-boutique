@@ -281,10 +281,46 @@
     }
   });
 
-  window.addEventListener("resinCartChanged", function () {
+  function onCartChanged() {
     updateBadge();
-    renderDrawer();
-  });
+    var drawer = document.getElementById("cartDrawer");
+    if (!drawer || !drawer.classList.contains("is-open")) return;
+    var list = document.getElementById("cartList");
+    var lines = CART.load();
+    if (!list) return;
+    if (!lines.length) {
+      renderDrawer();
+      return;
+    }
+    var items = list.querySelectorAll(".cart-item");
+    if (items.length !== lines.length) {
+      renderDrawer();
+      return;
+    }
+    var ok = true;
+    lines.forEach(function (line) {
+      var key =
+        String(line.id || "") +
+        "::" +
+        String(line.size || "") +
+        "::" +
+        (CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "");
+      var li = null;
+      items.forEach(function (el) {
+        if (el.getAttribute("data-cart-key") === key) li = el;
+      });
+      if (!li) {
+        ok = false;
+        return;
+      }
+      var num = li.querySelector(".cart-item-qty-num");
+      if (num) num.textContent = String(line.qty);
+    });
+    if (!ok) renderDrawer();
+    else patchCartSubtotal();
+  }
+
+  window.addEventListener("resinCartChanged", onCartChanged);
 
   window.RESIN_SHELL = {
     updateBadge: updateBadge,

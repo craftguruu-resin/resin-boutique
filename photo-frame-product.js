@@ -305,7 +305,7 @@
     if (lqv) lqv.textContent = String(state.lineQty);
     if (window.RESIN_WISHLIST && m) {
       var w = root.querySelector("#rmPdpWish");
-      if (w) window.RESIN_WISHLIST.syncButton(w, m.id);
+      if (w) window.RESIN_WISHLIST.syncButton(w, m.id, "photo_frame");
     }
   }
 
@@ -429,8 +429,10 @@
       var wish = t.closest("#rmPdpWish");
       if (wish) {
         if (window.RESIN_WISHLIST && state.material) {
-          window.RESIN_WISHLIST.toggle(state.material.id);
-          window.RESIN_WISHLIST.syncButton(wish, state.material.id);
+          wish.setAttribute("aria-busy", "true");
+          window.RESIN_WISHLIST.toggle(state.material.id, "photo_frame", function () {
+            window.RESIN_WISHLIST.syncButton(wish, state.material.id, "photo_frame");
+          });
         }
         return;
       }

@@ -29,6 +29,18 @@ CREATE INDEX IF NOT EXISTS idx_guest_addresses_guest ON guest_addresses (guest_i
 
 ALTER TABLE guest_addresses ADD COLUMN IF NOT EXISTS address_type VARCHAR(24) NOT NULL DEFAULT '';
 
+CREATE TABLE IF NOT EXISTS guest_wishlist_items (
+  id BIGSERIAL PRIMARY KEY,
+  guest_id BIGINT NOT NULL REFERENCES guest_customers (id) ON DELETE CASCADE,
+  product_id VARCHAR(220) NOT NULL,
+  product_kind VARCHAR(32) NOT NULL DEFAULT 'catalog',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  UNIQUE (guest_id, product_id, product_kind)
+);
+
+CREATE INDEX IF NOT EXISTS idx_guest_wishlist_guest ON guest_wishlist_items (guest_id);
+
+
 CREATE TABLE IF NOT EXISTS guest_sessions (
   id BIGSERIAL PRIMARY KEY,
   guest_id BIGINT NOT NULL REFERENCES guest_customers (id) ON DELETE CASCADE,

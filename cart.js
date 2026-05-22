@@ -170,6 +170,9 @@
     try {
       global.localStorage.setItem(ANON_SAVE_LATER_KEY, JSON.stringify([]));
     } catch (_) {}
+    if (global.RESIN_WISHLIST && global.RESIN_WISHLIST.mergeOnLogin) {
+      global.RESIN_WISHLIST.mergeOnLogin();
+    }
     notify();
   }
 
@@ -381,17 +384,73 @@
   }
 
   var WISH_KEY = "resin_wishlist_v1";
+  var GUEST_TOKEN_KEY = "craftguruGuestToken";
+  var wishCache = Object.create(null);
+  var wishHydrated = false;
 
-  function loadWishlistIds() {
+  function wishStorageKey() {
+    return WISH_KEY;
+  }
+
+  function wishApiBase() {
+    var M = global.CraftguruCatalogMerge;
+    if (M && typeof M.getApiBase === "function") {
+      var b = String(M.getApiBase() || "")
+        .trim()
+        .replace(/\/+$/, "");
+      if (b) return b;
+    }
     try {
-      var raw = global.localStorage.getItem(WISH_KEY);
+      if (global.location && global.location.protocol !== "file:") {
+        return String(global.location.origin || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    return "";
+  }
+
+  function guestBearer() {
+    try {
+      return String(global.localStorage.getItem(GUEST_TOKEN_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function normWishKind(kind) {
+    var k = String(kind || "catalog")
+      .trim()
+      .toLowerCase();
+    if (k === "raw_material" || k === "photo_frame" || k === "catalog") return k;
+    return "catalog";
+  }
+
+  function wishEntryKey(id, kind) {
+    return normWishKind(kind) + ":" + String(id || "").trim();
+  }
+
+  function notifyWishlist() {
+    try {
+      global.dispatchEvent(new CustomEvent("resinWishlistChanged"));
+    } catch (_) {}
+  }
+
+  function loadWishlistLocal() {
+    try {
+      var raw = global.localStorage.getItem(wishStorageKey());
       if (!raw) return [];
       var parsed = JSON.parse(raw);
       if (!Array.isArray(parsed)) return [];
       var out = [];
-      parsed.forEach(function (id) {
-        id = String(id || "").trim();
-        if (id && out.indexOf(id) < 0) out.push(id);
+      parsed.forEach(function (row) {
+        if (typeof row === "string") {
+          var sid = String(row || "").trim();
+          if (sid) out.push({ productId: sid, kind: "catalog" });
+          return;
+        }
+        if (!row || typeof row !== "object") return;
+        var pid = String(row.productId || row.id || "").trim();
+        if (!pid) return;
+        out.push({ productId: pid, kind: normWishKind(row.kind) });
       });
       return out;
     } catch (_) {
@@ -399,49 +458,179 @@
     }
   }
 
-  function saveWishlistIds(ids) {
+  function saveWishlistLocal(items) {
     try {
-      global.localStorage.setItem(WISH_KEY, JSON.stringify(ids || []));
+      global.localStorage.setItem(wishStorageKey(), JSON.stringify(items || []));
     } catch (_) {}
-    try {
-      global.dispatchEvent(new CustomEvent("resinWishlistChanged"));
-    } catch (_) {}
+    notifyWishlist();
   }
 
-  function hasWishlist(id) {
-    var pid = String(id || "").trim();
-    if (!pid) return false;
-    return loadWishlistIds().indexOf(pid) >= 0;
+  function applyWishCache(items) {
+    wishCache = Object.create(null);
+    (items || []).forEach(function (it) {
+      var pid = String((it && (it.productId || it.id)) || "").trim();
+      if (!pid) return;
+      wishCache[wishEntryKey(pid, it.kind)] = true;
+    });
+    wishHydrated = true;
   }
 
-  function toggleWishlist(id) {
+  function listWishlistItems() {
+    return loadWishlistLocal();
+  }
+
+  function hasWishlist(id, kind) {
     var pid = String(id || "").trim();
     if (!pid) return false;
-    var ids = loadWishlistIds();
-    var ix = ids.indexOf(pid);
-    if (ix >= 0) {
-      ids.splice(ix, 1);
-      saveWishlistIds(ids);
+    if (!wishHydrated) applyWishCache(loadWishlistLocal());
+    return !!wishCache[wishEntryKey(pid, kind)];
+  }
+
+  function setLocalWishlistFromCache() {
+    var items = [];
+    Object.keys(wishCache).forEach(function (k) {
+      if (!wishCache[k]) return;
+      var ix = k.indexOf(":");
+      if (ix < 0) return;
+      items.push({ productId: k.slice(ix + 1), kind: k.slice(0, ix) });
+    });
+    saveWishlistLocal(items);
+  }
+
+  function refreshWishlistFromServer(done) {
+    var tok = guestBearer();
+    var base = wishApiBase();
+    if (!tok || !base) {
+      applyWishCache(loadWishlistLocal());
+      if (done) done(null, listWishlistItems());
+      return;
+    }
+    fetch(base + "/api/guest/wishlist", {
+      method: "GET",
+      headers: { Authorization: "Bearer " + tok },
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (j) {
+        if (j && j.ok && Array.isArray(j.items)) {
+          applyWishCache(j.items);
+          saveWishlistLocal(j.items);
+        } else {
+          applyWishCache(loadWishlistLocal());
+        }
+        if (done) done(null, listWishlistItems());
+      })
+      .catch(function (err) {
+        applyWishCache(loadWishlistLocal());
+        if (done) done(err, listWishlistItems());
+      });
+  }
+
+  function mergeWishlistOnLogin() {
+    var tok = guestBearer();
+    var base = wishApiBase();
+    var local = loadWishlistLocal();
+    if (!tok || !base || !local.length) {
+      refreshWishlistFromServer();
+      return;
+    }
+    fetch(base + "/api/guest/wishlist/merge", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + tok,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ items: local }),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (j) {
+        if (j && j.ok && Array.isArray(j.items)) {
+          applyWishCache(j.items);
+          saveWishlistLocal(j.items);
+        } else {
+          refreshWishlistFromServer();
+        }
+      })
+      .catch(function () {
+        refreshWishlistFromServer();
+      });
+  }
+
+  function toggleWishlist(id, kind, done) {
+    var pid = String(id || "").trim();
+    var pk = normWishKind(kind);
+    if (!pid) {
+      if (done) done(new Error("id required"));
       return false;
     }
-    ids.push(pid);
-    saveWishlistIds(ids);
-    return true;
+    if (!wishHydrated) applyWishCache(loadWishlistLocal());
+    var key = wishEntryKey(pid, pk);
+    var nextOn = !wishCache[key];
+    if (nextOn) wishCache[key] = true;
+    else delete wishCache[key];
+    notifyWishlist();
+
+    var tok = guestBearer();
+    var base = wishApiBase();
+    if (tok && base) {
+      fetch(base + "/api/guest/wishlist/toggle", {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer " + tok,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productId: pid, kind: pk }),
+        cache: "no-store",
+      })
+        .then(function (res) {
+          return res.json();
+        })
+        .then(function (j) {
+          if (j && j.ok && typeof j.on === "boolean") {
+            if (j.on) wishCache[key] = true;
+            else delete wishCache[key];
+            setLocalWishlistFromCache();
+            notifyWishlist();
+          }
+          if (done) done(null, !!wishCache[key]);
+        })
+        .catch(function (err) {
+          if (done) done(err, !!wishCache[key]);
+        });
+      return nextOn;
+    }
+
+    setLocalWishlistFromCache();
+    if (done) done(null, nextOn);
+    return nextOn;
   }
 
-  function syncWishlistButton(btn, id) {
+  function syncWishlistButton(btn, id, kind) {
     if (!btn) return;
-    var on = hasWishlist(id);
+    var on = hasWishlist(id, kind);
     btn.classList.toggle("is-on", on);
     btn.setAttribute("aria-pressed", on ? "true" : "false");
     btn.setAttribute("aria-label", on ? "Remove from wishlist" : "Save to wishlist");
+    btn.setAttribute("aria-busy", "false");
+  }
+
+  applyWishCache(loadWishlistLocal());
+  if (guestBearer()) {
+    refreshWishlistFromServer();
   }
 
   global.RESIN_WISHLIST = {
-    load: loadWishlistIds,
+    load: listWishlistItems,
     has: hasWishlist,
     toggle: toggleWishlist,
     syncButton: syncWishlistButton,
+    refresh: refreshWishlistFromServer,
+    mergeOnLogin: mergeWishlistOnLogin,
   };
 
   global.RESIN_CART = {

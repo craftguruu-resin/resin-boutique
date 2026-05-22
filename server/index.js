@@ -77,6 +77,7 @@ var guestSessions = require("./guest-sessions.js");
 var guestOtp = require("./guest-otp.js");
 var guestGoogleAuth = require("./guest-google-auth.js");
 var guestDb = require("./guest-db.js");
+var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
 
 var PORT = Number(process.env.PORT) || 3847;
@@ -1313,6 +1314,68 @@ app.get("/api/guest/me", function (req, res) {
         phoneNorm: row.phoneNorm != null ? String(row.phoneNorm) : "",
         addresses: addresses,
       });
+    });
+  });
+});
+
+/** Wishlist for signed-in guest (catalog, raw material, photo frame product ids). */
+app.get("/api/guest/wishlist", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!row) {
+      return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
+    }
+    guestWishlistDb.listByGuestId(row.guestId, function (e2, items) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, items: items || [] });
+    });
+  });
+});
+
+app.post("/api/guest/wishlist/toggle", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!row) {
+      return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
+    }
+    var body = req.body || {};
+    var productId = guestWishlistDb.normProductId(body.productId || body.id);
+    var kind = guestWishlistDb.normKind(body.kind || body.productKind);
+    if (!productId) {
+      return res.status(400).json({ ok: false, error: "productId required" });
+    }
+    guestWishlistDb.toggle(row.guestId, productId, kind, function (e2, out) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, on: !!(out && out.on), productId: productId, kind: kind });
+    });
+  });
+});
+
+app.post("/api/guest/wishlist/merge", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!row) {
+      return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
+    }
+    var items = req.body && req.body.items;
+    guestWishlistDb.mergeItems(row.guestId, items, function (e2, merged) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, items: merged || [] });
     });
   });
 });
