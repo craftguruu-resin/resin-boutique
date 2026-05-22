@@ -310,15 +310,14 @@ a.rm-empty-link:hover {
 }
 
 .rm-card-shop__img {
-  aspect-ratio: auto;
+  aspect-ratio: 4 / 3;
   background: #f1f5f9;
-  line-height: 0;
 }
 
 .rm-card-shop__img img {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
@@ -531,7 +530,7 @@ a.rm-empty-link:hover {
   position: relative;
   border-radius: 20px;
   background: #f1f5f9;
-  min-height: 320px;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -539,8 +538,9 @@ a.rm-empty-link:hover {
 }
 
 .rm-pdp__hero-zoom {
-  width: 100%;
-  min-height: min(320px, 50vh);
+  width: auto;
+  max-width: 100%;
+  min-height: 0;
   max-height: min(560px, 70vh);
   display: flex;
   align-items: center;
@@ -548,16 +548,47 @@ a.rm-empty-link:hover {
   overflow: hidden;
   touch-action: none;
   cursor: zoom-in;
+  margin: 0 auto;
 }
 
 .rm-pdp__hero-zoom img {
-  width: 100%;
-  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-width: min(100%, 520px);
   max-height: min(560px, 70vh);
   object-fit: contain;
   transform-origin: center center;
-  will-change: transform, opacity;
-  transition: opacity 0.28s ease, transform 0.15s ease-out;
+  will-change: transform;
+  transition: transform 0.15s ease-out;
+}
+
+/* PDP-only: shrink hero box to image — no empty side bands */
+.rm-pdp--modern .rm-pdp__hero-wrap {
+  min-height: 0;
+}
+
+.rm-pdp--modern .rm-pdp__hero-zoom {
+  width: auto;
+  max-width: 100%;
+  min-height: 0;
+}
+
+.rm-pdp--modern .rm-pdp__hero-zoom img {
+  width: auto;
+  height: auto;
+  max-width: min(100%, 520px);
+  max-height: min(560px, 70vh);
+  object-fit: contain;
+  display: block;
+  margin: 0 auto;
+  opacity: 1;
+  transition: transform 0.15s ease-out;
+}
+
+.rm-pdp-zoom-hint,
+.rm-pdp__zoom-hint,
+.product-hero-img__zoom-hint {
+  display: none !important;
 }
 
 .rm-pdp__badge {
@@ -1281,7 +1312,3 @@ body.rm-page-wide .rm-card-shop__desc {
   line-height: 1.42;
 }
 
-body.rm-page-wide #rmCategoryHub.featured-cat-grid {
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.15rem;
-}

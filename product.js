@@ -125,6 +125,7 @@
       "<h1>Loading</h1>" +
       "<p>Fetching this piece from the catalog…</p>" +
       "</div>";
+    els.root.setAttribute("data-pdp-ready", "1");
     clearCatalogWaitTimer();
     catalogWaitTimer = setTimeout(function () {
       catalogWaitTimer = null;
@@ -380,6 +381,7 @@
     if (!els.root) return;
     els.root.innerHTML =
       '<div class="product-missing"><h1>Not found</h1><p>This piece is not in the catalog.</p><a class="btn-glass-dome" href="index.html">Back home</a></div>';
+    els.root.setAttribute("data-pdp-ready", "1");
   }
 
   function updatePrice() {

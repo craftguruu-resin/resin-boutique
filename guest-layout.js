@@ -402,7 +402,7 @@
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     try {
-      removeGuestCategoryRail();
+      if (document.getElementById("guestPageCategoryRail")) return;
       injectCategoryRail();
     } catch (_) {}
   });

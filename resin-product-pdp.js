@@ -572,13 +572,13 @@
           '<button type="button" class="rm-pdp__nav rm-pdp__nav--next" data-rm-gallery-nav="1" aria-label="Next image">›</button>'
         : "") +
       (mainImg
-        ? '<div class="rm-pdp__hero-zoom" id="resinPdpHeroZoom" title="Scroll to zoom in or out"><img id="resinPdpHero" src="' +
+        ? '<div class="rm-pdp__hero-zoom" id="resinPdpHeroZoom"><img id="resinPdpHero" src="' +
           escAttr(imgSrc(mainImg)) +
           '" alt="' +
           escAttr(m.name) +
           '" style="transform:scale(' +
           (state.heroZoom || 1) +
-          ')"/></div><p class="rm-pdp__zoom-hint vs-muted" style="margin:0.35rem 0 0;font-size:0.78rem">Scroll on the image to zoom. Double-click to reset zoom when supported.</p>'
+          ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div></div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
@@ -828,6 +828,7 @@
     document.body.classList.add("page-product--resin-rm", "rm-page-wide");
     document.title = product.name + " — Craft guru";
     renderPdp(root);
+    root.setAttribute("data-pdp-ready", "1");
     if (!root.dataset.resinPdpWired) wirePdpClicks(root);
   }
 
@@ -838,7 +839,11 @@
         pRef = np;
         state.product = np;
         state.material = productToMaterial(np);
-        renderPdp(document.getElementById("productRoot"));
+        var r = document.getElementById("productRoot");
+        if (r) {
+          renderPdp(r);
+          r.setAttribute("data-pdp-ready", "1");
+        }
       }
     }
   }

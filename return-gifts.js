@@ -208,7 +208,7 @@
     items.forEach(function (p, i) {
       var minP = minPrice(p);
       var card = document.createElement("article");
-      card.className = "product-card reveal-tile is-inview";
+      card.className = "product-card is-inview";
       card.style.setProperty("--stagger", String(i));
       card.innerHTML =
         '<a class="product-card__link" href="product.html?id=' +

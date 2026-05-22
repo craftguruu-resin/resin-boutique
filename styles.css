@@ -1082,8 +1082,28 @@ main {
 
 .product-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+
+@media (min-width: 540px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .product-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
 }
 
 .band-empty {
@@ -1111,14 +1131,10 @@ main {
 
 .product-card-image {
   position: relative;
-  aspect-ratio: auto;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
   background: linear-gradient(160deg, #5a6a82, #3d4658);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
 }
 
 .product-badge {
@@ -1252,16 +1268,14 @@ main {
 
 .product-card__media {
   width: 100%;
-  line-height: 0;
+  height: 100%;
 }
 
 .product-card__media img {
   width: 100%;
-  height: auto;
-  max-height: none;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
-  vertical-align: middle;
 }
 
 /* Grey the whole photo area (image + badge read as one muted block). */
@@ -6928,11 +6942,39 @@ a.home-auth-btn {
   transition-delay: calc(var(--stagger, 0) * 0.05s);
 }
 
+/* Catalog grids: no staggered fade — avoids blink on navigation and catalog merge */
+.band-shop .product-grid .product-card.reveal-tile,
+.featured-cat-grid .featured-cat-card.reveal-tile {
+  opacity: 1 !important;
+  transform: none !important;
+  transition: none !important;
+}
+
 /* Homepage featured — category hub (light cards; matches storefront band-shop) */
 .featured-cat-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+
+@media (min-width: 540px) {
+  .featured-cat-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 768px) {
+  .featured-cat-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.2rem;
+  }
+}
+
+@media (min-width: 1100px) {
+  .featured-cat-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
 }
 
 .featured-cat-card {
@@ -6972,7 +7014,7 @@ a.home-auth-btn {
 
 .featured-cat-card__media {
   position: relative;
-  aspect-ratio: auto;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 0;
   background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
@@ -6984,8 +7026,8 @@ a.home-auth-btn {
 
 .featured-cat-card__media img {
   width: 100%;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   display: block;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }

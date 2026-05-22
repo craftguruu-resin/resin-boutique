@@ -1188,22 +1188,3 @@ body.subpage #rmGrid {
   contain: layout style;
 }
 
-body:not(.vendor-saas) .product-card,
-body:not(.vendor-saas) .rm-card-shop,
-body:not(.vendor-saas) .featured-cat-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 280px;
-}
-
-body:not(.vendor-saas) .product-card-image {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-}
-
-body:not(.vendor-saas) .product-card__media {
-  width: 100%;
-  max-width: 100%;
-}
-

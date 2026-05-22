@@ -613,7 +613,7 @@
       var count = listedProductsInCategory(cat.id).length;
       var minFrom = minPriceInCategory(cat.id);
       var card = document.createElement("article");
-      card.className = "featured-cat-card reveal-tile";
+      card.className = "featured-cat-card is-inview";
       card.style.setProperty("--stagger", String(i));
       card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
       var bits = [(cat.label || "").toLowerCase(), (cat.id || "").toLowerCase(), String(count), "products", "category"];
@@ -662,7 +662,6 @@
         "</div>";
       els.productGrid.appendChild(card);
     });
-    observeTiles();
     applyHomeCatalogFilter();
   }
 
@@ -1055,8 +1054,11 @@
     return true;
   }
 
-  window.addEventListener("craftguruCatalogPricesMerged", function () {
+  window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     renderCategories();
+  });
+
+  window.addEventListener("craftguruCatalogPricesMerged", function () {
     if (!patchFeaturedCardPrices()) renderFeatured();
     paintHeroFloatCatalog();
     bootConfigurableHero();

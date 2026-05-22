@@ -766,7 +766,7 @@
           '<button type="button" class="rm-pdp__nav rm-pdp__nav--next" id="rmPdpNext" aria-label="Next image">›</button>'
         : "") +
       (mainImg
-        ? '<div class="rm-pdp__hero-zoom" id="rmPdpHeroZoom" title="Scroll to zoom in or out">' +
+        ? '<div class="rm-pdp__hero-zoom" id="rmPdpHeroZoom">' +
           '<img id="rmPdpHeroImg" src="' +
           escAttr(imgSrc(mainImg)) +
           '" alt="' +

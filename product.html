@@ -12,6 +12,14 @@
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
   <link rel="stylesheet" href="raw-material-pdp-modern.css" />
+  <style>
+    body.page-product #productRoot:not([data-pdp-ready]) {
+      visibility: hidden;
+    }
+    body.page-product #productRoot[data-pdp-ready] {
+      visibility: visible;
+    }
+  </style>
 </head>
 <body class="subpage page-product">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -101,9 +109,7 @@
               <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
                 <div class="product-hero-img__glow" aria-hidden="true"></div>
                 <img id="productImage" src="" alt="" width="800" height="900" />
-                <p class="product-hero-img__zoom-hint" id="productZoomHint">
-                  Scroll on the image to zoom in or out. Drag to move when zoomed. Double-click the image to reset.
-                </p>
+                <p class="product-hero-img__zoom-hint" id="productZoomHint" hidden></p>
               </div>
             </div>
             <div class="product-catalog-gallery__thumb-col" id="productGalleryThumbs" hidden aria-label="Extra product photos">

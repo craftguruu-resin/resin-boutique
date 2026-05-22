@@ -431,7 +431,7 @@
     result.items.forEach(function (p, i) {
       var minP = minPrice(p);
       var card = document.createElement("article");
-      card.className = "product-card reveal-tile is-inview";
+      card.className = "product-card is-inview";
       card.setAttribute("data-product-id", p.id);
       card.setAttribute("data-product-name", (p.name || "").toLowerCase());
       card.setAttribute("data-min-price", String(minP));
