@@ -1003,5 +1003,10 @@
     }
   }
 
-  window.RESIN_CATALOG_PDP = { mount: mount, refresh: refresh, productToMaterial: productToMaterial };
+  window.RESIN_CATALOG_PDP = {
+    mount: mount,
+    refresh: refresh,
+    productToMaterial: productToMaterial,
+    productHasVendorPdpOptions: hasVendorStyleOptions,
+  };
 })();

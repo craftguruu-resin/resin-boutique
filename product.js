@@ -78,9 +78,20 @@
     introText: document.getElementById("productIntroText"),
   };
 
+  /** Snapshot legacy PDP markup (bundled catalog products). */
+  var productPageLayoutHtml = id && product && els.root ? els.root.innerHTML : "";
   /** Snapshot before first paint: vendor pieces are merged async (catalog-merge.js). */
   var pendingLayoutHtml = id && !product && els.root ? els.root.innerHTML : "";
   var catalogWaitTimer = null;
+
+  function useResinVariantPdp(p) {
+    var m = window.RESIN_CATALOG_PDP;
+    return !!(p && m && typeof m.productHasVendorPdpOptions === "function" && m.productHasVendorPdpOptions(p));
+  }
+
+  function teardownResinPdpBodyClasses() {
+    document.body.classList.remove("page-product--resin-rm", "rm-page-wide");
+  }
 
   function clearCatalogWaitTimer() {
     if (catalogWaitTimer) {
@@ -112,9 +123,11 @@
   }
 
   function restoreProductLayout() {
-    if (!pendingLayoutHtml || !els.root) return false;
-    els.root.innerHTML = pendingLayoutHtml;
+    var html = pendingLayoutHtml || productPageLayoutHtml;
+    if (!html || !els.root) return false;
+    els.root.innerHTML = html;
     rewireProductEls();
+    teardownResinPdpBodyClasses();
     return true;
   }
 
@@ -174,8 +187,18 @@
       }
       return;
     }
-    if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.refresh) {
-      window.RESIN_CATALOG_PDP.refresh();
+    if (useResinVariantPdp(product)) {
+      if (els.root && els.root.querySelector("[data-resin-pdp]") && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.refresh) {
+        window.RESIN_CATALOG_PDP.refresh();
+      } else {
+        render();
+      }
+      return;
+    }
+    if (els.root && els.root.querySelector("[data-resin-pdp]")) {
+      if (restoreProductLayout()) {
+        render();
+      }
       return;
     }
     if (!productLayoutInDocument()) {
@@ -184,7 +207,8 @@
       }
       return;
     }
-    render();
+    refreshSizePickPrices();
+    updatePrice();
   }
 
   var selected = "";
@@ -431,13 +455,19 @@
       return;
     }
 
-    if (window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
+    if (useResinVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
       try {
         window.RESIN_CATALOG_PDP.mount(product);
       } catch (er) {
         void er;
       }
       return;
+    }
+
+    if (els.root && els.root.querySelector("[data-resin-pdp]") && productPageLayoutHtml) {
+      restoreProductLayout();
+    } else {
+      teardownResinPdpBodyClasses();
     }
 
     document.title = product.name + " — Craft guru";
@@ -613,6 +643,7 @@
     }
 
     bindProductImageZoom();
+    if (els.root) els.root.setAttribute("data-pdp-ready", "1");
   }
 
   function productPagePrefersReducedMotion() {
@@ -761,36 +792,12 @@
     });
   }
 
-  function showPdpAwaitingCatalog() {
-    if (!els.root) return;
-    els.root.innerHTML =
-      '<div class="resin-pdp-padded product-page-awaiting-catalog">' +
-      "<p>Loading product options…</p></div>";
-    els.root.setAttribute("data-pdp-ready", "1");
-  }
-
   function initialRender() {
     if (!id) {
       render404();
       return;
     }
     if (product) {
-      if (window.RESIN_CATALOG_PDP && window.CraftguruCatalogMerge && !window.__cgCatalogPricesMerged) {
-        showPdpAwaitingCatalog();
-        var fallbackTimer = setTimeout(function () {
-          refreshProductRef();
-          if (product) render();
-        }, 8000);
-        window.addEventListener(
-          "craftguruCatalogPricesMerged",
-          function () {
-            clearTimeout(fallbackTimer);
-            onCatalogPricesMerged();
-          },
-          { once: true }
-        );
-        return;
-      }
       render();
       return;
     }
