@@ -92,6 +92,8 @@
     try {
       var ov = window.__cgCatalogOverrides;
       if (ov && D.applyPriceOverrides) D.applyPriceOverrides(ov);
+      var sup = window.__cgCatalogSuppressions;
+      if (sup && sup.length && D.applyCatalogSuppressions) D.applyCatalogSuppressions(sup);
     } catch (_) {}
   }
 
@@ -1159,6 +1161,13 @@
             render();
           });
       }
+      return;
+    }
+    if (
+      D.productExistsInBundledCatalog &&
+      D.productExistsInBundledCatalog(id)
+    ) {
+      render404();
       return;
     }
     if (pendingLayoutHtml) {

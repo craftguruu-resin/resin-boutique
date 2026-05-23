@@ -108,6 +108,23 @@
           /* Applies per-product options_json to all resin product.html PDPs via product.js */
           D.applyPriceOverrides(j.overrides);
         }
+        if (j && j.ok) {
+          var suppressed = [];
+          if (j.suppressedProductIds && j.suppressedProductIds.length) {
+            suppressed = suppressed.concat(j.suppressedProductIds);
+          }
+          if (j.overrides && typeof j.overrides === "object") {
+            Object.keys(j.overrides).forEach(function (k) {
+              if (j.overrides[k] && j.overrides[k].listed === false) suppressed.push(k);
+            });
+          }
+          if (suppressed.length && typeof D.applyCatalogSuppressions === "function") {
+            try {
+              window.__cgCatalogSuppressions = suppressed;
+            } catch (_) {}
+            D.applyCatalogSuppressions(suppressed);
+          }
+        }
       })
       .then(function () {
         try {

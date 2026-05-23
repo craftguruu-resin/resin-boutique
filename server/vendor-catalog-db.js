@@ -346,9 +346,95 @@ function upsertOverride(productId, patch, cb) {
   });
 }
 
+var SUPPRESSED_IDS_DOC_KEY = "catalog_suppressed_product_ids";
+
+function parseSuppressedIdsDoc(doc) {
+  if (!doc) return [];
+  if (Array.isArray(doc)) {
+    return doc
+      .map(function (x) {
+        return String(x || "").trim();
+      })
+      .filter(Boolean);
+  }
+  if (typeof doc === "object" && Array.isArray(doc.ids)) {
+    return doc.ids
+      .map(function (x) {
+        return String(x || "").trim();
+      })
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/** Tombstoned catalog product ids (hard-removed from storefront even if still in data.js). */
+function listSuppressedProductIds(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null, []);
+    });
+  }
+  pool
+    .query("SELECT doc FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [SUPPRESSED_IDS_DOC_KEY])
+    .then(function (r) {
+      var row = r.rows[0];
+      var doc = row && row.doc;
+      cb(null, parseSuppressedIdsDoc(doc));
+    })
+    .catch(cb);
+}
+
+/**
+ * @param {string[]} ids
+ * @param {(err: Error|null, ids?: string[]) => void} cb
+ */
+function addSuppressedProductIds(ids, cb) {
+  ids = (ids || [])
+    .map(function (x) {
+      return String(x || "").trim().slice(0, 220);
+    })
+    .filter(Boolean);
+  if (!ids.length) {
+    return process.nextTick(function () {
+      cb(null, []);
+    });
+  }
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  listSuppressedProductIds(function (e0, cur) {
+    if (e0) return cb(e0);
+    var seen = Object.create(null);
+    var merged = [];
+    (cur || []).concat(ids).forEach(function (id) {
+      if (seen[id]) return;
+      seen[id] = 1;
+      merged.push(id);
+    });
+    var doc = { ids: merged };
+    pool
+      .query(
+        "INSERT INTO vendor_site_docs (doc_key, doc, updated_at) VALUES ($1, $2::jsonb, now()) " +
+          "ON CONFLICT (doc_key) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()",
+        [SUPPRESSED_IDS_DOC_KEY, JSON.stringify(doc)]
+      )
+      .then(function () {
+        try {
+          catalogFromData.invalidateCache();
+        } catch (_) {}
+        cb(null, merged);
+      })
+      .catch(cb);
+  });
+}
+
 /**
  * Remove the catalog_price_overrides row for a bundled (data.js) product.
- * Does not remove the product from the site catalog — only vendor DB overrides (prices, labels, listed, return gift).
+ * Adds a suppression tombstone so the static catalog row stays hidden after override delete.
  * @param {string} productId
  * @param {(err: Error|null, result?: { removed: boolean }) => void} cb
  */
@@ -384,17 +470,20 @@ function deleteBundledCatalogOverride(productId, cb) {
       cb(new Error("Database not configured"));
     });
   }
-  ensureCatalogOverridesColumns(function (e0) {
-    if (e0) return cb(e0);
-    pool
-      .query("DELETE FROM catalog_price_overrides WHERE product_id = $1 RETURNING product_id", [id])
-      .then(function (r) {
-        try {
-          catalogFromData.invalidateCache();
-        } catch (_) {}
-        cb(null, { removed: !!(r.rowCount > 0) });
-      })
-      .catch(cb);
+  addSuppressedProductIds([id], function (eSup) {
+    if (eSup) return cb(eSup);
+    ensureCatalogOverridesColumns(function (e0) {
+      if (e0) return cb(e0);
+      pool
+        .query("DELETE FROM catalog_price_overrides WHERE product_id = $1 RETURNING product_id", [id])
+        .then(function (r) {
+          try {
+            catalogFromData.invalidateCache();
+          } catch (_) {}
+          cb(null, { removed: !!(r.rowCount > 0), suppressed: true });
+        })
+        .catch(cb);
+    });
   });
 }
 
@@ -403,4 +492,6 @@ module.exports = {
   upsertOverride: upsertOverride,
   deleteBundledCatalogOverride: deleteBundledCatalogOverride,
   catalogOptionsHasPayload: catalogOptionsHasPayload,
+  listSuppressedProductIds: listSuppressedProductIds,
+  addSuppressedProductIds: addSuppressedProductIds,
 };

@@ -177,6 +177,34 @@ function ensureVendorInventoryColumns() {
             "From server/ run: npm run db:migrate — or grant ALTER on products."
         );
       }
+    })
+    .then(function () {
+      var tombstoneId =
+        "resin-guruji-products--all--resin-guruji-swaroop-frame-nirmal-singh-ji-maharaj-1";
+      var docKey = "catalog_suppressed_product_ids";
+      return p
+        .query("SELECT doc FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [docKey])
+        .then(function (r) {
+          var row = r.rows[0];
+          var doc = row && row.doc;
+          var ids = [];
+          if (Array.isArray(doc)) {
+            ids = doc.map(String).filter(Boolean);
+          } else if (doc && Array.isArray(doc.ids)) {
+            ids = doc.ids.map(String).filter(Boolean);
+          }
+          if (ids.indexOf(tombstoneId) >= 0) return;
+          ids.push(tombstoneId);
+          return p.query(
+            "INSERT INTO vendor_site_docs (doc_key, doc, updated_at) VALUES ($1, $2::jsonb, now()) " +
+              "ON CONFLICT (doc_key) DO UPDATE SET doc = EXCLUDED.doc, updated_at = now()",
+            [docKey, JSON.stringify({ ids: ids })]
+          );
+        })
+        .catch(function (err) {
+          if (err && err.code === "42P01") return;
+          console.warn("[db] catalog suppression seed:", err && err.message ? err.message : err);
+        });
     });
 }
 

@@ -2243,8 +2243,13 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       }
       out[key] = o;
     });
-    res.setHeader("Cache-Control", "no-store");
-    res.json({ ok: true, overrides: out });
+    vendorCatalogDb.listSuppressedProductIds(function (eSup, suppressed) {
+      if (eSup) {
+        return res.status(500).json({ ok: false, error: String(eSup.message || eSup) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, overrides: out, suppressedProductIds: suppressed || [] });
+    });
   });
 });
 
@@ -3260,6 +3265,14 @@ app.get("/api/vendor/catalog-products", function (req, res) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
+      vendorCatalogDb.listSuppressedProductIds(function (eSup, suppressed) {
+        if (eSup) {
+          return res.status(500).json({ ok: false, error: String(eSup.message || eSup) });
+        }
+        var supSet = Object.create(null);
+        (suppressed || []).forEach(function (sid) {
+          supSet[sid] = 1;
+        });
       vendorProductsDb.listExtraProductsForStorefront(function (eV, extras) {
         if (eV) {
           return res.status(500).json({ ok: false, error: String(eV.message || eV) });
@@ -3288,6 +3301,7 @@ app.get("/api/vendor/catalog-products", function (req, res) {
           });
         }
         list = list.filter(function (p) {
+          if (supSet[p.id]) return false;
           var ov = omap[p.id] || {};
           return ov.listed !== false;
         });
@@ -3414,6 +3428,7 @@ app.get("/api/vendor/catalog-products", function (req, res) {
             }
           );
         });
+      });
       });
     });
   });

@@ -749,9 +749,17 @@ function listAllProductsForManage(opts, cb) {
   vendorCatalogDb.listOverridesMap(function (e1, omap) {
     if (e1) return cb(e1);
     omap = omap || {};
+    vendorCatalogDb.listSuppressedProductIds(function (eSup, suppressed) {
+      if (eSup) return cb(eSup);
+      var supSet = Object.create(null);
+      (suppressed || []).forEach(function (sid) {
+        supSet[sid] = 1;
+      });
     var staticList;
     try {
-      staticList = catalogFromData.getProductsSummary();
+      staticList = catalogFromData.getProductsSummary().filter(function (p) {
+        return !supSet[p.id];
+      });
     } catch (e2) {
       return cb(e2);
     }
@@ -798,6 +806,7 @@ function listAllProductsForManage(opts, cb) {
         });
         finishWithSlices(staticWork, vendorWork);
       });
+    });
     });
   });
 }
@@ -875,6 +884,9 @@ function deleteVendorManagedProduct(productId, cb) {
               throw new Error("Product not found");
             }
             return client.query("COMMIT");
+          })
+          .then(function () {
+            return vendorCatalogDb.addSuppressedProductIds([id]);
           })
           .then(function () {
             client.release();
