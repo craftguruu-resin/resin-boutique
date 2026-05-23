@@ -70,6 +70,12 @@
     return "http://127.0.0.1:3847";
   }
 
+  function dispatchCatalogEvent(name) {
+    try {
+      window.dispatchEvent(new CustomEvent(name));
+    } catch (_) {}
+  }
+
   function runMerge() {
     var base = billApiBase();
     if (!base) return Promise.resolve();
@@ -81,9 +87,7 @@
         if (jc && jc.ok && jc.categories && typeof D.applyCategoriesMerge === "function") {
           D.applyCategoriesMerge(jc.categories);
         }
-        try {
-          window.dispatchEvent(new CustomEvent("craftguruCatalogCategoriesMerged"));
-        } catch (_) {}
+        dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
       })
       .catch(function () {})
       .then(function () {
@@ -96,6 +100,7 @@
         if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
           D.applyVendorProductsMerge(j2.products);
         }
+        dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
         return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" }).then(function (res) {
           return res.json();
         });
@@ -125,13 +130,14 @@
             D.applyCatalogSuppressions(suppressed);
           }
         }
+        if (typeof D.rebuildCategoryProductIndex === "function") {
+          D.rebuildCategoryProductIndex();
+        }
       })
-      .then(function () {
-        try {
-          window.dispatchEvent(new CustomEvent("craftguruCatalogPricesMerged"));
-        } catch (_) {}
-      })
-      .catch(function () {});
+      .catch(function () {})
+      .finally(function () {
+        dispatchCatalogEvent("craftguruCatalogPricesMerged");
+      });
   }
 
   if (document.readyState === "loading") {

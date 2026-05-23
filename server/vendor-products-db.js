@@ -328,6 +328,9 @@ function mapRowToClient(row) {
   if (row.listing_return_gift === true || row.listingReturnGift === true || row.returnGift === true) {
     out.returnGift = true;
   }
+  if (row.listing_listed === false || row.listed === false) {
+    out.listed = false;
+  }
   var gallery = parseGalleryPaths(row);
   if (gallery.length) {
     out.gallery = gallery;
@@ -358,10 +361,11 @@ function listExtraProductsForStorefront(cb) {
     pool
       .query(
         "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.gallery_paths, p.prices, p.size_labels, p.is_active, " +
-          "COALESCE(co.return_gift, false) AS listing_return_gift " +
+          "COALESCE(co.return_gift, false) AS listing_return_gift, " +
+          "COALESCE(co.listed, true) AS listing_listed " +
           "FROM products p " +
           "LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
-          "WHERE p.is_active = true ORDER BY p.updated_at DESC"
+          "WHERE p.is_active = true AND COALESCE(co.listed, true) = true ORDER BY p.updated_at DESC"
       )
       .then(function (r) {
         var out = [];

@@ -242,6 +242,13 @@
     syncReturnGiftsUrl();
   }
 
+  window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
+    paint();
+  });
+  window.addEventListener("craftguruCatalogPricesMerged", function () {
+    paint();
+  });
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", paint);
   } else {

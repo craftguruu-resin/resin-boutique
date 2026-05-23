@@ -1058,10 +1058,13 @@
     renderCategories();
   });
 
-  window.addEventListener("craftguruCatalogPricesMerged", function () {
+  function onStorefrontCatalogMerged() {
     if (!patchFeaturedCardPrices()) renderFeatured();
     paintHeroFloatCatalog();
     bootConfigurableHero();
     renderHeroSpotlight();
-  });
+  }
+
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onStorefrontCatalogMerged);
+  window.addEventListener("craftguruCatalogPricesMerged", onStorefrontCatalogMerged);
 })();

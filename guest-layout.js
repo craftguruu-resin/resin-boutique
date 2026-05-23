@@ -324,6 +324,9 @@
         res.hidden = true;
       }
     });
+    window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
+      runSearch();
+    });
     window.addEventListener("craftguruCatalogPricesMerged", function () {
       runSearch();
     });

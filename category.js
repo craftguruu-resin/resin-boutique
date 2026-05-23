@@ -605,13 +605,17 @@
     });
   }
 
-  window.addEventListener("craftguruCatalogPricesMerged", function () {
+  function onCatalogDataMerged() {
     if (els.productGrid && els.productGrid.querySelectorAll(".product-card[data-product-id]").length) {
       patchProductGridPrices();
+      applyCatalogFilters(false);
     } else {
       applyCatalogFilters(false);
     }
-  });
+  }
+
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogDataMerged);
+  window.addEventListener("craftguruCatalogPricesMerged", onCatalogDataMerged);
 
   render();
 })();

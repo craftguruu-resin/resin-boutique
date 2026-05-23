@@ -287,21 +287,56 @@
     }).filter(function (x) { return x.count > 0; });
   }
 
+  /** Rebuild BY_CAT / BY_CAT_SUB from PRODUCTS (static + vendor rows). */
+  function rebuildCategoryProductIndex() {
+    CATEGORIES.forEach(function (c) {
+      if (!c || !c.id) return;
+      BY_CAT[c.id] = [];
+      BY_CAT_SUB[c.id] = {};
+      (c.subcategories || []).forEach(function (s) {
+        if (s && s.id) BY_CAT_SUB[c.id][s.id] = [];
+      });
+    });
+    PRODUCTS.forEach(function (p) {
+      if (!p || !p.id) return;
+      if (p.category === "resin-clocks") {
+        p.subcategory = normalizeResinClockProductSub(p.subcategory, p.name);
+      }
+      if (p.category === "resin-guruji-products") {
+        p.subcategory = normalizeGurujiProductSub(p.subcategory, p.name);
+      }
+      if (p.category === "resin-keychains") {
+        p.subcategory = normalizeKeychainProductSub(p.subcategory, p.name);
+      }
+      var cat = p.category;
+      var sub = p.subcategory || "all";
+      if (!BY_CAT[cat]) BY_CAT[cat] = [];
+      if (BY_CAT[cat].indexOf(p.id) === -1) BY_CAT[cat].push(p.id);
+      if (!BY_CAT_SUB[cat]) BY_CAT_SUB[cat] = {};
+      if (!BY_CAT_SUB[cat][sub]) BY_CAT_SUB[cat][sub] = [];
+      if (BY_CAT_SUB[cat][sub].indexOf(p.id) === -1) BY_CAT_SUB[cat][sub].push(p.id);
+    });
+  }
+
   /** All products in a category (optionally scoped to one subcategory). For client search/sort. */
   function listProductsAll(catId, subId) {
     var cid = normalizeCategoryId(catId);
-    var ids = [];
-    if (subId) {
-      ids = (BY_CAT_SUB[cid] && BY_CAT_SUB[cid][subId]) || [];
-    } else {
-      ids = BY_CAT[cid] || [];
+    var seen = Object.create(null);
+    var out = [];
+    function pushListed(p) {
+      if (!p || !p.id || seen[p.id] || !isListedProduct(p)) return;
+      if (subId && String(p.subcategory || "all") !== String(subId)) return;
+      seen[p.id] = 1;
+      out.push(p);
     }
-    return ids
-      .map(function (id) {
-        return BY_ID[id];
-      })
-      .filter(Boolean)
-      .filter(isListedProduct);
+    var ids = subId ? (BY_CAT_SUB[cid] && BY_CAT_SUB[cid][subId]) || [] : BY_CAT[cid] || [];
+    ids.forEach(function (id) {
+      pushListed(BY_ID[id]);
+    });
+    PRODUCTS.forEach(function (p) {
+      if (p && normalizeCategoryId(p.category) === cid) pushListed(p);
+    });
+    return out;
   }
 
   function listProductPage(catId, subId, page) {
@@ -520,77 +555,105 @@
 
   var PLACEHOLDER_PRODUCT_IMAGE = "media/placeholder-product.svg";
 
+  function vendorRowToProduct(row) {
+    var id = String(row.id || "").trim();
+    if (!id) return null;
+    var cat = String(row.category || "").trim();
+    var sub = String(row.subcategory || "all").trim();
+    var img = String(row.image || "").trim() || PLACEHOLDER_PRODUCT_IMAGE;
+    if (!cat || isDroppedResinCategory(cat)) return null;
+    if (cat === "resin-clocks") {
+      sub = normalizeResinClockProductSub(sub, String(row.name || ""));
+    }
+    if (cat === "resin-guruji-products") {
+      sub = normalizeGurujiProductSub(sub, String(row.name || ""));
+    }
+    if (cat === "resin-keychains") {
+      sub = normalizeKeychainProductSub(sub, String(row.name || ""));
+    }
+    var rawSl = row.sizeLabels || row.size_labels;
+    if (typeof rawSl === "string") {
+      try {
+        rawSl = JSON.parse(rawSl);
+      } catch (_) {
+        rawSl = null;
+      }
+    }
+    var p = {
+      id: id,
+      name: String(row.name || "Piece").trim().slice(0, 500),
+      category: cat,
+      subcategory: sub,
+      image: img,
+      prices: {
+        s: Number(row.prices && row.prices.s) || 0,
+        m: Number(row.prices && row.prices.m) || 0,
+        l: Number(row.prices && row.prices.l) || 0,
+      },
+      vendorCatalogRow: true,
+    };
+    if (rawSl && typeof rawSl === "object" && (rawSl.s || rawSl.m || rawSl.l)) {
+      p.sizeLabels = rawSl;
+    }
+    if (row.returnGift === true) {
+      p.returnGift = true;
+    }
+    if (row.listed === false) {
+      p.listed = false;
+    } else {
+      delete p.listed;
+    }
+    var g = row.gallery || row.galleryImages;
+    if (Array.isArray(g) && g.length) {
+      p.gallery = g
+        .map(function (u) {
+          return String(u || "").trim();
+        })
+        .filter(Boolean)
+        .slice(0, 24);
+    }
+    if (row.options != null && catalogOptionsHasPayload(row.options)) {
+      p.options = normalizeOptionsOverride(row.options);
+    }
+    return p;
+  }
+
   /** Merge vendor-created catalog rows from Postgres (see /api/catalog/vendor-products). */
   function applyVendorProductsMerge(rows) {
     if (!rows || !rows.length) return 0;
     var n = 0;
     rows.forEach(function (row) {
+      if (row && row.isActive === false) return;
+      if (row && row.listed === false) return;
       var id = String(row.id || "").trim();
-      if (!id || BY_ID[id] || isProductSuppressed(id)) return;
-      var cat = String(row.category || "").trim();
-      var sub = String(row.subcategory || "all").trim();
-      var img = String(row.image || "").trim() || PLACEHOLDER_PRODUCT_IMAGE;
-      if (!cat) return;
-      if (isDroppedResinCategory(cat)) return;
-      if (cat === "resin-clocks") {
-        sub = normalizeResinClockProductSub(sub, String(row.name || ""));
-      }
-      if (cat === "resin-guruji-products") {
-        sub = normalizeGurujiProductSub(sub, String(row.name || ""));
-      }
-      if (cat === "resin-keychains") {
-        sub = normalizeKeychainProductSub(sub, String(row.name || ""));
-      }
-      var rawSl = row.sizeLabels || row.size_labels;
-      if (typeof rawSl === "string") {
-        try {
-          rawSl = JSON.parse(rawSl);
-        } catch (_) {
-          rawSl = null;
-        }
-      }
-      var p = {
-        id: id,
-        name: String(row.name || "Piece").trim().slice(0, 500),
-        category: cat,
-        subcategory: sub,
-        image: img,
-        prices: {
-          s: Number(row.prices && row.prices.s) || 0,
-          m: Number(row.prices && row.prices.m) || 0,
-          l: Number(row.prices && row.prices.l) || 0,
-        },
-      };
-      if (rawSl && typeof rawSl === "object" && (rawSl.s || rawSl.m || rawSl.l)) {
-        p.sizeLabels = rawSl;
-      }
-      PRODUCTS.push(p);
-      BY_ID[id] = p;
-      if (!BY_CAT[cat]) BY_CAT[cat] = [];
-      if (BY_CAT[cat].indexOf(id) === -1) BY_CAT[cat].push(id);
-      if (!BY_CAT_SUB[cat]) BY_CAT_SUB[cat] = {};
-      if (!BY_CAT_SUB[cat][sub]) BY_CAT_SUB[cat][sub] = [];
-      if (BY_CAT_SUB[cat][sub].indexOf(id) === -1) BY_CAT_SUB[cat][sub].push(id);
-      if (row.returnGift === true) {
-        p.returnGift = true;
-      }
-      p.vendorCatalogRow = true;
-      var g = row.gallery || row.galleryImages;
-      if (Array.isArray(g) && g.length) {
-        p.gallery = g
-          .map(function (u) {
-            return String(u || "").trim();
-          })
-          .filter(Boolean)
-          .slice(0, 24);
-      }
-      if (row.options != null) {
-        if (catalogOptionsHasPayload(row.options)) {
-          p.options = normalizeOptionsOverride(row.options);
-        }
+      if (!id || isProductSuppressed(id)) return;
+      if (BY_ID[id] && !BY_ID[id].vendorCatalogRow) return;
+      var p = vendorRowToProduct(row);
+      if (!p) return;
+      var existing = BY_ID[id];
+      if (existing && existing.vendorCatalogRow) {
+        existing.name = p.name;
+        existing.category = p.category;
+        existing.subcategory = p.subcategory;
+        existing.image = p.image;
+        existing.prices = p.prices;
+        if (p.sizeLabels) existing.sizeLabels = p.sizeLabels;
+        else delete existing.sizeLabels;
+        if (p.returnGift) existing.returnGift = true;
+        else delete existing.returnGift;
+        if (p.listed === false) existing.listed = false;
+        else delete existing.listed;
+        if (p.gallery) existing.gallery = p.gallery;
+        else delete existing.gallery;
+        if (p.options) existing.options = p.options;
+        else delete existing.options;
+      } else {
+        PRODUCTS.push(p);
+        BY_ID[id] = p;
       }
       n++;
     });
+    rebuildCategoryProductIndex();
     return n;
   }
 
@@ -684,47 +747,7 @@
       }
       CATEGORIES.push(row);
     });
-    BY_CAT = {};
-    BY_CAT_SUB = {};
-    CATEGORIES.forEach(function (cat) {
-      BY_CAT[cat.id] = [];
-      BY_CAT_SUB[cat.id] = {};
-      (cat.subcategories || []).forEach(function (s) {
-        if (s && s.id) {
-          BY_CAT_SUB[cat.id][s.id] = [];
-        }
-      });
-    });
-    PRODUCTS.forEach(function (p) {
-      if (p && p.category === "resin-clocks") {
-        p.subcategory = normalizeResinClockProductSub(p.subcategory, p.name);
-      }
-      if (p && p.category === "resin-guruji-products") {
-        p.subcategory = normalizeGurujiProductSub(p.subcategory, p.name);
-      }
-      if (p && p.category === "resin-keychains") {
-        p.subcategory = normalizeKeychainProductSub(p.subcategory, p.name);
-      }
-    });
-    PRODUCTS.forEach(function (p) {
-      var cat = p.category;
-      var sub = p.subcategory || "all";
-      if (!BY_CAT[cat]) {
-        BY_CAT[cat] = [];
-      }
-      if (BY_CAT[cat].indexOf(p.id) === -1) {
-        BY_CAT[cat].push(p.id);
-      }
-      if (!BY_CAT_SUB[cat]) {
-        BY_CAT_SUB[cat] = {};
-      }
-      if (!BY_CAT_SUB[cat][sub]) {
-        BY_CAT_SUB[cat][sub] = [];
-      }
-      if (BY_CAT_SUB[cat][sub].indexOf(p.id) === -1) {
-        BY_CAT_SUB[cat][sub].push(p.id);
-      }
-    });
+    rebuildCategoryProductIndex();
     return CATEGORIES.length;
   }
 
@@ -756,6 +779,7 @@
     applyCatalogSuppressions: applyCatalogSuppressions,
     isProductSuppressed: isProductSuppressed,
     applyVendorProductsMerge: applyVendorProductsMerge,
+    rebuildCategoryProductIndex: rebuildCategoryProductIndex,
     applyCategoriesMerge: applyCategoriesMerge,
     searchCatalogPartial: searchCatalogPartial,
     catalogOptionsHasPayload: catalogOptionsHasPayload,

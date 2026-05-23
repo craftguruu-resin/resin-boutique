@@ -153,6 +153,45 @@
     }
   }
 
+  var TAXONOMY_SUB_CATS = {
+    "resin-clocks": 1,
+    "resin-guruji-products": 1,
+    "resin-keychains": 1,
+  };
+
+  function refillApSubcategoryDropdown(catId) {
+    var wrap = document.getElementById("viApSubWrap");
+    var subSel = document.getElementById("viApSubcategory");
+    if (!wrap || !subSel) return;
+    catId = String(catId || "").trim();
+    if (!TAXONOMY_SUB_CATS[catId]) {
+      wrap.hidden = true;
+      subSel.innerHTML = "";
+      return;
+    }
+    var cat = viCategoriesCache.filter(function (c) {
+      return String(c.id) === catId;
+    })[0];
+    var subs = (cat && cat.subcategories) || [];
+    if (!subs.length) {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    subSel.innerHTML = "";
+    var o0 = document.createElement("option");
+    o0.value = "";
+    o0.textContent = "— Choose —";
+    subSel.appendChild(o0);
+    subs.forEach(function (s) {
+      if (!s || !s.id || String(s.id) === "all") return;
+      var o = document.createElement("option");
+      o.value = String(s.id);
+      o.textContent = s.label || s.id;
+      subSel.appendChild(o);
+    });
+  }
+
   function refillApCategoryDropdowns() {
     var sel = document.getElementById("viApCategory");
     if (!sel) return;
@@ -171,6 +210,7 @@
     if (prev && Array.prototype.some.call(sel.options, function (op) { return op.value === prev; })) {
       sel.value = prev;
     }
+    refillApSubcategoryDropdown(sel.value);
   }
 
   function loadCategories() {
@@ -896,6 +936,9 @@
     if (file) fd.append("image", file, file.name);
     var galEl = document.getElementById("viApGallery");
     if (galEl) fd.append("gallery", String(galEl.value || ""));
+    var subEl = document.getElementById("viApSubcategory");
+    var subPick = subEl && !subEl.closest("[hidden]") ? String(subEl.value || "").trim() : "";
+    if (subPick) fd.append("subcategoryId", subPick);
     var base = V.apiBase();
     vf(V.vendorApiUrl("/api/vendor/products"), {
       method: "POST",
@@ -939,6 +982,13 @@
       setTab(b.getAttribute("data-tab") || "studio");
     });
   });
+
+  var viApCategorySel = document.getElementById("viApCategory");
+  if (viApCategorySel) {
+    viApCategorySel.addEventListener("change", function () {
+      refillApSubcategoryDropdown(viApCategorySel.value);
+    });
+  }
 
   var catalogSearchTimer = null;
   function scheduleCatalogSearch() {
