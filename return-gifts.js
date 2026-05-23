@@ -218,11 +218,6 @@
         '"></a>' +
         '<div class="product-card__shine" aria-hidden="true"></div>' +
         '<div class="product-card-image">' +
-        '<div class="product-card-share">' +
-        '<button type="button" class="product-card-share__btn">Share</button>' +
-        '<div class="product-card-share__pop" hidden aria-hidden="true"></div>' +
-        "</div>" +
-        '<span class="product-badge">Return gift</span>' +
         '<div class="product-card__media">' +
         '<img src="' +
         escAttr(imgSrc(p.image)) +
@@ -236,17 +231,13 @@
         '<p class="product-card__from">From ' +
         CART.formatMoney(minP) +
         "</p>" +
-        '<div class="product-meta">' +
+        '<div class="product-meta product-meta--cta">' +
         '<a class="add-btn add-btn--mini" href="product.html?id=' +
         encodeURIComponent(p.id) +
         '">Open piece →</a>' +
         "</div>" +
         "</div>";
       grid.appendChild(card);
-      var sbtn = card.querySelector(".product-card-share__btn");
-      if (sbtn && window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountCardShare) {
-        window.CRAFTGURU_SHARE.mountCardShare(sbtn, { id: p.id, name: p.name });
-      }
     });
     syncReturnGiftsUrl();
   }

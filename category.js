@@ -389,23 +389,14 @@
     }
     if (els.productGrid) els.productGrid.hidden = false;
 
-    if (els.flowStep) {
-      els.flowStep.innerHTML =
-        '<span class="flow-step__n">Shop</span> Choose a piece — <span class="flow-step__muted">size &amp; price on the next page</span>';
-    }
-
+    if (els.flowStep) els.flowStep.hidden = true;
     if (els.sub) {
-      if (result.pages <= 1) {
-        els.sub.textContent =
-          result.total + " pieces" + (subLabel ? " · " + subLabel : "") + " — tap one to continue";
+      if (result.pages > 1) {
+        els.sub.hidden = false;
+        els.sub.textContent = "Page " + result.page + " of " + result.pages;
       } else {
-        els.sub.textContent =
-          result.total +
-          " pieces · page " +
-          result.page +
-          " of " +
-          result.pages +
-          (subLabel ? " · " + subLabel : "");
+        els.sub.textContent = "";
+        els.sub.hidden = true;
       }
     }
 
@@ -444,13 +435,6 @@
         '"></a>' +
         '<div class="product-card__shine" aria-hidden="true"></div>' +
         '<div class="product-card-image">' +
-        '<div class="product-card-share">' +
-        '<button type="button" class="product-card-share__btn">Share</button>' +
-        '<div class="product-card-share__pop" hidden aria-hidden="true"></div>' +
-        "</div>" +
-        '<span class="product-badge">' +
-        escapeHtml(D.getCategoryLabel(p.category)) +
-        "</span>" +
         '<div class="product-card__media">' +
         '<img src="' +
         escapeAttr(imgSrc(p.image)) +
@@ -468,20 +452,13 @@
         " size" +
         (D.countOfferedSizesForProduct && D.countOfferedSizesForProduct(p) === 1 ? "" : "s") +
         "</p>" +
-        '<div class="product-meta">' +
-        '<span class="price-note">' +
-        "Tap for sizes" +
-        "</span>" +
+        '<div class="product-meta product-meta--cta">' +
         '<a class="add-btn add-btn--mini" href="product.html?id=' +
         encodeURIComponent(p.id) +
         '">Size &amp; price →</a>' +
         "</div>" +
         "</div>";
       els.productGrid.appendChild(card);
-      var sbtn = card.querySelector(".product-card-share__btn");
-      if (sbtn && window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountCardShare) {
-        window.CRAFTGURU_SHARE.mountCardShare(sbtn, { id: p.id, name: p.name });
-      }
     });
 
     if (els.pager) {

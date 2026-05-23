@@ -1179,6 +1179,13 @@ main {
   padding-top: 0.85rem;
 }
 
+/* Listing grids: single CTA row (no share / tap hint) */
+.product-meta.product-meta--cta {
+  align-items: center;
+  justify-content: flex-end;
+  min-height: 2.75rem;
+}
+
 .price {
   font-family: "Inter", system-ui, sans-serif;
   font-size: 1.28rem;
