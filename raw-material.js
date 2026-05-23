@@ -170,15 +170,25 @@
     return !String(p.base || "").trim() && !String(p.sub || "").trim();
   }
 
-  function toggleRmShopHomeOnlySections() {
+  function shouldShowRmProductGrid(par, needle) {
+    if (String(par.base || "").trim() || String(par.sub || "").trim()) return true;
+    if (String(needle || "").trim()) return true;
+    return false;
+  }
+
+  function toggleRmShopHomeOnlySections(needle) {
     var home = isRawMaterialShopHome();
+    var par = qsParams();
+    var showGrid = shouldShowRmProductGrid(par, needle);
     var hub = document.querySelector(".rm-cat-hub");
     var tb = document.getElementById("rm-shop");
     var hero = document.getElementById("rm-hero");
+    var grid = document.getElementById("rmGrid");
     if (hub) hub.toggleAttribute("hidden", !home);
     if (tb) tb.toggleAttribute("hidden", !home);
-    /* Banner only on shop “home” (no category drill-in); catalog / listing shows products only. */
+    /* Banner only on shop “home” (no category drill-in); product grid only after category pick or search. */
     if (hero) hero.toggleAttribute("hidden", !home);
+    if (grid) grid.toggleAttribute("hidden", !showGrid);
   }
 
   function readHubFilterFromDom() {
@@ -533,9 +543,8 @@
       var emptyMsg;
       if (catalogTotal === 0) {
         emptyMsg = "No materials listed yet.";
-      } else if (!hasBrowse) {
-        emptyMsg =
-          "Choose a category or subcategory from Shop by category or the sidebar to see products here. The filter bar only narrows the category cards on the shop home.";
+      } else       if (!hasBrowse) {
+        emptyMsg = "Choose a category from Shop by category or the sidebar to see products.";
       } else {
         g.innerHTML =
           '<p class="band-empty" style="grid-column:1/-1">' +
@@ -610,7 +619,12 @@
     if (tax && isRawMaterialShopHome()) {
       renderRmCategoryHub(tax, allMaterials, rmShopHubFilter);
     }
-    toggleRmShopHomeOnlySections();
+    var needle = "";
+    try {
+      var gq = document.getElementById("globalFindQuery");
+      if (gq) needle = String(gq.value || "").trim();
+    } catch (_) {}
+    toggleRmShopHomeOnlySections(needle);
     var navEl = document.getElementById("rmNavTree");
     if (navEl && window.RmShopNav) {
       window.RmShopNav.mount(navEl, {
@@ -619,20 +633,20 @@
         materials: allMaterials,
       });
     }
-    var needle = "";
-    try {
-      var gq = document.getElementById("globalFindQuery");
-      if (gq) needle = String(gq.value || "").trim();
-    } catch (_) {}
-    var rows = allMaterials.filter(function (m) {
-      return materialsMatchFilters(m, par.base, par.sub, needle);
-    });
-    if (!rows.length && par.base && par.sub && allMaterials.length) {
-      rows = allMaterials.filter(function (m) {
-        return materialsMatchFilters(m, par.base, "", needle);
+    if (shouldShowRmProductGrid(par, needle)) {
+      var rows = allMaterials.filter(function (m) {
+        return materialsMatchFilters(m, par.base, par.sub, needle);
       });
+      if (!rows.length && par.base && par.sub && allMaterials.length) {
+        rows = allMaterials.filter(function (m) {
+          return materialsMatchFilters(m, par.base, "", needle);
+        });
+      }
+      render(rows);
+    } else {
+      var g0 = document.getElementById("rmGrid");
+      if (g0) g0.innerHTML = "";
     }
-    render(rows);
   }
 
   function wireRmShopSpaNavOnce() {
@@ -694,7 +708,7 @@
   }
 
   function load() {
-    toggleRmShopHomeOnlySections();
+    toggleRmShopHomeOnlySections("");
     wireFiltersOnce();
     wireRmHeaderGlobalFindOnce();
 
