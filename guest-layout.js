@@ -126,10 +126,18 @@
       var a = document.createElement("a");
       a.className = "category-pill category-pill--rail";
       a.href = "category.html?cat=" + encodeURIComponent(c.id);
-      var navImg = String((c.nav_image != null && c.nav_image) || (c.navImage != null && c.navImage) || "").trim();
-      if (navImg && D.imageUrl) {
+      var pair =
+        D.getCategoryPreviewImagePair && D.getCategoryPreviewImagePair(c.id)
+          ? D.getCategoryPreviewImagePair(c.id)
+          : {
+              primary: D.getCategoryPreviewImage ? D.getCategoryPreviewImage(c.id) : "",
+              fallback: "",
+            };
+      var previewImg = String((pair && pair.primary) || "").trim();
+      var previewFallback = String((pair && pair.fallback) || "").trim();
+      if (previewImg && D.imageUrl) {
         var img = document.createElement("img");
-        img.src = D.imageUrl(navImg);
+        img.src = D.imageUrl(previewImg);
         img.alt = "";
         img.width = 28;
         img.height = 28;
@@ -138,6 +146,20 @@
         img.style.borderRadius = "6px";
         img.style.marginRight = "0.4rem";
         img.style.verticalAlign = "middle";
+        if (previewFallback) {
+          var fbUrl = D.imageUrl(previewFallback);
+          img.setAttribute("data-fallback-src", fbUrl);
+          img.addEventListener("error", function onRailImgError() {
+            var alt = img.getAttribute("data-fallback-src") || "";
+            if (alt && img.src !== alt) {
+              img.src = alt;
+              img.removeAttribute("data-fallback-src");
+              return;
+            }
+            img.removeEventListener("error", onRailImgError);
+            img.remove();
+          });
+        }
         a.appendChild(img);
       }
       a.appendChild(document.createTextNode(c.label || c.id));

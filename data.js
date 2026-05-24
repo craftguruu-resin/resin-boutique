@@ -272,21 +272,94 @@ var SIZE_DEFAULT = {
   }
 
   var PAGE_SIZE = 48;
+  var PLACEHOLDER_PRODUCT_IMAGE = "media/placeholder-product.svg";
+
+  function getCategoryObject(catId) {
+    var cid = normalizeCategoryId(catId);
+    for (var i = 0; i < CATEGORIES.length; i++) {
+      if (CATEGORIES[i].id === cid) return CATEGORIES[i];
+    }
+    return null;
+  }
+
+  function isUsableProductImagePath(rel) {
+    rel = String(rel || "").trim();
+    if (!rel) return false;
+    if (rel === PLACEHOLDER_PRODUCT_IMAGE || rel.indexOf("placeholder-product") >= 0) return false;
+    return true;
+  }
+
+  function productDisplayImage(p) {
+    if (!p) return "";
+    var img = String(p.image || "").trim();
+    if (isUsableProductImagePath(img)) return img;
+    if (Array.isArray(p.gallery)) {
+      for (var g = 0; g < p.gallery.length; g++) {
+        var gi = String(p.gallery[g] || "").trim();
+        if (isUsableProductImagePath(gi)) return gi;
+      }
+    }
+    return "";
+  }
+
+  function getCategoryNavImage(catId) {
+    var cat = getCategoryObject(catId);
+    if (!cat) return "";
+    return String((cat.nav_image != null && cat.nav_image) || (cat.navImage != null && cat.navImage) || "").trim();
+  }
+
+  /** First listed product image in category (optional sub); scans from end when preferLatest. */
+  function pickListedProductImageInCategory(catId, subId, preferLatest) {
+    var list = listProductsAll(catId, subId || null);
+    if (!list.length) return "";
+    if (preferLatest) {
+      for (var j = list.length - 1; j >= 0; j--) {
+        var back = productDisplayImage(list[j]);
+        if (back) return back;
+      }
+    }
+    for (var i = 0; i < list.length; i++) {
+      var fwd = productDisplayImage(list[i]);
+      if (fwd) return fwd;
+    }
+    return "";
+  }
+
+  /** Category nav/media image, else first valid product image in the line. */
+  function getCategoryPreviewImage(catId) {
+    var nav = getCategoryNavImage(catId);
+    if (nav) return nav;
+    return pickListedProductImageInCategory(catId, null, true);
+  }
+
+  /** Primary display path plus product fallback when nav may 404 after media deletion. */
+  function getCategoryPreviewImagePair(catId) {
+    var nav = getCategoryNavImage(catId);
+    var product = pickListedProductImageInCategory(catId, null, true);
+    if (nav && product && nav !== product) {
+      return { primary: nav, fallback: product };
+    }
+    return { primary: nav || product, fallback: "" };
+  }
+
+  function getSubcategoryPreviewImage(catId, subId) {
+    var subs = getSubcategories(normalizeCategoryId(catId));
+    for (var i = 0; i < subs.length; i++) {
+      if (subs[i].id === subId) {
+        var subImg = String((subs[i].image != null && subs[i].image) || "").trim();
+        if (subImg) return subImg;
+        break;
+      }
+    }
+    return pickListedProductImageInCategory(catId, subId, true);
+  }
 
   function listCategorySubcategories(catId) {
     var cid = normalizeCategoryId(catId);
     var subs = getSubcategories(cid);
     return subs.map(function (s) {
       var count = countProductsInSub(cid, s.id);
-      var ids = (BY_CAT_SUB[cid] && BY_CAT_SUB[cid][s.id]) || [];
-      var preview = "";
-      for (var i = 0; i < ids.length; i++) {
-        var pr = BY_ID[ids[i]];
-        if (isListedProduct(pr) && pr.image) {
-          preview = pr.image;
-          break;
-        }
-      }
+      var preview = getSubcategoryPreviewImage(cid, s.id);
       return { id: s.id, label: s.label, count: count, previewImage: preview };
     }).filter(function (x) { return x.count > 0; });
   }
@@ -557,8 +630,6 @@ var SIZE_DEFAULT = {
     return out;
   }
 
-  var PLACEHOLDER_PRODUCT_IMAGE = "media/placeholder-product.svg";
-
   function vendorRowToProduct(row) {
     var id = String(row.id || "").trim();
     if (!id) return null;
@@ -764,6 +835,9 @@ var SIZE_DEFAULT = {
     getProduct: getProduct,
     productExistsInBundledCatalog: productExistsInBundledCatalog,
     getCategoryLabel: getCategoryLabel,
+    getCategoryPreviewImage: getCategoryPreviewImage,
+    getCategoryPreviewImagePair: getCategoryPreviewImagePair,
+    getSubcategoryPreviewImage: getSubcategoryPreviewImage,
     getSubcategoryLabel: getSubcategoryLabel,
     getSizeProfile: getSizeProfile,
     getSizeLabelNameForProduct: getSizeLabelNameForProduct,
