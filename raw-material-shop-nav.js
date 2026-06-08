@@ -141,20 +141,37 @@
     });
   }
 
+  function setBranchOpen(el, baseId, open) {
+    if (!el || !baseId) return;
+    var btn = el.querySelector('.rm-nav-tree__chev[data-base="' + baseId + '"]');
+    var ul = el.querySelector('[data-subs-for="' + baseId + '"]');
+    if (btn) {
+      btn.classList.toggle("is-open", open);
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }
+    if (ul) ul.classList.toggle("is-open", open);
+    toggleExpanded(baseId, open);
+  }
+
   function wireNavDelegationOnce(el) {
     if (!el || el.dataset.rmNavChevDelegation === "1") return;
     el.dataset.rmNavChevDelegation = "1";
     el.addEventListener("click", function (e) {
       var btn = e.target && e.target.closest && e.target.closest(".rm-nav-tree__chev");
-      if (!btn || !el.contains(btn)) return;
-      e.preventDefault();
-      var bid = btn.getAttribute("data-base");
-      var ul = el.querySelector('[data-subs-for="' + bid + '"]');
-      var open = !btn.classList.contains("is-open");
-      btn.classList.toggle("is-open", open);
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      if (ul) ul.classList.toggle("is-open", open);
-      toggleExpanded(bid, open);
+      if (btn && el.contains(btn)) {
+        e.preventDefault();
+        e.stopPropagation();
+        var bid = btn.getAttribute("data-base");
+        var open = !btn.classList.contains("is-open");
+        setBranchOpen(el, bid, open);
+        return;
+      }
+      var baseLink = e.target && e.target.closest && e.target.closest("a.rm-nav-tree__link--base");
+      if (baseLink && el.contains(baseLink)) {
+        var row = baseLink.closest(".rm-nav-tree__row");
+        var chev = row && row.querySelector(".rm-nav-tree__chev");
+        if (chev) setBranchOpen(el, chev.getAttribute("data-base"), true);
+      }
     });
   }
 
@@ -181,7 +198,7 @@
         var hasSubs = subs.length > 0;
         var isOpen = expanded.indexOf(c.id) >= 0 || (activeBase === c.id && hasSubs);
         var baseActive = activeBase === c.id && !activeSub;
-        var baseHref = hasSubs ? shopHref(c.id, preferredListingSub(c.id, c, materials)) : shopHref(c.id, "");
+        var baseHref = shopHref(c.id, "");
         if (!hasSubs) {
           html +=
             '<li class="rm-nav-tree__item">' +
@@ -201,15 +218,6 @@
         html +=
           '<li class="rm-nav-tree__item rm-nav-tree__item--branch">' +
           '<div class="rm-nav-tree__row">' +
-          '<button type="button" class="rm-nav-tree__chev' +
-          (isOpen ? " is-open" : "") +
-          '" data-base="' +
-          esc(c.id) +
-          '" aria-expanded="' +
-          (isOpen ? "true" : "false") +
-          '" aria-label="Toggle ' +
-          esc(c.name) +
-          '"></button>' +
           '<a class="rm-nav-tree__link rm-nav-tree__link--base' +
           (baseActive ? " is-active" : "") +
           '" href="' +
@@ -220,12 +228,29 @@
             : '<span class="rm-nav-tree__ico rm-nav-tree__ico--ph" aria-hidden="true"></span>') +
           "<span>" +
           esc(c.name) +
-          "</span></a></div>" +
+          "</span></a>" +
+          '<button type="button" class="rm-nav-tree__chev' +
+          (isOpen ? " is-open" : "") +
+          '" data-base="' +
+          esc(c.id) +
+          '" aria-expanded="' +
+          (isOpen ? "true" : "false") +
+          '" aria-label="Toggle ' +
+          esc(c.name) +
+          ' subcategories"></button></div>' +
           '<ul class="rm-nav-tree__subs' +
           (isOpen ? " is-open" : "") +
           '" data-subs-for="' +
           esc(c.id) +
           '">';
+        html +=
+          '<li><a class="rm-nav-tree__link rm-nav-tree__link--sub' +
+          (baseActive ? " is-active" : "") +
+          '" href="' +
+          esc(shopHref(c.id, "")) +
+          '">All ' +
+          esc(c.name) +
+          "</a></li>";
         subs.forEach(function (s) {
           var subAct = activeBase === c.id && activeSub === s.id;
           html +=

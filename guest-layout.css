@@ -33,6 +33,15 @@
   color: rgba(15, 18, 24, 0.55);
   background: rgba(255, 255, 255, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.35);
+  transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.guest-header-search:hover .guest-header-search__icon,
+.guest-header-search:focus-within .guest-header-search__icon {
+  color: rgba(15, 18, 24, 0.82);
+  background: rgba(255, 255, 255, 0.42);
+  border-color: rgba(59, 111, 217, 0.35);
+  box-shadow: 0 0 0 2px rgba(59, 111, 217, 0.12);
 }
 
 .guest-header-search__input {
@@ -242,9 +251,12 @@ body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail {
   font-weight: 600;
 }
 
-body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail:hover {
+body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail:hover,
+body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail:focus-visible {
   border-color: rgba(59, 111, 217, 0.35);
   background: #fff;
+  box-shadow: 0 8px 22px rgba(35, 60, 110, 0.1);
+  outline: none;
 }
 
 body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail.is-active {

@@ -151,6 +151,7 @@
   /** Hub-only filter from toolbar (not URL). Cleared by Reset. */
   var rmShopHubFilter = null;
   var rmShopSpaWired = false;
+  var rmNavMaterialCount = -1;
 
   function qsParams() {
     try {
@@ -597,25 +598,6 @@
   function applyShopShellFromParams() {
     var par = qsParams();
     var tax = rmShopTaxDoc;
-    if (tax && window.RmShopNav && par.base && !par.sub) {
-      var catList = (tax.categories) || [];
-      var cFound = null;
-      for (var ci = 0; ci < catList.length; ci++) {
-        if (catList[ci].id === par.base) {
-          cFound = catList[ci];
-          break;
-        }
-      }
-      var sc = (cFound && cFound.subcategories) || [];
-      if (sc.length > 1 && typeof window.RmShopNav.preferredListingSub === "function") {
-        var dsub = window.RmShopNav.preferredListingSub(par.base, cFound, allMaterials);
-        if (dsub) {
-          window.location.replace(window.RmShopNav.shopHref(par.base, dsub));
-          return;
-        }
-      }
-    }
-
     if (tax && isRawMaterialShopHome()) {
       renderRmCategoryHub(tax, allMaterials, rmShopHubFilter);
     }
@@ -627,10 +609,14 @@
     toggleRmShopHomeOnlySections(needle);
     var navEl = document.getElementById("rmNavTree");
     if (navEl && window.RmShopNav) {
+      var forceNavRebuild = rmNavMaterialCount !== allMaterials.length;
+      rmNavMaterialCount = allMaterials.length;
+      if (forceNavRebuild && navEl.dataset) navEl.dataset.rmNavBuilt = "";
       window.RmShopNav.mount(navEl, {
         activeBase: par.base,
         activeSub: par.sub,
         materials: allMaterials,
+        forceRebuild: forceNavRebuild,
       });
     }
     if (shouldShowRmProductGrid(par, needle)) {

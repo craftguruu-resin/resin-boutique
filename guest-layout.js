@@ -419,11 +419,27 @@
     /* auth-db.js, google-signin.js, auth-home.js must be included in page markup after guest-layout.js (see category.html). */
   }
 
+  function injectWhatsAppWidget() {
+    if (document.getElementById("cgWhatsAppWidget")) return;
+    if (!document.querySelector('link[href*="whatsapp-widget.css"]')) {
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "whatsapp-widget.css";
+      document.head.appendChild(link);
+    }
+    if (document.querySelector('script[src*="whatsapp-widget.js"]')) return;
+    var script = document.createElement("script");
+    script.src = "whatsapp-widget.js";
+    script.defer = true;
+    document.body.appendChild(script);
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
     injectCategoryRail();
     injectHeaderSearch();
     injectStorefrontAuthChrome();
+    injectWhatsAppWidget();
   }
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {

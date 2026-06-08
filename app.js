@@ -624,6 +624,9 @@
       var pair = categoryPreviewPair(cat.id);
       var imgRel = (pair && pair.primary) || "";
       var imgFallback = (pair && pair.fallback) || "";
+      if (!imgRel && !imgFallback && D.pickRandomCatalogProductImage) {
+        imgRel = D.pickRandomCatalogProductImage() || "";
+      }
       var count = listedProductsInCategory(cat.id).length;
       var minFrom = minPriceInCategory(cat.id);
       var card = document.createElement("article");
@@ -694,7 +697,64 @@
       }
       els.productGrid.appendChild(card);
     });
+    if (!cats.length && D.listAllListedProducts) {
+      var featuredPool = D.listAllListedProducts().filter(function (p) {
+        return p && productDisplayImageSafe(p);
+      });
+      if (featuredPool.length) {
+        var picks = featuredPool.slice();
+        for (var s = picks.length - 1; s > 0; s--) {
+          var r = Math.floor(Math.random() * (s + 1));
+          var tmp = picks[s];
+          picks[s] = picks[r];
+          picks[r] = tmp;
+        }
+        picks.slice(0, Math.min(8, picks.length)).forEach(function (p, fi) {
+          var pImg = productDisplayImageSafe(p);
+          if (!pImg) return;
+          var pHref = "product.html?id=" + encodeURIComponent(p.id);
+          var pCard = document.createElement("article");
+          pCard.className = "featured-cat-card is-inview";
+          pCard.style.setProperty("--stagger", String(fi));
+          pCard.setAttribute("data-has-preview", "1");
+          pCard.setAttribute("data-search-text", ((p.name || "") + " " + (p.id || "")).toLowerCase());
+          pCard.innerHTML =
+            '<div class="featured-cat-card__shine" aria-hidden="true"></div>' +
+            '<a class="featured-cat-card__media-hit" href="' +
+            pHref +
+            '"><div class="featured-cat-card__media"><img src="' +
+            escapeAttr(imgUrl(pImg)) +
+            '" alt="" loading="lazy" decoding="async" /></div></a>' +
+            '<div class="featured-cat-card__body">' +
+            "<h3><a href=\"" +
+            pHref +
+            "\">" +
+            escapeHtml(p.name || "Resin piece") +
+            "</a></h3>" +
+            "<p>Featured from our catalog</p>" +
+            '<div class="featured-cat-card__row">' +
+            '<a class="featured-cat-card__cta" href="' +
+            pHref +
+            '">View piece →</a>' +
+            "</div></div>";
+          els.productGrid.appendChild(pCard);
+        });
+      }
+    }
     applyHomeCatalogFilter();
+  }
+
+  function productDisplayImageSafe(p) {
+    if (!p) return "";
+    var img = String(p.image || "").trim();
+    if (img && img.indexOf("placeholder-product") < 0) return img;
+    if (Array.isArray(p.gallery)) {
+      for (var g = 0; g < p.gallery.length; g++) {
+        var gi = String(p.gallery[g] || "").trim();
+        if (gi && gi.indexOf("placeholder-product") < 0) return gi;
+      }
+    }
+    return "";
   }
 
   function prefersReducedMotion() {
@@ -1088,10 +1148,14 @@
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     renderCategories();
+    renderFeatured();
+    paintHeroFloatCatalog();
+    renderHeroSpotlight();
   });
 
   function onStorefrontCatalogMerged() {
-    if (!patchFeaturedCardPrices()) renderFeatured();
+    renderFeatured();
+    renderCategories();
     paintHeroFloatCatalog();
     bootConfigurableHero();
     renderHeroSpotlight();

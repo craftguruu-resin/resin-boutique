@@ -947,6 +947,23 @@ a.rm-empty-link:hover {
   font-weight: 600;
 }
 
+a.rm-nav-tree__title-link {
+  display: inline-block;
+  color: inherit;
+  text-decoration: none;
+  border-radius: 8px;
+  padding: 0.15rem 0.25rem;
+  margin: -0.15rem -0.25rem 0.6rem;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+a.rm-nav-tree__title-link:hover,
+a.rm-nav-tree__title-link:focus-visible {
+  color: #4c1d95;
+  background: rgba(76, 29, 149, 0.06);
+  outline: none;
+}
+
 .rm-nav-tree__root {
   list-style: none;
   margin: 0;
@@ -959,8 +976,14 @@ a.rm-empty-link:hover {
 
 .rm-nav-tree__row {
   display: flex;
-  align-items: center;
-  gap: 0.2rem;
+  align-items: stretch;
+  gap: 0.25rem;
+  border-radius: 10px;
+}
+
+.rm-nav-tree__row:hover .rm-nav-tree__link--base:not(.is-active) {
+  background: rgba(76, 29, 149, 0.06);
+  border-color: rgba(76, 29, 149, 0.1);
 }
 
 .rm-nav-tree__chev {
@@ -1019,8 +1042,9 @@ a.rm-empty-link:hover {
 }
 
 .rm-nav-tree__link--sub {
+  display: block;
   font-size: 0.82rem;
-  padding-left: 0.35rem;
+  padding: 0.42rem 0.5rem 0.42rem 0.65rem;
   margin-left: 1.5rem;
   border-left: 2px solid rgba(76, 29, 149, 0.15);
 }

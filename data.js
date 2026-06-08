@@ -308,38 +308,79 @@ var SIZE_DEFAULT = {
     return String((cat.nav_image != null && cat.nav_image) || (cat.navImage != null && cat.navImage) || "").trim();
   }
 
-  /** First listed product image in category (optional sub); scans from end when preferLatest. */
-  function pickListedProductImageInCategory(catId, subId, preferLatest) {
+  function collectListedProductImagesInCategory(catId, subId) {
     var list = listProductsAll(catId, subId || null);
-    if (!list.length) return "";
-    if (preferLatest) {
-      for (var j = list.length - 1; j >= 0; j--) {
-        var back = productDisplayImage(list[j]);
-        if (back) return back;
+    var imgs = [];
+    var seen = Object.create(null);
+    for (var i = 0; i < list.length; i++) {
+      var img = productDisplayImage(list[i]);
+      if (img && !seen[img]) {
+        seen[img] = 1;
+        imgs.push(img);
       }
     }
-    for (var i = 0; i < list.length; i++) {
-      var fwd = productDisplayImage(list[i]);
-      if (fwd) return fwd;
-    }
-    return "";
+    return imgs;
   }
 
-  /** Category nav/media image, else first valid product image in the line. */
+  /** First / latest / random listed product image in category (optional sub). */
+  function pickListedProductImageInCategory(catId, subId, mode) {
+    var imgs = collectListedProductImagesInCategory(catId, subId);
+    if (!imgs.length) return "";
+    if (mode === "random") {
+      return imgs[Math.floor(Math.random() * imgs.length)];
+    }
+    if (mode === "latest" || mode === true) {
+      return imgs[imgs.length - 1];
+    }
+    return imgs[0];
+  }
+
+  /** Category nav/media image, else a random valid product image in the line. */
   function getCategoryPreviewImage(catId) {
     var nav = getCategoryNavImage(catId);
     if (nav) return nav;
-    return pickListedProductImageInCategory(catId, null, true);
+    return pickListedProductImageInCategory(catId, null, "random");
   }
 
   /** Primary display path plus product fallback when nav may 404 after media deletion. */
   function getCategoryPreviewImagePair(catId) {
     var nav = getCategoryNavImage(catId);
-    var product = pickListedProductImageInCategory(catId, null, true);
+    var product = pickListedProductImageInCategory(catId, null, "random");
     if (nav && product && nav !== product) {
       return { primary: nav, fallback: product };
     }
     return { primary: nav || product, fallback: "" };
+  }
+
+  /** Listed products across all storefront categories (deduped). */
+  function listAllListedProducts() {
+    var seen = Object.create(null);
+    var out = [];
+    CATEGORIES.forEach(function (c) {
+      if (!c || !c.id || isDroppedResinCategory(c.id)) return;
+      listProductsAll(c.id, null).forEach(function (p) {
+        if (!p || !p.id || seen[p.id]) return;
+        seen[p.id] = 1;
+        out.push(p);
+      });
+    });
+    return out;
+  }
+
+  /** Random image from any listed product in the catalog. */
+  function pickRandomCatalogProductImage() {
+    var pool = listAllListedProducts();
+    var imgs = [];
+    var seen = Object.create(null);
+    for (var i = 0; i < pool.length; i++) {
+      var img = productDisplayImage(pool[i]);
+      if (img && !seen[img]) {
+        seen[img] = 1;
+        imgs.push(img);
+      }
+    }
+    if (!imgs.length) return "";
+    return imgs[Math.floor(Math.random() * imgs.length)];
   }
 
   function getSubcategoryPreviewImage(catId, subId) {
@@ -837,6 +878,8 @@ var SIZE_DEFAULT = {
     getCategoryLabel: getCategoryLabel,
     getCategoryPreviewImage: getCategoryPreviewImage,
     getCategoryPreviewImagePair: getCategoryPreviewImagePair,
+    listAllListedProducts: listAllListedProducts,
+    pickRandomCatalogProductImage: pickRandomCatalogProductImage,
     getSubcategoryPreviewImage: getSubcategoryPreviewImage,
     getSubcategoryLabel: getSubcategoryLabel,
     getSizeProfile: getSizeProfile,
