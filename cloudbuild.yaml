@@ -1,0 +1,68 @@
+# Cloud Build: build Docker image → Artifact Registry → deploy Cloud Run (API).
+# Trigger: push to main (see .github/workflows/gcp-deploy.yml or Cloud Build trigger).
+#
+# Substitutions (set in trigger or `gcloud builds submit --substitutions=...`):
+#   _REGION          e.g. asia-south1
+#   _SERVICE         e.g. craftguru-api
+#   _AR_REPO         e.g. craftguru
+#   _MIN_INSTANCES   0 (cost) or 1 (no cold start)
+
+substitutions:
+  _REGION: asia-south1
+  _SERVICE: craftguru-api
+  _AR_REPO: craftguru
+  _MIN_INSTANCES: "0"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: build-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
+      - .
+
+  - id: push-image
+    name: gcr.io/cloud-builders/docker
+    args:
+      - push
+      - --all-tags
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}
+
+  - id: deploy-cloud-run
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+      - --region=${_REGION}
+      - --platform=managed
+      - --allow-unauthenticated
+      - --port=8080
+      - --cpu=1
+      - --memory=512Mi
+      - --min-instances=${_MIN_INSTANCES}
+      - --max-instances=10
+      - --concurrency=80
+      - --timeout=300
+      - --env-vars-file=infra/gcp/env.cloudrun.yaml
+      - --set-secrets=DATABASE_URL=craftguru-database-url:latest,RAZORPAY_KEY_ID=craftguru-razorpay-key-id:latest,RAZORPAY_KEY_SECRET=craftguru-razorpay-key-secret:latest
+      # Optional secrets (create in Secret Manager first, then append to deploy):
+      # WHATSAPP_ACCESS_TOKEN=craftguru-whatsapp-access-token:latest
+      # WHATSAPP_PHONE_NUMBER_ID=craftguru-whatsapp-phone-number-id:latest
+      # BILL_API_SECRET=craftguru-bill-api-secret:latest
+      # GUEST_OTP_PEPPER=craftguru-guest-otp-pepper:latest
+      # GOOGLE_CLIENT_ID=craftguru-google-client-id:latest
+      # SMTP_PASS=craftguru-smtp-pass:latest
+      # VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest

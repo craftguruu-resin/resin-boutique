@@ -1,0 +1,37 @@
+# Cloud Build: patch storefront HTML with API base → Firebase Hosting deploy.
+# Requires Firebase project + Hosting enabled. Run after API URL is known.
+#
+# Substitutions:
+#   _PUBLIC_BILL_API_BASE   https://api.yourdomain.com (no trailing slash)
+#   _FIREBASE_PROJECT       Firebase / GCP project ID
+
+substitutions:
+  _PUBLIC_BILL_API_BASE: https://REPLACE_WITH_API_URL
+  _FIREBASE_PROJECT: YOUR_FIREBASE_PROJECT_ID
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: patch-html
+    name: node:20-bookworm-slim
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        export PUBLIC_BILL_API_BASE="${_PUBLIC_BILL_API_BASE}"
+        export PUBLIC_BILL_CLIENT_SECRET="$${PUBLIC_BILL_CLIENT_SECRET:-}"
+        node tools/set-bill-api-base.js
+
+  - id: firebase-deploy
+    name: gcr.io/$PROJECT_ID/firebase
+    args:
+      - deploy
+      - --only
+      - hosting
+      - --project
+      - ${_FIREBASE_PROJECT}
+      - --non-interactive
+
+# Note: Create a custom Cloud Build worker image with Firebase CLI, or use
+# the GitHub Actions workflow which installs firebase-tools via npm.

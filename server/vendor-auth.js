@@ -19,12 +19,13 @@ if (!Number.isFinite(IDLE_MS) || IDLE_MS < 60000) {
   IDLE_MS = 60 * 60 * 1000;
 }
 
-/** Require Bearer on /api/vendor/*. Explicit VENDOR_REQUIRE_AUTH=0 disables. On Render (RENDER=true), defaults to locked unless disabled. */
+/** Require Bearer on /api/vendor/*. Explicit VENDOR_REQUIRE_AUTH=0 disables. On Render/Cloud Run, defaults to locked unless disabled. */
 function vendorRequireAuth() {
   var ex = String(process.env.VENDOR_REQUIRE_AUTH || "").trim().toLowerCase();
   if (ex === "0" || ex === "false" || ex === "off") return false;
   if (ex === "1" || ex === "true" || ex === "on") return true;
-  return String(process.env.RENDER || "").toLowerCase() === "true";
+  if (String(process.env.RENDER || "").toLowerCase() === "true") return true;
+  return Boolean(String(process.env.K_SERVICE || "").trim());
 }
 
 var vendorSessionsMemory = Object.create(null);

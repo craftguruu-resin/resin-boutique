@@ -2,33 +2,42 @@
   "use strict";
 
   var PHONE = "918824350056";
+
   var WA_ICON =
-    '<svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">' +
-    '<path d="M16.01 2.67c-7.36 0-13.34 5.98-13.34 13.34 0 2.35.62 4.64 1.8 6.66L2.67 29.33l6.84-1.79a13.28 13.28 0 0 0 6.5 1.67h.01c7.36 0 13.34-5.98 13.34-13.34S23.37 2.67 16.01 2.67zm0 24.35h-.01a11.02 11.02 0 0 1-5.6-1.53l-.4-.24-4.06 1.06 1.08-3.96-.26-.41a11.02 11.02 0 0 1-1.69-5.83c0-6.09 4.95-11.04 11.04-11.04 2.95 0 5.72 1.15 7.8 3.23a10.96 10.96 0 0 1 3.23 7.8c0 6.09-4.95 11.03-11.03 11.03zm6.07-8.25c-.33-.17-1.96-.97-2.26-1.08-.3-.11-.52-.17-.74.17-.22.33-.85 1.08-1.04 1.3-.19.22-.39.24-.72.08-.33-.17-1.39-.51-2.65-1.62-.98-.87-1.64-1.95-1.83-2.28-.19-.33-.02-.51.14-.68.15-.15.33-.39.5-.58.17-.19.22-.33.33-.55.11-.22.06-.41-.03-.58-.08-.17-.74-1.78-1.01-2.44-.27-.64-.54-.55-.74-.56h-.63c-.22 0-.58.08-.88.41-.3.33-1.15 1.12-1.15 2.73 0 1.61 1.18 3.17 1.34 3.39.17.22 2.32 3.54 5.62 4.97.79.34 1.4.54 1.88.69.79.25 1.51.21 2.08.13.63-.09 1.96-.8 2.24-1.57.28-.77.28-1.43.19-1.57-.08-.14-.3-.22-.63-.39z"/>' +
+    '<svg class="cg-wa-widget__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="currentColor" d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>' +
     "</svg>";
 
+  var ACTIONS = [
+    {
+      label: "Recommended Products",
+      message: "Hi Craftguru, I would like recommendations for resin products from your catalog.",
+    },
+    {
+      label: "Bulk Order Inquiry",
+      message: "Hi Craftguru, I need help with a bulk / corporate order.",
+    },
+  ];
+
   function waUrl(text) {
-    var q = text ? "?text=" + encodeURIComponent(text) : "";
-    return "https://wa.me/" + PHONE + q;
+    return "https://wa.me/" + PHONE + "?text=" + encodeURIComponent(text);
   }
 
-  function pageContextMessage() {
-    try {
-      var path = (window.location.pathname || "").split("/").pop() || "index.html";
-      if (path === "product.html" || path === "category.html") {
-        return "Hi Craftguru, I have a question about a resin product on your site: " + window.location.href;
-      }
-      if (path.indexOf("raw-material") >= 0) {
-        return "Hi Craftguru, I need help choosing a resin raw material.";
-      }
-      if (path.indexOf("photo-frame") >= 0 || path === "photo-frames.html") {
-        return "Hi Craftguru, I have a question about photo frames.";
-      }
-      if (path === "checkout.html") {
-        return "Hi Craftguru, I need help with my checkout.";
-      }
-    } catch (_) {}
-    return "Hi Craftguru, I would like to know more about your resin products.";
+  function buildPanelActions() {
+    return ACTIONS.map(function (action, i) {
+      return (
+        '<a class="cg-wa-widget__action" href="' +
+        waUrl(action.message) +
+        '" target="_blank" rel="noopener noreferrer" style="--action-i:' +
+        i +
+        '">' +
+        '<span class="cg-wa-widget__action-label">' +
+        action.label +
+        "</span>" +
+        '<span class="cg-wa-widget__action-arrow" aria-hidden="true">→</span>' +
+        "</a>"
+      );
+    }).join("");
   }
 
   function mountWidget() {
@@ -37,44 +46,34 @@
     var root = document.createElement("div");
     root.id = "cgWhatsAppWidget";
     root.className = "cg-wa-widget";
-    root.setAttribute("aria-live", "polite");
     root.innerHTML =
-      '<div class="cg-wa-widget__backdrop" data-wa-close aria-hidden="true"></div>' +
-      '<div class="cg-wa-widget__panel" id="cgWhatsAppPanel" role="dialog" aria-modal="true" aria-labelledby="cgWhatsAppTitle" hidden>' +
-      '<div class="cg-wa-widget__head">' +
-      '<div><h3 id="cgWhatsAppTitle">Chat on WhatsApp</h3><p>Craftguru · +91-8824350056</p></div>' +
-      '<button type="button" class="cg-wa-widget__close" data-wa-close aria-label="Close chat panel">✕</button>' +
-      "</div>" +
-      '<div class="cg-wa-widget__body">' +
-      '<p class="cg-wa-widget__msg">Ask about resin pieces, bulk orders, raw materials, or delivery — we usually reply quickly.</p>' +
+      '<div class="cg-wa-widget__backdrop" data-wa-close tabindex="-1" aria-hidden="true"></div>' +
+      '<div class="cg-wa-widget__panel" id="cgWhatsAppPanel" role="menu" aria-label="WhatsApp options" hidden>' +
+      '<div class="cg-wa-widget__panel-glow" aria-hidden="true"></div>' +
       '<div class="cg-wa-widget__actions">' +
-      '<a class="cg-wa-widget__chip" href="' +
-      waUrl("Hi Craftguru, I would like a catalog recommendation.") +
-      '" target="_blank" rel="noopener noreferrer">Recommend a product line</a>' +
-      '<a class="cg-wa-widget__chip" href="' +
-      waUrl("Hi Craftguru, I need help with a bulk / corporate order.") +
-      '" target="_blank" rel="noopener noreferrer">Bulk / corporate order</a>' +
-      '<a class="cg-wa-widget__cta" id="cgWhatsAppOpenChat" href="' +
-      waUrl(pageContextMessage()) +
-      '" target="_blank" rel="noopener noreferrer">Open WhatsApp chat</a>' +
-      "</div></div></div>" +
-      '<button type="button" class="cg-wa-widget__fab cg-wa-widget__bounce" id="cgWhatsAppFab" aria-label="Open WhatsApp chat" aria-expanded="false" aria-controls="cgWhatsAppPanel">' +
-      '<span class="cg-wa-widget__pulse" aria-hidden="true"></span>' +
+      buildPanelActions() +
+      "</div></div>" +
+      '<button type="button" class="cg-wa-widget__fab" id="cgWhatsAppFab" aria-label="WhatsApp" aria-expanded="false" aria-controls="cgWhatsAppPanel" aria-haspopup="menu">' +
+      '<span class="cg-wa-widget__ring cg-wa-widget__ring--1" aria-hidden="true"></span>' +
+      '<span class="cg-wa-widget__ring cg-wa-widget__ring--2" aria-hidden="true"></span>' +
+      '<span class="cg-wa-widget__glow" aria-hidden="true"></span>' +
+      '<span class="cg-wa-widget__fab-core">' +
       WA_ICON +
+      "</span>" +
       "</button>";
 
     document.body.appendChild(root);
 
     var fab = document.getElementById("cgWhatsAppFab");
     var panel = document.getElementById("cgWhatsAppPanel");
-    var openChat = document.getElementById("cgWhatsAppOpenChat");
 
     function setOpen(on) {
       root.classList.toggle("is-open", on);
-      if (fab) fab.setAttribute("aria-expanded", on ? "true" : "false");
-      if (panel) {
-        panel.hidden = !on;
+      if (fab) {
+        fab.setAttribute("aria-expanded", on ? "true" : "false");
+        fab.setAttribute("aria-label", on ? "Close WhatsApp menu" : "WhatsApp");
       }
+      if (panel) panel.hidden = !on;
     }
 
     function toggleOpen() {
@@ -82,8 +81,15 @@
     }
 
     if (fab) fab.addEventListener("click", toggleOpen);
+
     root.querySelectorAll("[data-wa-close]").forEach(function (el) {
       el.addEventListener("click", function () {
+        setOpen(false);
+      });
+    });
+
+    root.querySelectorAll(".cg-wa-widget__action").forEach(function (link) {
+      link.addEventListener("click", function () {
         setOpen(false);
       });
     });
@@ -91,12 +97,6 @@
     document.addEventListener("keydown", function (e) {
       if (e.key === "Escape" && root.classList.contains("is-open")) setOpen(false);
     });
-
-    if (openChat) {
-      openChat.addEventListener("click", function () {
-        setOpen(false);
-      });
-    }
   }
 
   function ensureStyles() {
