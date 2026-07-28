@@ -95,6 +95,8 @@
     if (pn === "raw-material-shop.html") return;
     if (pn === "photo-frame-product.html") return;
     if (pn === "photo-frame-shop.html") return;
+    /* Same as raw-material-shop: owns its rm-nav-tree; do not inject main catalog rail. */
+    if (pn === "photo-frames.html") return;
     var main = document.querySelector("main.sub-main");
     if (!main) return;
     var D = window.RESIN_DATA;
