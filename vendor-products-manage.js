@@ -168,11 +168,287 @@
       .join("");
   }
 
-  /** Bundled catalog rows: name & images stay on data.js; prices, return gift, and size labels are editable here. */
+  var editingCoverFallback = "";
+  var editingHadOptionsPayload = false;
+  var editingProductOptions = null;
+
+  function stripMediaCacheBust(u) {
+    return String(u == null ? "" : u)
+      .trim()
+      .replace(/[?&]v=\d+/gi, "")
+      .replace(/\?&/, "?")
+      .replace(/[?&]$/, "");
+  }
+
+  function parseGalleryLines(txt) {
+    return String(txt == null ? "" : txt)
+      .split("\n")
+      .map(function (l) {
+        return stripMediaCacheBust(l);
+      })
+      .filter(Boolean)
+      .slice(0, 24);
+  }
+
+  function uniqueUrls(list) {
+    var seen = Object.create(null);
+    var out = [];
+    (list || []).forEach(function (u) {
+      var k = stripMediaCacheBust(u).toLowerCase();
+      if (!k || seen[k]) return;
+      seen[k] = 1;
+      out.push(stripMediaCacheBust(u));
+    });
+    return out;
+  }
+
+  function getGalleryUrls() {
+    return parseGalleryLines((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || "");
+  }
+
+  function setGalleryUrls(urls) {
+    var list = uniqueUrls(urls);
+    var gal = document.getElementById("vpmGallery");
+    if (gal) gal.value = list.join("\n");
+    var optGal = document.getElementById("vpmOptGallery");
+    if (optGal) optGal.value = list.join("\n");
+    renderMediaManager();
+  }
+
+  function getCoverUrlInput() {
+    return stripMediaCacheBust((document.getElementById("vpmImageUrl") && document.getElementById("vpmImageUrl").value) || "");
+  }
+
+  function setCoverUrlInput(url) {
+    var iu = document.getElementById("vpmImageUrl");
+    if (iu) iu.value = stripMediaCacheBust(url);
+    var hero = document.getElementById("vpmHero");
+    if (hero && stripMediaCacheBust(url)) hero.value = stripMediaCacheBust(url);
+    renderMediaManager();
+  }
+
+  function renderMediaManager() {
+    var cover = getCoverUrlInput() || stripMediaCacheBust(editingCoverFallback);
+    var preview = document.getElementById("vpmCoverPreview");
+    var empty = document.getElementById("vpmCoverPreviewEmpty");
+    if (preview) {
+      if (cover) {
+        preview.src = imgSrc(cover);
+        preview.hidden = false;
+      } else {
+        preview.removeAttribute("src");
+        preview.hidden = true;
+      }
+    }
+    if (empty) empty.hidden = !!cover;
+
+    var list = document.getElementById("vpmGalleryList");
+    if (!list) return;
+    var urls = getGalleryUrls();
+    if (!urls.length) {
+      list.innerHTML = '<li class="vpm-media__gallery-empty vs-muted">No gallery images yet.</li>';
+      return;
+    }
+    list.innerHTML = urls
+      .map(function (u, idx) {
+        return (
+          '<li class="vpm-media__gallery-item" data-idx="' +
+          idx +
+          '">' +
+          '<img src="' +
+          esc(imgSrc(u)) +
+          '" alt="" width="56" height="56" />' +
+          '<span class="vpm-media__gallery-url" title="' +
+          esc(u) +
+          '">' +
+          esc(u.length > 48 ? u.slice(0, 45) + "…" : u) +
+          "</span>" +
+          '<span class="vpm-media__gallery-actions">' +
+          '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn" data-act="up" data-idx="' +
+          idx +
+          '" title="Move up"' +
+          (idx === 0 ? " disabled" : "") +
+          ">↑</button>" +
+          '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn" data-act="down" data-idx="' +
+          idx +
+          '" title="Move down"' +
+          (idx === urls.length - 1 ? " disabled" : "") +
+          ">↓</button>" +
+          '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn" data-act="cover" data-idx="' +
+          idx +
+          '" title="Set as cover">Cover</button>' +
+          '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn" data-act="del" data-idx="' +
+          idx +
+          '" title="Remove">✕</button>' +
+          "</span></li>"
+        );
+      })
+      .join("");
+  }
+
+  function wireMediaManagerOnce() {
+    if (wireMediaManagerOnce.done) return;
+    wireMediaManagerOnce.done = true;
+    var list = document.getElementById("vpmGalleryList");
+    if (list) {
+      list.addEventListener("click", function (e) {
+        var btn = e.target && e.target.closest && e.target.closest("button[data-act]");
+        if (!btn) return;
+        var act = btn.getAttribute("data-act");
+        var idx = Number(btn.getAttribute("data-idx"));
+        var urls = getGalleryUrls();
+        if (!Number.isFinite(idx) || idx < 0 || idx >= urls.length) return;
+        if (act === "del") {
+          urls.splice(idx, 1);
+          setGalleryUrls(urls);
+          return;
+        }
+        if (act === "cover") {
+          setCoverUrlInput(urls[idx]);
+          return;
+        }
+        if (act === "up" && idx > 0) {
+          var t = urls[idx - 1];
+          urls[idx - 1] = urls[idx];
+          urls[idx] = t;
+          setGalleryUrls(urls);
+          return;
+        }
+        if (act === "down" && idx < urls.length - 1) {
+          var t2 = urls[idx + 1];
+          urls[idx + 1] = urls[idx];
+          urls[idx] = t2;
+          setGalleryUrls(urls);
+        }
+      });
+    }
+    var addBtn = document.getElementById("vpmGalleryAddBtn");
+    var addUrl = document.getElementById("vpmGalleryAddUrl");
+    if (addBtn) {
+      addBtn.addEventListener("click", function () {
+        var u = stripMediaCacheBust(addUrl && addUrl.value);
+        if (!u) {
+          showMsg("Enter an image URL to add.", true);
+          return;
+        }
+        if (!/^https:\/\//i.test(u) && u.indexOf("media/") !== 0 && u.charAt(0) !== "/") {
+          showMsg("Gallery images should be https:// URLs (e.g. Cloudinary) or existing media paths.", true);
+          return;
+        }
+        var urls = getGalleryUrls();
+        urls.push(u);
+        setGalleryUrls(urls);
+        if (addUrl) addUrl.value = "";
+        showMsg("", false);
+      });
+    }
+    var iu = document.getElementById("vpmImageUrl");
+    if (iu) {
+      iu.addEventListener("input", function () {
+        var hero = document.getElementById("vpmHero");
+        if (hero) hero.value = getCoverUrlInput();
+        renderMediaManager();
+      });
+    }
+    var file = document.getElementById("vpmImage");
+    if (file) {
+      file.addEventListener("change", function () {
+        renderMediaManager();
+      });
+    }
+  }
+
+  function classicSizesFromForm() {
+    var sizes = [];
+    var rows = [
+      { key: "s", priceId: "vpmPriceS", lblId: "vpmLblS", fallback: "Compact" },
+      { key: "m", priceId: "vpmPriceM", lblId: "vpmLblM", fallback: "Classic" },
+      { key: "l", priceId: "vpmPriceL", lblId: "vpmLblL", fallback: "Grand" },
+    ];
+    rows.forEach(function (r, i) {
+      var priceEl = document.getElementById(r.priceId);
+      var lblEl = document.getElementById(r.lblId);
+      var price = Number(priceEl && priceEl.value);
+      if (!Number.isFinite(price) || price < 0) price = 0;
+      var label = String((lblEl && lblEl.value) || "").trim() || r.fallback;
+      sizes.push({
+        id: "sz-" + r.key,
+        label: label.slice(0, 120),
+        priceInr: price,
+        sort: i,
+      });
+    });
+    return sizes;
+  }
+
+  /**
+   * Always produce options_json that activates the modern guest PDP, while preserving
+   * any Advanced size/colour/qty configuration the vendor already set.
+   */
+  function buildMigratedOptionsForSave(coverOverride) {
+    var adv =
+      window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
+        ? window.VendorCatalogPdpOptions.readOptionsFromForm()
+        : undefined;
+    var opt = {};
+    if (adv && typeof adv === "object") {
+      opt = Object.assign({}, adv);
+    } else if (editingProductOptions && typeof editingProductOptions === "object") {
+      opt = Object.assign({}, editingProductOptions);
+    }
+
+    var cover = stripMediaCacheBust(coverOverride || getCoverUrlInput() || editingCoverFallback);
+    var heroField = stripMediaCacheBust((document.getElementById("vpmHero") && document.getElementById("vpmHero").value) || "");
+    if (cover) opt.heroImage = cover;
+    else if (heroField) opt.heroImage = heroField;
+
+    var gallery = getGalleryUrls();
+    if (gallery.length) {
+      opt.galleryImages = gallery.filter(function (u) {
+        return stripMediaCacheBust(u).toLowerCase() !== stripMediaCacheBust(opt.heroImage || "").toLowerCase();
+      });
+    } else if (!Array.isArray(opt.galleryImages)) {
+      opt.galleryImages = [];
+    }
+
+    var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
+    opt.detailBody = descTxt;
+
+    /* First-time migration: seed modern size rows from classic S/M/L so the new PDP has variants. */
+    if (!editingHadOptionsPayload && !opt.useSize && !opt.useQty && !opt.useColor) {
+      opt.useSize = true;
+      opt.sizes = classicSizesFromForm();
+      opt.useQty = false;
+      opt.useColor = false;
+      opt.qtyOptions = [];
+      opt.colors = [];
+    }
+
+    if (!String(opt.heroImage || "").trim() && !(opt.galleryImages && opt.galleryImages.length) && !opt.useSize && !opt.useQty && !opt.useColor) {
+      /* Still force a payload so the product leaves the classic layout after save. */
+      opt.useSize = true;
+      opt.sizes = classicSizesFromForm();
+    }
+
+    var heroEl = document.getElementById("vpmHero");
+    if (heroEl && opt.heroImage) heroEl.value = opt.heroImage;
+    var optGal = document.getElementById("vpmOptGallery");
+    if (optGal && Array.isArray(opt.galleryImages)) optGal.value = opt.galleryImages.join("\n");
+
+    return opt;
+  }
+
+  /** Bundled catalog rows: name is fixed in data.js; cover/gallery URLs are editable via overrides. */
   function setCatalogFormDisabled(on) {
-    ["vpmName", "vpmImage", "vpmImageUrl", "vpmGallery"].forEach(function (id) {
+    var nameEl = document.getElementById("vpmName");
+    if (nameEl) nameEl.disabled = !!on;
+    var fileWrap = document.getElementById("vpmImageFileWrap");
+    if (fileWrap) fileWrap.style.display = on ? "none" : "";
+    var fi = document.getElementById("vpmImage");
+    if (fi) fi.disabled = !!on;
+    ["vpmImageUrl", "vpmGallery", "vpmGalleryAddUrl", "vpmGalleryAddBtn"].forEach(function (id) {
       var el = document.getElementById(id);
-      if (el) el.disabled = !!on;
+      if (el) el.disabled = false;
     });
   }
 
@@ -186,6 +462,22 @@
   function openEdit(p) {
     editingId = p.id;
     editingSource = p.source === "catalog" ? "catalog" : "vendor";
+    editingProductOptions = p.options && typeof p.options === "object" ? Object.assign({}, p.options) : null;
+    editingHadOptionsPayload = !!(
+      window.RESIN_DATA &&
+      typeof window.RESIN_DATA.catalogOptionsHasPayload === "function"
+        ? window.RESIN_DATA.catalogOptionsHasPayload(p.options)
+        : p.options &&
+          (p.options.useSize ||
+            p.options.useColor ||
+            p.options.useQty ||
+            (p.options.galleryImages && p.options.galleryImages.length) ||
+            String(p.options.heroImage || "").trim())
+    );
+    editingCoverFallback = stripMediaCacheBust(
+      (p.options && p.options.heroImage) || p.image || ""
+    );
+
     var card = document.getElementById("vpmEditCard");
     if (card) card.hidden = false;
     document.getElementById("vpmEditId").textContent = p.id;
@@ -200,16 +492,19 @@
     document.getElementById("vpmLblL").value = (sl.l && sl.l.name) || "";
     var fi = document.getElementById("vpmImage");
     if (fi) fi.value = "";
+
+    var cover =
+      stripMediaCacheBust((p.options && p.options.heroImage) || "") ||
+      stripMediaCacheBust(p.image || "");
     var iu = document.getElementById("vpmImageUrl");
-    if (iu) {
-      var im = String((p && p.image) || "").trim();
-      iu.value = /^https:\/\//i.test(im) ? im : "";
-    }
+    if (iu) iu.value = cover;
+
+    var galleryFromOpt = p.options && Array.isArray(p.options.galleryImages) ? p.options.galleryImages : [];
+    var galleryFromProduct = Array.isArray(p.gallery) ? p.gallery : [];
+    var mergedGal = uniqueUrls(galleryFromOpt.concat(galleryFromProduct).map(stripMediaCacheBust));
     var gal = document.getElementById("vpmGallery");
-    if (gal) {
-      var g = p && p.gallery;
-      gal.value = Array.isArray(g) && g.length ? g.join("\n") : "";
-    }
+    if (gal) gal.value = mergedGal.join("\n");
+
     var descEl = document.getElementById("vpmDescription");
     if (descEl) {
       var fromOpt =
@@ -233,7 +528,13 @@
     setCatalogFormDisabled(editingSource === "catalog");
     if (window.VendorCatalogPdpOptions) {
       window.VendorCatalogPdpOptions.fillEditorsFromOptions(p.options || null);
+      var hero = document.getElementById("vpmHero");
+      if (hero && cover && !String(hero.value || "").trim()) hero.value = cover;
+      var optGal = document.getElementById("vpmOptGallery");
+      if (optGal && mergedGal.length && !String(optGal.value || "").trim()) optGal.value = mergedGal.join("\n");
     }
+    wireMediaManagerOnce();
+    renderMediaManager();
     showMsg("", false);
     try {
       card && card.scrollIntoView({ behavior: "smooth", block: "nearest" });
@@ -243,6 +544,9 @@
   function closeEdit() {
     editingId = "";
     editingSource = "";
+    editingCoverFallback = "";
+    editingHadOptionsPayload = false;
+    editingProductOptions = null;
     var card = document.getElementById("vpmEditCard");
     if (card) card.hidden = true;
     setCatalogFormDisabled(false);
@@ -367,13 +671,16 @@
     var pl = Number(document.getElementById("vpmPriceL").value);
 
     var returnGift = !!(document.getElementById("vpmReturnGiftYes") && document.getElementById("vpmReturnGiftYes").checked);
+    var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
+    var coverUrl = getCoverUrlInput();
+    if (coverUrl && !/^https:\/\//i.test(coverUrl) && coverUrl.indexOf("media/") !== 0 && coverUrl.charAt(0) !== "/") {
+      showMsg("Cover image URL must be https:// (e.g. Cloudinary) or an existing media path.", true);
+      return;
+    }
 
     if (editingSource === "catalog") {
-      var advOpt =
-        window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
-          ? window.VendorCatalogPdpOptions.readOptionsFromForm()
-          : undefined;
-      var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
+      var migrated = buildMigratedOptionsForSave(coverUrl || editingCoverFallback);
+      migrated.detailBody = descTxt;
       var catBody = {
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
@@ -383,14 +690,11 @@
         sizeLabelM: String((document.getElementById("vpmLblM") && document.getElementById("vpmLblM").value) || "").trim(),
         sizeLabelL: String((document.getElementById("vpmLblL") && document.getElementById("vpmLblL").value) || "").trim(),
         description: descTxt,
+        options: migrated,
       };
-      if (advOpt !== undefined) {
-        advOpt.detailBody = descTxt;
-        catBody.options = advOpt;
-      }
       putCatalogPrices(editingId, catBody)
         .then(function () {
-          showMsg("Saved.", false);
+          showMsg("Saved. Product now uses the latest guest product page.", false);
           refreshGuestCatalogMerge();
           return loadList();
         })
@@ -412,20 +716,11 @@
     fd.set("sizeLabelM", document.getElementById("vpmLblM").value.trim());
     fd.set("sizeLabelL", document.getElementById("vpmLblL").value.trim());
     fd.set("returnGift", returnGift ? "true" : "false");
-    var imageUrl = String((document.getElementById("vpmImageUrl") && document.getElementById("vpmImageUrl").value) || "").trim();
-    if (imageUrl) {
-      if (!/^https:\/\//i.test(imageUrl)) {
-        showMsg("Image URL must start with https://", true);
-        return;
-      }
-      fd.set("imageUrl", imageUrl);
+    if (coverUrl && /^https:\/\//i.test(coverUrl)) {
+      fd.set("imageUrl", coverUrl);
     }
-    var galleryTxt = String((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || "");
-    fd.set("gallery", galleryTxt);
-    fd.set(
-      "description",
-      String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "")
-    );
+    fd.set("gallery", getGalleryUrls().join("\n"));
+    fd.set("description", descTxt);
     var file = document.getElementById("vpmImage").files && document.getElementById("vpmImage").files[0];
     if (file) fd.set("image", file, file.name);
 
@@ -447,19 +742,21 @@
           if (!res.ok || !j.ok) {
             throw new Error((j && j.error) || res.statusText || "Save failed");
           }
+          return j;
+        });
+      })
+      .then(function (j) {
+        var savedCover = stripMediaCacheBust((j.product && j.product.image) || coverUrl || editingCoverFallback);
+        var migrated2 = buildMigratedOptionsForSave(savedCover);
+        migrated2.detailBody = descTxt;
+        return putCatalogPrices(editingId, {
+          returnGift: returnGift,
+          description: descTxt,
+          options: migrated2,
         });
       })
       .then(function () {
-        var advOpt2 =
-          window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
-            ? window.VendorCatalogPdpOptions.readOptionsFromForm()
-            : undefined;
-        var pb = { returnGift: returnGift };
-        if (advOpt2 !== undefined) pb.options = advOpt2;
-        return putCatalogPrices(editingId, pb);
-      })
-      .then(function () {
-        showMsg("Saved.", false);
+        showMsg("Saved. Product now uses the latest guest product page.", false);
         refreshGuestCatalogMerge();
         return loadList();
       })

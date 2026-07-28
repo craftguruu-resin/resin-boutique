@@ -705,6 +705,15 @@ var SIZE_DEFAULT = {
       if (catalogOptionsHasPayload(o.options)) {
         p.options = normalizeOptionsOverride(o.options);
         n++;
+        var heroImg = String((p.options && p.options.heroImage) || "").trim();
+        if (heroImg) {
+          p.image = heroImg;
+          n++;
+        }
+        if (p.options && Array.isArray(p.options.galleryImages) && p.options.galleryImages.length) {
+          p.gallery = p.options.galleryImages.slice();
+          n++;
+        }
       }
       var optForDesc = normalizeOptionsOverride(o.options);
       if (optForDesc && Object.prototype.hasOwnProperty.call(optForDesc, "detailBody")) {
@@ -815,6 +824,11 @@ var SIZE_DEFAULT = {
     }
     if (row.options != null && catalogOptionsHasPayload(row.options)) {
       p.options = normalizeOptionsOverride(row.options);
+      var heroImg = String((p.options && p.options.heroImage) || "").trim();
+      if (heroImg) p.image = heroImg;
+      if (p.options && Array.isArray(p.options.galleryImages) && p.options.galleryImages.length) {
+        p.gallery = p.options.galleryImages.slice();
+      }
     }
     var desc = String(row.description || "").trim();
     if (!desc && p.options && p.options.detailBody) {

@@ -73,7 +73,8 @@
           <h2 class="vs-card__title" style="margin-top: 0">Edit product</h2>
           <p class="vs-muted" style="margin-top: 0">Product id: <code id="vpmEditId"></code></p>
           <p id="vpmCatalogNote" class="vs-muted" style="margin-top: 0; display: none">
-            Catalog listing: change <strong>prices</strong>, optional <strong>size labels</strong>, <strong>Advanced guest PDP</strong> (same variant UI as resin raw materials), or <strong>discontinue / set active</strong>. Name and main catalog image stay in bundled data unless you use HTTPS URLs in the advanced block.
+            Catalog listing: edit <strong>prices</strong>, <strong>cover &amp; gallery</strong> (HTTPS / Cloudinary),
+            <strong>description</strong>, <strong>Advanced guest PDP</strong>, or discontinue. Cover and gallery are saved into the product override so the guest site uses the latest product page. Bundled name stays unless you create a vendor product.
           </p>
           <div class="vs-field">
             <label for="vpmName">Name</label>
@@ -107,23 +108,42 @@
               <input type="text" id="vpmLblL" maxlength="120" />
             </div>
           </div>
-          <div class="vs-field" style="margin-top: 0.75rem">
-            <label for="vpmImage">New image (optional)</label>
-            <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
-          </div>
-          <div class="vs-field" style="margin-top: 0.75rem">
-            <label for="vpmImageUrl">Image URL (optional — vendor products)</label>
-            <input type="url" id="vpmImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
-            <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
-              Paste an HTTPS link from Cloudinary (or similar) to avoid storing the file on Render. If you also choose a file above, the file wins.
+          <div class="vpm-media" id="vpmMediaManager">
+            <p class="vpm-media__title">Product media</p>
+            <p class="vs-muted vpm-media__hint" id="vpmMediaHint">
+              Replace the cover, add gallery images, reorder, or remove. Saving upgrades this product to the latest guest product page while keeping prices, IDs, and categories.
             </p>
-          </div>
-          <div class="vs-field" style="margin-top: 0.75rem">
-            <label for="vpmGallery">Extra gallery images (optional)</label>
-            <textarea id="vpmGallery" rows="5" maxlength="12000" placeholder="One HTTPS image URL per line (same as raw material listings)."></textarea>
-            <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
-              Shown on the product page as thumbnails with the main image. Catalog-only rows keep images in the bundled site data; this field applies when you edit a vendor-created product.
-            </p>
+            <div class="vpm-media__cover-row">
+              <div class="vpm-media__cover-preview-wrap">
+                <img id="vpmCoverPreview" class="vpm-media__cover-preview" alt="" width="120" height="120" hidden />
+                <div id="vpmCoverPreviewEmpty" class="vpm-media__cover-empty" aria-hidden="true">No cover</div>
+              </div>
+              <div class="vpm-media__cover-fields">
+                <div class="vs-field" style="margin: 0">
+                  <label for="vpmImageUrl">Cover image URL (HTTPS / Cloudinary)</label>
+                  <input type="url" id="vpmImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
+                </div>
+                <div class="vs-field" style="margin-top: 0.55rem" id="vpmImageFileWrap">
+                  <label for="vpmImage">Upload new cover (vendor products)</label>
+                  <input type="file" id="vpmImage" accept="image/jpeg,image/png,image/webp" />
+                  <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
+                    File upload replaces the cover on save. Paste a Cloudinary HTTPS URL to avoid storing the file on the server.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div class="vs-field" style="margin-top: 0.85rem">
+              <label>Gallery images</label>
+              <ul class="vpm-media__gallery-list" id="vpmGalleryList" aria-label="Product gallery"></ul>
+              <div class="vpm-media__gallery-add">
+                <input type="url" id="vpmGalleryAddUrl" maxlength="2000" placeholder="https://… add gallery image" autocomplete="off" />
+                <button type="button" class="vs-btn vs-btn--ghost" id="vpmGalleryAddBtn">Add image</button>
+              </div>
+              <textarea id="vpmGallery" class="visually-hidden" rows="5" maxlength="12000" aria-hidden="true" tabindex="-1"></textarea>
+              <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                Use ↑ / ↓ to reorder, “Cover” to set the default image, and ✕ to remove. Changes apply when you click Save.
+              </p>
+            </div>
           </div>
           <div class="vs-field" style="margin-top: 0.75rem">
             <label for="vpmDescription">Product description</label>

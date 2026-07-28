@@ -96,9 +96,37 @@ function ensureProductSchema(cb) {
     if (e1) return cb(e1);
     ensureProductsGalleryColumn(function (e2) {
       if (e2) return cb(e2);
-      ensureProductsLongDescriptionColumn(cb);
+      ensureProductsLongDescriptionColumn(function (e3) {
+        if (e3) return cb(e3);
+        ensureProductsImagePathText(cb);
+      });
     });
   });
+}
+
+var productsImagePathTextPromise = null;
+function ensureProductsImagePathText(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null);
+    });
+  }
+  if (!productsImagePathTextPromise) {
+    productsImagePathTextPromise = pool
+      .query("ALTER TABLE products ALTER COLUMN image_path TYPE TEXT USING image_path::text")
+      .catch(function (err) {
+        productsImagePathTextPromise = null;
+        return Promise.reject(err);
+      });
+  }
+  productsImagePathTextPromise
+    .then(function () {
+      cb(null);
+    })
+    .catch(function (e) {
+      cb(e);
+    });
 }
 
 function normalizeProductDescription(raw) {
@@ -700,6 +728,12 @@ function pushStaticManageRow(p, omap, skuMap, out) {
   }
   if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
     row.options = ov.options;
+    if (ov.options && String(ov.options.heroImage || "").trim()) {
+      row.image = String(ov.options.heroImage).trim();
+    }
+    if (ov.options && Array.isArray(ov.options.galleryImages) && ov.options.galleryImages.length) {
+      row.gallery = ov.options.galleryImages.slice();
+    }
   }
   var catDesc =
     (ov.options && String(ov.options.detailBody || "").trim()) ||
@@ -752,6 +786,12 @@ function pushVendorManageRow(row, omap, skuMap, out) {
   }
   if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
     merged.options = ov.options;
+    if (ov.options && String(ov.options.heroImage || "").trim()) {
+      merged.image = String(ov.options.heroImage).trim();
+    }
+    if (ov.options && Array.isArray(ov.options.galleryImages) && ov.options.galleryImages.length) {
+      merged.gallery = ov.options.galleryImages.slice();
+    }
   }
   if (!merged.description && ov.options && String(ov.options.detailBody || "").trim()) {
     merged.description = String(ov.options.detailBody).trim().slice(0, 8000);
