@@ -235,10 +235,16 @@ body.pdp-ethereal .rm-pdp--modern {
 }
 
 body.pdp-ethereal .rm-pdp--modern .rm-pdp-gallery--shell {
-  background: var(--pdp-e-glass-strong);
+  background:
+    radial-gradient(ellipse 55% 50% at 70% 42%, rgba(158, 201, 232, 0.28), transparent 62%),
+    radial-gradient(ellipse 45% 42% at 30% 70%, rgba(240, 196, 204, 0.22), transparent 60%),
+    var(--pdp-e-glass-strong);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--pdp-e-radius);
-  box-shadow: var(--pdp-e-shadow);
+  box-shadow:
+    var(--pdp-e-shadow),
+    0 0 0 10px rgba(255, 255, 255, 0.28),
+    0 0 60px rgba(158, 201, 232, 0.18);
   backdrop-filter: blur(20px) saturate(1.25);
   -webkit-backdrop-filter: blur(20px) saturate(1.25);
 }
@@ -560,6 +566,18 @@ body.pdp-ethereal .glass-panel {
   box-shadow: var(--pdp-e-shadow);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+}
+
+body.pdp-ethereal .product-hero-img,
+body.pdp-ethereal .product-hero-img--fx,
+body.pdp-ethereal .product-hero-img--zoomhost {
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 255, 0.75), rgba(158, 201, 232, 0.2) 48%, transparent 70%),
+    linear-gradient(145deg, #eef4fb 0%, #f7eef2 55%, #e8e4f4 100%);
+  box-shadow:
+    0 22px 48px rgba(80, 100, 140, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.85) inset;
 }
 
 body.pdp-ethereal .product-hero-img--fx,
