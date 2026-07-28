@@ -3751,6 +3751,19 @@ var staticOpts = {
   },
 };
 
+/** Legacy shop URL — single Photo Frames page is photo-frames.html (hero + shop). */
+app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
+  var q = "";
+  try {
+    var ix = String(req.url || "").indexOf("?");
+    if (ix >= 0) q = String(req.url).slice(ix);
+  } catch (_) {}
+  if (q.indexOf("#") >= 0) {
+    /* keep query only */
+  }
+  res.redirect(302, "/photo-frames.html" + q);
+});
+
 app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticOpts));
 app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticOpts));
 app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticOpts));

@@ -1,8 +1,8 @@
 (function () {
   "use strict";
 
-  /** Match photo-frame-nav.js: hide shop/PDP category tree until lines return. */
-  window.CRAFT_PF_NAV_LINES_HIDDEN = true;
+  /** Show category tree on the photo-frames shop page (same pattern as raw materials). */
+  window.CRAFT_PF_NAV_LINES_HIDDEN = false;
 
   var LS_KEY = "craftguruPfNavExpanded";
 
@@ -38,7 +38,7 @@
   }
 
   function shopHref(base, sub) {
-    var u = "photo-frame-shop.html";
+    var u = "photo-frames.html";
     var q = [];
     if (base) q.push("base=" + encodeURIComponent(base));
     if (sub) q.push("sub=" + encodeURIComponent(sub));

@@ -217,14 +217,28 @@
       "<p>Preparing the latest size and pricing options…</p>" +
       "</div>";
     els.root.setAttribute("data-pdp-ready", "1");
+  }
+
+  function ensureLayoutBeforePaint() {
+    if (!els.root) return;
+    if (!els.root.querySelector(".product-page-awaiting-catalog")) return;
+    restoreProductLayout();
+  }
+
+  function paintProductAfterCatalog() {
+    applyCachedCatalogOverrides();
+    refreshProductRef();
     clearCatalogWaitTimer();
-    catalogWaitTimer = setTimeout(function () {
-      catalogWaitTimer = null;
-      refreshProductRef();
-      if (!product && pendingLayoutHtml) {
+    if (!product) {
+      if (pendingLayoutHtml || (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id))) {
         render404();
+        return;
       }
-    }, 12000);
+      render404();
+      return;
+    }
+    ensureLayoutBeforePaint();
+    render();
   }
 
   function productLayoutInDocument() {
@@ -257,16 +271,7 @@
   }
 
   function onCatalogPricesMerged() {
-    applyCachedCatalogOverrides();
-    refreshProductRef();
-    clearCatalogWaitTimer();
-    if (!product) {
-      if (pendingLayoutHtml && els.root && els.root.querySelector(".product-page-awaiting-catalog")) {
-        render404();
-      }
-      return;
-    }
-    render();
+    paintProductAfterCatalog();
   }
 
   var selected = "";
@@ -808,6 +813,7 @@
 
     applyCachedCatalogOverrides();
     refreshProductRef();
+    ensureLayoutBeforePaint();
 
     if (productUsesVendorVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
       try {
@@ -1186,33 +1192,40 @@
 
     var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
 
-    function paintAfterCatalogReady() {
-      applyCachedCatalogOverrides();
-      refreshProductRef();
+    function armCatalogPaint() {
       clearCatalogWaitTimer();
-      if (!product) {
-        if (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id)) {
-          render404();
-          return;
-        }
-        if (pendingLayoutHtml) {
-          render404();
-          return;
-        }
-        render404();
-        return;
+      /* Never leave the skeleton up if the network hangs — paint whatever we have. */
+      catalogWaitTimer = setTimeout(function () {
+        catalogWaitTimer = null;
+        paintProductAfterCatalog();
+      }, 8000);
+      if (typeof merge === "function") {
+        merge().finally(paintProductAfterCatalog);
+      } else {
+        paintProductAfterCatalog();
       }
-      render();
     }
 
-    /* Always wait for catalog merge before first size UI paint — avoids Compact/Classic/Grand flash. */
-    if (product || pendingLayoutHtml) {
+    /*
+     * Full-page skeleton only when the product is not in the bundled catalog yet
+     * (vendor rows arrive via catalog-merge). If we already have a product, keep the
+     * layout in the DOM and paint once after merge — wiping the root previously left
+     * els.* pointing at detached nodes, so the loading screen never cleared.
+     */
+    if (!product && pendingLayoutHtml) {
       renderLoadingForCatalog();
-      if (typeof merge === "function") {
-        merge().finally(paintAfterCatalogReady);
-      } else {
-        paintAfterCatalogReady();
+      armCatalogPaint();
+      return;
+    }
+
+    if (product) {
+      if (els.sizes) els.sizes.innerHTML = "";
+      if (els.priceSizeLabel) els.priceSizeLabel.textContent = "";
+      if (els.sizeScale) {
+        els.sizeScale.hidden = true;
+        els.sizeScale.setAttribute("aria-hidden", "true");
       }
+      armCatalogPaint();
       return;
     }
 

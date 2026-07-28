@@ -178,8 +178,10 @@
     var hubSection = document.querySelector(".rm-cat-hub");
     var sub = document.getElementById("rmCatHubSub");
     var heading = document.getElementById("rmCatHubHeading");
+    var hero = document.getElementById("pf-hero") || document.querySelector(".pf-landing-hero");
     if (hubSection) hubSection.removeAttribute("hidden");
     if (tb) tb.removeAttribute("hidden");
+    if (hero) hero.toggleAttribute("hidden", !home);
     if (hubCards) hubCards.toggleAttribute("hidden", !home);
     if (grid) grid.toggleAttribute("hidden", home);
     if (heading) heading.textContent = "Shop by category";
@@ -390,7 +392,7 @@
       var count = countMaterialsForHubCard(c, mats, cats, hubN);
       var href = window.PfShopNav
         ? window.PfShopNav.shopHref(c.id, "")
-        : "photo-frame-shop.html?base=" + encodeURIComponent(c.id);
+        : "photo-frames.html?base=" + encodeURIComponent(c.id);
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
@@ -533,7 +535,7 @@
           esc(
             "No photo frames match this category or filters. Choose another category, subcategory, or reset filters."
           ) +
-          ' <a class="rm-empty-link" href="photo-frame-shop.html">Back to photo frame shop home</a></p>';
+          ' <a class="rm-empty-link" href="photo-frames.html">Back to photo frames</a></p>';
         return;
       }
       g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">' + esc(emptyMsg) + "</p>";
@@ -654,7 +656,7 @@
         if (e.defaultPrevented) return;
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         var href = a.getAttribute("href") || "";
-        if (href.indexOf("photo-frame-shop.html") < 0) return;
+        if (href.indexOf("photo-frames.html") < 0 && href.indexOf("photo-frame-shop.html") < 0) return;
         try {
           var abs = new URL(a.href, window.location.href);
           if (abs.origin !== window.location.origin) return;
@@ -662,7 +664,9 @@
             .split("/")
             .filter(Boolean)
             .pop();
-          if (!file || file.split("?")[0] !== "photo-frame-shop.html") return;
+          if (!file) return;
+          var fileBase = file.split("?")[0];
+          if (fileBase !== "photo-frames.html" && fileBase !== "photo-frame-shop.html") return;
         } catch (_) {
           return;
         }

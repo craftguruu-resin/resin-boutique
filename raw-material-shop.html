@@ -100,10 +100,14 @@
             <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div class="rm-hero" id="rm-hero">
+            <div class="rm-hero rm-hero--premium" id="rm-hero">
+              <div class="rm-hero__glow" aria-hidden="true"></div>
               <div class="rm-hero__blob" aria-hidden="true"></div>
               <div class="rm-hero__inner">
-                <p class="rm-hero__kicker">Craft Guru</p>
+                <p class="rm-hero__kicker">
+                  <span class="rm-hero__kicker-dot" aria-hidden="true"></span>
+                  Craft Guru · Studio supplies
+                </p>
                 <h2 class="rm-hero__title-stack">
                   <span class="rm-hero__title-line1">Your Resin Art Supply Destination</span>
                   <span class="rm-hero__title-line2">Epoxy, pigments, molds &amp; studio essentials</span>
@@ -111,16 +115,21 @@
                 <p class="rm-hero__sub">
                   Browse vendor-listed resins and supplies with the same checkout as the main catalogue — crystal-clear epoxy, colour systems, glitters, and tools for serious pours.
                 </p>
-                <a class="rm-hero__cta" href="#rm-shop">Shop now</a>
+                <div class="rm-hero__actions">
+                  <a class="rm-hero__cta" href="#rm-shop">Shop now</a>
+                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading">Browse categories</a>
+                </div>
               </div>
               <div class="rm-hero__visual">
-                <img
-                  src="media/raw-material-shop-hero-home-banner.png"
-                  width="1376"
-                  height="768"
-                  alt="Craft Guru — your resin art supply destination: epoxy, pigments, molds, and hand-poured pieces"
-                  decoding="async"
-                />
+                <div class="rm-hero__visual-frame">
+                  <img
+                    src="media/raw-material-shop-hero-home-banner.png"
+                    width="1376"
+                    height="768"
+                    alt="Craft Guru — your resin art supply destination: epoxy, pigments, molds, and hand-poured pieces"
+                    decoding="async"
+                  />
+                </div>
               </div>
             </div>
             <div id="rm-shop">

@@ -975,12 +975,13 @@ html.auth-google-ui-off .auth-or-divider {
   left: 100%;
 }
 
-/* Photo frames guest landing (photo-frames.html) — RM-style split hero */
-.pf-landing-hero {
-  position: relative;
+/* Photo frames guest landing — light teal split hero (overrides dark .rm-hero studio theme) */
+.pf-landing-hero.rm-hero {
+  --rm-hero-ink: #0c4a6e;
+  --rm-hero-muted: rgba(15, 23, 42, 0.62);
   background:
-    linear-gradient(135deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.88) 42%, rgba(224, 242, 254, 0.75) 100%);
-  border: 1px solid rgba(14, 116, 144, 0.12);
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(248, 250, 252, 0.9) 42%, rgba(224, 242, 254, 0.82) 100%);
+  border: 1px solid rgba(14, 116, 144, 0.14);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
     0 22px 50px rgba(15, 23, 42, 0.08);
@@ -1001,7 +1002,7 @@ html.auth-google-ui-off .auth-or-divider {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .pf-landing-hero {
+  .pf-landing-hero.rm-hero {
     animation: none;
   }
 }
@@ -1015,20 +1016,15 @@ html.auth-google-ui-off .auth-or-divider {
   );
 }
 
-.pf-landing-hero__cta {
-  background: linear-gradient(135deg, #0e7490, #0284c7);
-  box-shadow: 0 12px 30px rgba(14, 116, 144, 0.35);
-}
-
-.pf-landing-hero__cta:hover {
-  filter: brightness(1.06);
-}
-
 .pf-landing-hero .rm-hero__title-line1 {
   background: linear-gradient(120deg, #0c4a6e 0%, #0e7490 50%, #0369a1 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.pf-landing-hero .rm-hero__title-line2 {
+  color: rgba(15, 23, 42, 0.7);
 }
 
 .pf-landing-hero .rm-hero__kicker {
@@ -1037,12 +1033,24 @@ html.auth-google-ui-off .auth-or-divider {
   border-color: rgba(14, 116, 144, 0.22);
 }
 
-.pf-landing-hero .rm-hero__visual img {
-  transition: transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+.pf-landing-hero__cta {
+  color: #fff;
+  background: linear-gradient(135deg, #0e7490, #0284c7);
+  box-shadow: 0 12px 30px rgba(14, 116, 144, 0.35);
 }
 
-.pf-landing-hero:hover .rm-hero__visual img {
-  transform: scale(1.025);
+.pf-landing-hero__cta:hover {
+  filter: brightness(1.06);
+}
+
+.pf-landing-hero .rm-hero__visual-frame {
+  background: linear-gradient(145deg, rgba(125, 211, 252, 0.35), rgba(255, 255, 255, 0.5) 45%, rgba(14, 116, 144, 0.15));
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.1);
+}
+
+.pf-landing-hero .rm-hero__visual img,
+.pf-landing-hero .rm-hero__visual-frame img {
+  border: 1px solid rgba(255, 255, 255, 0.7);
 }
 
 .pf-home-hero {
