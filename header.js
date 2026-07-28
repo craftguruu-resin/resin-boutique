@@ -34,9 +34,9 @@
     "checkout.html": "index.html",
     "raw-material.html": "raw-material-shop.html",
     "raw-material-product.html": "raw-material-shop.html",
-    "photo-frame-shop.html": "photo-frame-shop.html",
-    "photo-frame-product.html": "photo-frame-shop.html",
-    "photo-frames.html": "photo-frame-shop.html",
+    "photo-frame-shop.html": "photo-frames.html",
+    "photo-frame-product.html": "photo-frames.html",
+    "photo-frames.html": "photo-frames.html",
   };
 
   // Best-effort active state (some pages already set is-active in markup).

@@ -184,7 +184,7 @@
         var hasSubs = subs.length > 0;
         var isOpen = expanded.indexOf(c.id) >= 0 || (activeBase === c.id && hasSubs);
         var baseActive = activeBase === c.id && !activeSub;
-        var baseHref = hasSubs ? shopHref(c.id, preferredListingSub(c.id, c, materials)) : shopHref(c.id, "");
+        var baseHref = shopHref(c.id, "");
         if (!hasSubs) {
           html +=
             '<li class="rm-nav-tree__item">' +

@@ -205,9 +205,16 @@
   function renderLoadingForCatalog() {
     if (!els.root) return;
     els.root.innerHTML =
-      '<div class="product-missing product-page-awaiting-catalog">' +
+      '<div class="product-missing product-page-awaiting-catalog" role="status" aria-live="polite">' +
+      '<div class="pdp-loading-skel" aria-hidden="true">' +
+      '<div class="pdp-loading-skel__media"></div>' +
+      '<div class="pdp-loading-skel__lines">' +
+      '<span class="pdp-loading-skel__line pdp-loading-skel__line--lg"></span>' +
+      '<span class="pdp-loading-skel__line"></span>' +
+      '<span class="pdp-loading-skel__line pdp-loading-skel__line--sm"></span>' +
+      "</div></div>" +
       "<h1>Loading</h1>" +
-      "<p>Fetching this piece from the catalog…</p>" +
+      "<p>Preparing the latest size and pricing options…</p>" +
       "</div>";
     els.root.setAttribute("data-pdp-ready", "1");
     clearCatalogWaitTimer();
@@ -1176,35 +1183,41 @@
       render404();
       return;
     }
-    if (product) {
+
+    var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
+
+    function paintAfterCatalogReady() {
       applyCachedCatalogOverrides();
       refreshProductRef();
+      clearCatalogWaitTimer();
+      if (!product) {
+        if (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id)) {
+          render404();
+          return;
+        }
+        if (pendingLayoutHtml) {
+          render404();
+          return;
+        }
+        render404();
+        return;
+      }
       render();
-      var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
+    }
+
+    /* Always wait for catalog merge before first size UI paint — avoids Compact/Classic/Grand flash. */
+    if (product || pendingLayoutHtml) {
+      renderLoadingForCatalog();
       if (typeof merge === "function") {
-        merge()
-          .finally(function () {
-            applyCachedCatalogOverrides();
-            refreshProductRef();
-            render();
-          })
-          .catch(function () {
-            applyCachedCatalogOverrides();
-            refreshProductRef();
-            render();
-          });
+        merge().finally(paintAfterCatalogReady);
+      } else {
+        paintAfterCatalogReady();
       }
       return;
     }
-    if (
-      D.productExistsInBundledCatalog &&
-      D.productExistsInBundledCatalog(id)
-    ) {
+
+    if (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id)) {
       render404();
-      return;
-    }
-    if (pendingLayoutHtml) {
-      renderLoadingForCatalog();
       return;
     }
     render404();
@@ -1222,13 +1235,7 @@
       applyCachedCatalogOverrides();
       refreshProductRef();
       clearCatalogWaitTimer();
-      if (product) {
-        render();
-      } else if (pendingLayoutHtml) {
-        renderLoadingForCatalog();
-      } else {
-        render404();
-      }
+      initialRender();
     } catch (_) {}
   });
 

@@ -3751,16 +3751,6 @@ var staticOpts = {
   },
 };
 
-/** Landing page removed — nav and bookmarks go straight to the photo-frame product listing. */
-app.get(["/photo-frames.html", "/photo-frames"], function (req, res) {
-  var q = "";
-  try {
-    var ix = String(req.url || "").indexOf("?");
-    if (ix >= 0) q = String(req.url).slice(ix);
-  } catch (_) {}
-  res.redirect(302, "/photo-frame-shop.html" + q);
-});
-
 app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticOpts));
 app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticOpts));
 app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticOpts));

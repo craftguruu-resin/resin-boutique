@@ -388,16 +388,9 @@
     }
     catsToShow.forEach(function (c, idx) {
       var count = countMaterialsForHubCard(c, mats, cats, hubN);
-      var subs = c.subcategories || [];
-      var defSub = "";
-      if (window.PfShopNav && typeof window.PfShopNav.preferredListingSub === "function") {
-        defSub = window.PfShopNav.preferredListingSub(c.id, c, mats);
-      } else if (subs.length === 1) {
-        defSub = String(subs[0].id || "").trim();
-      }
       var href = window.PfShopNav
-        ? window.PfShopNav.shopHref(c.id, subs.length ? defSub : "")
-        : "photo-frame-shop.html?base=" + encodeURIComponent(c.id) + (defSub ? "&sub=" + encodeURIComponent(defSub) : "");
+        ? window.PfShopNav.shopHref(c.id, "")
+        : "photo-frame-shop.html?base=" + encodeURIComponent(c.id);
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
@@ -605,24 +598,6 @@
   function applyShopShellFromParams() {
     var par = qsParams();
     var tax = rmShopTaxDoc;
-    if (tax && window.PfShopNav && par.base && !par.sub) {
-      var catList = (tax.categories) || [];
-      var cFound = null;
-      for (var ci = 0; ci < catList.length; ci++) {
-        if (catList[ci].id === par.base) {
-          cFound = catList[ci];
-          break;
-        }
-      }
-      var sc = (cFound && cFound.subcategories) || [];
-      if (sc.length > 1 && typeof window.PfShopNav.preferredListingSub === "function") {
-        var dsub = window.PfShopNav.preferredListingSub(par.base, cFound, allMaterials);
-        if (dsub) {
-          window.location.replace(window.PfShopNav.shopHref(par.base, dsub));
-          return;
-        }
-      }
-    }
 
     if (tax && isRawMaterialShopHome()) {
       renderRmCategoryHub(tax, allMaterials, rmShopHubFilter);
@@ -657,6 +632,11 @@
     var rows = allMaterials.filter(function (m) {
       return materialsMatchFilters(m, par.base, par.sub, needle);
     });
+    if (!rows.length && par.base && par.sub && allMaterials.length) {
+      rows = allMaterials.filter(function (m) {
+        return materialsMatchFilters(m, par.base, "", needle);
+      });
+    }
     render(rows);
   }
 

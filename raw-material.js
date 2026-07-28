@@ -401,16 +401,9 @@
     }
     catsToShow.forEach(function (c, idx) {
       var count = countMaterialsForHubCard(c, mats, cats, hubN);
-      var subs = c.subcategories || [];
-      var defSub = "";
-      if (window.RmShopNav && typeof window.RmShopNav.preferredListingSub === "function") {
-        defSub = window.RmShopNav.preferredListingSub(c.id, c, mats);
-      } else if (subs.length === 1) {
-        defSub = String(subs[0].id || "").trim();
-      }
       var href = window.RmShopNav
-        ? window.RmShopNav.shopHref(c.id, subs.length ? defSub : "")
-        : "raw-material-shop.html?base=" + encodeURIComponent(c.id) + (defSub ? "&sub=" + encodeURIComponent(defSub) : "");
+        ? window.RmShopNav.shopHref(c.id, "")
+        : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
