@@ -210,6 +210,14 @@
       var g = p && p.gallery;
       gal.value = Array.isArray(g) && g.length ? g.join("\n") : "";
     }
+    var descEl = document.getElementById("vpmDescription");
+    if (descEl) {
+      var fromOpt =
+        p && p.options && String(p.options.detailBody || "").trim()
+          ? String(p.options.detailBody).trim()
+          : "";
+      descEl.value = String((p && p.description) || fromOpt || "");
+    }
     var rgY = document.getElementById("vpmReturnGiftYes");
     var rgN = document.getElementById("vpmReturnGiftNo");
     if (rgY && rgN) {
@@ -365,6 +373,7 @@
         window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.readOptionsFromForm === "function"
           ? window.VendorCatalogPdpOptions.readOptionsFromForm()
           : undefined;
+      var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
       var catBody = {
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
@@ -373,8 +382,12 @@
         sizeLabelS: String((document.getElementById("vpmLblS") && document.getElementById("vpmLblS").value) || "").trim(),
         sizeLabelM: String((document.getElementById("vpmLblM") && document.getElementById("vpmLblM").value) || "").trim(),
         sizeLabelL: String((document.getElementById("vpmLblL") && document.getElementById("vpmLblL").value) || "").trim(),
+        description: descTxt,
       };
-      if (advOpt !== undefined) catBody.options = advOpt;
+      if (advOpt !== undefined) {
+        advOpt.detailBody = descTxt;
+        catBody.options = advOpt;
+      }
       putCatalogPrices(editingId, catBody)
         .then(function () {
           showMsg("Saved.", false);
@@ -409,6 +422,10 @@
     }
     var galleryTxt = String((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || "");
     fd.set("gallery", galleryTxt);
+    fd.set(
+      "description",
+      String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "")
+    );
     var file = document.getElementById("vpmImage").files && document.getElementById("vpmImage").files[0];
     if (file) fd.set("image", file, file.name);
 

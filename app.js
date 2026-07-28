@@ -45,12 +45,16 @@
   }
 
   function minCompactPrice(product) {
+    if (D && typeof D.getStartingPriceInr === "function") {
+      var n = D.getStartingPriceInr(product);
+      return n > 0 ? n : null;
+    }
     if (!product || !product.prices) return null;
     var keys = ["s", "m", "l"];
     var min = null;
     keys.forEach(function (k) {
-      var v = product.prices[k];
-      if (v == null) return;
+      var v = Number(product.prices[k]);
+      if (!Number.isFinite(v) || v <= 0) return;
       if (min === null || v < min) min = v;
     });
     return min;
@@ -907,6 +911,7 @@
         " each";
     }
     if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+    if (CART.syncShippingNotice) CART.syncShippingNotice();
     return true;
   }
 
@@ -915,6 +920,7 @@
     var count = CART.countItems();
     if (els.cartCount) els.cartCount.textContent = String(count);
     if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+    if (CART.syncShippingNotice) CART.syncShippingNotice();
 
     if (!els.cartList) return;
     if (lines.length === 0) {
@@ -1116,6 +1122,7 @@
     var drawerOpen = els.cartDrawer && els.cartDrawer.classList.contains("is-open");
     if (!drawerOpen) {
       if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+      if (CART.syncShippingNotice) CART.syncShippingNotice();
       return;
     }
     var items = els.cartList.querySelectorAll(".cart-item");
@@ -1124,6 +1131,7 @@
       return;
     }
     if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
+    if (CART.syncShippingNotice) CART.syncShippingNotice();
   });
 
   function patchFeaturedCardPrices() {

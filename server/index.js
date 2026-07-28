@@ -79,8 +79,11 @@ var guestGoogleAuth = require("./guest-google-auth.js");
 var guestDb = require("./guest-db.js");
 var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
+var httpHardening = require("./http-hardening.js");
 
-var PORT = Number(process.env.PORT) || 3847;
+/** Cloud Run sets PORT=8080; local default 8080 (use PORT=3847 in server/.env for legacy local). */
+var PORT = Number(process.env.PORT) || 8080;
+var HOST = String(process.env.HOST || "0.0.0.0").trim() || "0.0.0.0";
 var TOKEN = process.env.WHATSAPP_ACCESS_TOKEN || "";
 var PHONE_NUMBER_ID = process.env.WHATSAPP_PHONE_NUMBER_ID || "";
 var GRAPH_VERSION = process.env.META_GRAPH_VERSION || "v21.0";
@@ -605,6 +608,7 @@ function normalizeGuestParcel(g) {
 }
 
 var app = express();
+httpHardening.applyHttpHardening(app);
 app.use(express.json({ limit: "400kb" }));
 
 /** CORS: "*" is wide open. Otherwise merge env list with common Live Server / Vite ports on loopback (fixes vendor login from browser when .env only lists :5500 but Live Server uses :5501, etc.). */
@@ -666,11 +670,18 @@ app.use("/api/vendor", function (req, res, next) {
   next();
 });
 
+/** Cloud Run / load balancer liveness — keep payload tiny and always 200 when process is up. */
+app.get("/health", function (_req, res) {
+  res.status(200).json({ status: "ok" });
+});
+
+/** Detailed readiness (DB + integrations). Prefer /health for Cloud Run probes. */
 app.get("/api/health", function (_req, res) {
   var hasToken = Boolean(TOKEN && PHONE_NUMBER_ID);
   poolMod.ping(function (err, dbOk) {
     res.json({
       ok: true,
+      status: "ok",
       whatsappConfigured: hasToken,
       razorpayConfigured: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && Razorpay),
       emailConfigured: Boolean(createMailTransport()),
@@ -2449,6 +2460,7 @@ app.post(
         imageBuffer: req.file && req.file.buffer,
         mime: req.file && req.file.mimetype,
         imageUrl: firstField(b.imageUrl),
+        description: firstField(b.description),
       };
       if (b.gallery !== undefined) {
         createBody.galleryText = firstField(b.gallery);
@@ -2528,6 +2540,9 @@ app.put(
               ? String(b.return_gift) === "true" || b.return_gift === true
               : undefined,
       };
+      if (b.description !== undefined) {
+        putBody.description = firstField(b.description);
+      }
       if (b.gallery !== undefined) {
         putBody.gallery = firstField(b.gallery);
       }
@@ -3444,6 +3459,12 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
     }
     var pid = String((req.params && req.params.productId) || "").trim();
     var b = req.body || {};
+    var optionsPatch =
+      b.options !== undefined && b.options !== null && typeof b.options === "object" ? Object.assign({}, b.options) : undefined;
+    if (b.description !== undefined) {
+      optionsPatch = optionsPatch || {};
+      optionsPatch.detailBody = String(b.description == null ? "" : b.description).trim().slice(0, 8000);
+    }
     vendorCatalogDb.upsertOverride(
       pid,
       {
@@ -3459,7 +3480,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         sizeLabelM: b.sizeLabelM !== undefined ? b.sizeLabelM : b.size_label_m !== undefined ? b.size_label_m : undefined,
         sizeLabelL: b.sizeLabelL !== undefined ? b.sizeLabelL : b.size_label_l !== undefined ? b.size_label_l : undefined,
         sizeLabels: b.sizeLabels !== undefined ? b.sizeLabels : undefined,
-        options: b.options !== undefined && b.options !== null && typeof b.options === "object" ? b.options : undefined,
+        options: optionsPatch,
       },
       function (e2, row) {
         if (e2) {
@@ -3701,16 +3722,55 @@ app.get("/vendor/returns", function (_req, res) {
 app.get("/vendororder", function (_req, res) {
   res.redirect(302, "/vendor-tags.html");
 });
-app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot()));
-app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot()));
-app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot()));
-app.use("/media/photo-frame-products", express.static(catalogMediaPath.photoFrameProductsMediaFsRoot()));
-app.use(express.static(siteRoot));
+var staticOpts = {
+  etag: true,
+  lastModified: true,
+  setHeaders: function (res, filePath) {
+    var p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
+    /* Uploaded catalog / product media: never immutable — replaces at the same path must reach all visitors. */
+    if (
+      p.indexOf("/media/catalog/") >= 0 ||
+      p.indexOf("/media/hero/") >= 0 ||
+      p.indexOf("/media/raw-materials/") >= 0 ||
+      p.indexOf("/media/photo-frame-products/") >= 0
+    ) {
+      res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
+      return;
+    }
+    if (/\.(png|jpe?g|webp|gif|svg|ico)$/.test(p)) {
+      res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+      return;
+    }
+    if (/\.(js|css|woff2?|ttf)$/.test(p)) {
+      res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+      return;
+    }
+    if (/\.html$/.test(p)) {
+      res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
+    }
+  },
+};
+
+/** Landing page removed — nav and bookmarks go straight to the photo-frame product listing. */
+app.get(["/photo-frames.html", "/photo-frames"], function (req, res) {
+  var q = "";
+  try {
+    var ix = String(req.url || "").indexOf("?");
+    if (ix >= 0) q = String(req.url).slice(ix);
+  } catch (_) {}
+  res.redirect(302, "/photo-frame-shop.html" + q);
+});
+
+app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticOpts));
+app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticOpts));
+app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticOpts));
+app.use("/media/photo-frame-products", express.static(catalogMediaPath.photoFrameProductsMediaFsRoot(), staticOpts));
+app.use(express.static(siteRoot, staticOpts));
 
 function onServerListen() {
-  console.log("Craftguru server on http://127.0.0.1:" + PORT);
+  console.log("Craftguru server listening on http://" + HOST + ":" + PORT);
+  console.log("Health: GET /health  ·  Detailed: GET /api/health");
   console.log("Storefront + API: open http://127.0.0.1:" + PORT + "/checkout.html (same origin fixes PDF POST).");
-  console.log("API: GET /api/health  ·  POST /api/save-guest-address  ·  POST /api/razorpay-order  ·  POST /api/razorpay-verify  ·  vendor/*");
   if (poolMod.isEnabled()) {
     console.log("Postgres: DATABASE_URL set — run npm run db:migrate && npm run db:seed (from server/) once.");
   } else {
@@ -3731,13 +3791,23 @@ function onServerListen() {
     console.warn(
       "[media] Production + Postgres but no UPLOADED_MEDIA_ROOT or CATALOG_MEDIA_ROOT — " +
         "uploaded catalog/hero/raw images live on the app disk and can disappear after redeploy. " +
-        "See server/.env.example (Persistent uploads)."
+        "Prefer Cloudinary HTTPS URLs. See server/.env.example (Persistent uploads)."
     );
   }
 }
 
+var httpServer = null;
+
 function startHttpServer() {
-  app.listen(PORT, onServerListen);
+  httpServer = app.listen(PORT, HOST, function () {
+    onServerListen();
+    httpHardening.wireGracefulShutdown(httpServer, { getPool: poolMod.getPool });
+  });
+  if (httpServer && typeof httpServer.keepAliveTimeout === "number") {
+    // Cloud Run / LB idle timeouts — keep connections warm a bit longer than proxy.
+    httpServer.keepAliveTimeout = 65_000;
+    httpServer.headersTimeout = 66_000;
+  }
 }
 
 if (poolMod.isEnabled()) {

@@ -1,4 +1,5 @@
-# Optional: Render Blueprint — "New" → "Blueprint" → paste repo or commit render.yaml
+# Optional Blueprint — LEGACY Render hosting (prefer Cloud Run).
+# Keep for rollback until GCP cutover is complete, then delete.
 # https://render.com/docs/blueprint-spec
 services:
   - type: web
@@ -9,4 +10,4 @@ services:
     rootDir: server
     buildCommand: npm install
     startCommand: npm start
-    healthCheckPath: /api/health
+    healthCheckPath: /health

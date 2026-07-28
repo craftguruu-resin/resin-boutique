@@ -936,6 +936,8 @@
     if (file) fd.append("image", file, file.name);
     var galEl = document.getElementById("viApGallery");
     if (galEl) fd.append("gallery", String(galEl.value || ""));
+    var descEl = document.getElementById("viApDescription");
+    if (descEl) fd.append("description", String(descEl.value || ""));
     var subEl = document.getElementById("viApSubcategory");
     var subPick = subEl && !subEl.closest("[hidden]") ? String(subEl.value || "").trim() : "";
     if (subPick) fd.append("subcategoryId", subPick);
@@ -971,6 +973,8 @@
         if (urlEl) urlEl.value = "";
         var gal = document.getElementById("viApGallery");
         if (gal) gal.value = "";
+        var desc = document.getElementById("viApDescription");
+        if (desc) desc.value = "";
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));

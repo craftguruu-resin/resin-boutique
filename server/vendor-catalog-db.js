@@ -26,6 +26,7 @@ function ensureCatalogOverridesColumns(cb) {
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS name_override VARCHAR(500)",
     ].forEach(function (sql) {
       chain = chain.then(function () {
         return pool.query(sql);
@@ -89,7 +90,9 @@ function mergeSizeLabelsFromPatch(curSl, patch) {
   pairs.forEach(function (pr) {
     var pk = pr[0];
     var letter = pr[1];
+    /* Only touch a label when the client intentionally sent a string (or null). Undefined = omit. */
     if (!Object.prototype.hasOwnProperty.call(patch, pk)) return;
+    if (patch[pk] === undefined) return;
     var v = normalizeOneLabel(patch[pk]);
     if (v) base[letter] = v;
     else delete base[letter];
@@ -127,6 +130,7 @@ function catalogOptionsHasPayload(opt) {
     (Array.isArray(opt.galleryImages) && opt.galleryImages.length) ||
     String(opt.heroImage || "").trim() ||
     String(opt.badge || "").trim() ||
+    String(opt.detailBody || "").trim() ||
     (Array.isArray(opt.trustBullets) && opt.trustBullets.length)
   );
 }
@@ -143,7 +147,7 @@ function listOverridesMap(cb) {
     if (e0) return cb(e0);
     pool
       .query(
-        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json " +
+        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json, name_override " +
           "FROM catalog_price_overrides ORDER BY product_id"
       )
       .then(function (r) {
@@ -171,7 +175,11 @@ function listOverridesMap(cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: sl,
-            options: catalogOptionsHasPayload(oj) ? oj : null,
+            options:
+              catalogOptionsHasPayload(oj) ||
+              (oj && typeof oj === "object" && Object.prototype.hasOwnProperty.call(oj, "detailBody"))
+                ? oj
+                : null,
           };
         });
         cb(null, m);
@@ -302,7 +310,17 @@ function upsertOverride(productId, patch, cb) {
       var curOpt = cur.options && typeof cur.options === "object" && !Array.isArray(cur.options) ? cur.options : {};
       var nextOpt = curOpt;
       if (patch && Object.prototype.hasOwnProperty.call(patch, "options") && patch.options && typeof patch.options === "object") {
-        nextOpt = patch.options;
+        var incoming = patch.options;
+        var inKeys = Object.keys(incoming);
+        /* Description-only patch must not wipe size/colour PDP options. */
+        if (inKeys.length === 1 && inKeys[0] === "detailBody") {
+          nextOpt = Object.assign({}, curOpt, { detailBody: incoming.detailBody });
+        } else {
+          nextOpt = Object.assign({}, incoming);
+          if (!Object.prototype.hasOwnProperty.call(incoming, "detailBody") && curOpt.detailBody != null) {
+            nextOpt.detailBody = curOpt.detailBody;
+          }
+        }
       }
       var optJson = JSON.stringify(nextOpt || {});
       pool

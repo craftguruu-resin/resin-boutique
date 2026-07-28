@@ -1149,6 +1149,7 @@
     if (els.modalShip) els.modalShip.textContent = shipping === 0 ? "Free" : fmt(shipping);
     if (els.modalTax) els.modalTax.textContent = fmt(split.gst);
     if (els.modalGrand) els.modalGrand.textContent = fmt(grand);
+    if (CART.syncShippingNotice) CART.syncShippingNotice();
   }
 
   function setPaymentUi(mode) {

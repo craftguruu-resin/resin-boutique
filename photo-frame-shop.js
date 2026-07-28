@@ -172,13 +172,22 @@
 
   function toggleRmShopHomeOnlySections() {
     var home = isRawMaterialShopHome();
-    var hub = document.querySelector(".rm-cat-hub");
+    var hubCards = document.getElementById("rmCategoryHub");
+    var grid = document.getElementById("rmGrid");
     var tb = document.getElementById("rm-shop");
-    var hero = document.getElementById("rm-hero");
-    if (hub) hub.toggleAttribute("hidden", !home);
-    if (tb) tb.toggleAttribute("hidden", !home);
-    /* Banner only on shop “home” (no category drill-in); catalog / listing shows products only. */
-    if (hero) hero.toggleAttribute("hidden", !home);
+    var hubSection = document.querySelector(".rm-cat-hub");
+    var sub = document.getElementById("rmCatHubSub");
+    var heading = document.getElementById("rmCatHubHeading");
+    if (hubSection) hubSection.removeAttribute("hidden");
+    if (tb) tb.removeAttribute("hidden");
+    if (hubCards) hubCards.toggleAttribute("hidden", !home);
+    if (grid) grid.toggleAttribute("hidden", home);
+    if (heading) heading.textContent = "Shop by category";
+    if (sub) {
+      sub.textContent = home
+        ? "Open a category to see its photo frame products."
+        : "Photo frame products in this category.";
+    }
   }
 
   function readHubFilterFromDom() {
@@ -550,7 +559,7 @@
           ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(effMrp)) + "</span>"
           : "";
       card.innerHTML =
-        '<a href="' +
+        '<a class="rm-card-shop__hit" href="' +
         escAttr(href) +
         '">' +
         '<div class="rm-card-shop__img">' +
@@ -564,12 +573,31 @@
         (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
         '<div class="rm-card-shop__row">' +
         '<span class="rm-card-shop__price">' +
-        esc((showFrom ? "From " : "") + fmtPrice(meta.min)) +
+        esc(meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "") +
         "</span>" +
         "<span>" +
         mrp +
         discountHtml(m) +
-        "</span></div></div></a>";
+        "</span></div></div></a>" +
+        (function () {
+          var WA = window.CRAFTGURU_WA;
+          if (!WA || typeof WA.listingButtonHtml !== "function") return "";
+          var abs;
+          try {
+            abs = new URL(href, window.location.href).href;
+          } catch (_) {
+            abs = href;
+          }
+          return (
+            '<div class="rm-card-shop__cta">' +
+            WA.listingButtonHtml({
+              productName: m.name || "Photo frame",
+              productId: m.id,
+              productUrl: abs,
+            }) +
+            "</div>"
+          );
+        })();
       g.appendChild(card);
     });
   }
@@ -613,6 +641,19 @@
       var gq = document.getElementById("globalFindQuery");
       if (gq) needle = String(gq.value || "").trim();
     } catch (_) {}
+    if (isRawMaterialShopHome() && !needle) {
+      var gHome = document.getElementById("rmGrid");
+      if (gHome) gHome.innerHTML = "";
+      return;
+    }
+    var hubCards = document.getElementById("rmCategoryHub");
+    var gridEl = document.getElementById("rmGrid");
+    if (isRawMaterialShopHome() && needle) {
+      if (hubCards) hubCards.setAttribute("hidden", "hidden");
+      if (gridEl) gridEl.removeAttribute("hidden");
+      var subEl = document.getElementById("rmCatHubSub");
+      if (subEl) subEl.textContent = "Search results across photo frames.";
+    }
     var rows = allMaterials.filter(function (m) {
       return materialsMatchFilters(m, par.base, par.sub, needle);
     });

@@ -24,16 +24,46 @@
     return D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  function productPageUrl(id) {
+    var path = "product.html?id=" + encodeURIComponent(id);
+    try {
+      return new URL(path, window.location.href).href;
+    } catch (_) {
+      return path;
+    }
+  }
+
+  function bulkBuyCardHtml(p) {
+    var WA = window.CRAFTGURU_WA;
+    if (!WA || typeof WA.listingButtonHtml !== "function") return "";
+    return WA.listingButtonHtml({
+      productName: p.name,
+      productId: p.id,
+      productUrl: productPageUrl(p.id),
+    });
+  }
+
   function minPrice(p) {
+    if (D.getStartingPriceInr) {
+      return D.getStartingPriceInr(p) || 0;
+    }
     if (!p || !p.prices) return 0;
     var keys = ["s", "m", "l"];
     var m = null;
     keys.forEach(function (k) {
-      var v = p.prices[k];
-      if (v == null || !Number.isFinite(Number(v))) return;
+      var v = Number(p.prices[k]);
+      if (!Number.isFinite(v) || v <= 0) return;
       if (m === null || v < m) m = v;
     });
     return m == null ? 0 : m;
+  }
+
+  function fromPriceLabel(p) {
+    if (D.formatStartingFromPrice) {
+      return D.formatStartingFromPrice(p, CART.formatMoney);
+    }
+    var minP = minPrice(p);
+    return minP > 0 ? "From " + CART.formatMoney(minP) : "";
   }
 
   function sortSelect() {
@@ -228,15 +258,17 @@
         "<h3>" +
         esc(p.name) +
         "</h3>" +
-        '<p class="product-card__from">From ' +
-        CART.formatMoney(minP) +
+        '<p class="product-card__from">' +
+        esc(fromPriceLabel(p)) +
         "</p>" +
         '<div class="product-meta product-meta--cta">' +
         '<a class="add-btn add-btn--mini" href="product.html?id=' +
         encodeURIComponent(p.id) +
         '">Open piece →</a>' +
+        bulkBuyCardHtml(p) +
         "</div>" +
         "</div>";
+      if (minP > 0) card.setAttribute("data-min-price", String(minP));
       grid.appendChild(card);
     });
     syncReturnGiftsUrl();

@@ -1,3 +1,25 @@
 # Design sources — GitHub rejects blobs > 100MB; site uses .jpg/.jpeg/.png from catalog
 *.psd
 .DS_Store
+
+# Local env / secrets
+.env
+.env.*
+!.env.example
+!server/.env.example
+
+# Firebase local cache
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+
+# GCP local secret exports (never commit filled copies)
+infra/gcp/secrets.env
+infra/gcp/*.local.env
+
+# Node
+node_modules/
+coverage/
+dist/
+logs/
+*.log

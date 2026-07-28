@@ -207,6 +207,18 @@
                   <label for="viApName">Product name</label>
                   <input type="text" id="viApName" placeholder="Shown on the website" maxlength="500" />
                 </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApDescription">Product description</label>
+                  <textarea
+                    id="viApDescription"
+                    rows="5"
+                    maxlength="8000"
+                    placeholder="Detailed product description for the product page (line breaks preserved)."
+                  ></textarea>
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                    Shown on the product details page only — not on category listings. Up to 8,000 characters.
+                  </p>
+                </div>
                 <div class="vs-field">
                   <label for="viApPriceS">Price tier 1 (S) ₹</label>
                   <input type="number" id="viApPriceS" min="0" step="1" value="0" />

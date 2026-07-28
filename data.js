@@ -92,6 +92,75 @@ var SIZE_DEFAULT = {
     return getOfferedSizeKeysForProduct(product).length;
   }
 
+  function sizeStockAvailable(product, sizeKey) {
+    var stock = product && product.stock;
+    if (!stock || typeof stock !== "object") return true;
+    if (!Object.prototype.hasOwnProperty.call(stock, sizeKey)) return true;
+    var n = Number(stock[sizeKey]);
+    if (!Number.isFinite(n)) return true;
+    return n > 0;
+  }
+
+  /**
+   * Lowest available storefront selling price for listing cards.
+   * Uses positive prices.s/m/l (skipping out-of-stock slots) and vendor PDP option rows.
+   * Returns 0 when no positive price is available (caller should hide ₹0).
+   */
+  function getStartingPriceInr(product) {
+    if (!product) return 0;
+    var vals = [];
+    var prices = product.prices || {};
+    ["s", "m", "l"].forEach(function (k) {
+      var pr = Number(prices[k]);
+      if (!Number.isFinite(pr) || pr <= 0) return;
+      if (!sizeStockAvailable(product, k)) return;
+      vals.push(pr);
+    });
+
+    var opt = product.options;
+    if (opt && typeof opt === "object") {
+      var useSize = !!(opt.useSize && Array.isArray(opt.sizes) && opt.sizes.length);
+      var useQty = !!(opt.useQty && Array.isArray(opt.qtyOptions) && opt.qtyOptions.length);
+      var base = vals.length ? Math.min.apply(null, vals) : 0;
+      if (useSize || useQty) {
+        var sizes = useSize ? opt.sizes : [{ id: "", priceInr: null }];
+        var qtys = useQty ? opt.qtyOptions : [{ id: "", priceInr: null }];
+        sizes.forEach(function (s) {
+          qtys.forEach(function (q) {
+            var ps = s && Number.isFinite(Number(s.priceInr)) ? Number(s.priceInr) : null;
+            var pq = q && Number.isFinite(Number(q.priceInr)) ? Number(q.priceInr) : null;
+            var p;
+            if (useSize && useQty) {
+              p = (ps != null ? ps : base) + (pq != null ? pq : 0);
+            } else if (useSize) {
+              p = ps != null ? ps : base;
+            } else {
+              p = pq != null ? pq : base;
+            }
+            if (Number.isFinite(p) && p > 0) vals.push(p);
+          });
+        });
+      } else if (Array.isArray(opt.sizes) && opt.sizes.length) {
+        opt.sizes.forEach(function (s) {
+          var ps = Number(s && s.priceInr);
+          if (Number.isFinite(ps) && ps > 0) vals.push(ps);
+        });
+      }
+    }
+
+    if (!vals.length) return 0;
+    return Math.min.apply(null, vals);
+  }
+
+  /** Listing label: "From ₹…" when a positive price exists; empty string otherwise (never "₹0"). */
+  function formatStartingFromPrice(product, formatMoneyFn) {
+    var n = getStartingPriceInr(product);
+    if (!(n > 0)) return "";
+    var money =
+      typeof formatMoneyFn === "function" ? formatMoneyFn(n) : "₹" + String(Math.round(n * 100) / 100);
+    return "From " + money;
+  }
+
   function getSizeLabelNameForProduct(product, sizeKey) {
     var sl = product && product.sizeLabels && product.sizeLabels[sizeKey];
     if (sl && typeof sl === "object" && String(sl.name || "").trim()) {
@@ -522,12 +591,18 @@ var SIZE_DEFAULT = {
     /* Absolute URLs (e.g. Cloudinary, R2, Imgur) — use as-is; no Render disk needed. */
     if (/^https?:\/\//i.test(s)) return s;
     if (s.indexOf("//") === 0) return s;
+    var q = "";
+    var qIx = s.indexOf("?");
+    if (qIx >= 0) {
+      q = s.slice(qIx);
+      s = s.slice(0, qIx);
+    }
     var enc = s.split("/").map(function (seg) { return encodeURIComponent(seg); }).join("/");
     var base = storefrontApiBaseForMedia();
     if (base && s.indexOf("media/") === 0) {
-      return base.replace(/\/+$/, "") + "/" + enc;
+      return base.replace(/\/+$/, "") + "/" + enc + q;
     }
-    return enc;
+    return enc + q;
   }
 
   function normalizeOptionsOverride(raw) {
@@ -631,6 +706,16 @@ var SIZE_DEFAULT = {
         p.options = normalizeOptionsOverride(o.options);
         n++;
       }
+      var optForDesc = normalizeOptionsOverride(o.options);
+      if (optForDesc && Object.prototype.hasOwnProperty.call(optForDesc, "detailBody")) {
+        var detailDesc = String(optForDesc.detailBody || "").trim();
+        if (detailDesc) {
+          p.description = detailDesc.slice(0, 8000);
+        } else {
+          delete p.description;
+        }
+        n++;
+      }
       BY_ID[p.id] = p;
     });
     return n;
@@ -731,6 +816,17 @@ var SIZE_DEFAULT = {
     if (row.options != null && catalogOptionsHasPayload(row.options)) {
       p.options = normalizeOptionsOverride(row.options);
     }
+    var desc = String(row.description || "").trim();
+    if (!desc && p.options && p.options.detailBody) {
+      desc = String(p.options.detailBody).trim();
+    }
+    if (!desc && row.options) {
+      var optOnly = normalizeOptionsOverride(row.options);
+      if (optOnly && optOnly.detailBody) desc = String(optOnly.detailBody).trim();
+    }
+    if (desc) {
+      p.description = desc.slice(0, 8000);
+    }
     return p;
   }
 
@@ -763,6 +859,8 @@ var SIZE_DEFAULT = {
         else delete existing.gallery;
         if (p.options) existing.options = p.options;
         else delete existing.options;
+        if (p.description) existing.description = p.description;
+        else delete existing.description;
       } else {
         PRODUCTS.push(p);
         BY_ID[id] = p;
@@ -887,6 +985,8 @@ var SIZE_DEFAULT = {
     getSizeProfileForProduct: getSizeProfileForProduct,
     getOfferedSizeKeysForProduct: getOfferedSizeKeysForProduct,
     countOfferedSizesForProduct: countOfferedSizesForProduct,
+    getStartingPriceInr: getStartingPriceInr,
+    formatStartingFromPrice: formatStartingFromPrice,
     lineSizeLabel: lineSizeLabel,
     normalizeCategoryId: normalizeCategoryId,
     getSubcategories: getSubcategories,

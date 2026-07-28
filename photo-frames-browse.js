@@ -43,7 +43,7 @@
   }
 
   function escAttr(s) {
-    return String(s == null ? "").replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/"/g, "&quot;");
   }
 
   function imgSrc(rel) {
@@ -123,7 +123,7 @@
     try {
       var page = (window.location.pathname || "").split("/").pop() || "";
       if (/^photo-frames\.html/i.test(page)) {
-        navPf.setAttribute("href", "photo-frames.html" + (window.location.search || ""));
+        navPf.setAttribute("href", "photo-frame-shop.html" + (window.location.search || ""));
       }
     } catch (_) {}
   }
@@ -223,7 +223,7 @@
         (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "") +
         '<div class="rm-card-shop__row">' +
         '<span class="rm-card-shop__price">' +
-        esc((showFrom ? "From " : "") + fmtPrice(meta.min)) +
+        esc(meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "") +
         "</span></div></div></a>";
       g.appendChild(card);
     });
@@ -234,7 +234,7 @@
     if (window.CRAFT_PF_NAV_LINES_HIDDEN) {
       setBrowseVisible(false, "");
       var nr = document.getElementById("navDockPhotoFrames");
-      if (nr) nr.setAttribute("href", "photo-frames.html");
+      if (nr) nr.setAttribute("href", "photo-frame-shop.html");
       return;
     }
     syncNavPhotoFramesLink();
@@ -243,7 +243,7 @@
     if (!has) {
       setBrowseVisible(false, "");
       var navReset = document.getElementById("navDockPhotoFrames");
-      if (navReset) navReset.setAttribute("href", "photo-frames.html");
+      if (navReset) navReset.setAttribute("href", "photo-frame-shop.html");
       return;
     }
     var titleParts = [];

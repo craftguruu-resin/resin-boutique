@@ -119,6 +119,25 @@
     return D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  function productPageUrl(id) {
+    var path = "product.html?id=" + encodeURIComponent(id);
+    try {
+      return new URL(path, window.location.href).href;
+    } catch (_) {
+      return path;
+    }
+  }
+
+  function bulkBuyCardHtml(p) {
+    var WA = window.CRAFTGURU_WA;
+    if (!WA || typeof WA.listingButtonHtml !== "function") return "";
+    return WA.listingButtonHtml({
+      productName: p.name,
+      productId: p.id,
+      productUrl: productPageUrl(p.id),
+    });
+  }
+
   function prefersReducedMotion() {
     return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   }
@@ -158,12 +177,24 @@
   }
 
   function minPrice(p) {
+    if (D.getStartingPriceInr) {
+      return D.getStartingPriceInr(p) || 0;
+    }
     if (!p || !p.prices) return 0;
     var vals = [];
     ["s", "m", "l"].forEach(function (k) {
-      if (p.prices[k] != null && !isNaN(p.prices[k])) vals.push(p.prices[k]);
+      var v = Number(p.prices[k]);
+      if (Number.isFinite(v) && v > 0) vals.push(v);
     });
     return vals.length ? Math.min.apply(null, vals) : 0;
+  }
+
+  function fromPriceLabel(p) {
+    if (D.formatStartingFromPrice) {
+      return D.formatStartingFromPrice(p, CART.formatMoney);
+    }
+    var minP = minPrice(p);
+    return minP > 0 ? "From " + CART.formatMoney(minP) : "";
   }
 
   function syncUrl() {
@@ -445,17 +476,14 @@
         "<h3>" +
         escapeHtml(p.name) +
         "</h3>" +
-        '<p class="product-card__from">From ' +
-        CART.formatMoney(minP) +
-        " · " +
-        (D.countOfferedSizesForProduct ? D.countOfferedSizesForProduct(p) : 3) +
-        " size" +
-        (D.countOfferedSizesForProduct && D.countOfferedSizesForProduct(p) === 1 ? "" : "s") +
+        '<p class="product-card__from">' +
+        escapeHtml(fromPriceLabel(p)) +
         "</p>" +
         '<div class="product-meta product-meta--cta">' +
         '<a class="add-btn add-btn--mini" href="product.html?id=' +
         encodeURIComponent(p.id) +
         '">Size &amp; price →</a>' +
+        bulkBuyCardHtml(p) +
         "</div>" +
         "</div>";
       els.productGrid.appendChild(card);
@@ -593,14 +621,7 @@
       card.setAttribute("data-min-price", String(minP));
       var fromEl = card.querySelector(".product-card__from");
       if (fromEl) {
-        var nSizes = D.countOfferedSizesForProduct ? D.countOfferedSizesForProduct(p) : 3;
-        fromEl.textContent =
-          "From " +
-          CART.formatMoney(minP) +
-          " · " +
-          nSizes +
-          " size" +
-          (nSizes === 1 ? "" : "s");
+        fromEl.textContent = fromPriceLabel(p);
       }
     });
   }

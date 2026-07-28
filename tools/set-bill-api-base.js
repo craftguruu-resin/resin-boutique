@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 /**
- * Cloudflare Pages (or any static CI): inject production API origin into root *.html
- * so checkout / account / vendor pages call Render instead of 127.0.0.1:3847.
+ * Cloudflare Pages / Firebase / any static CI: inject production API origin into root *.html
+ * so checkout / account / vendor pages call Cloud Run (or legacy Render) instead of 127.0.0.1:3847.
  *
  * Env (build-time):
- *   PUBLIC_BILL_API_BASE   required — e.g. https://your-service.onrender.com (no trailing slash)
+ *   PUBLIC_BILL_API_BASE   required — e.g. https://api.yourdomain.com or https://xxx.run.app (no trailing slash)
  *
  * Optional:
  *   PUBLIC_BILL_CLIENT_SECRET — if set, replaces data-bill-api-secret="" with this value

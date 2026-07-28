@@ -571,7 +571,7 @@
           ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(effMrp)) + "</span>"
           : "";
       card.innerHTML =
-        '<a href="' +
+        '<a class="rm-card-shop__hit" href="' +
         escAttr(href) +
         '">' +
         '<div class="rm-card-shop__img">' +
@@ -585,12 +585,31 @@
         (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
         '<div class="rm-card-shop__row">' +
         '<span class="rm-card-shop__price">' +
-        esc((showFrom ? "From " : "") + fmtPrice(meta.min)) +
+        esc(meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "") +
         "</span>" +
         "<span>" +
         mrp +
         discountHtml(m) +
-        "</span></div></div></a>";
+        "</span></div></div></a>" +
+        (function () {
+          var WA = window.CRAFTGURU_WA;
+          if (!WA || typeof WA.listingButtonHtml !== "function") return "";
+          var abs;
+          try {
+            abs = new URL(href, window.location.href).href;
+          } catch (_) {
+            abs = href;
+          }
+          return (
+            '<div class="rm-card-shop__cta">' +
+            WA.listingButtonHtml({
+              productName: m.name || "Material",
+              productId: m.id,
+              productUrl: abs,
+            }) +
+            "</div>"
+          );
+        })();
       g.appendChild(card);
     });
   }

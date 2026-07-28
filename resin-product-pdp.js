@@ -295,7 +295,7 @@
     if (parsed.badge) opt.badge = String(parsed.badge).trim().slice(0, 80);
     if (parsed.heroImage) opt.heroImage = String(parsed.heroImage).trim().slice(0, 2000);
     if (parsed.brandLine) opt.brandLine = String(parsed.brandLine).trim().slice(0, 100);
-    if (parsed.detailBody) opt.detailBody = String(parsed.detailBody).trim().slice(0, 4000);
+    if (parsed.detailBody) opt.detailBody = String(parsed.detailBody).trim().slice(0, 8000);
     if (parsed.shipNote) opt.shipNote = String(parsed.shipNote).trim().slice(0, 500);
     if (parsed.ratingScore) opt.ratingScore = String(parsed.ratingScore).trim().slice(0, 20);
     if (parsed.reviewCount != null && Number.isFinite(Number(parsed.reviewCount))) {
@@ -435,11 +435,29 @@
     dn.hidden = !need;
   }
 
-  function showNeedBulkUrl(name) {
-    var text = "Need in bulk: " + String(name || "product") + " — " + String(window.location.href);
-    var u = "https://wa.me/918824350056?text=" + encodeURIComponent(text);
+  function showNeedBulkUrl(name, id) {
+    var WA = window.CRAFTGURU_WA;
+    var pageUrl;
     try {
-      window.open(u, "_blank", "noopener");
+      pageUrl = new URL("product.html?id=" + encodeURIComponent(id || ""), window.location.href).href;
+    } catch (_) {
+      pageUrl = String(window.location.href);
+    }
+    if (WA && typeof WA.openBulkBuy === "function") {
+      WA.openBulkBuy({ productName: name, productId: id, productUrl: pageUrl });
+      return;
+    }
+    var text =
+      "Hi, I'm interested in buying this product in bulk.\n\nProduct Name: " +
+      String(name || "product") +
+      "\nProduct ID: " +
+      String(id || "") +
+      "\nProduct URL: " +
+      pageUrl;
+    var phone = (WA && WA.PHONE) || "918824350056";
+    var u = "https://wa.me/" + phone + "?text=" + encodeURIComponent(text);
+    try {
+      window.open(u, "_blank", "noopener,noreferrer");
     } catch (_) {}
   }
 
@@ -793,7 +811,6 @@
       esc(String(revN)) +
       " reviews)</span></div></div>" +
       '<div class="product-share-bar product-share-bar--rm-pdp" id="resinPdpShare" aria-label="Share"></div>' +
-      '<button type="button" class="rm-pdp__bulk" id="resinPdpBulk">Need in bulk</button>' +
       "</div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
@@ -824,6 +841,10 @@
       '<button type="button" data-rm-line-qty="1">+</button></div>' +
       '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="resinPdpWish" aria-label="Save to wishlist">♡</button></div>' +
+      '<div class="rm-pdp__bulk-row">' +
+      '<button type="button" class="rm-pdp__bulk bulk-buy-btn bulk-buy-btn--pdp" id="resinPdpBulk" title="Contact us for bulk orders and wholesale pricing." aria-label="Bulk Buy. Contact us for bulk orders and wholesale pricing.">' +
+      ((window.CRAFTGURU_WA && window.CRAFTGURU_WA.ICON_SVG) || "") +
+      '<span class="bulk-buy-btn__label">Bulk Buy</span></button></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
       "</div></div></div>";
@@ -849,7 +870,11 @@
       }
     }
     var bBulk = document.getElementById("resinPdpBulk");
-    if (bBulk) bBulk.addEventListener("click", function () { showNeedBulkUrl(p.name); });
+    if (bBulk) {
+      bBulk.addEventListener("click", function () {
+        showNeedBulkUrl(p.name, p.id);
+      });
+    }
     var ta = document.getElementById("resinPdpNameplateText");
     if (ta) {
       ta.addEventListener("input", function () {

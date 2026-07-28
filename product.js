@@ -76,6 +76,7 @@
     qtyDock: document.getElementById("qtyDock"),
     sizeScale: document.getElementById("sizeScale"),
     introText: document.getElementById("productIntroText"),
+    bulkBuyWrap: document.getElementById("bulkBuyWrap"),
   };
 
   /** Snapshot legacy PDP markup (bundled catalog products). */
@@ -86,6 +87,28 @@
 
   function teardownResinPdpBodyClasses() {
     document.body.classList.remove("page-product--resin-rm", "rm-page-wide");
+  }
+
+  function syncBulkBuyButton() {
+    var wrap = els.bulkBuyWrap || document.getElementById("bulkBuyWrap");
+    if (!wrap) return;
+    var WA = window.CRAFTGURU_WA;
+    if (!product || !WA || typeof WA.pdpButtonHtml !== "function") {
+      wrap.innerHTML = "";
+      return;
+    }
+    var pageUrl;
+    try {
+      pageUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
+    } catch (_) {
+      pageUrl = "product.html?id=" + encodeURIComponent(product.id);
+    }
+    wrap.innerHTML = WA.pdpButtonHtml({
+      id: "bulkBuyBtn",
+      productName: product.name,
+      productId: product.id,
+      productUrl: pageUrl,
+    });
   }
 
   function applyCachedCatalogOverrides() {
@@ -167,6 +190,7 @@
     els.qtyDock = document.getElementById("qtyDock");
     els.sizeScale = document.getElementById("sizeScale");
     els.introText = document.getElementById("productIntroText");
+    els.bulkBuyWrap = document.getElementById("bulkBuyWrap");
   }
 
   function restoreProductLayout() {
@@ -804,12 +828,21 @@
       els.flowStep.textContent = "Piece overview · " + catLabel;
     }
     if (els.introText) {
-      els.introText.textContent =
-        product.name +
-        " sits in our " +
-        catLabel +
-        " line from the Jaipur bench. We start with the smallest-priced format; change size below, set quantity, then add to cart — same MRP per unit for each format.";
+      var desc = String((product && product.description) || "").trim();
+      var overview = els.introText.closest ? els.introText.closest(".product-overview") : null;
+      if (desc) {
+        els.introText.textContent = desc;
+        els.introText.style.whiteSpace = "pre-wrap";
+        if (overview) overview.hidden = false;
+      } else if (overview) {
+        overview.hidden = true;
+        els.introText.textContent = "";
+      } else {
+        els.introText.textContent = "";
+      }
     }
+
+    syncBulkBuyButton();
 
     var rgb = document.getElementById("productReturnGiftBadge");
     if (rgb) {

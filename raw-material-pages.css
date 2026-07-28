@@ -301,12 +301,13 @@ a.rm-empty-link:hover {
   box-shadow: 0 10px 26px rgba(15, 23, 42, 0.07);
 }
 
-.rm-card-shop a {
+.rm-card-shop a.rm-card-shop__hit,
+.rm-card-shop > a:not(.bulk-buy-btn) {
   color: inherit;
   text-decoration: none;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
 }
 
 .rm-card-shop__img {

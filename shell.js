@@ -38,6 +38,7 @@
   function patchCartSubtotal() {
     var sub = document.getElementById("cartSubtotal");
     if (sub) sub.textContent = CART.formatMoney(CART.subtotal());
+    if (CART.syncShippingNotice) CART.syncShippingNotice();
   }
 
   function findCartLine(id, size, ex) {

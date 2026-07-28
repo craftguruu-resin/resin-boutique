@@ -1,7 +1,8 @@
 (function () {
   "use strict";
 
-  var PHONE = "918824350056";
+  var WA = window.CRAFTGURU_WA;
+  var PHONE = (WA && WA.PHONE) || "918824350056";
 
   var WA_ICON =
     '<svg class="cg-wa-widget__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
@@ -20,6 +21,7 @@
   ];
 
   function waUrl(text) {
+    if (WA && typeof WA.buildUrl === "function") return WA.buildUrl(text);
     return "https://wa.me/" + PHONE + "?text=" + encodeURIComponent(text);
   }
 

@@ -66,11 +66,56 @@ function ensureProductsGalleryColumn(cb) {
     });
 }
 
+var productsLongDescPromise = null;
+function ensureProductsLongDescriptionColumn(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null);
+    });
+  }
+  if (!productsLongDescPromise) {
+    productsLongDescPromise = pool
+      .query("ALTER TABLE products ADD COLUMN IF NOT EXISTS long_description TEXT")
+      .catch(function (err) {
+        productsLongDescPromise = null;
+        return Promise.reject(err);
+      });
+  }
+  productsLongDescPromise
+    .then(function () {
+      cb(null);
+    })
+    .catch(function (e) {
+      cb(e);
+    });
+}
+
 function ensureProductSchema(cb) {
   ensureProductsSizeLabelsColumn(function (e1) {
     if (e1) return cb(e1);
-    ensureProductsGalleryColumn(cb);
+    ensureProductsGalleryColumn(function (e2) {
+      if (e2) return cb(e2);
+      ensureProductsLongDescriptionColumn(cb);
+    });
   });
+}
+
+function normalizeProductDescription(raw) {
+  return String(raw == null ? "" : raw).trim().slice(0, 8000);
+}
+
+/** Bust browser/CDN caches when the same media path or Cloudinary URL is reused after an upload. */
+function appendMediaCacheBust(url, updatedAt) {
+  var u = String(url == null ? "" : url).trim();
+  if (!u) return u;
+  if (/[?&]v=\d+/i.test(u)) return u;
+  var t = 0;
+  if (updatedAt) {
+    t = updatedAt instanceof Date ? updatedAt.getTime() : Date.parse(String(updatedAt));
+  }
+  if (!Number.isFinite(t) || t <= 0) return u;
+  return u + (u.indexOf("?") >= 0 ? "&" : "?") + "v=" + Math.floor(t / 1000);
 }
 
 /** Accepts CDN URLs (Cloudinary, R2, etc.). Rejects non-HTTPS and obvious SSRF targets. */
@@ -314,7 +359,7 @@ function mapRowToClient(row) {
     name: row.name,
     category: row.category_id,
     subcategory: subRaw,
-    image: row.image_path || "",
+    image: appendMediaCacheBust(row.image_path || "", row.updated_at),
     prices: {
       s: Number(prices.s) || 0,
       m: Number(prices.m) || 0,
@@ -333,7 +378,13 @@ function mapRowToClient(row) {
   }
   var gallery = parseGalleryPaths(row);
   if (gallery.length) {
-    out.gallery = gallery;
+    out.gallery = gallery.map(function (g) {
+      return appendMediaCacheBust(g, row.updated_at);
+    });
+  }
+  var desc = normalizeProductDescription(row.long_description != null ? row.long_description : row.description);
+  if (desc) {
+    out.description = desc;
   }
   return out;
 }
@@ -360,7 +411,7 @@ function listExtraProductsForStorefront(cb) {
     }
     pool
       .query(
-        "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.gallery_paths, p.prices, p.size_labels, p.is_active, " +
+        "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.gallery_paths, p.prices, p.size_labels, p.long_description, p.is_active, p.updated_at, " +
           "COALESCE(co.return_gift, false) AS listing_return_gift, " +
           "COALESCE(co.listed, true) AS listing_listed " +
           "FROM products p " +
@@ -462,6 +513,7 @@ function createVendorProductAfterSchema(opts, cb) {
     var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
     var sizeLabelsJson = JSON.stringify(buildSizeLabelsObject(opts));
     var galleryPathsJson = galleryJsonFromOpts(opts);
+    var longDescription = normalizeProductDescription(opts && opts.description);
 
     function commitInsert(imagePathVal, absImageForRollback, cbOut) {
       pool
@@ -471,13 +523,13 @@ function createVendorProductAfterSchema(opts, cb) {
             .query("BEGIN")
             .then(function () {
               return client.query(
-                "INSERT INTO products (id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active) " +
-                  "VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, true) " +
+                "INSERT INTO products (id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, long_description, is_active) " +
+                  "VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7::jsonb, $8::jsonb, $9, true) " +
                   "ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, category_id = EXCLUDED.category_id, " +
                   "subcategory_id = EXCLUDED.subcategory_id, image_path = EXCLUDED.image_path, gallery_paths = EXCLUDED.gallery_paths, prices = EXCLUDED.prices, " +
-                  "size_labels = EXCLUDED.size_labels, " +
-                  "is_active = true, updated_at = now() RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels",
-                [productId, name, categoryId, subDb, imagePathVal, galleryPathsJson, pricesJson, sizeLabelsJson]
+                  "size_labels = EXCLUDED.size_labels, long_description = EXCLUDED.long_description, " +
+                  "is_active = true, updated_at = now() RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, long_description",
+                [productId, name, categoryId, subDb, imagePathVal, galleryPathsJson, pricesJson, sizeLabelsJson, longDescription || null]
               );
             })
             .then(function (insRes) {
@@ -513,6 +565,11 @@ function createVendorProductAfterSchema(opts, cb) {
               };
               if (mapped && mapped.gallery && mapped.gallery.length) {
                 outCreate.gallery = mapped.gallery;
+              }
+              if (mapped && mapped.description) {
+                outCreate.description = mapped.description;
+              } else if (longDescription) {
+                outCreate.description = longDescription;
               }
               cbOut(null, outCreate);
             })
@@ -644,6 +701,12 @@ function pushStaticManageRow(p, omap, skuMap, out) {
   if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
     row.options = ov.options;
   }
+  var catDesc =
+    (ov.options && String(ov.options.detailBody || "").trim()) ||
+    String((p && p.description) || "").trim();
+  if (catDesc) {
+    row.description = catDesc.slice(0, 8000);
+  }
   if (row.category === "resin-clocks") {
     row.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", row.subcategory);
   }
@@ -689,6 +752,9 @@ function pushVendorManageRow(row, omap, skuMap, out) {
   }
   if (vendorCatalogDb.catalogOptionsHasPayload(ov.options)) {
     merged.options = ov.options;
+  }
+  if (!merged.description && ov.options && String(ov.options.detailBody || "").trim()) {
+    merged.description = String(ov.options.detailBody).trim().slice(0, 8000);
   }
   if (merged.category === "resin-clocks") {
     merged.subcategory = resinClocksTaxonomy.normalizeResinClocksSubcategoryId("resin-clocks", merged.subcategory);
@@ -835,7 +901,7 @@ function listVendorManagedProducts(cb) {
     }
     pool
       .query(
-        "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active FROM products ORDER BY updated_at DESC"
+        "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, long_description, is_active FROM products ORDER BY updated_at DESC"
       )
       .then(function (r) {
         var out = [];
@@ -984,7 +1050,7 @@ function updateVendorProductById(productId, opts, cb) {
       if (e00) return cb(e00);
       pool
         .query(
-          "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active FROM products WHERE id = $1 LIMIT 1",
+          "SELECT id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, long_description, is_active FROM products WHERE id = $1 LIMIT 1",
           [id]
         )
         .then(function (r) {
@@ -996,6 +1062,9 @@ function updateVendorProductById(productId, opts, cb) {
         if (!name) {
           throw new Error("Name is required");
         }
+        var longDescription = Object.prototype.hasOwnProperty.call(opts || {}, "description")
+          ? normalizeProductDescription(opts.description)
+          : normalizeProductDescription(row.long_description);
         var priceS = opts && opts.priceS != null ? Math.max(0, Number(opts.priceS) || 0) : null;
         var priceM = opts && opts.priceM != null ? Math.max(0, Number(opts.priceM) || 0) : null;
         var priceL = opts && opts.priceL != null ? Math.max(0, Number(opts.priceL) || 0) : null;
@@ -1082,8 +1151,8 @@ function updateVendorProductById(productId, opts, cb) {
                 .then(function () {
                   return client
                     .query(
-                      "UPDATE products SET name = $2, image_path = $3, prices = $4::jsonb, size_labels = $5::jsonb, gallery_paths = $6::jsonb, updated_at = now() WHERE id = $1 " +
-                        "RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, is_active",
+                      "UPDATE products SET name = $2, image_path = $3, prices = $4::jsonb, size_labels = $5::jsonb, gallery_paths = $6::jsonb, long_description = $7, updated_at = now() WHERE id = $1 " +
+                        "RETURNING id, name, category_id, subcategory_id, image_path, gallery_paths, prices, size_labels, long_description, is_active",
                       [
                         id,
                         name,
@@ -1091,6 +1160,7 @@ function updateVendorProductById(productId, opts, cb) {
                         pricesJson,
                         sizeLabelsJson,
                         galleryPathsJson,
+                        longDescription || null,
                       ]
                     )
                     .then(function (upd) {

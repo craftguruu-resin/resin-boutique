@@ -1220,7 +1220,130 @@ main {
 .product-meta.product-meta--cta {
   align-items: center;
   justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 0.45rem;
   min-height: 2.75rem;
+}
+
+/* Bulk Buy — WhatsApp enquiry (listings + PDP) */
+.bulk-buy-btn {
+  position: relative;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  padding: 0.5rem 0.95rem;
+  border-radius: var(--radius-pill, 999px);
+  border: 1px solid rgba(37, 211, 102, 0.45);
+  background: rgba(37, 211, 102, 0.12);
+  color: #128c7e;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.bulk-buy-btn:hover {
+  background: rgba(37, 211, 102, 0.22);
+  border-color: rgba(37, 211, 102, 0.65);
+  color: #0b6b5c;
+}
+
+.bulk-buy-btn__icon {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.bulk-buy-btn--card {
+  font-size: 0.65rem;
+  padding: 0.42rem 0.75rem;
+}
+
+body:not(.vendor-saas) .band-shop .bulk-buy-btn--card {
+  border-color: rgba(18, 140, 126, 0.35);
+  background: rgba(37, 211, 102, 0.1);
+  color: #0f766e;
+}
+
+.bulk-buy-btn--pdp,
+a.bulk-buy-btn--pdp {
+  width: 100%;
+  margin-top: 0.55rem;
+  padding: 0.85rem 1.1rem;
+  border-radius: 0.85rem;
+  font-size: 0.8rem;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  border: none;
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(18, 140, 126, 0.22);
+}
+
+.bulk-buy-btn--pdp:hover,
+a.bulk-buy-btn--pdp:hover {
+  color: #fff;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(18, 140, 126, 0.28);
+  background: linear-gradient(135deg, #2fe472 0%, #0f9f88 100%);
+}
+
+.pd-buy-rail__bulk {
+  width: 100%;
+}
+
+.rm-pdp__bulk-row {
+  margin-top: 0.55rem;
+}
+
+.rm-pdp__bulk.bulk-buy-btn--pdp,
+button.rm-pdp__bulk.bulk-buy-btn--pdp {
+  width: 100%;
+  margin-left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border: none;
+  background: linear-gradient(135deg, #25d366 0%, #128c7e 100%);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(18, 140, 126, 0.22);
+  cursor: pointer;
+}
+
+.rm-card-shop__cta {
+  padding: 0 0.85rem 0.85rem;
+}
+
+.rm-card-shop__cta .bulk-buy-btn {
+  width: 100%;
+}
+
+@media (max-width: 520px) {
+  .product-meta.product-meta--cta {
+    justify-content: stretch;
+  }
+
+  .product-meta.product-meta--cta .add-btn,
+  .product-meta.product-meta--cta .bulk-buy-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: center;
+  }
 }
 
 .price {
@@ -1303,6 +1426,10 @@ main {
   margin: 0;
   font-size: 0.78rem;
   color: rgba(255, 255, 255, 0.55);
+}
+
+.product-card__from:empty {
+  display: none;
 }
 
 .price-note {
@@ -3871,6 +3998,63 @@ body.product-page--oos .btn-add-lg {
   font-size: 0.72rem;
   color: rgba(26, 32, 44, 0.45);
   text-align: center;
+}
+
+.cart-shipping-note {
+  margin: 0.65rem 0 0;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.65rem;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  font-weight: 500;
+  text-align: left;
+  border: 1px solid rgba(59, 111, 217, 0.18);
+  background: rgba(59, 111, 217, 0.07);
+  color: #1e3a5f;
+}
+
+.cart-shipping-note.is-free {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(22, 163, 74, 0.1);
+  color: #14532d;
+}
+
+.cart-shipping-note.is-paid {
+  border-color: rgba(59, 111, 217, 0.2);
+  background: rgba(59, 111, 217, 0.08);
+  color: #1e3a5f;
+}
+
+.checkout-shipping-hint {
+  margin: 0.55rem 0 0.85rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 0.65rem;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  font-weight: 500;
+  border: 1px solid rgba(59, 111, 217, 0.18);
+  background: rgba(59, 111, 217, 0.07);
+  color: #1e3a5f;
+}
+
+.checkout-shipping-hint.is-free {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: rgba(22, 163, 74, 0.1);
+  color: #14532d;
+}
+
+.checkout-shipping-hint.is-paid {
+  border-color: rgba(180, 120, 40, 0.25);
+  background: rgba(245, 200, 80, 0.14);
+  color: #6b4a12;
+}
+
+@media (max-width: 520px) {
+  .cart-shipping-note,
+  .checkout-shipping-hint {
+    font-size: 0.74rem;
+    padding: 0.5rem 0.6rem;
+  }
 }
 
 @media (max-width: 900px) {

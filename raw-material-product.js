@@ -559,6 +559,26 @@
     });
   }
 
+  function mountRmBulkBuy(root) {
+    if (!root || !state.material) return;
+    var wrap = root.querySelector("#rmBulkBuyWrap");
+    var WA = window.CRAFTGURU_WA;
+    if (!wrap || !WA || typeof WA.pdpButtonHtml !== "function") return;
+    var mid = String(state.material.id || "");
+    var pageUrl;
+    try {
+      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), window.location.href).href;
+    } catch (_) {
+      pageUrl = "raw-material-product.html?id=" + encodeURIComponent(mid);
+    }
+    wrap.innerHTML = WA.pdpButtonHtml({
+      id: "rmBulkBuyBtn",
+      productName: state.material.name || "Material",
+      productId: mid,
+      productUrl: pageUrl,
+    });
+  }
+
   function formatDescParagraphs(raw) {
     var s = String(raw == null ? "" : raw)
       .replace(/\r\n/g, "\n")
@@ -825,6 +845,7 @@
       '<button type="button" class="rm-pdp__add" id="rmAddCart">Add to cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="rmPdpWish" aria-label="Save to wishlist">♡</button>' +
       "</div>" +
+      '<div class="rm-pdp__bulk-row" id="rmBulkBuyWrap"></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
       (detailText
@@ -846,6 +867,7 @@
     }
     wirePdpRootOnce(root);
     mountRmPdpShare(root);
+    mountRmBulkBuy(root);
     fadeHeroImageIn(root);
   }
 

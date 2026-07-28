@@ -36,7 +36,7 @@
     <nav class="nav-dock nav-dock--fx" aria-label="Main">
       <a href="index.html" class="nav-dock-link">Home</a>
       <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
-      <a href="photo-frames.html" class="nav-dock-link is-active">Photo frames</a>
+      <a href="photo-frame-shop.html" class="nav-dock-link is-active">Photo frames</a>
       <a href="return-gifts.html" class="nav-dock-link">Return gifts</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
@@ -95,43 +95,20 @@
     <section class="band-shop band-shop--flush">
       <div class="band-shop-inner">
         <p class="crumb crumb--fx">
-          <a href="index.html">Home</a> <span aria-hidden="true">/</span> <a href="photo-frames.html">Photo frames</a> <span aria-hidden="true">/</span> Shop
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span> Photo frames
         </p>
         <div class="section-head section-head--solo">
           <div>
-            <h1 class="band-title band-title--fx">Photo frames shop</h1>
-            <p class="band-sub">Browse vendor-listed resin photo frames — same checkout as the rest of Craftguru. Listings update as soon as products are saved in the vendor portal.</p>
+            <h1 class="band-title band-title--fx">Photo frames</h1>
+            <p class="band-sub">Browse resin photo frames by category — same checkout as the rest of Craftguru.</p>
           </div>
         </div>
         <div class="rm-shop-layout" id="rmShopLayout">
-          <aside class="rm-nav-tree-wrap" aria-label="Material categories">
+          <aside class="rm-nav-tree-wrap" aria-label="Photo frame categories">
             <p class="rm-nav-tree__title">Categories</p>
             <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div class="rm-hero" id="rm-hero">
-              <div class="rm-hero__blob" aria-hidden="true"></div>
-              <div class="rm-hero__inner">
-                <p class="rm-hero__kicker">Craft Guru</p>
-                <h2 class="rm-hero__title-stack">
-                  <span class="rm-hero__title-line1">Your Resin Art Supply Destination</span>
-                  <span class="rm-hero__title-line2">Epoxy, pigments, molds &amp; studio essentials</span>
-                </h2>
-                <p class="rm-hero__sub">
-                  Browse vendor-listed resins and supplies with the same checkout as the main catalogue — crystal-clear epoxy, colour systems, glitters, and tools for serious pours.
-                </p>
-                <a class="rm-hero__cta" href="#rm-shop">Shop now</a>
-              </div>
-              <div class="rm-hero__visual">
-                <img
-                  src="media/raw-material-shop-hero-home-banner.png"
-                  width="1376"
-                  height="768"
-                  alt="Craft Guru — your resin art supply destination: epoxy, pigments, molds, and hand-poured pieces"
-                  decoding="async"
-                />
-              </div>
-            </div>
             <div id="rm-shop">
               <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter Shop by category">
                 <div class="category-toolbar__group">
@@ -165,7 +142,7 @@
                   </select>
                 </div>
                 <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmSortSelect">Sort category cards</label>
+                  <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
                   <select id="rmSortSelect" class="category-toolbar__select">
                     <option value="name-asc">Name · A → Z</option>
                     <option value="name-desc">Name · Z → A</option>
@@ -176,8 +153,8 @@
                 <div class="category-toolbar__group category-toolbar__group--actions">
                   <label class="category-toolbar__label" for="rmFilterApply">Shop by category</label>
                   <div class="category-toolbar__btn-row">
-                    <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply to Shop by category</button>
-                    <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset category filter</button>
+                    <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply</button>
+                    <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset</button>
                   </div>
                 </div>
               </div>
@@ -185,15 +162,9 @@
             <section class="rm-cat-hub" aria-labelledby="rmCatHubHeading">
               <div class="rm-cat-hub__head">
                 <h2 id="rmCatHubHeading" class="rm-best-sellers__title">Shop by category</h2>
-                <p class="rm-best-sellers__sub">Same card layout as the main Craftguru storefront — open a family of materials.</p>
+                <p class="rm-best-sellers__sub" id="rmCatHubSub">Open a category to see its photo frame products.</p>
               </div>
               <div class="featured-cat-grid" id="rmCategoryHub"></div>
-            </section>
-            <section class="rm-product-panel" id="rmProductPanel" aria-labelledby="rmProductsHeading">
-              <div class="rm-product-panel__head">
-                <h2 id="rmProductsHeading" class="rm-best-sellers__title">Materials in this category</h2>
-                <p class="rm-best-sellers__sub">Opens when you choose a category or subcategory from the cards or the sidebar — not from the filter bar above.</p>
-              </div>
               <div class="rm-grid-cards" id="rmGrid"></div>
             </section>
           </div>
@@ -282,6 +253,7 @@
           <span>Subtotal</span>
           <strong id="cartSubtotal">₹0</strong>
         </div>
+        <p class="cart-shipping-note" id="cartShippingNote" role="status" hidden></p>
         <button type="button" class="btn-checkout" id="checkoutBtn">Go to checkout</button>
         <p class="cart-note">Checkout to order · WhatsApp +91-8824350056</p>
       </div>
@@ -306,6 +278,7 @@
   </script>
   <script src="auth-home.js"></script>
   <script src="craftguru-share.js"></script>
+  <script src="craftguru-whatsapp.js"></script>
   <script src="shell.js"></script>
   <script src="header.js"></script>
   <script src="global-find.js"></script>

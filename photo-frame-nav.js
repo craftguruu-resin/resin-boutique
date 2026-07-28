@@ -44,15 +44,19 @@
     return D && typeof D.imageUrl === "function" ? D.imageUrl(r) : r;
   }
 
-  /** Legacy vendor links pointed at the standalone shop; browsing stays on the Photo frames landing page. */
+  /** Keep photo-frame browse links on the product listing shop page. */
   function normalizeLineHref(href) {
     var h = String(href || "").trim();
-    var legacy = "photo-frame-shop.html";
-    if (h === legacy || h.indexOf(legacy + "?") === 0 || h.indexOf("./" + legacy) === 0) {
+    var landing = "photo-frames.html";
+    var shop = "photo-frame-shop.html";
+    if (h === landing || h.indexOf(landing + "?") === 0 || h.indexOf("./" + landing) === 0) {
       var rest = h.replace(/^\.\//, "");
       var q = rest.indexOf("?");
       var qs = q >= 0 ? rest.slice(q) : "";
-      return "photo-frames.html" + qs;
+      return shop + qs;
+    }
+    if (h === shop || h.indexOf(shop + "?") === 0 || h.indexOf("./" + shop) === 0) {
+      return h.replace(/^\.\//, "");
     }
     return h;
   }
@@ -63,13 +67,13 @@
     if (!b) return "";
     if (s) {
       return (
-        "photo-frames.html?base=" +
+        "photo-frame-shop.html?base=" +
         encodeURIComponent(b) +
         "&sub=" +
         encodeURIComponent(s)
       );
     }
-    return "photo-frames.html?base=" + encodeURIComponent(b);
+    return "photo-frame-shop.html?base=" + encodeURIComponent(b);
   }
 
   function lineImage(c, s) {

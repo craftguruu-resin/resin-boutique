@@ -239,6 +239,10 @@
         .map(function (p) {
           var href = "product.html?id=" + encodeURIComponent(p.id);
           var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
+          var from =
+            D2.formatStartingFromPrice && window.RESIN_CART && window.RESIN_CART.formatMoney
+              ? D2.formatStartingFromPrice(p, window.RESIN_CART.formatMoney)
+              : "";
           return (
             '<a class="guest-header-search__hit" href="' +
             escapeAttr(href) +
@@ -251,7 +255,10 @@
             '<span class="guest-header-search__hit-txt"><strong>' +
             escapeHtml(p.name) +
             "</strong><span class=\"guest-header-search__hit-sub\">" +
-            escapeHtml(D2.getCategoryLabel ? D2.getCategoryLabel(p.category) : p.category) +
+            escapeHtml(
+              (D2.getCategoryLabel ? D2.getCategoryLabel(p.category) : p.category) +
+                (from ? " · " + from : "")
+            ) +
             "</span></span></a>"
           );
         })
@@ -419,6 +426,16 @@
     /* auth-db.js, google-signin.js, auth-home.js must be included in page markup after guest-layout.js (see category.html). */
   }
 
+  function injectScriptOnce(src, defer) {
+    if (document.querySelector('script[src="' + src + '"]') || document.querySelector('script[src*="' + src + '"]')) {
+      return;
+    }
+    var script = document.createElement("script");
+    script.src = src;
+    if (defer) script.defer = true;
+    document.body.appendChild(script);
+  }
+
   function injectWhatsAppWidget() {
     if (document.getElementById("cgWhatsAppWidget")) return;
     if (!document.querySelector('link[href*="whatsapp-widget.css"]')) {
@@ -427,11 +444,8 @@
       link.href = "whatsapp-widget.css";
       document.head.appendChild(link);
     }
-    if (document.querySelector('script[src*="whatsapp-widget.js"]')) return;
-    var script = document.createElement("script");
-    script.src = "whatsapp-widget.js";
-    script.defer = true;
-    document.body.appendChild(script);
+    injectScriptOnce("craftguru-whatsapp.js", false);
+    injectScriptOnce("whatsapp-widget.js", true);
   }
 
   function boot() {

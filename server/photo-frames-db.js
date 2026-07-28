@@ -275,7 +275,14 @@ function mapRow(row) {
     sku: String(row.sku || "").trim(),
     name: String(row.name || ""),
     description: String(row.description || ""),
-    image: String(row.image_path || ""),
+    image: (function () {
+      var img = String(row.image_path || "").trim();
+      if (!img) return "";
+      if (/[?&]v=\d+/i.test(img)) return img;
+      var t = row.updated_at ? (row.updated_at instanceof Date ? row.updated_at.getTime() : Date.parse(String(row.updated_at))) : 0;
+      if (!Number.isFinite(t) || t <= 0) return img;
+      return img + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + Math.floor(t / 1000);
+    })(),
     note: String(row.note || ""),
     isActive: row.is_active !== false,
     priceInr: Number.isFinite(price) ? Math.round(price * 100) / 100 : 0,
@@ -310,7 +317,7 @@ function listActive(filter, cb) {
     });
   }
   var sql =
-    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug FROM photo_frame_products WHERE is_active = true";
+    "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug, updated_at FROM photo_frame_products WHERE is_active = true";
   var params = [];
   if (base) {
     params.push(base);
@@ -410,7 +417,7 @@ function getActiveById(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug FROM photo_frame_products WHERE id = $1 AND is_active = true",
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug, updated_at FROM photo_frame_products WHERE id = $1 AND is_active = true",
       [rid]
     )
     .then(function (r) {
