@@ -3,16 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Photo frames — Resin keepsakes — Craft guru</title>
+  <title>Resin Photo Frames — Personalised keepsakes — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
 </head>
-<body class="subpage rm-page-wide">
+<body class="subpage rm-page-wide rm-theme--photo-frame">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -103,28 +103,39 @@
             <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div class="rm-hero pf-landing-hero" id="pf-hero" aria-labelledby="pfHomeHeroHeading">
+            <div class="rm-hero rm-hero--premium pf-landing-hero" id="pf-hero" aria-labelledby="pfHomeHeroHeading">
+              <div class="rm-hero__glow" aria-hidden="true"></div>
               <div class="rm-hero__blob pf-landing-hero__blob" aria-hidden="true"></div>
+              <div class="rm-hero__spark rm-hero__spark--a" aria-hidden="true"></div>
+              <div class="rm-hero__spark rm-hero__spark--b" aria-hidden="true"></div>
               <div class="rm-hero__inner">
-                <p class="rm-hero__kicker">Craft Guru · Photo frames</p>
+                <p class="rm-hero__kicker">
+                  <span class="rm-hero__kicker-dot" aria-hidden="true"></span>
+                  Craft Guru · Personalised frames
+                </p>
                 <h1 id="pfHomeHeroHeading" class="rm-hero__title-stack">
-                  <span class="rm-hero__title-line1">Resin Photo Frames</span>
-                  <span class="rm-hero__title-line2">Keepsakes poured for your favourite moments</span>
+                  <span class="rm-hero__title-line1">Frames for the moments you keep</span>
+                  <span class="rm-hero__title-line2">Hand-poured resin · Custom photos · Lasting gifts</span>
                 </h1>
                 <p class="rm-hero__sub">
-                  Hand-finished frames from Jaipur — ocean scenes, florals, clocks, and custom pours that turn photographs into lasting gifts. Browse the full catalogue and checkout with the same cart you use across Craftguru.
+                  Blush florals, soft oceans, clocks, and bespoke pours from our Jaipur bench — each frame turns a favourite photograph into a keepsake. Same Craftguru cart and checkout.
                 </p>
-                <a class="rm-hero__cta pf-landing-hero__cta" href="#rm-shop">Shop now</a>
+                <div class="rm-hero__actions">
+                  <a class="rm-hero__cta pf-landing-hero__cta" href="#rm-shop">Shop frames</a>
+                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading">Browse styles</a>
+                </div>
               </div>
               <div class="rm-hero__visual">
-                <img
-                  src="media/photo-frames-hero-home-banner.png"
-                  width="1536"
-                  height="1024"
-                  alt="Hand-poured resin photo frames and keepsakes on a warm wooden table"
-                  decoding="async"
-                  fetchpriority="high"
-                />
+                <div class="rm-hero__visual-frame">
+                  <img
+                    src="media/photo-frames-hero-home-banner.png"
+                    width="1536"
+                    height="1024"
+                    alt="Hand-poured resin photo frames and keepsakes on a warm wooden table"
+                    decoding="async"
+                    fetchpriority="high"
+                  />
+                </div>
               </div>
             </div>
             <div id="rm-shop">
