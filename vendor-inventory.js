@@ -814,6 +814,15 @@
   function boot() {
     showDesk(true);
     var startTab = window.location.hash === "#add-product" ? "addproduct" : "studio";
+    on("viApAddColor", "click", function () {
+      addViExtraColorRow({});
+    });
+    var coverHex = document.getElementById("viApCoverColorHex");
+    if (coverHex) {
+      coverHex.addEventListener("input", syncViCoverColorReadout);
+      coverHex.addEventListener("change", syncViCoverColorReadout);
+      syncViCoverColorReadout();
+    }
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
@@ -899,6 +908,151 @@
     });
   }
 
+  function normalizeViHex(raw) {
+    var h = String(raw == null ? "" : raw)
+      .trim()
+      .replace(/^#/, "");
+    if (/^[0-9a-fA-F]{6}$/.test(h)) return "#" + h.toLowerCase();
+    if (/^[0-9a-fA-F]{3}$/.test(h)) {
+      return ("#" + h[0] + h[0] + h[1] + h[1] + h[2] + h[2]).toLowerCase();
+    }
+    return "#f8fafc";
+  }
+
+  function syncViCoverColorReadout() {
+    var pick = document.getElementById("viApCoverColorHex");
+    var read = document.getElementById("viApCoverColorReadout");
+    if (pick && read) read.textContent = String(pick.value || "").toUpperCase();
+  }
+
+  function addViExtraColorRow(prefill) {
+    var host = document.getElementById("viApExtraColors");
+    if (!host) return;
+    var row = document.createElement("div");
+    row.className = "vi-ap-extra-color-row vrm-opt-row";
+    var hx = normalizeViHex((prefill && prefill.hex) || "#6366f1");
+    row.innerHTML =
+      '<div class="vs-field" style="margin:0"><label>Colour name</label>' +
+      '<input type="text" class="vs-input vi-ap-color-label" maxlength="120" placeholder="e.g. Blue" value="' +
+      String((prefill && prefill.label) || "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div class="vs-field" style="margin:0"><label>Swatch</label>' +
+      '<div class="vrm-color-swatch-controls" style="display:flex;align-items:center;gap:0.4rem">' +
+      '<input type="color" class="vrm-color-pick vi-ap-color-hex" value="' +
+      hx +
+      '" />' +
+      '<code class="vrm-color-readout vi-ap-color-readout">' +
+      hx.toUpperCase() +
+      "</code></div></div>" +
+      '<div class="vs-field" style="margin:0;grid-column:1/-1"><label>Image URL (HTTPS)</label>' +
+      '<input type="url" class="vs-input vi-ap-color-image" maxlength="2000" placeholder="https://…" value="' +
+      String((prefill && prefill.image) || "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div style="grid-column:1/-1"><button type="button" class="vs-btn vs-btn--ghost vi-ap-color-rm">Remove</button></div>';
+    row.style.cssText =
+      "display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;padding:0.5rem;border:1px solid rgba(15,23,42,0.08);border-radius:8px;background:#fff";
+    host.appendChild(row);
+    var pick = row.querySelector(".vi-ap-color-hex");
+    var read = row.querySelector(".vi-ap-color-readout");
+    if (pick && read) {
+      function sync() {
+        read.textContent = String(pick.value || "").toUpperCase();
+      }
+      pick.addEventListener("input", sync);
+      pick.addEventListener("change", sync);
+    }
+    var rm = row.querySelector(".vi-ap-color-rm");
+    if (rm) {
+      rm.addEventListener("click", function () {
+        row.remove();
+      });
+    }
+  }
+
+  function readViExtraColors() {
+    var host = document.getElementById("viApExtraColors");
+    if (!host) return [];
+    var out = [];
+    host.querySelectorAll(".vi-ap-extra-color-row").forEach(function (row, idx) {
+      var lab = row.querySelector(".vi-ap-color-label");
+      var pick = row.querySelector(".vi-ap-color-hex");
+      var img = row.querySelector(".vi-ap-color-image");
+      var label = lab ? String(lab.value || "").trim() : "";
+      var image = img ? String(img.value || "").trim() : "";
+      if (!label || !image) return;
+      if (!/^https:\/\//i.test(image)) return;
+      out.push({
+        id: "c" + (idx + 2),
+        label: label.slice(0, 120),
+        hex: normalizeViHex(pick && pick.value),
+        image: image,
+      });
+    });
+    return out;
+  }
+
+  function buildCreateProductOptions(coverUrl) {
+    var cover = String(coverUrl || "").trim();
+    var labelEl = document.getElementById("viApCoverColorLabel");
+    var hexEl = document.getElementById("viApCoverColorHex");
+    var coverLabel = labelEl ? String(labelEl.value || "").trim() || "Default" : "Default";
+    var coverHex = normalizeViHex(hexEl && hexEl.value);
+    var colors = [];
+    if (cover) {
+      colors.push({
+        id: "c-cover",
+        label: coverLabel.slice(0, 120),
+        hex: coverHex,
+        image: cover,
+      });
+    }
+    colors = colors.concat(readViExtraColors());
+    var galEl = document.getElementById("viApGallery");
+    var galleryImages = galEl
+      ? String(galEl.value || "")
+          .split("\n")
+          .map(function (l) {
+            return l.trim();
+          })
+          .filter(Boolean)
+          .slice(0, 12)
+      : [];
+    var prices = {
+      s: Number(document.getElementById("viApPriceS") && document.getElementById("viApPriceS").value) || 0,
+      m: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
+      l: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
+    };
+    var sizes = [
+      {
+        id: "sz-s",
+        label: String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim() || "Compact",
+        priceInr: prices.s,
+      },
+      {
+        id: "sz-m",
+        label: String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim() || "Classic",
+        priceInr: prices.m,
+      },
+      {
+        id: "sz-l",
+        label: String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim() || "Grand",
+        priceInr: prices.l,
+      },
+    ];
+    var descEl = document.getElementById("viApDescription");
+    return {
+      useSize: true,
+      useQty: false,
+      useColor: colors.length > 0,
+      sizes: sizes,
+      qtyOptions: [],
+      colors: colors,
+      heroImage: cover,
+      galleryImages: galleryImages,
+      detailBody: descEl ? String(descEl.value || "").trim().slice(0, 8000) : "",
+    };
+  }
+
   on("viApSubmit", "click", function () {
     var msg = document.getElementById("viApMsg");
     if (msg) {
@@ -921,6 +1075,11 @@
     }
     if (imageUrl && !/^https:\/\//i.test(imageUrl)) {
       window.alert("Image URL must start with https://");
+      return;
+    }
+    var coverColorLabel = String((document.getElementById("viApCoverColorLabel") && document.getElementById("viApCoverColorLabel").value) || "").trim();
+    if (!coverColorLabel) {
+      window.alert("Enter a colour name for the cover image (e.g. White).");
       return;
     }
     var fd = new FormData();
@@ -955,13 +1114,35 @@
         });
       })
       .then(function (p) {
+        var cover = String((p && p.image) || imageUrl || "").trim();
+        var options = buildCreateProductOptions(cover);
+        if (!p || !p.id) return p;
+        return vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(p.id) + "/prices"), {
+          method: "PUT",
+          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+          body: JSON.stringify({
+            priceS: options.sizes[0] && options.sizes[0].priceInr,
+            priceM: options.sizes[1] && options.sizes[1].priceInr,
+            priceL: options.sizes[2] && options.sizes[2].priceInr,
+            description: options.detailBody || "",
+            options: options,
+          }),
+          cache: "no-store",
+        }).then(function (res2) {
+          return V.parseApiJson(res2).then(function (x2) {
+            if (!x2.okHttp || !(x2.json && x2.json.ok)) {
+              throw new Error((x2.json && x2.json.error) || "Product created but colour options failed to save");
+            }
+            return p;
+          });
+        });
+      })
+      .then(function (p) {
         if (msg) {
           msg.textContent =
             "Created · id " +
             (p && p.id ? p.id : "") +
-            " — image " +
-            (p && p.image ? p.image : "") +
-            ". Customers see it after a page refresh.";
+            " — cover colour is a selectable variant on the product page. Customers see it after a page refresh.";
           msg.removeAttribute("hidden");
         }
         if (document.getElementById("viApName")) document.getElementById("viApName").value = "";
@@ -975,6 +1156,13 @@
         if (gal) gal.value = "";
         var desc = document.getElementById("viApDescription");
         if (desc) desc.value = "";
+        var cLab = document.getElementById("viApCoverColorLabel");
+        if (cLab) cLab.value = "Default";
+        var cHex = document.getElementById("viApCoverColorHex");
+        if (cHex) cHex.value = "#f8fafc";
+        syncViCoverColorReadout();
+        var extra = document.getElementById("viApExtraColors");
+        if (extra) extra.innerHTML = "";
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));

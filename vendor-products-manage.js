@@ -350,6 +350,12 @@
         renderMediaManager();
       });
     }
+    var coverHex = document.getElementById("vpmCoverColorHex");
+    if (coverHex) {
+      coverHex.addEventListener("input", syncCoverColorReadout);
+      coverHex.addEventListener("change", syncCoverColorReadout);
+      syncCoverColorReadout();
+    }
     var file = document.getElementById("vpmImage");
     if (file) {
       file.addEventListener("change", function () {
@@ -384,6 +390,7 @@
   /**
    * Always produce options_json that activates the modern guest PDP, while preserving
    * any Advanced size/colour/qty configuration the vendor already set.
+   * Cover image is always promoted to a colour variant (c-cover) with its own swatch.
    */
   function buildMigratedOptionsForSave(coverOverride) {
     var adv =
@@ -419,16 +426,26 @@
       opt.useSize = true;
       opt.sizes = classicSizesFromForm();
       opt.useQty = false;
-      opt.useColor = false;
       opt.qtyOptions = [];
-      opt.colors = [];
     }
 
     if (!String(opt.heroImage || "").trim() && !(opt.galleryImages && opt.galleryImages.length) && !opt.useSize && !opt.useQty && !opt.useColor) {
-      /* Still force a payload so the product leaves the classic layout after save. */
       opt.useSize = true;
       opt.sizes = classicSizesFromForm();
     }
+
+    var coverLabel = String((document.getElementById("vpmCoverColorLabel") && document.getElementById("vpmCoverColorLabel").value) || "").trim();
+    var coverHex = (document.getElementById("vpmCoverColorHex") && document.getElementById("vpmCoverColorHex").value) || "#f8fafc";
+    if (!coverLabel) coverLabel = "Default";
+    if (window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.ensureCoverColorVariant === "function") {
+      opt = window.VendorCatalogPdpOptions.ensureCoverColorVariant(opt, opt.heroImage || cover, {
+        label: coverLabel,
+        hex: coverHex,
+      });
+    }
+
+    var uC = document.getElementById("vpmUseColor");
+    if (uC) uC.checked = true;
 
     var heroEl = document.getElementById("vpmHero");
     if (heroEl && opt.heroImage) heroEl.value = opt.heroImage;
@@ -436,6 +453,25 @@
     if (optGal && Array.isArray(opt.galleryImages)) optGal.value = opt.galleryImages.join("\n");
 
     return opt;
+  }
+
+  function syncCoverColorReadout() {
+    var pick = document.getElementById("vpmCoverColorHex");
+    var read = document.getElementById("vpmCoverColorReadout");
+    if (pick && read) read.textContent = String(pick.value || "").toUpperCase();
+  }
+
+  function setCoverColorFields(meta) {
+    var lab = document.getElementById("vpmCoverColorLabel");
+    var hex = document.getElementById("vpmCoverColorHex");
+    var label = (meta && meta.label) || "Default";
+    var hx =
+      window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.normalizeHex === "function"
+        ? window.VendorCatalogPdpOptions.normalizeHex((meta && meta.hex) || "#f8fafc")
+        : "#f8fafc";
+    if (lab) lab.value = label;
+    if (hex) hex.value = hx;
+    syncCoverColorReadout();
   }
 
   /** Bundled catalog rows: name is fixed in data.js; cover/gallery URLs are editable via overrides. */
@@ -527,11 +563,28 @@
     if (note) note.style.display = editingSource === "catalog" ? "block" : "none";
     setCatalogFormDisabled(editingSource === "catalog");
     if (window.VendorCatalogPdpOptions) {
-      window.VendorCatalogPdpOptions.fillEditorsFromOptions(p.options || null);
+      var seeded = p.options || null;
+      if (cover && window.VendorCatalogPdpOptions.ensureCoverColorVariant) {
+        seeded = window.VendorCatalogPdpOptions.ensureCoverColorVariant(
+          seeded ? Object.assign({}, seeded) : {},
+          cover,
+          window.VendorCatalogPdpOptions.findCoverColorMeta(seeded, cover) || { label: "Default", hex: "#f8fafc" }
+        );
+      }
+      window.VendorCatalogPdpOptions.fillEditorsFromOptions(seeded);
+      var uC = document.getElementById("vpmUseColor");
+      if (uC) uC.checked = true;
       var hero = document.getElementById("vpmHero");
       if (hero && cover && !String(hero.value || "").trim()) hero.value = cover;
       var optGal = document.getElementById("vpmOptGallery");
       if (optGal && mergedGal.length && !String(optGal.value || "").trim()) optGal.value = mergedGal.join("\n");
+      var coverMeta =
+        (window.VendorCatalogPdpOptions.findCoverColorMeta &&
+          window.VendorCatalogPdpOptions.findCoverColorMeta(seeded, cover)) ||
+        null;
+      setCoverColorFields(coverMeta || { label: "Default", hex: "#f8fafc" });
+    } else {
+      setCoverColorFields({ label: "Default", hex: "#f8fafc" });
     }
     wireMediaManagerOnce();
     renderMediaManager();

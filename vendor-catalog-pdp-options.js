@@ -133,6 +133,7 @@
       rowUrl("Image URL (optional)", (o && o.image) || "") +
       "</div>";
     var row = wrapRow(inner);
+    if (o && o.id) row.setAttribute("data-color-id", String(o.id));
     host.appendChild(row);
     var pick = row.querySelector(".vpm-color-pick");
     var read = row.querySelector(".vpm-color-readout");
@@ -144,6 +145,74 @@
       pick.addEventListener("change", sync);
       sync();
     }
+  }
+
+  var COVER_COLOR_ID = "c-cover";
+
+  function stripUrlCache(u) {
+    return String(u == null ? "" : u)
+      .trim()
+      .replace(/[?&]v=\d+/gi, "")
+      .replace(/\?&/, "?")
+      .replace(/[?&]$/, "");
+  }
+
+  function isCoverColorRow(c) {
+    if (!c) return false;
+    var id = String(c.id || "")
+      .trim()
+      .toLowerCase();
+    return id === COVER_COLOR_ID || id === "cover" || id === "c-cover";
+  }
+
+  function findCoverColorMeta(opt, coverUrl) {
+    var colors = (opt && Array.isArray(opt.colors) ? opt.colors : []) || [];
+    var cover = stripUrlCache(coverUrl || (opt && opt.heroImage) || "").toLowerCase();
+    var i;
+    for (i = 0; i < colors.length; i++) {
+      if (isCoverColorRow(colors[i])) return colors[i];
+    }
+    if (cover) {
+      for (i = 0; i < colors.length; i++) {
+        if (stripUrlCache(colors[i].image || "").toLowerCase() === cover) return colors[i];
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Ensure the cover/hero image is the first colour variant (useColor + colors[0]).
+   * Preserves other colour rows; drops duplicates of the cover image URL.
+   */
+  function ensureCoverColorVariant(opt, coverUrl, coverMeta) {
+    opt = opt && typeof opt === "object" && !Array.isArray(opt) ? Object.assign({}, opt) : {};
+    var cover = stripUrlCache(coverUrl || opt.heroImage || "");
+    if (!cover) return opt;
+
+    var meta = coverMeta || {};
+    var label = String(meta.label != null ? meta.label : "").trim() || "Default";
+    var hex = normalizeHexVendor(meta.hex || "#f8fafc");
+    var coverLower = cover.toLowerCase();
+
+    var colors = Array.isArray(opt.colors) ? opt.colors.slice() : [];
+    colors = colors.filter(function (c) {
+      if (isCoverColorRow(c)) return false;
+      var img = stripUrlCache(c.image || "").toLowerCase();
+      if (img && img === coverLower) return false;
+      return true;
+    });
+
+    colors.unshift({
+      id: COVER_COLOR_ID,
+      label: label.slice(0, 120),
+      hex: hex,
+      image: cover,
+    });
+
+    opt.useColor = true;
+    opt.colors = colors;
+    opt.heroImage = cover;
+    return opt;
   }
 
   function readRows(containerSel, kind) {
@@ -159,7 +228,7 @@
         var lab = labInp && labInp.value.trim();
         if (!lab) return;
         out.push({
-          id: "c" + (out.length + 1),
+          id: String(row.getAttribute("data-color-id") || ("c" + (out.length + 1))).slice(0, 40),
           label: lab.slice(0, 120),
           hex: normalizeHexVendor((pick && pick.value) || "#888888"),
           image: urlInp ? urlInp.value.trim() : "",
@@ -224,8 +293,8 @@
     }
     if (cl) {
       cl.innerHTML = uC
-        ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem;margin:0\">Colours</h3>" +
-          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Swatch + optional image URL per colour (hero switches when guest picks a colour).</p>" +
+        ? "<h3 class=\"vs-card__title\" style=\"font-size:1rem;margin:0\">Additional colours</h3>" +
+          "<p class=\"vs-muted\" style=\"margin:0.25rem 0 0.5rem\">Cover colour is set under Product media. Add more swatches here (optional image URL per colour).</p>" +
           '<div id="vpmColorRows"></div><button type="button" class="vs-btn vs-btn--ghost" id="vpmAddColor">+ Add colour</button>'
         : "";
     }
@@ -239,8 +308,7 @@
       addQtyRow({});
     }
     if (uC && document.getElementById("vpmColorRows") && !document.getElementById("vpmColorRows").children.length) {
-      addColorRow({ hex: "#6366f1" });
-      addColorRow({ hex: "#22c55e" });
+      /* Empty until vendor adds additional colours — cover lives in Product media. */
     }
     var as = document.getElementById("vpmAddSize");
     if (as) as.onclick = function () { addSizeRow({}); };
@@ -338,6 +406,7 @@
     }
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (s) {
+        if (isCoverColorRow(s)) return;
         addColorRow(s);
       });
     }
@@ -370,5 +439,11 @@
     fillEditorsFromOptions: fillEditorsFromOptions,
     clearEditors: clearEditors,
     renderOptionBlocks: renderOptionBlocks,
+    addColorRow: addColorRow,
+    normalizeHex: normalizeHexVendor,
+    COVER_COLOR_ID: COVER_COLOR_ID,
+    isCoverColorRow: isCoverColorRow,
+    findCoverColorMeta: findCoverColorMeta,
+    ensureCoverColorVariant: ensureCoverColorVariant,
   };
 })();

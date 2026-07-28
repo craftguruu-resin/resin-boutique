@@ -932,6 +932,14 @@
         state.sel.cid = sw.getAttribute("data-cid") || "";
         var g4 = galleryEntries(m, state.sel);
         var ix4 = indexForCid(g4, state.sel.cid);
+        if (ix4 < 0) {
+          for (var hi = 0; hi < g4.length; hi++) {
+            if (g4[hi].kind === "hero" || g4[hi].kind === "main") {
+              ix4 = hi;
+              break;
+            }
+          }
+        }
         state.imgIndex = ix4 >= 0 ? ix4 : 0;
         state.heroZoom = 1;
         renderPdp(pRoot);

@@ -111,7 +111,7 @@
           <div class="vpm-media" id="vpmMediaManager">
             <p class="vpm-media__title">Product media</p>
             <p class="vs-muted vpm-media__hint" id="vpmMediaHint">
-              Replace the cover, add gallery images, reorder, or remove. Saving upgrades this product to the latest guest product page while keeping prices, IDs, and categories.
+              Assign a colour to the cover image (it becomes a colour variant on the guest product page). Add more colours under Advanced → Additional colours. Saving keeps prices, IDs, and categories.
             </p>
             <div class="vpm-media__cover-row">
               <div class="vpm-media__cover-preview-wrap">
@@ -129,6 +129,25 @@
                   <p class="vs-muted" style="margin: 0.25rem 0 0; font-size: 0.82rem">
                     File upload replaces the cover on save. Paste a Cloudinary HTTPS URL to avoid storing the file on the server.
                   </p>
+                </div>
+                <div class="vpm-media__cover-color" id="vpmCoverColorBlock">
+                  <p class="vpm-media__cover-color-title">Cover colour variant</p>
+                  <p class="vs-muted" style="margin: 0 0 0.5rem; font-size: 0.82rem">
+                    The cover image is a selectable colour on the product page — same as Blue, Green, and other swatches.
+                  </p>
+                  <div class="vpm-media__cover-color-row">
+                    <div class="vs-field" style="margin: 0; flex: 1 1 10rem">
+                      <label for="vpmCoverColorLabel">Colour name</label>
+                      <input type="text" id="vpmCoverColorLabel" maxlength="120" placeholder="e.g. White" autocomplete="off" />
+                    </div>
+                    <div class="vs-field vrm-color-swatch-row" style="margin: 0">
+                      <span class="vs-muted vrm-color-swatch-label" id="vpmCoverColorSwatchLab">Swatch</span>
+                      <div class="vrm-color-swatch-controls">
+                        <input type="color" id="vpmCoverColorHex" class="vrm-color-pick" value="#f8fafc" aria-labelledby="vpmCoverColorSwatchLab" />
+                        <code class="vrm-color-readout" id="vpmCoverColorReadout">#F8FAFC</code>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
