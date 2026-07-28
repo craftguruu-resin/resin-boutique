@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
+  <link rel="stylesheet" href="photo-frames-hero-exact.css" />
 </head>
 <body class="subpage rm-page-wide rm-theme--photo-frame">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -103,54 +105,37 @@
             <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div class="rm-hero rm-hero--premium pf-landing-hero" id="pf-hero" aria-labelledby="pfHomeHeroHeading">
-              <div class="rm-hero__glow" aria-hidden="true"></div>
-              <div class="rm-hero__marble" aria-hidden="true"></div>
-              <div class="rm-hero__aurora" aria-hidden="true"></div>
-              <div class="rm-hero__blob pf-landing-hero__blob" aria-hidden="true"></div>
-              <div class="rm-hero__blob rm-hero__blob--rose" aria-hidden="true"></div>
-              <svg class="rm-hero__veins" aria-hidden="true" viewBox="0 0 800 480" preserveAspectRatio="none">
-                <path class="rm-hero__vein rm-hero__vein--a" d="M40 320 C140 260 220 200 320 180 S480 160 560 220 S700 340 780 300" fill="none" />
-                <path class="rm-hero__vein rm-hero__vein--b" d="M20 200 C160 140 260 90 380 120 S560 220 640 160 S740 80 790 110" fill="none" />
-                <path class="rm-hero__vein rm-hero__vein--c" d="M80 420 C200 380 300 360 420 390 S620 430 720 360" fill="none" />
-              </svg>
-              <div class="rm-hero__geo rm-hero__geo--ring" aria-hidden="true"></div>
-              <div class="rm-hero__geo rm-hero__geo--diamond" aria-hidden="true"></div>
-              <div class="rm-hero__geo rm-hero__geo--pour" aria-hidden="true"></div>
-              <div class="rm-hero__particles" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span><span></span>
-              </div>
-              <div class="rm-hero__spark rm-hero__spark--a" aria-hidden="true"></div>
-              <div class="rm-hero__spark rm-hero__spark--b" aria-hidden="true"></div>
-              <div class="rm-hero__inner">
+            <div class="rm-hero rm-hero--premium pf-landing-hero pf-landing-hero--exact" id="pf-hero" aria-labelledby="pfHomeHeroHeading">
+              <img
+                class="pf-landing-hero__exact-art"
+                src="media/photo-frames-showcase/pf-hero-panel.png"
+                width="797"
+                height="482"
+                alt="Frames for the moments you keep — Craft Guru personalised resin photo frames"
+                decoding="async"
+                fetchpriority="high"
+              />
+              <div class="rm-hero__inner pf-landing-hero__copy">
                 <p class="rm-hero__kicker">
                   <span class="rm-hero__kicker-dot" aria-hidden="true"></span>
                   Craft Guru · Personalised frames
                 </p>
                 <h1 id="pfHomeHeroHeading" class="rm-hero__title-stack">
-                  <span class="rm-hero__title-line1">Frames for the moments <em class="rm-hero__title-script">you keep</em></span>
+                  <span class="rm-hero__title-line1">Frames for the moments</span>
+                  <span class="rm-hero__title-script">you keep</span>
                   <span class="rm-hero__title-line2">Hand-poured resin · Custom photos · Lasting gifts</span>
                 </h1>
                 <p class="rm-hero__sub">
                   Ocean pours, florals, clocks, and bespoke keepsakes from our Jaipur bench — each frame turns a favourite photograph into something lasting. Same Craftguru cart and checkout.
                 </p>
-                <div class="rm-hero__actions">
-                  <a class="rm-hero__cta pf-landing-hero__cta" href="#rm-shop">Shop frames</a>
-                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading">Browse styles</a>
+                <div class="rm-hero__actions" aria-hidden="true">
+                  <a class="rm-hero__cta pf-landing-hero__cta" href="#rm-shop" tabindex="-1">Shop frames →</a>
+                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading" tabindex="-1">Browse styles</a>
                 </div>
               </div>
-              <div class="rm-hero__visual">
-                <div class="rm-hero__visual-glow" aria-hidden="true"></div>
-                <div class="rm-hero__visual-frame">
-                  <img
-                    src="media/photo-frames-hero-home-banner.png"
-                    width="1536"
-                    height="1024"
-                    alt="Hand-poured resin photo frames and keepsakes on a warm wooden table"
-                    decoding="async"
-                    fetchpriority="high"
-                  />
-                </div>
+              <div class="pf-landing-hero__hits">
+                <a class="pf-landing-hero__hit pf-landing-hero__hit--shop" href="#rm-shop" aria-label="Shop frames"></a>
+                <a class="pf-landing-hero__hit pf-landing-hero__hit--browse" href="#rmCatHubHeading" aria-label="Browse styles"></a>
               </div>
             </div>
             <div id="rm-shop">
@@ -300,6 +285,7 @@
   <script src="data.js"></script>
   <script src="catalog-merge.js"></script>
   <script src="cart.js"></script>
+  <script src="category-rail-icons.js"></script>
   <script src="guest-layout.js"></script>
   <script src="auth-db.js"></script>
   <script>

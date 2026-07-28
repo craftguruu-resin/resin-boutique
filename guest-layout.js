@@ -110,7 +110,8 @@
 
     var aside = document.createElement("aside");
     aside.id = "guestPageCategoryRail";
-    aside.className = "home-category-rail home-category-rail--split guest-page-category-rail";
+    aside.className =
+      "home-category-rail home-category-rail--split home-category-rail--icons guest-page-category-rail";
     aside.setAttribute("aria-labelledby", "guest-cat-rail-heading");
 
     var label = document.createElement("p");
@@ -123,48 +124,18 @@
     grid.setAttribute("role", "navigation");
     grid.setAttribute("aria-label", "Product categories");
 
+    var railApi = window.CRAFT_RAIL_ICONS;
+
     D.categories.forEach(function (c) {
       if (!c) return;
       var a = document.createElement("a");
       a.className = "category-pill category-pill--rail";
       a.href = "category.html?cat=" + encodeURIComponent(c.id);
-      var pair =
-        D.getCategoryPreviewImagePair && D.getCategoryPreviewImagePair(c.id)
-          ? D.getCategoryPreviewImagePair(c.id)
-          : {
-              primary: D.getCategoryPreviewImage ? D.getCategoryPreviewImage(c.id) : "",
-              fallback: "",
-            };
-      var previewImg = String((pair && pair.primary) || "").trim();
-      var previewFallback = String((pair && pair.fallback) || "").trim();
-      if (previewImg && D.imageUrl) {
-        var img = document.createElement("img");
-        img.src = D.imageUrl(previewImg);
-        img.alt = "";
-        img.width = 28;
-        img.height = 28;
-        img.loading = "lazy";
-        img.style.objectFit = "cover";
-        img.style.borderRadius = "6px";
-        img.style.marginRight = "0.4rem";
-        img.style.verticalAlign = "middle";
-        if (previewFallback) {
-          var fbUrl = D.imageUrl(previewFallback);
-          img.setAttribute("data-fallback-src", fbUrl);
-          img.addEventListener("error", function onRailImgError() {
-            var alt = img.getAttribute("data-fallback-src") || "";
-            if (alt && img.src !== alt) {
-              img.src = alt;
-              img.removeAttribute("data-fallback-src");
-              return;
-            }
-            img.removeEventListener("error", onRailImgError);
-            img.remove();
-          });
-        }
-        a.appendChild(img);
+      if (railApi && railApi.fillRailLink) {
+        railApi.fillRailLink(a, { id: c.id, label: c.label || c.id });
+      } else {
+        a.textContent = c.label || c.id;
       }
-      a.appendChild(document.createTextNode(c.label || c.id));
       if (pn === "category.html") {
         try {
           var u = new URLSearchParams(window.location.search);
@@ -183,7 +154,11 @@
       var a2 = document.createElement("a");
       a2.className = "category-pill category-pill--rail guest-page-category-rail__extra-pill";
       a2.href = pair[0];
-      a2.textContent = pair[1];
+      if (railApi && railApi.fillRailLink) {
+        railApi.fillRailLink(a2, { id: pair[0], label: pair[1] });
+      } else {
+        a2.textContent = pair[1];
+      }
       if (pn === pair[0]) a2.classList.add("is-active");
       grid.appendChild(a2);
     });
@@ -438,6 +413,29 @@
     document.body.appendChild(script);
   }
 
+  function ensureRailIconsLoaded(done) {
+    if (window.CRAFT_RAIL_ICONS) {
+      if (done) done();
+      return;
+    }
+    var existing = document.querySelector('script[src*="category-rail-icons.js"]');
+    if (existing) {
+      existing.addEventListener("load", function () {
+        if (done) done();
+      });
+      return;
+    }
+    var script = document.createElement("script");
+    script.src = "category-rail-icons.js";
+    script.onload = function () {
+      if (done) done();
+    };
+    script.onerror = function () {
+      if (done) done();
+    };
+    document.head.appendChild(script);
+  }
+
   function injectWhatsAppWidget() {
     if (document.getElementById("cgWhatsAppWidget")) return;
     if (!document.querySelector('link[href*="whatsapp-widget.css"]')) {
@@ -450,9 +448,20 @@
     injectScriptOnce("whatsapp-widget.js", true);
   }
 
+  function ensureIconRailStyles() {
+    if (document.querySelector('link[href*="category-rail-icons.css"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "category-rail-icons.css";
+    document.head.appendChild(link);
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
-    injectCategoryRail();
+    ensureIconRailStyles();
+    ensureRailIconsLoaded(function () {
+      injectCategoryRail();
+    });
     injectHeaderSearch();
     injectStorefrontAuthChrome();
     injectWhatsAppWidget();
@@ -461,7 +470,9 @@
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     try {
       if (document.getElementById("guestPageCategoryRail")) return;
-      injectCategoryRail();
+      ensureRailIconsLoaded(function () {
+        injectCategoryRail();
+      });
     } catch (_) {}
   });
 

@@ -199,6 +199,10 @@
         var isOpen = expanded.indexOf(c.id) >= 0 || (activeBase === c.id && hasSubs);
         var baseActive = activeBase === c.id && !activeSub;
         var baseHref = shopHref(c.id, "");
+        var ico =
+          window.CRAFT_RAIL_ICONS
+            ? window.CRAFT_RAIL_ICONS.treeIconHtml(c.id || c.name, cats.indexOf(c))
+            : '<span class="rm-nav-tree__ico rm-nav-tree__ico--ph" aria-hidden="true"></span>';
         if (!hasSubs) {
           html +=
             '<li class="rm-nav-tree__item">' +
@@ -207,9 +211,7 @@
             '" href="' +
             esc(baseHref) +
             '">' +
-            (c.image
-              ? '<span class="rm-nav-tree__ico"><img src="' + esc(c.image) + '" alt="" width="36" height="36" loading="lazy" /></span>'
-              : '<span class="rm-nav-tree__ico rm-nav-tree__ico--ph" aria-hidden="true"></span>') +
+            ico +
             "<span>" +
             esc(c.name) +
             "</span></a></li>";
@@ -223,9 +225,7 @@
           '" href="' +
           esc(baseHref) +
           '">' +
-          (c.image
-            ? '<span class="rm-nav-tree__ico"><img src="' + esc(c.image) + '" alt="" width="36" height="36" loading="lazy" /></span>'
-            : '<span class="rm-nav-tree__ico rm-nav-tree__ico--ph" aria-hidden="true"></span>') +
+          ico +
           "<span>" +
           esc(c.name) +
           "</span></a>" +

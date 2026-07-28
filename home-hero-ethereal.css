@@ -236,7 +236,7 @@ body.page-home .hero-atelier__exact-art {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: center center;
+  object-position: 62% center;
   pointer-events: none;
   user-select: none;
 }
@@ -245,13 +245,12 @@ body.page-home .hero-atelier__light {
   position: relative;
   z-index: 2;
   gap: 0.95rem;
-  /* Opaque-enough wash so live copy covers baked text; right art stays crystal clear */
+  /* Art has no baked copy — keep wash light so only the live HTML layer reads */
   background: linear-gradient(
     105deg,
-    rgba(210, 228, 244, 0.94) 0%,
-    rgba(232, 218, 230, 0.82) 36%,
-    rgba(248, 236, 240, 0.35) 58%,
-    rgba(255, 255, 255, 0) 78%
+    rgba(214, 230, 245, 0.28) 0%,
+    rgba(245, 230, 236, 0.12) 42%,
+    transparent 72%
   ) !important;
 }
 
@@ -274,11 +273,7 @@ body.page-home .hero-atelier__kicker {
 }
 
 body.page-home .hero-atelier__kicker-dot {
-  width: 0.45rem;
-  height: 0.45rem;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #f5d76e, var(--home-gold));
-  box-shadow: 0 0 0 4px rgba(212, 175, 55, 0.22);
+  display: none;
 }
 
 body.page-home .hero-atelier__title {
@@ -288,7 +283,7 @@ body.page-home .hero-atelier__title {
   line-height: 1.12;
   letter-spacing: -0.02em;
   color: var(--home-ink);
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+  text-shadow: none;
 }
 
 body.page-home .hero-atelier__title span {
@@ -308,7 +303,7 @@ body.page-home .hero-atelier__deck {
   font-size: 0.98rem;
   line-height: 1.65;
   max-width: 32rem;
-  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: none;
 }
 
 body.page-home .hero-atelier__btn--primary {
@@ -406,9 +401,9 @@ body.page-home .hero-atelier__stage--exact {
   body.page-home .hero-atelier__light {
     background: linear-gradient(
       180deg,
-      rgba(220, 232, 246, 0.88) 0%,
-      rgba(245, 225, 232, 0.72) 55%,
-      rgba(255, 255, 255, 0.2) 100%
+      rgba(220, 232, 246, 0.35) 0%,
+      rgba(245, 225, 232, 0.18) 55%,
+      transparent 100%
     ) !important;
   }
 

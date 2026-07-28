@@ -10,7 +10,9 @@
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
+  <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
+  <link rel="stylesheet" href="raw-materials-hero-exact.css" />
 </head>
 <body class="subpage rm-page-wide rm-theme--materials">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -100,36 +102,45 @@
             <nav class="rm-nav-tree" id="rmNavTree"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div class="rm-hero rm-hero--premium" id="rm-hero">
-              <div class="rm-hero__glow" aria-hidden="true"></div>
-              <div class="rm-hero__blob" aria-hidden="true"></div>
-              <div class="rm-hero__inner">
+            <div class="rm-hero rm-hero--premium rm-landing-hero rm-landing-hero--exact" id="rm-hero" aria-labelledby="rmHomeHeroHeading">
+              <img
+                class="rm-landing-hero__exact-art"
+                src="media/raw-material-showcase/rm-hero-panel.png"
+                width="784"
+                height="458"
+                alt="Your Resin Art Supply Destination — Craft Guru studio supplies: epoxy, pigments, molds, and essentials"
+                decoding="async"
+                fetchpriority="high"
+              />
+              <div class="rm-hero__inner rm-landing-hero__copy">
                 <p class="rm-hero__kicker">
                   <span class="rm-hero__kicker-dot" aria-hidden="true"></span>
                   Craft Guru · Studio supplies
                 </p>
-                <h2 class="rm-hero__title-stack">
+                <h2 id="rmHomeHeroHeading" class="rm-hero__title-stack">
                   <span class="rm-hero__title-line1">Your Resin Art Supply Destination</span>
                   <span class="rm-hero__title-line2">Epoxy, pigments, molds &amp; studio essentials</span>
                 </h2>
                 <p class="rm-hero__sub">
                   Browse vendor-listed resins and supplies with the same checkout as the main catalogue — crystal-clear epoxy, colour systems, glitters, and tools for serious pours.
                 </p>
-                <div class="rm-hero__actions">
-                  <a class="rm-hero__cta" href="#rm-shop">Shop now</a>
-                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading">Browse categories</a>
+                <div class="rm-hero__actions" aria-hidden="true">
+                  <a class="rm-hero__cta rm-landing-hero__cta" href="#rm-shop" tabindex="-1">Shop now</a>
+                  <a class="rm-hero__cta rm-hero__cta--ghost" href="#rmCatHubHeading" tabindex="-1">Browse categories</a>
                 </div>
               </div>
-              <div class="rm-hero__visual">
-                <div class="rm-hero__visual-frame">
-                  <img
-                    src="media/raw-material-shop-hero-home-banner.png"
-                    width="1376"
-                    height="768"
-                    alt="Craft Guru — your resin art supply destination: epoxy, pigments, molds, and hand-poured pieces"
-                    decoding="async"
-                  />
-                </div>
+              <div class="rm-landing-hero__hits">
+                <a class="rm-landing-hero__hit rm-landing-hero__hit--shop" href="#rm-shop" aria-label="Shop now"></a>
+                <a class="rm-landing-hero__hit rm-landing-hero__hit--browse" href="#rmCatHubHeading" aria-label="Browse categories"></a>
+              </div>
+              <div class="rm-landing-hero__fx" aria-hidden="true">
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--a"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--b"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--c"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--a"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--b"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--c"></span>
+                <span class="rm-landing-hero__shimmer"></span>
               </div>
             </div>
             <div id="rm-shop">
@@ -287,6 +298,7 @@
   <script src="data.js"></script>
   <script src="catalog-merge.js"></script>
   <script src="cart.js"></script>
+  <script src="category-rail-icons.js"></script>
   <script src="guest-layout.js"></script>
   <script src="auth-db.js"></script>
   <script>
