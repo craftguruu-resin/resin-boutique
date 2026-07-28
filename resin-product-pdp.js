@@ -795,6 +795,9 @@
           (state.heroZoom || 1) +
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
+      "</div>" +
+      '<div class="rm-pdp__feature-bar" aria-label="Product highlights">' +
+      "<span>Handmade With Love</span><span>Premium Quality</span><span>Made To Last</span><span>Perfect For Gifting</span>" +
       "</div></div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       "<p class=\"rm-pdp__brand\">" +
@@ -841,12 +844,16 @@
       '<button type="button" data-rm-line-qty="1">+</button></div>' +
       '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="resinPdpWish" aria-label="Save to wishlist">♡</button></div>' +
+      '<button type="button" class="rm-pdp__buy-now" id="resinPdpBuyNow">Buy now</button>' +
       '<div class="rm-pdp__bulk-row">' +
       '<button type="button" class="rm-pdp__bulk bulk-buy-btn bulk-buy-btn--pdp" id="resinPdpBulk" title="Contact us for bulk orders and wholesale pricing." aria-label="Bulk Buy. Contact us for bulk orders and wholesale pricing.">' +
       ((window.CRAFTGURU_WA && window.CRAFTGURU_WA.ICON_SVG) || "") +
       '<span class="bulk-buy-btn__label">Bulk Buy</span></button></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
+      '<div class="rm-pdp__trust-bar" aria-label="Shopping assurances">' +
+      "<span>100% Secure Payment</span><span>Easy 7 Day Returns</span><span>Pan India Delivery</span>" +
+      "</div>" +
       "</div></div></div>";
 
     root.innerHTML = html;
@@ -1000,7 +1007,11 @@
         }
         return;
       }
-      if (t.id === "resinPdpAdd" || (t.closest && t.closest("#resinPdpAdd"))) {
+      if (
+        t.id === "resinPdpAdd" ||
+        t.id === "resinPdpBuyNow" ||
+        (t.closest && (t.closest("#resinPdpAdd") || t.closest("#resinPdpBuyNow")))
+      ) {
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
         var ex = customLineExtra();
@@ -1067,7 +1078,20 @@
       state._lastHeroResolvedSrc = "";
       syncDefaults(state.material);
     }
-    document.body.classList.add("page-product--resin-rm", "rm-page-wide");
+    document.body.classList.add("page-product--resin-rm", "rm-page-wide", "pdp-ethereal");
+    if (!document.querySelector(".pdp-ethereal-fx")) {
+      var fx = document.createElement("div");
+      fx.className = "pdp-ethereal-fx";
+      fx.setAttribute("aria-hidden", "true");
+      fx.innerHTML =
+        '<div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--1"></div>' +
+        '<div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--2"></div>' +
+        '<div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--3"></div>' +
+        '<div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--1"></div>' +
+        '<div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--2"></div>' +
+        '<div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--3"></div>';
+      document.body.insertBefore(fx, document.body.firstChild);
+    }
     document.title = product.name + " — Craft guru";
     renderPdp(root);
     root.setAttribute("data-pdp-ready", "1");

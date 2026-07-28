@@ -438,7 +438,8 @@
       }
 
       var add = t.closest("#rmAddCart");
-      if (add && CART) {
+      var buyNow = t.closest("#rmBuyNow");
+      if ((add || buyNow) && CART) {
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
         CART.addItem({
@@ -795,6 +796,9 @@
           (state.heroZoom || 1) +
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
+      "</div>" +
+      '<div class="rm-pdp__feature-bar" aria-label="Product highlights">' +
+      "<span>Handmade With Love</span><span>Premium Quality</span><span>Made To Last</span><span>Perfect For Gifting</span>" +
       "</div></div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       '<p class="rm-pdp__brand">' +
@@ -845,9 +849,13 @@
       '<button type="button" class="rm-pdp__add" id="rmAddCart">Add to cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="rmPdpWish" aria-label="Save to wishlist">♡</button>' +
       "</div>" +
+      '<button type="button" class="rm-pdp__buy-now" id="rmBuyNow">Buy now</button>' +
       '<div class="rm-pdp__bulk-row" id="rmBulkBuyWrap"></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
+      '<div class="rm-pdp__trust-bar" aria-label="Shopping assurances">' +
+      "<span>100% Secure Payment</span><span>Easy 7 Day Returns</span><span>Pan India Delivery</span>" +
+      "</div>" +
       (detailText
         ? '<div class="rm-pdp-accordion rm-pdp-accordion--modern">' +
           '<button type="button" class="rm-pdp-acc-head" id="rmPdpAccBtn" aria-expanded="true">' +

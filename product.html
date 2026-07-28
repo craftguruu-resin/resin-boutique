@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
   <link rel="stylesheet" href="raw-material-pdp-modern.css" />
+  <link rel="stylesheet" href="pdp-ethereal.css" />
   <style>
     body.page-product #productRoot:not([data-pdp-ready]) {
       visibility: hidden;
@@ -21,7 +22,15 @@
     }
   </style>
 </head>
-<body class="subpage page-product">
+<body class="subpage page-product pdp-ethereal">
+  <div class="pdp-ethereal-fx" aria-hidden="true">
+    <div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--1"></div>
+    <div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--2"></div>
+    <div class="pdp-ethereal-fx__bubble pdp-ethereal-fx__bubble--3"></div>
+    <div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--1"></div>
+    <div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--2"></div>
+    <div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--3"></div>
+  </div>
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -118,6 +127,12 @@
               <button type="button" class="product-catalog-gallery__nav product-catalog-gallery__nav--down" id="productGalleryDown" aria-label="Scroll thumbnails down">▼</button>
             </div>
           </div>
+          <div class="pdp-feature-bar" aria-label="Product highlights">
+            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">♡</span>Handmade With Love</div>
+            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">✦</span>Premium Quality</div>
+            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">◎</span>Made To Last</div>
+            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">❀</span>Perfect For Gifting</div>
+          </div>
           <section class="product-overview product-overview--under-visual glass-panel" aria-labelledby="overview-h">
             <h2 class="product-overview__h" id="overview-h">About this piece</h2>
             <p class="product-overview__copy" id="productIntroText"></p>
@@ -181,6 +196,7 @@
             <button type="button" class="pd-buy-rail__cta btn-add-lg btn-add-lg--fx" id="addToCartBtn">
               <span class="btn-add-premium__text">Add to cart</span>
             </button>
+            <button type="button" class="rm-pdp__buy-now" id="buyNowBtn">Buy now</button>
             <div class="pd-buy-rail__bulk" id="bulkBuyWrap"></div>
             <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
           </div>
@@ -194,6 +210,11 @@
             <a href="about.html">contact us</a> for reseller pricing and timelines.
           </p>
         </div>
+      </div>
+      <div class="pdp-trust-bar" aria-label="Shopping assurances">
+        <span>100% Secure Payment</span>
+        <span>Easy 7 Day Returns</span>
+        <span>Pan India Delivery</span>
       </div>
     </div>
   </main>

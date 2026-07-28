@@ -1027,6 +1027,14 @@
     }
     wireAddToCart(els.addBtn);
 
+    var buyNowBtn = document.getElementById("buyNowBtn");
+    if (buyNowBtn && els.addBtn && !buyNowBtn.dataset.wired) {
+      buyNowBtn.dataset.wired = "1";
+      buyNowBtn.addEventListener("click", function () {
+        els.addBtn.click();
+      });
+    }
+
     applyOutOfStockUi();
 
     var sh = document.getElementById("productShareHost");
