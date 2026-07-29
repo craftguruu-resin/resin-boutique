@@ -116,7 +116,7 @@
       li.innerHTML =
         imgBlock +
         '<div class="cart-item-info"><strong>' +
-        escapeHtml(line.name) +
+        escapeHtml(CART.liveDisplayName ? CART.liveDisplayName(line) : line.name) +
         "</strong><span>" +
         escapeHtml(String(sz || "")) +
         " · Qty " +

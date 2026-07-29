@@ -474,10 +474,10 @@
     syncCoverColorReadout();
   }
 
-  /** Bundled catalog rows: name is fixed in data.js; cover/gallery URLs are editable via overrides. */
+  /** Bundled catalog rows: cover file upload stays hidden; name is editable via name_override. */
   function setCatalogFormDisabled(on) {
     var nameEl = document.getElementById("vpmName");
-    if (nameEl) nameEl.disabled = !!on;
+    if (nameEl) nameEl.disabled = false;
     var fileWrap = document.getElementById("vpmImageFileWrap");
     if (fileWrap) fileWrap.style.display = on ? "none" : "";
     var fi = document.getElementById("vpmImage");
@@ -732,9 +732,15 @@
     }
 
     if (editingSource === "catalog") {
+      var nameVal = String((document.getElementById("vpmName") && document.getElementById("vpmName").value) || "").trim();
+      if (!nameVal) {
+        showMsg("Product name is required.", true);
+        return;
+      }
       var migrated = buildMigratedOptionsForSave(coverUrl || editingCoverFallback);
       migrated.detailBody = descTxt;
       var catBody = {
+        name: nameVal,
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
@@ -747,7 +753,7 @@
       };
       putCatalogPrices(editingId, catBody)
         .then(function () {
-          showMsg("Saved. Product now uses the latest guest product page.", false);
+          showMsg("Saved. Product name and details updated on the guest storefront.", false);
           refreshGuestCatalogMerge();
           return loadList();
         })
@@ -760,8 +766,14 @@
       return;
     }
 
+    var vendorName = String((document.getElementById("vpmName") && document.getElementById("vpmName").value) || "").trim();
+    if (!vendorName) {
+      showMsg("Product name is required.", true);
+      return;
+    }
+
     var fd = new FormData();
-    fd.set("name", document.getElementById("vpmName").value.trim());
+    fd.set("name", vendorName);
     fd.set("priceS", document.getElementById("vpmPriceS").value);
     fd.set("priceM", document.getElementById("vpmPriceM").value);
     fd.set("priceL", document.getElementById("vpmPriceL").value);
@@ -803,13 +815,14 @@
         var migrated2 = buildMigratedOptionsForSave(savedCover);
         migrated2.detailBody = descTxt;
         return putCatalogPrices(editingId, {
+          name: vendorName,
           returnGift: returnGift,
           description: descTxt,
           options: migrated2,
         });
       })
       .then(function () {
-        showMsg("Saved. Product now uses the latest guest product page.", false);
+        showMsg("Saved. Product name and details updated on the guest storefront.", false);
         refreshGuestCatalogMerge();
         return loadList();
       })

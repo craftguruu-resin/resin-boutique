@@ -198,5 +198,7 @@ ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT 
 
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb;
 
+ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS name_override VARCHAR(500);
+
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT '';
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS size_key VARCHAR(20) NOT NULL DEFAULT '';

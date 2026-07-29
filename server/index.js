@@ -2238,6 +2238,9 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       o.returnGift = !!x.returnGift;
       /* Always send listed so the guest merge never confuses “missing key” with delisting. */
       o.listed = x.listed !== false;
+      if (x.name != null && String(x.name).trim()) {
+        o.name = String(x.name).trim().slice(0, 500);
+      }
       var slIn = x.sizeLabels != null && typeof x.sizeLabels === "object" ? x.sizeLabels : {};
       var slOut = {};
       ["s", "m", "l"].forEach(function (letter) {
@@ -3468,6 +3471,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
     vendorCatalogDb.upsertOverride(
       pid,
       {
+        name: b.name !== undefined ? b.name : b.nameOverride !== undefined ? b.nameOverride : undefined,
         s: b.priceS != null ? Number(b.priceS) : b.s != null ? Number(b.s) : undefined,
         m: b.priceM != null ? Number(b.priceM) : b.m != null ? Number(b.m) : undefined,
         l: b.priceL != null ? Number(b.priceL) : b.l != null ? Number(b.l) : undefined,
@@ -3485,7 +3489,12 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
       function (e2, row) {
         if (e2) {
           var msg = String((e2 && e2.message) || e2);
-          var code = msg.indexOf("not configured") >= 0 ? 503 : msg.indexOf("required") >= 0 ? 400 : 500;
+          var code =
+            msg.indexOf("not configured") >= 0
+              ? 503
+              : msg.indexOf("required") >= 0 || msg.indexOf("Product name") >= 0
+                ? 400
+                : 500;
           return res.status(code).json({ ok: false, error: msg });
         }
         try {

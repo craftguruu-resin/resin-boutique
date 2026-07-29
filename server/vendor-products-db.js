@@ -706,7 +706,7 @@ function pushStaticManageRow(p, omap, skuMap, out) {
   });
   var row = {
     id: p.id,
-    name: p.name,
+    name: ov.name != null && String(ov.name).trim() ? String(ov.name).trim().slice(0, 500) : p.name,
     category: p.category,
     subcategory: p.subcategory,
     image: p.image,

@@ -656,7 +656,7 @@
       return {
         productId: String(line.id || ""),
         sizeKey: String(sizeKey).slice(0, 200),
-        name: String(line.name || "Item"),
+        name: String(lineDisplayName(line) || "Item"),
         sizeLabel: String(disp).slice(0, 500),
         qty: Math.max(1, Math.floor(Number(line.qty) || 1)),
         unitPrice: Number(line.price) || 0,
@@ -859,6 +859,11 @@
     });
   }
 
+  function lineDisplayName(line) {
+    if (CART && typeof CART.liveDisplayName === "function") return CART.liveDisplayName(line);
+    return String((line && line.name) || "");
+  }
+
   function imgUrl(rel) {
     return D.imageUrl ? D.imageUrl(rel) : rel;
   }
@@ -994,14 +999,14 @@
         '<a class="checkout-snip" href="' +
         escapeAttr(href) +
         '" aria-label="Open ' +
-        escapeAttr(line.name || "product") +
+        escapeAttr(lineDisplayName(line) || "product") +
         '">' +
         imgHtml +
         '<span class="checkout-snip__badge" aria-hidden="true">' +
         escapeHtml(String(line.qty || 1)) +
         "</span>" +
         '<span class="checkout-snip__meta">' +
-        escapeHtml(line.name || "") +
+        escapeHtml(lineDisplayName(line)) +
         "</span></a>" +
         '<div class="checkout-snip__actions">' +
         '<button type="button" class="checkout-snip__later" data-later-id="' +
@@ -1018,14 +1023,14 @@
         '" data-remove-extrak="' +
         escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" aria-label="Remove ' +
-        escapeAttr(line.name || "item") +
+        escapeAttr(lineDisplayName(line) || "item") +
         ' from cart">×</button></div>';
       var szMeta =
         (line.variantLabel && String(line.variantLabel).trim()) ||
         (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var amt = lineTotalAmt(line);
       var hay =
-        (line.name || "") +
+        (lineDisplayName(line) || "") +
         " " +
         szMeta +
         " " +
@@ -1067,7 +1072,7 @@
           : '<span class="checkout-line__ph" aria-hidden="true"></span>') +
         '<div class="checkout-line__body">' +
         "<strong>" +
-        escapeHtml(line.name) +
+        escapeHtml(lineDisplayName(line)) +
         "</strong>" +
         "<span>" +
         escapeHtml(sz) +
@@ -1097,10 +1102,10 @@
         '" data-remove-extrak="' +
         escapeAttr(CART.lineExtraKey ? CART.lineExtraKey(line.lineExtra) : "") +
         '" title="Remove" aria-label="Remove ' +
-        escapeAttr(line.name || "item") +
+        escapeAttr(lineDisplayName(line) || "item") +
         '">×</button></div></div>';
       var hay =
-        (line.name || "") +
+        (lineDisplayName(line) || "") +
         " " +
         sz +
         " " +

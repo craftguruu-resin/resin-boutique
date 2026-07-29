@@ -686,6 +686,10 @@ var SIZE_DEFAULT = {
         delete p.returnGift;
         n++;
       }
+      if (o.name != null && String(o.name).trim()) {
+        p.name = String(o.name).trim().slice(0, 500);
+        n++;
+      }
       if (Object.prototype.hasOwnProperty.call(o, "sizeLabels")) {
         var sl = o.sizeLabels;
         var next = {};

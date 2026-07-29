@@ -49,6 +49,18 @@
       .slice(0, 2000);
   }
 
+  /** Prefer live catalog name so vendor renames show in cart / checkout without re-adding. */
+  function liveDisplayName(line) {
+    try {
+      var D = global.RESIN_DATA;
+      if (D && typeof D.getProduct === "function" && line && line.id) {
+        var p = D.getProduct(line.id);
+        if (p && String(p.name || "").trim()) return String(p.name).trim();
+      }
+    } catch (_) {}
+    return String((line && line.name) || "").trim();
+  }
+
   function lineKey(line) {
     return (
       String(line.id || "") +
@@ -705,6 +717,7 @@
     ANON_CART_KEY: ANON_CART_KEY,
     storageKey: storageKey,
     lineExtraKey: lineExtraKey,
+    liveDisplayName: liveDisplayName,
     load: load,
     save: save,
     addItem: addItem,

@@ -175,6 +175,10 @@ function listOverridesMap(cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: sl,
+            name:
+              row.name_override != null && String(row.name_override).trim()
+                ? String(row.name_override).trim().slice(0, 500)
+                : null,
             options:
               catalogOptionsHasPayload(oj) ||
               (oj && typeof oj === "object" && Object.prototype.hasOwnProperty.call(oj, "detailBody"))
@@ -265,7 +269,7 @@ function mergeStockPatch(cur, patch) {
 
 /**
  * @param {string} productId
- * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, listed?: boolean, returnGift?: boolean, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, sizeLabels?: object }} patch
+ * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, listed?: boolean, returnGift?: boolean, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, sizeLabels?: object, name?: string|null, nameOverride?: string|null, options?: object }} patch
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function upsertOverride(productId, patch, cb) {
@@ -323,19 +327,29 @@ function upsertOverride(productId, patch, cb) {
         }
       }
       var optJson = JSON.stringify(nextOpt || {});
+      var nameOverride = cur.name != null && String(cur.name).trim() ? String(cur.name).trim().slice(0, 500) : null;
+      if (patch && (Object.prototype.hasOwnProperty.call(patch, "name") || Object.prototype.hasOwnProperty.call(patch, "nameOverride"))) {
+        var rawName = Object.prototype.hasOwnProperty.call(patch, "name") ? patch.name : patch.nameOverride;
+        var trimmedName = rawName == null ? "" : String(rawName).trim().slice(0, 500);
+        if (!trimmedName) {
+          return cb(new Error("Product name is required"));
+        }
+        nameOverride = trimmedName;
+      }
       pool
         .query(
-          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json) " +
-            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb) " +
+          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override) " +
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
             "out_of_stock = false, " +
-            "listed = COALESCE($13::boolean, catalog_price_overrides.listed), " +
+            "listed = COALESCE($14::boolean, catalog_price_overrides.listed), " +
             "return_gift = EXCLUDED.return_gift, " +
             "size_labels = EXCLUDED.size_labels, " +
             "options_json = EXCLUDED.options_json, " +
-            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, listedUpdateParam]
+            "name_override = EXCLUDED.name_override, " +
+            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override, updated_at",
+          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, nameOverride, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];
@@ -355,6 +369,10 @@ function upsertOverride(productId, patch, cb) {
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: slOut,
+            name:
+              row.name_override != null && String(row.name_override).trim()
+                ? String(row.name_override).trim().slice(0, 500)
+                : null,
             options: row.options_json && typeof row.options_json === "object" ? row.options_json : null,
             updatedAt: row.updated_at ? new Date(row.updated_at).toISOString() : null,
           });
