@@ -3732,7 +3732,10 @@ var staticOpts = {
       p.indexOf("/media/catalog/") >= 0 ||
       p.indexOf("/media/hero/") >= 0 ||
       p.indexOf("/media/raw-materials/") >= 0 ||
-      p.indexOf("/media/photo-frame-products/") >= 0
+      p.indexOf("/media/photo-frame-products/") >= 0 ||
+      p.indexOf("/media/raw-material-showcase/") >= 0 ||
+      p.indexOf("/media/photo-frames-showcase/") >= 0 ||
+      p.indexOf("/media/home-showcase/") >= 0
     ) {
       res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
       return;
