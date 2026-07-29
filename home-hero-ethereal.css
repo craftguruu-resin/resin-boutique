@@ -320,31 +320,28 @@ body.page-home .home-landing-hero__hits {
   inset: 0;
   z-index: 5;
   pointer-events: none;
+  /* Keep hit layer in sync with art float so CTAs stay locked to artwork */
+  animation: homeExactArtFloat 9s ease-in-out 0.95s infinite;
+  will-change: transform;
 }
 
 body.page-home .home-landing-hero__hit {
   pointer-events: auto;
 }
 
-/* Calibrated to home-ethereal-hero-clock1.png (1625×968) */
+/* Calibrated to home-ethereal-hero-clock1.png (1625×968) — Shop categories + Return gifts */
 body.page-home .home-landing-hero__hit--shop {
-  left: 4%;
-  top: 62%;
-  width: 15%;
-  height: 7.5%;
-  min-width: 6.5rem;
-  min-height: 2.2rem;
-  animation: heroExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both;
+  left: 7.2%;
+  top: 72.5%;
+  width: 15.2%;
+  height: 6.8%;
 }
 
 body.page-home .home-landing-hero__hit--browse {
-  left: 20.5%;
-  top: 62%;
-  width: 14.5%;
-  height: 7.5%;
-  min-width: 6.5rem;
-  min-height: 2.2rem;
-  animation: heroExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both;
+  left: 24.4%;
+  top: 72.5%;
+  width: 12.4%;
+  height: 6.8%;
 }
 
 body.page-home .home-landing-hero__fx,
@@ -848,18 +845,19 @@ body.page-home .hero-atelier__dots span.is-active {
     object-position: center top;
   }
 
+  /* Same % as desktop — panel keeps aspect-ratio; only tighten tap comfort slightly */
   body.page-home .home-landing-hero__hit--shop {
-    left: 3.5%;
-    top: 60%;
-    width: 22%;
-    height: 8%;
+    left: 6.8%;
+    top: 72.2%;
+    width: 16%;
+    height: 7.4%;
   }
 
   body.page-home .home-landing-hero__hit--browse {
-    left: 27%;
-    top: 60%;
-    width: 22%;
-    height: 8%;
+    left: 24%;
+    top: 72.2%;
+    width: 13.2%;
+    height: 7.4%;
   }
 }
 
@@ -879,6 +877,10 @@ body.page-home .hero-atelier__dots span.is-active {
   body.page-home .hero-atelier__gold,
   body.page-home .hero-atelier__glass,
   body.page-home .hero-atelier__btn--primary::after {
+    animation: none;
+  }
+
+  body.page-home .home-landing-hero__hits {
     animation: none;
   }
 

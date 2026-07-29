@@ -246,32 +246,27 @@ body.rm-theme--materials .rm-landing-hero__hits {
   inset: 0;
   z-index: 5;
   pointer-events: none;
+  animation: rmExactArtFloat 9s ease-in-out 0.95s infinite;
+  will-change: transform;
 }
 
-body.rm-theme--materials .rm-landing-hero__hit::after {
-  content: none;
-  display: none;
+body.rm-theme--materials .rm-landing-hero__hit {
+  pointer-events: auto;
 }
 
-/* Button positions calibrated to rm-hero-panel.png (1639×960) */
+/* Button positions calibrated to rm-hero-panel.png (1639×960) — Shop now + Browse categories */
 body.rm-theme--materials .rm-landing-hero__hit--shop {
-  left: 4%;
-  top: 52%;
+  left: 2%;
+  top: 65.4%;
   width: 13.5%;
-  height: 7%;
-  min-width: 6.5rem;
-  min-height: 2.2rem;
-  animation: heroExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both;
+  height: 7.4%;
 }
 
 body.rm-theme--materials .rm-landing-hero__hit--browse {
-  left: 18.5%;
-  top: 52%;
-  width: 17%;
-  height: 7%;
-  min-width: 7rem;
-  min-height: 2.2rem;
-  animation: heroExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both;
+  left: 19.8%;
+  top: 65.4%;
+  width: 19.2%;
+  height: 7.4%;
 }
 
 body.rm-theme--materials .rm-landing-hero__hit:focus-visible {
@@ -643,16 +638,16 @@ body.rm-theme--materials .rm-landing-hero__glass {
   }
 
   body.rm-theme--materials .rm-landing-hero__hit--shop {
-    left: 3.5%;
-    top: 50%;
-    width: 20%;
+    left: 1.6%;
+    top: 65%;
+    width: 14.5%;
     height: 8%;
   }
 
   body.rm-theme--materials .rm-landing-hero__hit--browse {
-    left: 25%;
-    top: 50%;
-    width: 26%;
+    left: 19.2%;
+    top: 65%;
+    width: 20.5%;
     height: 8%;
   }
 }
@@ -662,6 +657,7 @@ body.rm-theme--materials .rm-landing-hero__glass {
   body.rm-theme--materials .rm-landing-hero--exact,
   body.rm-theme--materials .rm-landing-hero--exact::before,
   body.rm-theme--materials .rm-landing-hero__exact-art,
+  body.rm-theme--materials .rm-landing-hero__hits,
   body.rm-theme--materials .rm-landing-hero__hit--shop,
   body.rm-theme--materials .rm-landing-hero__hit--browse,
   body.rm-theme--materials .rm-landing-hero__fx,
