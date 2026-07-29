@@ -47,6 +47,26 @@ body.pdp-ethereal .band-shop {
   color: inherit;
 }
 
+/* RM / PF product pages — match Home product.html top spacing (source of truth) */
+body.pdp-ethereal.rm-page-wide .band-shop.band-shop--flush {
+  margin-top: 0;
+  padding: 0 clamp(1.25rem, 4vw, 2rem) 3rem;
+}
+
+body.pdp-ethereal.rm-page-wide .band-shop--flush > .band-shop-inner > .crumb {
+  margin-bottom: 0.75rem;
+}
+
+body.pdp-ethereal.rm-page-wide .rm-shop-layout--pdp {
+  margin-top: 0;
+}
+
+body.pdp-ethereal.rm-page-wide .rm-pdp,
+body.pdp-ethereal.rm-page-wide .rm-pdp--modern {
+  margin-top: 0;
+  padding-block-start: 0;
+}
+
 /* Floating page FX */
 body.pdp-ethereal .pdp-ethereal-fx {
   position: fixed;

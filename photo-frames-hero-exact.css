@@ -13,8 +13,12 @@ body.rm-theme--photo-frame {
   --pf-navy: #1a2b48;
   --pf-navy-mid: #243656;
   --pf-cream: #f8f6f7;
+  --pf-gold: #d4af37;
+  --pf-gold-soft: #e8d48b;
   --pf-shadow: 0 18px 48px rgba(26, 43, 72, 0.12);
   --pf-shadow-pink: 0 18px 48px rgba(212, 132, 154, 0.18);
+  --pf-hero-min-h: min(58vh, 560px);
+  --pf-hero-radius: clamp(1.75rem, 4.5vw, 2.75rem);
   background:
     radial-gradient(ellipse 80% 45% at 12% -5%, rgba(232, 160, 168, 0.14), transparent 55%),
     radial-gradient(ellipse 60% 40% at 95% 20%, rgba(26, 43, 72, 0.06), transparent 50%),
@@ -115,7 +119,10 @@ body.rm-theme--photo-frame .pf-landing-hero--exact {
   gap: 0;
   padding: 0;
   margin-bottom: 2.25rem;
-  border-radius: clamp(1.75rem, 3.5vw, 2.5rem);
+  height: var(--pf-hero-min-h);
+  min-height: var(--pf-hero-min-h);
+  max-height: var(--pf-hero-min-h);
+  border-radius: var(--pf-hero-radius);
   overflow: hidden;
   isolation: isolate;
   background: #e8dfe3 !important;
@@ -126,6 +133,29 @@ body.rm-theme--photo-frame .pf-landing-hero--exact {
     0 28px 64px rgba(26, 43, 72, 0.14),
     0 0 40px rgba(232, 160, 168, 0.12);
   animation: pfExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero--exact::before {
+  content: "";
+  position: absolute;
+  inset: -20% -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 50% 40% at 15% 30%, rgba(245, 208, 212, 0.22), transparent 62%),
+    radial-gradient(ellipse 45% 38% at 85% 70%, rgba(232, 160, 168, 0.14), transparent 58%);
+  animation: pfExactBgDrift 16s ease-in-out infinite alternate;
+}
+
+@keyframes pfExactBgDrift {
+  0% {
+    transform: translate3d(-2%, 1%, 0) scale(1);
+    opacity: 0.65;
+  }
+  100% {
+    transform: translate3d(2%, -2%, 0) scale(1.05);
+    opacity: 0.95;
+  }
 }
 
 @keyframes pfExactHeroIn {
@@ -140,16 +170,46 @@ body.rm-theme--photo-frame .pf-landing-hero--exact {
 }
 
 body.rm-theme--photo-frame .pf-landing-hero__exact-art {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
   display: block;
   width: 100%;
-  height: auto;
+  height: 100%;
+  min-height: unset;
   max-width: 100%;
   vertical-align: top;
-  object-fit: contain;
-  object-position: center top;
+  object-fit: cover;
+  object-position: center center;
   pointer-events: none;
   user-select: none;
   border-radius: inherit;
+  animation:
+    pfExactArtReveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) both,
+    pfExactArtFloat 9s ease-in-out 0.95s infinite;
+  transform-origin: 72% 48%;
+  will-change: transform;
+}
+
+@keyframes pfExactArtReveal {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0) scale(1.01);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes pfExactArtFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
 }
 
 /* Hide any leftover reconstructed FX layers */
@@ -183,8 +243,27 @@ body.rm-theme--photo-frame .pf-landing-hero--exact .pf-landing-hero__copy {
 body.rm-theme--photo-frame .pf-landing-hero__hits {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   pointer-events: none;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit--shop {
+  animation: pfExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.36s both;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit--browse {
+  animation: pfExactCtaIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) 0.48s both;
+}
+
+@keyframes pfExactCtaIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 body.rm-theme--photo-frame .pf-landing-hero__hit {
@@ -194,6 +273,53 @@ body.rm-theme--photo-frame .pf-landing-hero__hit {
   background: transparent;
   border: none;
   cursor: pointer;
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    background 0.28s ease,
+    filter 0.28s ease,
+    opacity 0.28s ease;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(105deg, transparent 30%, rgba(255, 255, 255, 0.28) 50%, transparent 70%);
+  transform: translateX(-120%);
+  animation: pfExactHitShimmer 5.5s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit:hover::after {
+  opacity: 1;
+}
+
+@keyframes pfExactHitShimmer {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  80%,
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit:hover {
+  transform: translateY(-3px);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 10px 24px rgba(26, 43, 72, 0.14),
+    0 0 0 1px rgba(255, 255, 255, 0.32) inset;
+  filter: brightness(1.04);
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__hit:active {
+  transform: translateY(-1px);
 }
 
 /* Button positions calibrated to pf-hero-panel.png (797×482) */
@@ -221,20 +347,357 @@ body.rm-theme--photo-frame .pf-landing-hero__hit:focus-visible {
   background: rgba(255, 255, 255, 0.14);
 }
 
+/* Premium FX overlays — coral theme, same quality as RM exact hero */
+body.rm-theme--photo-frame .pf-landing-hero__fx {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+  border-radius: inherit;
+  animation: pfExactFxIn 1.05s ease 0.12s both;
+}
+
+/* Product-side FX — stronger motion on the right without touching copy */
+body.rm-theme--photo-frame .pf-landing-hero__fx::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 38%;
+  border-radius: inherit;
+  background: radial-gradient(ellipse 55% 50% at 70% 45%, rgba(245, 208, 212, 0.1), transparent 68%);
+  animation: pfExactProductGlow 8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes pfExactProductGlow {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translate3d(0, -8px, 0);
+  }
+}
+
+@keyframes pfExactFxIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__wave {
+  position: absolute;
+  inset: -18% -12%;
+  background:
+    radial-gradient(ellipse 55% 40% at 18% 78%, rgba(232, 160, 168, 0.18), transparent 62%),
+    radial-gradient(ellipse 48% 36% at 82% 22%, rgba(245, 208, 212, 0.16), transparent 60%),
+    linear-gradient(
+      115deg,
+      transparent 20%,
+      rgba(245, 208, 212, 0.12) 42%,
+      rgba(232, 160, 168, 0.08) 58%,
+      transparent 78%
+    );
+  background-size: 140% 140%;
+  animation: pfExactWaveDrift 14s ease-in-out infinite alternate;
+  mix-blend-mode: soft-light;
+  opacity: 0.85;
+}
+
+@keyframes pfExactWaveDrift {
+  0% {
+    background-position: 0% 40%, 100% 20%, 10% 50%;
+    transform: translate3d(-2%, 1%, 0) scale(1);
+  }
+  100% {
+    background-position: 80% 60%, 20% 70%, 70% 30%;
+    transform: translate3d(2%, -2%, 0) scale(1.04);
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__glow {
+  position: absolute;
+  width: 42%;
+  height: 58%;
+  right: 6%;
+  top: 12%;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(245, 208, 212, 0.32) 0%,
+    rgba(232, 160, 168, 0.12) 42%,
+    transparent 72%
+  );
+  filter: blur(18px);
+  animation: pfExactGlowPulse 7s ease-in-out infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes pfExactGlowPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.96);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.06);
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: radial-gradient(
+    circle at 30% 28%,
+    rgba(255, 255, 255, 0.55),
+    rgba(245, 208, 212, 0.16) 45%,
+    rgba(232, 160, 168, 0.08) 70%,
+    transparent 75%
+  );
+  box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.25);
+  animation: pfExactBubbleFloat 7.5s ease-in-out infinite;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble--a {
+  width: 2.4rem;
+  height: 2.4rem;
+  left: 58%;
+  top: 18%;
+  animation-delay: 0s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble--b {
+  width: 1.5rem;
+  height: 1.5rem;
+  left: 72%;
+  top: 12%;
+  animation-delay: -2.2s;
+  animation-duration: 8.5s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble--c {
+  width: 1.1rem;
+  height: 1.1rem;
+  left: 64%;
+  top: 38%;
+  animation-delay: -4.1s;
+  animation-duration: 6.8s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble--d {
+  width: 1.85rem;
+  height: 1.85rem;
+  left: 86%;
+  top: 42%;
+  animation-delay: -1.4s;
+  animation-duration: 9.2s;
+  opacity: 0.7;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__bubble--e {
+  width: 0.85rem;
+  height: 0.85rem;
+  left: 52%;
+  top: 52%;
+  animation-delay: -5.2s;
+  animation-duration: 7.1s;
+}
+
+@keyframes pfExactBubbleFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(6px, -14px, 0) scale(1.06);
+    opacity: 0.85;
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 8px rgba(245, 208, 212, 0.75);
+  animation: pfExactParticle 5.5s ease-in-out infinite;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle--a {
+  left: 48%;
+  top: 22%;
+  animation-delay: 0s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle--b {
+  left: 82%;
+  top: 28%;
+  width: 3px;
+  height: 3px;
+  animation-delay: -1.8s;
+  animation-duration: 6.2s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle--c {
+  left: 68%;
+  top: 48%;
+  width: 3px;
+  height: 3px;
+  animation-delay: -3.4s;
+  animation-duration: 7s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle--d {
+  left: 76%;
+  top: 16%;
+  width: 2px;
+  height: 2px;
+  background: rgba(232, 212, 139, 0.95);
+  box-shadow: 0 0 10px rgba(212, 175, 55, 0.75);
+  animation-delay: -0.8s;
+  animation-duration: 6.6s;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__particle--e {
+  left: 90%;
+  top: 58%;
+  width: 3px;
+  height: 3px;
+  background: rgba(232, 212, 139, 0.9);
+  box-shadow: 0 0 9px rgba(212, 175, 55, 0.65);
+  animation-delay: -2.6s;
+  animation-duration: 7.4s;
+}
+
+@keyframes pfExactParticle {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translate3d(-8px, -12px, 0);
+    opacity: 0.95;
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__gold {
+  position: absolute;
+  inset: -10% -20%;
+  background: linear-gradient(
+    125deg,
+    transparent 38%,
+    rgba(232, 212, 139, 0.05) 46%,
+    rgba(212, 175, 55, 0.16) 50%,
+    rgba(232, 212, 139, 0.06) 54%,
+    transparent 64%
+  );
+  animation: pfExactGoldShimmer 8.5s ease-in-out infinite;
+  mix-blend-mode: color-dodge;
+  opacity: 0.55;
+}
+
+@keyframes pfExactGoldShimmer {
+  0%,
+  100% {
+    transform: translateX(-18%) translateY(3%) rotate(0.5deg);
+    opacity: 0.25;
+  }
+  45% {
+    opacity: 0.7;
+  }
+  50% {
+    transform: translateX(16%) translateY(-4%) rotate(-0.5deg);
+    opacity: 0.55;
+  }
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__shimmer {
+  position: absolute;
+  inset: -20% -30%;
+  background: linear-gradient(
+    115deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.08) 48%,
+    rgba(245, 208, 212, 0.12) 52%,
+    transparent 65%
+  );
+  animation: pfExactShimmer 9s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+}
+
+body.rm-theme--photo-frame .pf-landing-hero__glass {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 42%,
+    rgba(255, 255, 255, 0.02) 48%,
+    rgba(255, 255, 255, 0.18) 51%,
+    rgba(255, 255, 255, 0.03) 54%,
+    transparent 62%
+  );
+  background-size: 220% 100%;
+  animation: pfExactGlassSweep 7.5s ease-in-out infinite;
+  mix-blend-mode: soft-light;
+  opacity: 0.65;
+}
+
+@keyframes pfExactGlassSweep {
+  0%,
+  100% {
+    background-position: 120% 0;
+    opacity: 0.2;
+  }
+  40% {
+    opacity: 0.7;
+  }
+  55% {
+    background-position: -40% 0;
+    opacity: 0.35;
+  }
+}
+
+@keyframes pfExactShimmer {
+  0%,
+  100% {
+    transform: translateX(-12%) translateY(4%);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(10%) translateY(-2%);
+    opacity: 0.7;
+  }
+}
+
 @media (max-width: 820px) {
   body.rm-theme--photo-frame .pf-landing-hero--exact.rm-hero,
   body.rm-theme--photo-frame .pf-landing-hero--exact {
-    /* Keep exact panel replica on mobile — no second text layer */
     display: block;
+    height: min(70vh, 620px);
+    min-height: min(70vh, 620px);
+    max-height: min(70vh, 620px);
   }
 
   body.rm-theme--photo-frame .pf-landing-hero__exact-art {
     width: 100%;
+    height: 100%;
     border-radius: inherit;
   }
 
   body.rm-theme--photo-frame .pf-landing-hero--exact .pf-landing-hero__copy {
-    /* Stay visually hidden — avoid duplicated headline over the panel */
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
@@ -263,7 +726,29 @@ body.rm-theme--photo-frame .pf-landing-hero__hit:focus-visible {
 
 @media (prefers-reduced-motion: reduce) {
   body.rm-theme--photo-frame .pf-landing-hero--exact.rm-hero,
-  body.rm-theme--photo-frame .pf-landing-hero--exact {
+  body.rm-theme--photo-frame .pf-landing-hero--exact,
+  body.rm-theme--photo-frame .pf-landing-hero--exact::before,
+  body.rm-theme--photo-frame .pf-landing-hero__exact-art,
+  body.rm-theme--photo-frame .pf-landing-hero__hit--shop,
+  body.rm-theme--photo-frame .pf-landing-hero__hit--browse,
+  body.rm-theme--photo-frame .pf-landing-hero__fx,
+  body.rm-theme--photo-frame .pf-landing-hero__fx::after,
+  body.rm-theme--photo-frame .pf-landing-hero__bubble,
+  body.rm-theme--photo-frame .pf-landing-hero__particle,
+  body.rm-theme--photo-frame .pf-landing-hero__shimmer,
+  body.rm-theme--photo-frame .pf-landing-hero__wave,
+  body.rm-theme--photo-frame .pf-landing-hero__glow,
+  body.rm-theme--photo-frame .pf-landing-hero__gold,
+  body.rm-theme--photo-frame .pf-landing-hero__glass,
+  body.rm-theme--photo-frame .pf-landing-hero__hit::after {
     animation: none;
+  }
+
+  body.rm-theme--photo-frame .pf-landing-hero__hit:hover {
+    transform: none;
+  }
+
+  body.rm-theme--photo-frame .pf-landing-hero__exact-art {
+    transform: none;
   }
 }
