@@ -4,22 +4,22 @@
  */
 
 body.page-category {
-  --cat-e-sky: #9ec9e8;
-  --cat-e-lavender: #c4b5e0;
-  --cat-e-blush: #f0c4cc;
-  --cat-e-rose: #e8a0b0;
-  --cat-e-rose-deep: #d18b92;
-  --cat-e-ink: #1a1a40;
-  --cat-e-muted: rgba(26, 26, 64, 0.58);
-  --cat-e-gold: #d4af37;
+  --cat-e-sky: var(--cg-mint, #7dd3c7);
+  --cat-e-lavender: var(--cg-mint, #7dd3c7);
+  --cat-e-blush: var(--cg-mint-soft, #d8f3ef);
+  --cat-e-rose: var(--cg-teal, #26a69a);
+  --cat-e-rose-deep: var(--cg-teal-deep, #1e8e84);
+  --cat-e-ink: var(--cg-navy, #1a2b48);
+  --cat-e-muted: rgba(26, 43, 72, 0.62);
+  --cat-e-gold: var(--cg-gold, #d4af37);
   --cat-e-glass: rgba(255, 255, 255, 0.82);
-  --cat-e-shadow: 0 18px 48px rgba(100, 120, 160, 0.12);
-  --cat-e-grad-nav: linear-gradient(105deg, #e8a0b0 0%, #9b7eb8 40%, #2a3a5c 100%);
+  --cat-e-shadow: var(--cg-shadow, 0 18px 48px rgba(26, 43, 72, 0.12));
+  --cat-e-grad-nav: var(--cg-grad-nav, linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%));
   background:
-    radial-gradient(ellipse 80% 50% at 12% -5%, rgba(158, 201, 232, 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(196, 181, 224, 0.2), transparent 52%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(240, 196, 204, 0.18), transparent 50%),
-    #f8f9fa;
+    radial-gradient(ellipse 80% 50% at 12% -5%, rgba(125, 211, 199, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(38, 166, 154, 0.12), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(216, 243, 239, 0.45), transparent 50%),
+    #f4f9f7;
   color: var(--cat-e-ink);
 }
 
@@ -30,15 +30,15 @@ body.page-category .tone-shift {
 
 body.page-category .animated-backdrop .orb {
   opacity: 0.06;
-  filter: hue-rotate(300deg) saturate(0.7);
+  filter: hue-rotate(100deg) saturate(0.5);
 }
 
 body.page-category .nav-dock {
   background: var(--cat-e-grad-nav);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 10px 32px rgba(45, 55, 90, 0.28),
-    0 1px 0 rgba(255, 255, 255, 0.22) inset;
+    0 10px 32px rgba(26, 43, 72, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset;
 }
 
 body.page-category .nav-dock-link {
@@ -51,15 +51,15 @@ body.page-category .nav-dock-link {
 
 body.page-category .nav-dock-link:hover,
 body.page-category .nav-dock-link:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(125, 211, 199, 0.18);
   color: #fff;
 }
 
 body.page-category .nav-dock-link.is-active,
 body.page-category .nav-dock-link.nav-dock-link--active {
-  background: linear-gradient(135deg, #fff8fa 0%, #f5c4d0 55%, #e8a0b0 100%);
-  color: #2a3a5c;
-  box-shadow: 0 4px 16px rgba(232, 160, 176, 0.45);
+  background: var(--cg-grad-active, linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%));
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(38, 166, 154, 0.45);
 }
 
 body.page-category .sub-main,
@@ -128,7 +128,7 @@ body.page-category .cat-product-card:hover,
 body.page-category .product-grid > a:hover,
 body.page-category .product-grid .product-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(232, 160, 176, 0.45);
+  border-color: rgba(38, 166, 154, 0.45);
   box-shadow: 0 22px 48px rgba(100, 120, 160, 0.16);
 }
 
@@ -162,7 +162,7 @@ body.page-category::before {
   border-radius: 50%;
   left: 4%;
   top: 28%;
-  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), rgba(196, 181, 224, 0.25) 55%, transparent 72%);
+  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.7), rgba(125, 211, 199, 0.25) 55%, transparent 72%);
   pointer-events: none;
   z-index: 0;
   animation: catEBubble 14s ease-in-out infinite alternate;
@@ -176,7 +176,7 @@ body.page-category::after {
   border-radius: 50%;
   right: 6%;
   top: 42%;
-  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), rgba(240, 196, 204, 0.3) 55%, transparent 72%);
+  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.75), rgba(216, 243, 239, 0.3) 55%, transparent 72%);
   pointer-events: none;
   z-index: 0;
   animation: catEBubble 11s ease-in-out infinite alternate-reverse;

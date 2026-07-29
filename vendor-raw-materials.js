@@ -414,7 +414,7 @@
     fuchsia: "#c026d3",
     purple: "#9333ea",
     violet: "#7c3aed",
-    indigo: "#4f46e5",
+    indigo: "#148f7f",
     blue: "#3b82f6",
     navy: "#1e3a8a",
     "royal blue": "#2563eb",
@@ -444,7 +444,7 @@
     maroon: "#881337",
     burgundy: "#9f1239",
     plum: "#86198f",
-    lavender: "#c4b5fd",
+    lavender: "#26a69a",
     lilac: "#ddd6fe",
     periwinkle: "#a5b4fc",
     "light blue": "#93c5fd",
@@ -694,7 +694,7 @@
       addQtyRow({ id: "", label: "", image: "" });
     }
     if (uC && document.getElementById("vrmColorRows") && !document.getElementById("vrmColorRows").children.length) {
-      addColorRow({ id: "", label: "", hex: "#6366f1", image: "" });
+      addColorRow({ id: "", label: "", hex: "#26a69a", image: "" });
       addColorRow({ id: "", label: "", hex: "#22c55e", image: "" });
     }
     var as = document.getElementById("vrmAddSize");
@@ -759,7 +759,7 @@
     var host = document.getElementById("vrmColorRows");
     if (!host) return;
     ensureColorDatalist();
-    var hx = normalizeHexVendor(o.hex || "#6366f1");
+    var hx = normalizeHexVendor(o.hex || "#26a69a");
     var chips = COLOR_QUICK_PICKS.map(function (p) {
       return (
         '<button type="button" class="vrm-color-chip" data-hex="' +

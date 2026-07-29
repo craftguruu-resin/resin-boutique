@@ -7,9 +7,9 @@
   --pdp-ink: #0a0f1a;
   --pdp-muted: #5c6578;
   --pdp-line: rgba(12, 18, 34, 0.08);
-  --pdp-violet: #5b21b6;
-  --pdp-violet-mid: #7c3aed;
-  --pdp-indigo: #4f46e5;
+  --pdp-violet: #1e8e84;
+  --pdp-violet-mid: #1e8e84;
+  --pdp-indigo: #148f7f;
   --pdp-mint: #059669;
   --pdp-mint-soft: rgba(5, 150, 105, 0.12);
   --pdp-glass: blur(22px) saturate(1.4);
@@ -17,7 +17,7 @@
   --pdp-radius-md: 1rem;
   --pdp-shadow:
     0 1px 2px rgba(12, 18, 34, 0.04),
-    0 20px 50px -18px rgba(91, 33, 182, 0.18);
+    0 20px 50px -18px rgba(38, 166, 154, 0.18);
   --pdp-shadow-soft: 0 8px 32px rgba(12, 18, 34, 0.06);
 
   font-family: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
@@ -98,7 +98,7 @@
 .rm-pdp--modern .rm-pdp__hero-wrap {
   border-radius: var(--pdp-radius-lg);
   background:
-    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(124, 58, 237, 0.08), transparent 55%),
+    radial-gradient(ellipse 80% 60% at 20% 0%, rgba(38, 166, 154, 0.08), transparent 55%),
     radial-gradient(ellipse 60% 50% at 100% 100%, rgba(99, 102, 241, 0.07), transparent 50%),
     linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--pdp-line);
@@ -220,7 +220,7 @@
 .rm-pdp--modern .product-share-bar--rm-pdp .product-share-bar__toggle:hover,
 .rm-pdp--modern .product-share-bar--rm-pdp .product-share-bar__toggle:focus-visible {
   border-color: rgba(91, 33, 182, 0.55);
-  box-shadow: 0 4px 16px rgba(91, 33, 182, 0.18);
+  box-shadow: 0 4px 16px rgba(38, 166, 154, 0.18);
 }
 
 .rm-pdp--modern .rm-pdp__stars-wrap {
@@ -261,7 +261,7 @@
   font-size: clamp(1.55rem, 3.5vw, 2rem);
   font-weight: 800;
   letter-spacing: -0.02em;
-  background: linear-gradient(115deg, #1e1b4b 0%, var(--pdp-violet) 45%, var(--pdp-indigo) 100%);
+  background: linear-gradient(115deg, #1a2b48 0%, var(--pdp-violet) 45%, var(--pdp-indigo) 100%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
@@ -467,7 +467,7 @@
   font-size: 0.8rem;
   letter-spacing: 0.03em;
   padding: 0.55rem 1rem;
-  background: linear-gradient(105deg, #1e1b4b 0%, #5b21b6 40%, #4f46e5 100%);
+  background: linear-gradient(105deg, #1a2b48 0%, #148f7f 40%, #26a69a 100%);
 }
 
 .rm-pdp-promo-strip--modern::after {

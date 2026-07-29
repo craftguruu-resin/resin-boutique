@@ -1,0 +1,592 @@
+/**
+ * Craftguru Design System — unified emerald / teal brand theme.
+ * Source of truth: Craftguru Green Theme (Resin Raw Materials reference).
+ *
+ * Load LAST on guest pages so page-scoped ethereal tokens remapped here win.
+ * Layout, spacing, and structure are unchanged — colour language only.
+ */
+
+:root {
+  /* ---- Core brand tokens ---- */
+  --cg-emerald: #148f7f;
+  --cg-emerald-deep: #0f766e;
+  --cg-teal: #26a69a;
+  --cg-teal-deep: #1e8e84;
+  --cg-mint: #7dd3c7;
+  --cg-mint-soft: #d8f3ef;
+  --cg-mint-pale: #eef8f6;
+  --cg-navy: #1a2b48;
+  --cg-navy-mid: #243656;
+  --cg-ink: #1a2b48;
+  --cg-ink-soft: #2a3a52;
+  --cg-body: #3a4558;
+  --cg-muted: #6b778a;
+  --cg-white: #ffffff;
+  --cg-marble: #f7faf9;
+  --cg-cream: #f4f9f7;
+  --cg-gold: #d4af37;
+  --cg-gold-soft: #e8d48b;
+  --cg-danger: #dc2626;
+  --cg-danger-soft: rgba(220, 38, 38, 0.12);
+
+  --cg-border: rgba(26, 43, 72, 0.1);
+  --cg-border-strong: rgba(26, 43, 72, 0.16);
+  --cg-shadow: 0 18px 48px rgba(26, 43, 72, 0.12);
+  --cg-shadow-soft: 0 10px 28px rgba(26, 43, 72, 0.08);
+  --cg-shadow-green: 0 14px 36px rgba(38, 166, 154, 0.18);
+  --cg-glow-green: 0 0 24px rgba(38, 166, 154, 0.28);
+
+  --cg-grad-nav: linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%);
+  --cg-grad-active: linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%);
+  --cg-grad-primary: linear-gradient(135deg, #26a69a 0%, #148f7f 55%, #0f766e 100%);
+  --cg-grad-page: linear-gradient(168deg, #fdfefe 0%, #f4f9f7 40%, #eef8f6 100%);
+  --cg-grad-mint-wash:
+    radial-gradient(ellipse 80% 50% at 12% -5%, rgba(125, 211, 199, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(38, 166, 154, 0.12), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(216, 243, 239, 0.55), transparent 50%);
+
+  /* ---- Legacy aliases → Craftguru (styles.css + components) ---- */
+  --white: var(--cg-white);
+  --ink: var(--cg-ink);
+  --ink-soft: var(--cg-ink-soft);
+  --mist-0: var(--cg-marble);
+  --mist-1: var(--cg-mint-pale);
+  --mist-2: var(--cg-mint-soft);
+  --blue-veil: var(--cg-mint);
+  --accent: var(--cg-teal);
+  --glass-dark: rgba(26, 43, 72, 0.88);
+  --stroke-soft: rgba(255, 255, 255, 0.12);
+  --shadow-dock: 0 10px 32px rgba(26, 43, 72, 0.28);
+  --shadow-float: 0 28px 64px rgba(26, 43, 72, 0.16), 0 12px 28px rgba(38, 166, 154, 0.08);
+  --shadow-card: var(--cg-shadow);
+
+  /* ---- Shared rail tokens ---- */
+  --cg-rail-ink: var(--cg-navy);
+  --cg-rail-rose: var(--cg-teal-deep);
+  --cg-rail-blush: var(--cg-mint-soft);
+  --cg-rail-lavender: var(--cg-mint);
+  --cg-rail-shadow: var(--cg-shadow);
+}
+
+/* ================================================================== */
+/* Page-scoped ethereal tokens → Craftguru green (no layout changes)   */
+/* ================================================================== */
+
+body.page-home,
+body.page-category,
+body.pdp-ethereal,
+body.rm-theme--photo-frame,
+body.rm-theme--materials {
+  --home-sky: var(--cg-mint);
+  --home-aqua: var(--cg-teal);
+  --home-lavender: var(--cg-mint);
+  --home-blush: var(--cg-mint-soft);
+  --home-rose: var(--cg-teal);
+  --home-rose-deep: var(--cg-teal-deep);
+  --home-gold: var(--cg-gold);
+  --home-gold-soft: var(--cg-gold-soft);
+  --home-ink: var(--cg-navy);
+  --home-ink-muted: rgba(26, 43, 72, 0.62);
+  --home-cream: var(--cg-cream);
+  --home-glass: rgba(255, 255, 255, 0.96);
+  --home-shadow: var(--cg-shadow);
+
+  --cat-e-sky: var(--cg-mint);
+  --cat-e-lavender: var(--cg-mint);
+  --cat-e-blush: var(--cg-mint-soft);
+  --cat-e-rose: var(--cg-teal);
+  --cat-e-rose-deep: var(--cg-teal-deep);
+  --cat-e-ink: var(--cg-navy);
+  --cat-e-muted: rgba(26, 43, 72, 0.62);
+  --cat-e-gold: var(--cg-gold);
+  --cat-e-glass: rgba(255, 255, 255, 0.82);
+  --cat-e-shadow: var(--cg-shadow);
+  --cat-e-grad-nav: var(--cg-grad-nav);
+
+  --pdp-e-sky: var(--cg-mint);
+  --pdp-e-aqua: var(--cg-teal);
+  --pdp-e-lavender: var(--cg-mint);
+  --pdp-e-blush: var(--cg-mint-soft);
+  --pdp-e-rose: var(--cg-teal);
+  --pdp-e-rose-deep: var(--cg-teal-deep);
+  --pdp-e-pink: var(--cg-mint);
+  --pdp-e-purple: var(--cg-teal-deep);
+  --pdp-e-purple-deep: var(--cg-emerald-deep);
+  --pdp-e-ink: var(--cg-navy);
+  --pdp-e-muted: rgba(26, 43, 72, 0.62);
+  --pdp-e-gold: var(--cg-gold);
+  --pdp-e-glass: rgba(255, 255, 255, 0.78);
+  --pdp-e-glass-strong: rgba(255, 255, 255, 0.9);
+  --pdp-e-shadow: var(--cg-shadow);
+  --pdp-e-grad-cta: var(--cg-grad-primary);
+  --pdp-e-grad-nav: var(--cg-grad-nav);
+  --pdp-violet: var(--cg-teal-deep);
+  --pdp-indigo: var(--cg-emerald-deep);
+
+  --pf-ink: var(--cg-navy);
+  --pf-ink-muted: rgba(26, 43, 72, 0.62);
+  --pf-coral: var(--cg-teal);
+  --pf-coral-deep: var(--cg-teal-deep);
+  --pf-coral-soft: var(--cg-mint-soft);
+  --pf-rose: var(--cg-teal);
+  --pf-rose-deep: var(--cg-teal-deep);
+  --pf-lavender: var(--cg-mint);
+  --pf-navy: var(--cg-navy);
+  --pf-navy-mid: var(--cg-navy-mid);
+  --pf-cream: var(--cg-cream);
+  --pf-gold: var(--cg-gold);
+  --pf-gold-soft: var(--cg-gold-soft);
+  --pf-shadow: var(--cg-shadow);
+  --pf-shadow-pink: var(--cg-shadow-green);
+}
+
+/* ================================================================== */
+/* Global page atmosphere                                              */
+/* ================================================================== */
+
+body:not(.vendor-saas) {
+  color: var(--cg-ink);
+  background: var(--cg-grad-page);
+}
+
+body:not(.vendor-saas) .mesh-gradient,
+body:not(.vendor-saas) .tone-shift {
+  opacity: 0.18;
+  filter: hue-rotate(90deg) saturate(0.55);
+}
+
+body:not(.vendor-saas) .animated-backdrop .orb {
+  opacity: 0.1;
+  filter: hue-rotate(100deg) saturate(0.5);
+}
+
+body.page-home,
+body.page-category,
+body.pdp-ethereal {
+  background:
+    var(--cg-grad-mint-wash),
+    var(--cg-white);
+  color: var(--cg-navy);
+}
+
+body.page-home .animated-backdrop .orb,
+body.page-category .animated-backdrop .orb,
+body.pdp-ethereal .animated-backdrop .orb {
+  filter: hue-rotate(100deg) saturate(0.45);
+}
+
+body:not(.vendor-saas) .band-shop {
+  background: linear-gradient(175deg, #ffffff 0%, #f4f9f7 45%, #eef8f6 100%);
+  color: var(--cg-ink);
+  box-shadow: 0 -10px 48px rgba(26, 43, 72, 0.05);
+}
+
+body:not(.vendor-saas) .band-sub,
+body:not(.vendor-saas) .band-tagline {
+  color: var(--cg-muted);
+}
+
+body:not(.vendor-saas) .band-shop .product-card {
+  background: var(--cg-white);
+  border: 1px solid var(--cg-border);
+  box-shadow: var(--cg-shadow-soft);
+}
+
+body:not(.vendor-saas) .band-shop .product-card:hover {
+  border-color: rgba(38, 166, 154, 0.45);
+  box-shadow: var(--cg-shadow-green);
+}
+
+body:not(.vendor-saas) .band-shop .product-card-image {
+  background: linear-gradient(160deg, var(--cg-mint-pale), var(--cg-mint-soft));
+}
+
+body:not(.vendor-saas) .band-shop .add-btn {
+  border-color: transparent;
+  background: var(--cg-grad-primary);
+  color: var(--cg-white);
+  box-shadow: var(--cg-shadow-green);
+}
+
+body:not(.vendor-saas) .band-shop .add-btn:hover {
+  filter: brightness(1.05);
+  box-shadow: 0 16px 36px rgba(38, 166, 154, 0.28);
+  transform: translateY(-1px);
+}
+
+/* ================================================================== */
+/* Navigation — dark navy dock, emerald active                         */
+/* ================================================================== */
+
+body:not(.vendor-saas) .nav-dock,
+body.page-home .nav-dock,
+body.page-category .nav-dock,
+body.pdp-ethereal .nav-dock,
+body.rm-theme--photo-frame .nav-dock,
+body.rm-theme--materials .nav-dock {
+  background: var(--cg-grad-nav);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 10px 32px rgba(26, 43, 72, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 28px rgba(38, 166, 154, 0.08);
+}
+
+body:not(.vendor-saas) .nav-dock-link,
+body.page-home .nav-dock-link,
+body.page-category .nav-dock-link,
+body.pdp-ethereal .nav-dock-link,
+body.rm-theme--photo-frame .nav-dock-link,
+body.rm-theme--materials .nav-dock-link {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+body:not(.vendor-saas) .nav-dock-link:hover,
+body:not(.vendor-saas) .nav-dock-link:focus-visible,
+body.page-home .nav-dock-link:hover,
+body.page-home .nav-dock-link:focus-visible,
+body.page-category .nav-dock-link:hover,
+body.page-category .nav-dock-link:focus-visible,
+body.pdp-ethereal .nav-dock-link:hover,
+body.pdp-ethereal .nav-dock-link:focus-visible,
+body.rm-theme--photo-frame .nav-dock-link:hover,
+body.rm-theme--photo-frame .nav-dock-link:focus-visible,
+body.rm-theme--materials .nav-dock-link:hover,
+body.rm-theme--materials .nav-dock-link:focus-visible {
+  background: rgba(125, 211, 199, 0.18);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(125, 211, 199, 0.22);
+}
+
+body:not(.vendor-saas) .nav-dock-link.is-active,
+body:not(.vendor-saas) .nav-dock-link.nav-dock-link--active,
+body.page-home .nav-dock-link.is-active,
+body.page-home .nav-dock-link.nav-dock-link--active,
+body.page-category .nav-dock-link.is-active,
+body.page-category .nav-dock-link.nav-dock-link--active,
+body.pdp-ethereal .nav-dock-link.is-active,
+body.pdp-ethereal .nav-dock-link.nav-dock-link--active,
+body.rm-theme--photo-frame .nav-dock-link.is-active,
+body.rm-theme--photo-frame .nav-dock-link.nav-dock-link--active,
+body.rm-theme--materials .nav-dock-link.is-active,
+body.rm-theme--materials .nav-dock-link.nav-dock-link--active {
+  background: var(--cg-grad-active);
+  color: var(--cg-white);
+  box-shadow:
+    0 4px 16px rgba(38, 166, 154, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+body:not(.vendor-saas) .nav-dock-link.is-active:hover,
+body:not(.vendor-saas) .nav-dock-link.is-active:focus-visible,
+body.page-home .nav-dock-link.is-active:hover,
+body.page-home .nav-dock-link.is-active:focus-visible,
+body.page-category .nav-dock-link.is-active:hover,
+body.page-category .nav-dock-link.is-active:focus-visible,
+body.pdp-ethereal .nav-dock-link.is-active:hover,
+body.pdp-ethereal .nav-dock-link.is-active:focus-visible {
+  background: linear-gradient(135deg, #a8e6dc 0%, #26a69a 55%, #148f7f 100%);
+  color: var(--cg-white);
+}
+
+/* ================================================================== */
+/* Sidebar / category rail                                             */
+/* ================================================================== */
+
+.home-category-rail--icons,
+.home-category-rail.home-category-rail--icons,
+body.guest-site .guest-page-category-rail.home-category-rail--icons {
+  background: var(--cg-white);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: var(--cg-shadow);
+}
+
+.home-category-rail--icons .home-category-rail__label {
+  color: rgba(26, 43, 72, 0.4);
+}
+
+.home-category-rail--icons .category-pill,
+.home-category-rail--icons .category-pill--rail,
+body.guest-site .guest-page-category-rail.home-category-rail--icons .category-pill--rail {
+  color: var(--cg-navy);
+}
+
+.home-category-rail--icons .category-pill:hover,
+.home-category-rail--icons .category-pill:focus-visible,
+.home-category-rail--icons .category-pill--rail:hover,
+.home-category-rail--icons .category-pill--rail:focus-visible,
+body.page-home .category-grid--rail .category-pill:hover,
+body.page-home .category-grid--rail .category-pill:focus-visible {
+  background: rgba(216, 243, 239, 0.75);
+  color: var(--cg-navy);
+  box-shadow: none;
+}
+
+.home-category-rail--icons .category-pill.is-active,
+.home-category-rail--icons .category-pill--rail.is-active,
+body.page-home .category-grid--rail .category-pill.is-active {
+  background: linear-gradient(135deg, rgba(216, 243, 239, 0.95), rgba(125, 211, 199, 0.35));
+  color: var(--cg-navy);
+  box-shadow: inset 0 0 0 1px rgba(38, 166, 154, 0.28);
+}
+
+.home-category-rail--icons .category-pill__icon,
+.category-pill__icon {
+  color: var(--cg-teal-deep);
+}
+
+.home-category-rail--icons .category-pill__icon svg,
+.category-pill__icon svg {
+  stroke: var(--cg-teal-deep);
+  fill: none;
+  color: var(--cg-teal-deep);
+}
+
+.home-category-rail--icons .category-pill:hover .category-pill__chev,
+.home-category-rail--icons .category-pill.is-active .category-pill__chev,
+body.page-home .category-grid--rail .category-pill:hover .category-pill__chev {
+  color: var(--cg-teal-deep);
+}
+
+body.rm-theme--materials .rm-nav-tree-wrap,
+body.rm-theme--photo-frame .rm-nav-tree-wrap {
+  background: var(--cg-white);
+  border: 1px solid var(--cg-border);
+  box-shadow: var(--cg-shadow);
+}
+
+body.rm-theme--materials .rm-nav-tree__link:hover,
+body.rm-theme--photo-frame .rm-nav-tree__link:hover {
+  background: rgba(216, 243, 239, 0.75);
+  color: var(--cg-navy);
+}
+
+body.rm-theme--materials .rm-nav-tree__link.is-active,
+body.rm-theme--photo-frame .rm-nav-tree__link.is-active {
+  background: linear-gradient(135deg, rgba(216, 243, 239, 0.95), rgba(125, 211, 199, 0.35));
+  color: var(--cg-navy);
+  box-shadow: inset 0 0 0 1px rgba(38, 166, 154, 0.28);
+}
+
+/* ================================================================== */
+/* Buttons                                                             */
+/* ================================================================== */
+
+body:not(.vendor-saas) .btn-glass-dome,
+body:not(.vendor-saas) .hero-atelier__btn--primary,
+body:not(.vendor-saas) .rm-hero__cta:not(.rm-hero__cta--ghost),
+body.pdp-ethereal .add-btn,
+body.pdp-ethereal .size-dock__cta,
+body.pdp-ethereal .pdp-cta-primary,
+body.pdp-ethereal [class*="add-to-cart"],
+body.pdp-ethereal .rm-pdp__btn--primary {
+  background: var(--cg-grad-primary) !important;
+  color: var(--cg-white) !important;
+  border-color: transparent !important;
+  box-shadow: var(--cg-shadow-green);
+}
+
+body:not(.vendor-saas) .btn-glass-dome:hover,
+body:not(.vendor-saas) .hero-atelier__btn--primary:hover,
+body.pdp-ethereal .add-btn:hover,
+body.pdp-ethereal .rm-pdp__btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(38, 166, 154, 0.32);
+  filter: brightness(1.04);
+}
+
+body:not(.vendor-saas) .hero-atelier__btn--ghost,
+body:not(.vendor-saas) .rm-hero__cta--ghost,
+body.pdp-ethereal .pdp-cta-secondary,
+body.pdp-ethereal .rm-pdp__btn--ghost,
+body.pdp-ethereal .buy-now,
+body.pdp-ethereal .btn-buy-now {
+  background: var(--cg-white) !important;
+  color: var(--cg-teal-deep) !important;
+  border: 1.5px solid var(--cg-teal) !important;
+  box-shadow: var(--cg-shadow-soft);
+}
+
+body:not(.vendor-saas) .hero-atelier__btn--ghost:hover,
+body.pdp-ethereal .pdp-cta-secondary:hover,
+body.pdp-ethereal .rm-pdp__btn--ghost:hover,
+body.pdp-ethereal .buy-now:hover {
+  background: rgba(216, 243, 239, 0.85) !important;
+  color: var(--cg-emerald-deep) !important;
+  border-color: var(--cg-teal-deep) !important;
+}
+
+/* ================================================================== */
+/* Forms / search / focus                                              */
+/* ================================================================== */
+
+body:not(.vendor-saas) .guest-header-search {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: var(--cg-border);
+}
+
+body:not(.vendor-saas) .guest-header-search:hover .guest-header-search__icon,
+body:not(.vendor-saas) .guest-header-search:focus-within .guest-header-search__icon {
+  color: var(--cg-teal-deep);
+  background: rgba(216, 243, 239, 0.85);
+  border-color: rgba(38, 166, 154, 0.35);
+  box-shadow: 0 0 0 2px rgba(38, 166, 154, 0.12);
+}
+
+body:not(.vendor-saas) .guest-header-search__input:focus,
+body:not(.vendor-saas) input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):focus,
+body:not(.vendor-saas) select:focus,
+body:not(.vendor-saas) textarea:focus {
+  border-color: rgba(38, 166, 154, 0.65) !important;
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.18) !important;
+  outline: none;
+}
+
+body:not(.vendor-saas) input[type="checkbox"]:checked,
+body:not(.vendor-saas) input[type="radio"]:checked {
+  accent-color: var(--cg-teal);
+}
+
+body:not(.vendor-saas) .category-toolbar__select:focus,
+body:not(.vendor-saas) .cg-filter-panel select:focus {
+  border-color: var(--cg-teal);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.16);
+}
+
+/* ================================================================== */
+/* Cards, badges, chips, tabs                                          */
+/* ================================================================== */
+
+body:not(.vendor-saas) .product-card,
+body:not(.vendor-saas) .quote-card,
+body:not(.vendor-saas) .glass-panel {
+  border-color: var(--cg-border);
+}
+
+body:not(.vendor-saas) .product-card:hover {
+  border-color: rgba(38, 166, 154, 0.4);
+}
+
+body.pdp-ethereal .size-chip.is-active,
+body.pdp-ethereal .size-option.is-selected,
+body.pdp-ethereal .variant-swatch.is-active,
+body.pdp-ethereal [aria-pressed="true"] {
+  border-color: var(--cg-teal-deep) !important;
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.22) !important;
+  color: var(--cg-navy);
+}
+
+body.pdp-ethereal .product-tabs__tab.is-active,
+body.pdp-ethereal .pdp-tab.is-active {
+  color: var(--cg-teal-deep);
+  border-bottom-color: var(--cg-teal);
+}
+
+body:not(.vendor-saas) .band-title,
+body:not(.vendor-saas) h1,
+body:not(.vendor-saas) h2 {
+  color: var(--cg-navy);
+}
+
+body:not(.vendor-saas) .price,
+body:not(.vendor-saas) .product-price,
+body.pdp-ethereal .price {
+  color: var(--cg-teal-deep);
+}
+
+body:not(.vendor-saas) a:not(.nav-dock-link):not(.btn-glass-dome):not(.add-btn):hover {
+  color: var(--cg-teal-deep);
+}
+
+/* ================================================================== */
+/* Account / checkout accents                                          */
+/* ================================================================== */
+
+body.page-account,
+body.page-checkout,
+body:has(.checkout-shell) {
+  --accent: var(--cg-teal);
+}
+
+body:not(.vendor-saas) .checkout-pay-secondary--primary,
+body:not(.vendor-saas) .account-tab.is-active {
+  color: var(--cg-teal-deep);
+  border-color: var(--cg-teal);
+}
+
+/* ================================================================== */
+/* Photo Frames — retire coral chrome (hero art unchanged)             */
+/* ================================================================== */
+
+body.rm-theme--photo-frame {
+  background:
+    radial-gradient(ellipse 80% 45% at 12% -5%, rgba(125, 211, 199, 0.16), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 20%, rgba(26, 43, 72, 0.05), transparent 50%),
+    #ffffff;
+}
+
+body.rm-theme--photo-frame .nav-dock-link.is-active,
+body.rm-theme--photo-frame .nav-dock-link.nav-dock-link--active {
+  background: var(--cg-grad-active);
+  color: var(--cg-white);
+}
+
+/* ================================================================== */
+/* Vendor suite — indigo → emerald/teal (structure preserved)          */
+/* ================================================================== */
+
+body.vendor-saas {
+  --vs-indigo: var(--cg-teal-deep);
+  --vs-indigo-hover: var(--cg-emerald-deep);
+  --vs-indigo-soft: rgba(38, 166, 154, 0.12);
+  --vs-indigo-mid: var(--cg-teal);
+  --vs-emerald: var(--cg-teal);
+  --vs-emerald-soft: rgba(38, 166, 154, 0.14);
+  --vs-green: var(--cg-teal-deep);
+  --vs-green-hover: var(--cg-emerald-deep);
+  --vs-green-soft: rgba(38, 166, 154, 0.12);
+  --vs-green-mid: var(--cg-teal);
+  --vs-bg: #f3f7f6;
+  --vs-bg-pattern: radial-gradient(ellipse 90% 55% at 0% 0%, rgba(38, 166, 154, 0.07), transparent 55%);
+  --vd-purple: var(--cg-teal-deep);
+  --vd-purple-soft: rgba(38, 166, 154, 0.12);
+}
+
+/* Danger stays red */
+body:not(.vendor-saas) .btn-danger,
+body:not(.vendor-saas) .add-btn--danger,
+.vendor-saas .vs-btn--danger {
+  background: var(--cg-danger) !important;
+  color: #fff !important;
+  border-color: transparent !important;
+}
+
+
+/* ================================================================== */
+/* Exact hero panels — full artwork visible (sizing fortify, load-last) */
+/* ================================================================== */
+
+.home-landing-hero--exact,
+.hero-atelier__shell--exact-ref.home-landing-hero--exact,
+.rm-landing-hero--exact,
+.pf-landing-hero--exact,
+body.page-home .home-landing-main .hero-atelier__shell.home-landing-hero--exact,
+body.page-home .home-landing-main .hero-atelier__shell--exact-ref {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+}
+
+.home-landing-hero__exact-art,
+.hero-atelier__shell--exact-ref .hero-atelier__exact-art,
+.rm-landing-hero__exact-art,
+.pf-landing-hero__exact-art {
+  width: 100% !important;
+  height: auto !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
+}

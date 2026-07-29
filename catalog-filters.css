@@ -170,7 +170,7 @@
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.95);
   background: linear-gradient(145deg, #a78bfa 0%, #6366f1 100%);
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 2px 12px rgba(38, 166, 154, 0.45);
   cursor: grab;
 }
 
@@ -186,7 +186,7 @@
   border-radius: 50%;
   border: 2px solid rgba(255, 255, 255, 0.95);
   background: linear-gradient(145deg, #a78bfa 0%, #6366f1 100%);
-  box-shadow: 0 2px 12px rgba(79, 70, 229, 0.45);
+  box-shadow: 0 2px 12px rgba(38, 166, 154, 0.45);
   cursor: grab;
 }
 

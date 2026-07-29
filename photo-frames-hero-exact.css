@@ -5,30 +5,30 @@
  */
 
 body.rm-theme--photo-frame {
-  --pf-ink: #1a2b48;
+  --pf-ink: var(--cg-navy, #1a2b48);
   --pf-ink-muted: rgba(26, 43, 72, 0.62);
-  --pf-coral: #e8a0a8;
-  --pf-coral-deep: #d4849a;
-  --pf-coral-soft: #f5d0d4;
-  --pf-navy: #1a2b48;
-  --pf-navy-mid: #243656;
-  --pf-cream: #f8f6f7;
-  --pf-gold: #d4af37;
-  --pf-gold-soft: #e8d48b;
-  --pf-shadow: 0 18px 48px rgba(26, 43, 72, 0.12);
-  --pf-shadow-pink: 0 18px 48px rgba(212, 132, 154, 0.18);
+  --pf-coral: var(--cg-teal, #26a69a);
+  --pf-coral-deep: var(--cg-teal-deep, #1e8e84);
+  --pf-coral-soft: var(--cg-mint-soft, #d8f3ef);
+  --pf-navy: var(--cg-navy, #1a2b48);
+  --pf-navy-mid: var(--cg-navy-mid, #243656);
+  --pf-cream: var(--cg-cream, #f4f9f7);
+  --pf-gold: var(--cg-gold, #d4af37);
+  --pf-gold-soft: var(--cg-gold-soft, #e8d48b);
+  --pf-shadow: var(--cg-shadow, 0 18px 48px rgba(26, 43, 72, 0.12));
+  --pf-shadow-pink: var(--cg-shadow-green, 0 18px 48px rgba(38, 166, 154, 0.18));
   --pf-hero-min-h: min(58vh, 560px);
   --pf-hero-radius: clamp(1.75rem, 4.5vw, 2.75rem);
   background:
-    radial-gradient(ellipse 80% 45% at 12% -5%, rgba(232, 160, 168, 0.14), transparent 55%),
+    radial-gradient(ellipse 80% 45% at 12% -5%, rgba(125, 211, 199, 0.14), transparent 55%),
     radial-gradient(ellipse 60% 40% at 95% 20%, rgba(26, 43, 72, 0.06), transparent 50%),
     #ffffff;
   color: var(--pf-ink);
 }
 
-/* ---- Navigation (dark navy capsule, coral active) ---- */
+/* ---- Navigation (dark navy capsule, emerald active) ---- */
 body.rm-theme--photo-frame .nav-dock {
-  background: linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%);
+  background: var(--cg-grad-nav, linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%));
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
     0 10px 32px rgba(26, 43, 72, 0.28),
@@ -45,17 +45,17 @@ body.rm-theme--photo-frame .nav-dock-link {
 
 body.rm-theme--photo-frame .nav-dock-link:hover,
 body.rm-theme--photo-frame .nav-dock-link:focus-visible {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(125, 211, 199, 0.18);
   color: #fff;
 }
 
 body.rm-theme--photo-frame .nav-dock-link.is-active,
 body.rm-theme--photo-frame .nav-dock-link.nav-dock-link--active {
-  background: linear-gradient(135deg, #fff5f6 0%, #f5c4cc 50%, #e8a0a8 100%);
-  color: var(--pf-navy);
+  background: var(--cg-grad-active, linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%));
+  color: #ffffff;
   box-shadow:
-    0 4px 16px rgba(232, 160, 168, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    0 4px 16px rgba(38, 166, 154, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
 }
 
 body.rm-theme--photo-frame .crumb,
@@ -67,13 +67,13 @@ body.rm-theme--photo-frame .crumb a:hover {
   color: var(--pf-coral-deep);
 }
 
-/* ---- Left sidebar (white card + pink glow, matching reference) ---- */
+/* ---- Left sidebar (white card + green glow) ---- */
 body.rm-theme--photo-frame .rm-nav-tree-wrap {
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-radius: 28px;
   box-shadow:
-    0 0 0 1px rgba(232, 160, 168, 0.12),
+    0 0 0 1px rgba(38, 166, 154, 0.12),
     var(--pf-shadow-pink);
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -99,15 +99,15 @@ body.rm-theme--photo-frame .rm-nav-tree__link {
 
 body.rm-theme--photo-frame .rm-nav-tree__link:hover {
   background: rgba(245, 208, 212, 0.35);
-  border-color: rgba(232, 160, 168, 0.35);
+  border-color: rgba(38, 166, 154, 0.35);
   color: var(--pf-ink);
 }
 
 body.rm-theme--photo-frame .rm-nav-tree__link.is-active {
   background: rgba(245, 208, 212, 0.55);
-  border-color: rgba(212, 132, 154, 0.55);
+  border-color: rgba(38, 166, 154, 0.55);
   color: var(--pf-navy);
-  box-shadow: 0 6px 18px rgba(212, 132, 154, 0.12);
+  box-shadow: 0 6px 18px rgba(38, 166, 154, 0.12);
 }
 
 /* ---- Exact hero replica (panel image = visual source of truth) ---- */
@@ -119,19 +119,20 @@ body.rm-theme--photo-frame .pf-landing-hero--exact {
   gap: 0;
   padding: 0;
   margin-bottom: 2.25rem;
-  min-height: 0;
-  height: auto;
-  max-height: none;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
   border-radius: var(--pf-hero-radius);
   overflow: hidden;
   isolation: isolate;
+  line-height: 0;
   background: #e8dfe3 !important;
   background-image: none !important;
   border: 1px solid rgba(255, 255, 255, 0.7);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.85) inset,
     0 28px 64px rgba(26, 43, 72, 0.14),
-    0 0 40px rgba(232, 160, 168, 0.12);
+    0 0 40px rgba(38, 166, 154, 0.12);
   animation: pfExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
@@ -143,7 +144,7 @@ body.rm-theme--photo-frame .pf-landing-hero--exact::before {
   pointer-events: none;
   background:
     radial-gradient(ellipse 50% 40% at 15% 30%, rgba(245, 208, 212, 0.22), transparent 62%),
-    radial-gradient(ellipse 45% 38% at 85% 70%, rgba(232, 160, 168, 0.14), transparent 58%);
+    radial-gradient(ellipse 45% 38% at 85% 70%, rgba(38, 166, 154, 0.14), transparent 58%);
   animation: pfExactBgDrift 16s ease-in-out infinite alternate;
 }
 
@@ -170,45 +171,26 @@ body.rm-theme--photo-frame .pf-landing-hero--exact::before {
 }
 
 body.rm-theme--photo-frame .pf-landing-hero__exact-art {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: auto;
-  min-height: unset;
-  max-width: 100%;
-  vertical-align: top;
-  object-fit: contain;
-  object-position: center top;
-  pointer-events: none;
-  user-select: none;
+  /* Sizing owned by hero-exact-shared.css */
   border-radius: inherit;
-  aspect-ratio: 1663 / 946;
-  animation:
-    pfExactArtReveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) both,
-    pfExactArtFloat 9s ease-in-out 0.95s infinite;
-  transform-origin: 72% 48%;
-  will-change: transform;
 }
 
 @keyframes pfExactArtReveal {
   from {
     opacity: 0;
-    transform: translate3d(0, 8px, 0) scale(1.01);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes pfExactArtFloat {
   0%,
   100% {
-    transform: translate3d(0, 0, 0);
+    transform: none;
   }
   50% {
-    transform: translate3d(0, -6px, 0);
+    transform: none;
   }
 }
 
@@ -245,8 +227,6 @@ body.rm-theme--photo-frame .pf-landing-hero__hits {
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  animation: pfExactArtFloat 9s ease-in-out 0.95s infinite;
-  will-change: transform;
 }
 
 body.rm-theme--photo-frame .pf-landing-hero__hit {
@@ -324,13 +304,13 @@ body.rm-theme--photo-frame .pf-landing-hero__wave {
   position: absolute;
   inset: -18% -12%;
   background:
-    radial-gradient(ellipse 55% 40% at 18% 78%, rgba(232, 160, 168, 0.18), transparent 62%),
+    radial-gradient(ellipse 55% 40% at 18% 78%, rgba(38, 166, 154, 0.18), transparent 62%),
     radial-gradient(ellipse 48% 36% at 82% 22%, rgba(245, 208, 212, 0.16), transparent 60%),
     linear-gradient(
       115deg,
       transparent 20%,
       rgba(245, 208, 212, 0.12) 42%,
-      rgba(232, 160, 168, 0.08) 58%,
+      rgba(38, 166, 154, 0.08) 58%,
       transparent 78%
     );
   background-size: 140% 140%;
@@ -360,7 +340,7 @@ body.rm-theme--photo-frame .pf-landing-hero__glow {
   background: radial-gradient(
     circle,
     rgba(245, 208, 212, 0.32) 0%,
-    rgba(232, 160, 168, 0.12) 42%,
+    rgba(38, 166, 154, 0.12) 42%,
     transparent 72%
   );
   filter: blur(18px);
@@ -388,7 +368,7 @@ body.rm-theme--photo-frame .pf-landing-hero__bubble {
     circle at 30% 28%,
     rgba(255, 255, 255, 0.55),
     rgba(245, 208, 212, 0.16) 45%,
-    rgba(232, 160, 168, 0.08) 70%,
+    rgba(38, 166, 154, 0.08) 70%,
     transparent 75%
   );
   box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.25);

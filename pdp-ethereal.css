@@ -4,28 +4,28 @@
  */
 
 body.pdp-ethereal {
-  --pdp-e-sky: #9ec9e8;
-  --pdp-e-aqua: #7eb8d4;
-  --pdp-e-lavender: #c4b5e0;
-  --pdp-e-blush: #f0c4cc;
-  --pdp-e-rose: #e8a0b0;
-  --pdp-e-rose-deep: #d18b92;
-  --pdp-e-pink: #ff99ac;
-  --pdp-e-purple: #6644aa;
-  --pdp-e-purple-deep: #4a2f8a;
-  --pdp-e-ink: #1a1a40;
-  --pdp-e-muted: rgba(26, 26, 64, 0.58);
-  --pdp-e-gold: #d4af37;
+  --pdp-e-sky: var(--cg-mint, #7dd3c7);
+  --pdp-e-aqua: var(--cg-teal, #26a69a);
+  --pdp-e-lavender: var(--cg-mint, #7dd3c7);
+  --pdp-e-blush: var(--cg-mint-soft, #d8f3ef);
+  --pdp-e-rose: var(--cg-teal, #26a69a);
+  --pdp-e-rose-deep: var(--cg-teal-deep, #1e8e84);
+  --pdp-e-pink: var(--cg-mint, #7dd3c7);
+  --pdp-e-purple: var(--cg-teal-deep, #1e8e84);
+  --pdp-e-purple-deep: var(--cg-emerald-deep, #0f766e);
+  --pdp-e-ink: var(--cg-navy, #1a2b48);
+  --pdp-e-muted: rgba(26, 43, 72, 0.62);
+  --pdp-e-gold: var(--cg-gold, #d4af37);
   --pdp-e-glass: rgba(255, 255, 255, 0.78);
   --pdp-e-glass-strong: rgba(255, 255, 255, 0.9);
   --pdp-e-radius: 24px;
-  --pdp-e-shadow: 0 18px 48px rgba(100, 110, 160, 0.12);
-  --pdp-e-grad-cta: linear-gradient(105deg, #ff99ac 0%, #d4849a 42%, #6644aa 100%);
-  --pdp-e-grad-nav: linear-gradient(105deg, #e8a0b0 0%, #9b7eb8 40%, #2a3a5c 100%);
+  --pdp-e-shadow: var(--cg-shadow, 0 18px 48px rgba(26, 43, 72, 0.12));
+  --pdp-e-grad-cta: var(--cg-grad-primary, linear-gradient(135deg, #26a69a 0%, #148f7f 55%, #0f766e 100%));
+  --pdp-e-grad-nav: var(--cg-grad-nav, linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%));
   background:
-    radial-gradient(ellipse 80% 50% at 12% -5%, rgba(158, 201, 232, 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(196, 181, 224, 0.2), transparent 52%),
-    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(240, 196, 204, 0.18), transparent 50%),
+    radial-gradient(ellipse 80% 50% at 12% -5%, rgba(125, 211, 199, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 45% at 95% 15%, rgba(38, 166, 154, 0.12), transparent 52%),
+    radial-gradient(ellipse 60% 40% at 50% 100%, rgba(216, 243, 239, 0.45), transparent 50%),
     #ffffff;
   color: var(--pdp-e-ink);
   position: relative;
@@ -38,7 +38,7 @@ body.pdp-ethereal .tone-shift {
 
 body.pdp-ethereal .animated-backdrop .orb {
   opacity: 0.07;
-  filter: hue-rotate(300deg) saturate(0.7);
+  filter: hue-rotate(100deg) saturate(0.5);
 }
 
 body.pdp-ethereal .band-shop {
@@ -79,7 +79,7 @@ body.pdp-ethereal .pdp-ethereal-fx {
 body.pdp-ethereal .pdp-ethereal-fx__bubble {
   position: absolute;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.9), rgba(196, 181, 224, 0.3) 50%, transparent 72%);
+  background: radial-gradient(circle at 30% 28%, rgba(255, 255, 255, 0.9), rgba(125, 211, 199, 0.3) 50%, transparent 72%);
   box-shadow: 0 0 24px rgba(255, 255, 255, 0.45);
   animation: pdpEBubble 14s ease-in-out infinite alternate;
 }
@@ -184,9 +184,9 @@ body.pdp-ethereal .nav-dock-link:focus-visible {
 
 body.pdp-ethereal .nav-dock-link.is-active,
 body.pdp-ethereal .nav-dock-link.nav-dock-link--active {
-  background: linear-gradient(135deg, #fff8fa 0%, #f5c4d0 55%, #e8a0b0 100%);
-  color: #2a3a5c;
-  box-shadow: 0 4px 16px rgba(232, 160, 176, 0.45);
+  background: var(--cg-grad-active, linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%));
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(38, 166, 154, 0.45);
 }
 
 /* ---- Sidebar ---- */
@@ -212,12 +212,12 @@ body.pdp-ethereal .rm-nav-tree__link {
 }
 
 body.pdp-ethereal .rm-nav-tree__link:hover {
-  background: rgba(240, 196, 204, 0.28);
-  border-color: rgba(232, 160, 176, 0.3);
+  background: rgba(216, 243, 239, 0.28);
+  border-color: rgba(38, 166, 154, 0.3);
 }
 
 body.pdp-ethereal .rm-nav-tree__link.is-active {
-  background: linear-gradient(135deg, rgba(255, 153, 172, 0.35), rgba(240, 196, 204, 0.4));
+  background: linear-gradient(135deg, rgba(125, 211, 199, 0.35), rgba(216, 243, 239, 0.4));
   border-color: rgba(209, 139, 146, 0.55);
   color: #8b3a4a;
 }
@@ -227,9 +227,9 @@ body.pdp-ethereal .rm-nav-tree__chev::after {
 }
 
 body.pdp-ethereal .rm-pdp-promo-strip--modern {
-  background: linear-gradient(90deg, rgba(255, 153, 172, 0.2), rgba(102, 68, 170, 0.15));
+  background: linear-gradient(90deg, rgba(125, 211, 199, 0.2), rgba(102, 68, 170, 0.15));
   color: var(--pdp-e-ink);
-  border-bottom: 1px solid rgba(232, 160, 176, 0.25);
+  border-bottom: 1px solid rgba(38, 166, 154, 0.25);
 }
 
 /* ---- Modern RM / PF / resin shell ---- */
@@ -257,7 +257,7 @@ body.pdp-ethereal .rm-pdp--modern {
 body.pdp-ethereal .rm-pdp--modern .rm-pdp-gallery--shell {
   background:
     radial-gradient(ellipse 55% 50% at 70% 42%, rgba(158, 201, 232, 0.28), transparent 62%),
-    radial-gradient(ellipse 45% 42% at 30% 70%, rgba(240, 196, 204, 0.22), transparent 60%),
+    radial-gradient(ellipse 45% 42% at 30% 70%, rgba(216, 243, 239, 0.22), transparent 60%),
     var(--pdp-e-glass-strong);
   border: 1px solid rgba(255, 255, 255, 0.9);
   border-radius: var(--pdp-e-radius);
@@ -285,7 +285,7 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__thumb:hover {
 
 body.pdp-ethereal .rm-pdp--modern .rm-pdp__thumb.is-active {
   border-color: var(--pdp-e-rose-deep);
-  box-shadow: 0 0 0 3px rgba(232, 160, 176, 0.35);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.35);
 }
 
 body.pdp-ethereal .rm-pdp--modern .rm-pdp__hero-wrap {
@@ -367,7 +367,7 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__price-row::after {
 }
 
 body.pdp-ethereal .rm-pdp--modern .product-share-bar--rm-pdp .product-share-bar__toggle {
-  border-color: rgba(232, 160, 176, 0.55);
+  border-color: rgba(38, 166, 154, 0.55);
   color: var(--pdp-e-rose-deep);
   background: rgba(255, 255, 255, 0.9);
   border-radius: 999px;
@@ -381,15 +381,15 @@ body.pdp-ethereal .rm-pdp--modern .rm-opt-pill {
 }
 
 body.pdp-ethereal .rm-pdp--modern .rm-opt-pill:hover {
-  border-color: rgba(232, 160, 176, 0.55);
+  border-color: rgba(38, 166, 154, 0.55);
   transform: translateY(-1px);
 }
 
 body.pdp-ethereal .rm-pdp--modern .rm-opt-pill.is-on {
-  background: linear-gradient(135deg, rgba(255, 153, 172, 0.35), rgba(240, 196, 204, 0.45));
+  background: linear-gradient(135deg, rgba(125, 211, 199, 0.35), rgba(216, 243, 239, 0.45));
   border-color: var(--pdp-e-rose-deep);
   color: var(--pdp-e-ink);
-  box-shadow: 0 0 0 3px rgba(232, 160, 176, 0.25);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.25);
 }
 
 body.pdp-ethereal .rm-pdp--modern .rm-color-swatch {
@@ -478,7 +478,7 @@ body.pdp-ethereal .rm-pdp__buy-now:hover {
 body.pdp-ethereal .rm-pdp--modern .rm-trust--modern {
   background: rgba(255, 255, 255, 0.65);
   border-radius: 16px;
-  border: 1px solid rgba(232, 160, 176, 0.25);
+  border: 1px solid rgba(38, 166, 154, 0.25);
 }
 
 /* Feature / trust strips */
@@ -547,7 +547,7 @@ body.pdp-ethereal .rm-pdp__trust-bar {
   max-width: 42rem;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(196, 181, 224, 0.35);
+  border: 1px solid rgba(125, 211, 199, 0.35);
   box-shadow: 0 10px 28px rgba(100, 110, 160, 0.08);
   font-size: 0.72rem;
   font-weight: 650;
@@ -641,10 +641,10 @@ body.pdp-ethereal #productPrice {
 
 body.pdp-ethereal .size-pick--pill.is-selected,
 body.pdp-ethereal .size-options .rm-opt-pill.is-on {
-  background: linear-gradient(135deg, rgba(255, 153, 172, 0.35), rgba(240, 196, 204, 0.45));
+  background: linear-gradient(135deg, rgba(125, 211, 199, 0.35), rgba(216, 243, 239, 0.45));
   border-color: var(--pdp-e-rose-deep);
   color: var(--pdp-e-ink);
-  box-shadow: 0 0 0 3px rgba(232, 160, 176, 0.25);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.25);
 }
 
 body.pdp-ethereal .rm-color-swatch.is-on {

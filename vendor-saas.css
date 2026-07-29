@@ -1,17 +1,17 @@
-/* Craftguru vendor suite — Ledger-style (indigo + emerald, airy cards) */
+/* Craftguru vendor suite — emerald / teal (aligned with storefront) */
 :root {
-  --vs-indigo: #4f46e5;
-  --vs-indigo-hover: #4338ca;
-  --vs-indigo-soft: rgba(79, 70, 229, 0.12);
-  --vs-indigo-mid: #6366f1;
-  --vs-emerald: #10b981;
-  --vs-emerald-soft: rgba(16, 185, 129, 0.14);
-  --vs-green: #4f46e5;
-  --vs-green-hover: #4338ca;
-  --vs-green-soft: rgba(79, 70, 229, 0.12);
-  --vs-green-mid: #6366f1;
-  --vs-bg: #f3f4f6;
-  --vs-bg-pattern: radial-gradient(ellipse 90% 55% at 0% 0%, rgba(79, 70, 229, 0.06), transparent 55%);
+  --vs-indigo: #1e8e84;
+  --vs-indigo-hover: #0f766e;
+  --vs-indigo-soft: rgba(38, 166, 154, 0.12);
+  --vs-indigo-mid: #26a69a;
+  --vs-emerald: #26a69a;
+  --vs-emerald-soft: rgba(38, 166, 154, 0.14);
+  --vs-green: #1e8e84;
+  --vs-green-hover: #0f766e;
+  --vs-green-soft: rgba(38, 166, 154, 0.12);
+  --vs-green-mid: #26a69a;
+  --vs-bg: #f3f7f6;
+  --vs-bg-pattern: radial-gradient(ellipse 90% 55% at 0% 0%, rgba(38, 166, 154, 0.07), transparent 55%);
   --vs-surface: #ffffff;
   --vs-border: #e5e7eb;
   --vs-text: #0f172a;
@@ -24,7 +24,7 @@
   --vs-sidebar-muted: #64748b;
   --vs-radius: 14px;
   --vs-shadow: 0 1px 3px rgba(15, 23, 42, 0.06), 0 12px 32px rgba(15, 23, 42, 0.08);
-  --vs-shadow-lg: 0 4px 6px rgba(15, 23, 42, 0.05), 0 20px 48px rgba(79, 70, 229, 0.1);
+  --vs-shadow-lg: 0 4px 6px rgba(15, 23, 42, 0.05), 0 20px 48px rgba(38, 166, 154, 0.1);
 }
 
 .vendor-saas {
@@ -340,7 +340,7 @@
   background: var(--vs-indigo);
   border-color: var(--vs-indigo);
   color: #fff;
-  box-shadow: 0 8px 22px rgba(79, 70, 229, 0.28);
+  box-shadow: 0 8px 22px rgba(38, 166, 154, 0.28);
 }
 
 .vs-btn--primary:hover {
@@ -721,7 +721,7 @@
 
 .vs-pill:hover,
 .vs-ful-pill:hover {
-  border-color: rgba(79, 70, 229, 0.35);
+  border-color: rgba(38, 166, 154, 0.35);
   color: var(--vs-text);
 }
 
@@ -1007,7 +1007,7 @@
 }
 
 .vi-tabbar .vs-btn.vs-btn--primary {
-  box-shadow: 0 2px 8px rgba(79, 70, 229, 0.25);
+  box-shadow: 0 2px 8px rgba(38, 166, 154, 0.25);
 }
 
 .vs-grid--charts {
@@ -1022,8 +1022,8 @@
 
 /* —— Ledger-style vendor dashboard —— */
 :root {
-  --vd-purple: #7c3aed;
-  --vd-purple-soft: rgba(124, 58, 237, 0.12);
+  --vd-purple: #1e8e84;
+  --vd-purple-soft: rgba(38, 166, 154, 0.12);
   --vd-green: #16a34a;
   --vd-blue: #2563eb;
   --vd-orange: #ea580c;
@@ -1062,7 +1062,7 @@
 
 .vd-ledger__tab--active {
   background: var(--vd-purple-soft);
-  border-color: rgba(124, 58, 237, 0.35);
+  border-color: rgba(38, 166, 154, 0.35);
   color: var(--vd-purple);
   font-weight: 600;
 }
@@ -1106,12 +1106,12 @@ a.vd-kpi-card--link {
 
 a.vd-kpi-card--link:hover {
   transform: translateY(-2px);
-  border-color: rgba(59, 111, 217, 0.35);
+  border-color: rgba(38, 166, 154, 0.35);
   box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
 }
 
 a.vd-kpi-card--link:focus-visible {
-  outline: 2px solid rgba(59, 111, 217, 0.55);
+  outline: 2px solid rgba(38, 166, 154, 0.55);
   outline-offset: 3px;
 }
 
@@ -1318,8 +1318,8 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vpm-return-gift-row__opt.is-selected {
-  border-color: rgba(79, 70, 229, 0.45);
-  background: rgba(79, 70, 229, 0.06);
+  border-color: rgba(38, 166, 154, 0.45);
+  background: rgba(38, 166, 154, 0.06);
 }
 
 .vendor-saas .vpm-return-gift-row__opt input {
@@ -1571,7 +1571,7 @@ a.vd-kpi-card--link:focus-visible {
 .vrm-tab.is-active {
   background: var(--vs-surface);
   color: var(--vs-indigo);
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.14);
+  box-shadow: 0 4px 16px rgba(38, 166, 154, 0.14);
 }
 
 .vrm-panel[hidden] {
@@ -1613,8 +1613,8 @@ a.vd-kpi-card--link:focus-visible {
 
 .vendor-saas .vrm-search-input:focus {
   outline: none;
-  border-color: rgba(79, 70, 229, 0.45);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: rgba(38, 166, 154, 0.45);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.12);
 }
 
 .vendor-saas .vrm-delete:hover {
@@ -1649,8 +1649,8 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vrm-color-chip:hover {
-  border-color: rgba(79, 70, 229, 0.35);
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.12);
+  border-color: rgba(38, 166, 154, 0.35);
+  box-shadow: 0 2px 10px rgba(38, 166, 154, 0.12);
 }
 
 .vendor-saas .vrm-color-chip-dot {
@@ -1691,7 +1691,7 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vrm-color-suggest-btn:hover {
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(38, 166, 154, 0.08);
 }
 
 .vendor-saas .vrm-color-swatch-dot {
@@ -1773,7 +1773,7 @@ a.vd-kpi-card--link:focus-visible {
 .vpf-tab.is-active {
   background: var(--vs-surface);
   color: var(--vs-indigo);
-  box-shadow: 0 4px 16px rgba(79, 70, 229, 0.14);
+  box-shadow: 0 4px 16px rgba(38, 166, 154, 0.14);
 }
 
 .vpf-panel[hidden] {
@@ -1815,8 +1815,8 @@ a.vd-kpi-card--link:focus-visible {
 
 .vendor-saas .vpf-search-input:focus {
   outline: none;
-  border-color: rgba(79, 70, 229, 0.45);
-  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.12);
+  border-color: rgba(38, 166, 154, 0.45);
+  box-shadow: 0 0 0 3px rgba(38, 166, 154, 0.12);
 }
 
 .vendor-saas .vpf-delete:hover {
@@ -1850,8 +1850,8 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vpf-color-chip:hover {
-  border-color: rgba(79, 70, 229, 0.35);
-  box-shadow: 0 2px 10px rgba(79, 70, 229, 0.12);
+  border-color: rgba(38, 166, 154, 0.35);
+  box-shadow: 0 2px 10px rgba(38, 166, 154, 0.12);
 }
 
 .vendor-saas .vpf-color-chip-dot {
@@ -1892,7 +1892,7 @@ a.vd-kpi-card--link:focus-visible {
 }
 
 .vendor-saas .vpf-color-suggest-btn:hover {
-  background: rgba(79, 70, 229, 0.08);
+  background: rgba(38, 166, 154, 0.08);
 }
 
 .vendor-saas .vpf-color-swatch-dot {

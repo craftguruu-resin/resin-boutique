@@ -120,12 +120,13 @@ body.rm-theme--materials .rm-landing-hero--exact {
   gap: 0;
   padding: 0;
   margin-bottom: 2.25rem;
-  min-height: 0;
-  height: auto;
-  max-height: none;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
   border-radius: var(--rm-hero-radius);
   overflow: hidden;
   isolation: isolate;
+  line-height: 0;
   background: #d8f3ef !important;
   background-image: none !important;
   border: 1px solid rgba(255, 255, 255, 0.7);
@@ -171,45 +172,26 @@ body.rm-theme--materials .rm-landing-hero--exact::before {
 }
 
 body.rm-theme--materials .rm-landing-hero__exact-art {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: auto;
-  min-height: unset;
-  max-width: 100%;
-  vertical-align: top;
-  object-fit: contain;
-  object-position: center top;
-  pointer-events: none;
-  user-select: none;
+  /* Sizing owned by hero-exact-shared.css */
   border-radius: inherit;
-  aspect-ratio: 1639 / 960;
-  animation:
-    rmExactArtReveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) both,
-    rmExactArtFloat 9s ease-in-out 0.95s infinite;
-  transform-origin: 72% 48%;
-  will-change: transform;
 }
 
 @keyframes rmExactArtReveal {
   from {
     opacity: 0;
-    transform: translate3d(0, 8px, 0) scale(1.01);
   }
   to {
     opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
   }
 }
 
 @keyframes rmExactArtFloat {
   0%,
   100% {
-    transform: translate3d(0, 0, 0);
+    transform: none;
   }
   50% {
-    transform: translate3d(0, -6px, 0);
+    transform: none;
   }
 }
 
@@ -246,8 +228,6 @@ body.rm-theme--materials .rm-landing-hero__hits {
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  animation: rmExactArtFloat 9s ease-in-out 0.95s infinite;
-  will-change: transform;
 }
 
 body.rm-theme--materials .rm-landing-hero__hit {

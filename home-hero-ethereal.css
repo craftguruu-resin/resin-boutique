@@ -4,19 +4,20 @@
  */
 
 body.page-home {
-  --home-sky: #9ec9e8;
-  --home-aqua: #7eb8d4;
-  --home-lavender: #c4b5e0;
-  --home-blush: #f0c4cc;
-  --home-rose: #e8a0b0;
-  --home-rose-deep: #d18b92;
-  --home-gold: #d4af37;
-  --home-gold-soft: #e8d48b;
-  --home-ink: #1a1a40;
-  --home-ink-muted: rgba(26, 26, 64, 0.58);
-  --home-cream: #f8f9fa;
+  /* Aliases → Craftguru green (craftguru-theme.css is source of truth) */
+  --home-sky: var(--cg-mint, #7dd3c7);
+  --home-aqua: var(--cg-teal, #26a69a);
+  --home-lavender: var(--cg-mint, #7dd3c7);
+  --home-blush: var(--cg-mint-soft, #d8f3ef);
+  --home-rose: var(--cg-teal, #26a69a);
+  --home-rose-deep: var(--cg-teal-deep, #1e8e84);
+  --home-gold: var(--cg-gold, #d4af37);
+  --home-gold-soft: var(--cg-gold-soft, #e8d48b);
+  --home-ink: var(--cg-navy, #1a2b48);
+  --home-ink-muted: rgba(26, 43, 72, 0.62);
+  --home-cream: var(--cg-cream, #f4f9f7);
   --home-glass: rgba(255, 255, 255, 0.96);
-  --home-shadow: 0 18px 48px rgba(100, 120, 160, 0.12);
+  --home-shadow: var(--cg-shadow, 0 18px 48px rgba(26, 43, 72, 0.12));
   background: var(--home-cream);
   color: var(--home-ink);
 }
@@ -34,15 +35,16 @@ body.page-home .page-atmosphere {
   opacity: 0.28;
 }
 
-/* ---- Navigation (design pill gradient) ---- */
+/* ---- Navigation (Craftguru navy dock + emerald active) ---- */
 body.page-home .nav-dock {
-  background: linear-gradient(105deg, #e8a0b0 0%, #9b7eb8 40%, #2a3a5c 100%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: var(--cg-grad-nav, linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%));
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow:
-    0 10px 32px rgba(45, 55, 90, 0.28),
-    0 1px 0 rgba(255, 255, 255, 0.22) inset;
-  backdrop-filter: blur(20px) saturate(1.15);
-  -webkit-backdrop-filter: blur(20px) saturate(1.15);
+    0 10px 32px rgba(26, 43, 72, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset,
+    0 0 28px rgba(38, 166, 154, 0.08);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
 }
 
 body.page-home .nav-dock-link {
@@ -55,24 +57,24 @@ body.page-home .nav-dock-link {
 
 body.page-home .nav-dock-link:hover,
 body.page-home .nav-dock-link:focus-visible {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(125, 211, 199, 0.18);
   color: #fff;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.16);
+  box-shadow: 0 0 0 2px rgba(125, 211, 199, 0.22);
 }
 
 body.page-home .nav-dock-link.is-active,
 body.page-home .nav-dock-link.nav-dock-link--active {
-  background: linear-gradient(135deg, #fff8fa 0%, #f5c4d0 55%, #e8a0b0 100%);
-  color: #2a3a5c;
+  background: var(--cg-grad-active, linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%));
+  color: #ffffff;
   box-shadow:
-    0 4px 16px rgba(232, 160, 176, 0.45),
-    0 1px 0 rgba(255, 255, 255, 0.75) inset;
+    0 4px 16px rgba(38, 166, 154, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
 }
 
 body.page-home .nav-dock-link.is-active:hover,
 body.page-home .nav-dock-link.is-active:focus-visible {
-  background: linear-gradient(135deg, #ffffff 0%, #f8d0da 100%);
-  color: var(--home-ink);
+  background: linear-gradient(135deg, #a8e6dc 0%, #26a69a 55%, #148f7f 100%);
+  color: #ffffff;
 }
 
 body.page-home .home-auth-btn,
@@ -175,7 +177,7 @@ body.page-home .category-pill__chev {
 
 body.page-home .category-grid--rail .category-pill:hover,
 body.page-home .category-grid--rail .category-pill:focus-visible {
-  background: rgba(240, 196, 204, 0.22);
+  background: rgba(216, 243, 239, 0.22);
   color: var(--home-ink);
   transform: none;
   outline: none;
@@ -188,7 +190,7 @@ body.page-home .category-grid--rail .category-pill:focus-visible .category-pill_
 }
 
 body.page-home .category-grid--rail .category-pill.is-active {
-  background: linear-gradient(135deg, rgba(240, 196, 204, 0.38), rgba(196, 181, 224, 0.22));
+  background: linear-gradient(135deg, rgba(216, 243, 239, 0.38), rgba(125, 211, 199, 0.22));
   color: var(--home-ink);
   box-shadow: none;
 }
@@ -229,8 +231,21 @@ body.page-home .home-landing-hero--exact {
     var(--home-shadow),
     0 32px 72px rgba(120, 140, 180, 0.14);
   min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
   margin-bottom: 0;
+  line-height: 0;
   animation: homeExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Defeat styles.css flex min-heights that stretch/crop the exact panel */
+body.page-home .home-landing-main .hero-atelier__shell.home-landing-hero--exact,
+body.page-home .home-landing-main .hero-atelier__shell--exact-ref {
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
 }
 
 @keyframes homeExactHeroIn {
@@ -257,44 +272,8 @@ body.page-home .hero-atelier__art-zone {
 
 body.page-home .home-landing-hero__exact-art,
 body.page-home .hero-atelier__exact-art {
-  position: relative;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: auto;
-  inset: auto;
-  object-fit: contain;
-  object-position: center top;
-  pointer-events: none;
-  user-select: none;
+  /* Sizing/object-fit owned by hero-exact-shared.css — keep theme-only polish here */
   border-radius: inherit;
-  aspect-ratio: 1625 / 968;
-  animation:
-    homeExactArtReveal 0.95s cubic-bezier(0.22, 1, 0.36, 1) both,
-    homeExactArtFloat 9s ease-in-out 0.95s infinite;
-  transform-origin: 72% 48%;
-  will-change: transform;
-}
-
-@keyframes homeExactArtReveal {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 8px, 0) scale(1.01);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-}
-
-@keyframes homeExactArtFloat {
-  0%,
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
-  50% {
-    transform: translate3d(0, -6px, 0);
-  }
 }
 
 /* Live copy: a11y / SEO only — artwork already includes headline + CTAs */
@@ -320,9 +299,6 @@ body.page-home .home-landing-hero__hits {
   inset: 0;
   z-index: 5;
   pointer-events: none;
-  /* Keep hit layer in sync with art float so CTAs stay locked to artwork */
-  animation: homeExactArtFloat 9s ease-in-out 0.95s infinite;
-  will-change: transform;
 }
 
 body.page-home .home-landing-hero__hit {
@@ -368,7 +344,7 @@ body.page-home .hero-atelier__kicker {
   text-transform: uppercase;
   color: var(--home-ink);
   background: rgba(255, 248, 236, 0.92);
-  border: 1px solid rgba(240, 196, 204, 0.45);
+  border: 1px solid rgba(216, 243, 239, 0.45);
   box-shadow: 0 6px 18px rgba(120, 140, 180, 0.1);
 }
 
@@ -486,9 +462,9 @@ body.page-home .hero-atelier__btn--primary:hover {
 body.page-home .hero-atelier__btn--ghost {
   color: var(--home-rose-deep);
   background: rgba(255, 255, 255, 0.78);
-  border: 1.5px solid rgba(232, 160, 176, 0.65);
+  border: 1.5px solid rgba(38, 166, 154, 0.65);
   box-shadow:
-    0 10px 24px rgba(232, 160, 176, 0.22),
+    0 10px 24px rgba(38, 166, 154, 0.22),
     0 0 0 1px rgba(255, 255, 255, 0.65) inset;
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -500,7 +476,7 @@ body.page-home .hero-atelier__btn--ghost:hover {
   color: var(--home-rose-deep);
   transform: translateY(-3px);
   box-shadow:
-    0 14px 28px rgba(232, 160, 176, 0.32),
+    0 14px 28px rgba(38, 166, 154, 0.32),
     0 0 0 1px rgba(255, 255, 255, 0.85) inset;
 }
 
@@ -528,11 +504,11 @@ body.page-home .hero-atelier__wave {
   inset: -18% -12%;
   background:
     radial-gradient(ellipse 55% 40% at 18% 78%, rgba(158, 201, 232, 0.18), transparent 62%),
-    radial-gradient(ellipse 48% 36% at 82% 22%, rgba(196, 181, 224, 0.16), transparent 60%),
+    radial-gradient(ellipse 48% 36% at 82% 22%, rgba(125, 211, 199, 0.16), transparent 60%),
     linear-gradient(
       115deg,
       transparent 20%,
-      rgba(240, 196, 204, 0.12) 42%,
+      rgba(216, 243, 239, 0.12) 42%,
       rgba(158, 201, 232, 0.08) 58%,
       transparent 78%
     );
@@ -562,8 +538,8 @@ body.page-home .hero-atelier__glow {
   border-radius: 50%;
   background: radial-gradient(
     circle,
-    rgba(196, 181, 224, 0.28) 0%,
-    rgba(232, 160, 176, 0.12) 42%,
+    rgba(125, 211, 199, 0.28) 0%,
+    rgba(38, 166, 154, 0.12) 42%,
     transparent 72%
   );
   filter: blur(18px);
@@ -590,7 +566,7 @@ body.page-home .hero-atelier__bubble {
   background: radial-gradient(
     circle at 30% 28%,
     rgba(255, 255, 255, 0.55),
-    rgba(196, 181, 224, 0.14) 45%,
+    rgba(125, 211, 199, 0.14) 45%,
     rgba(158, 201, 232, 0.08) 70%,
     transparent 75%
   );
@@ -660,7 +636,7 @@ body.page-home .hero-atelier__particle {
   height: 4px;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 0 8px rgba(196, 181, 224, 0.75);
+  box-shadow: 0 0 8px rgba(125, 211, 199, 0.75);
   animation: homeExactParticle 5.5s ease-in-out infinite;
 }
 
@@ -759,7 +735,7 @@ body.page-home .hero-atelier__shimmer {
     115deg,
     transparent 35%,
     rgba(255, 255, 255, 0.08) 48%,
-    rgba(196, 181, 224, 0.1) 52%,
+    rgba(125, 211, 199, 0.1) 52%,
     transparent 65%
   );
   animation: homeExactShimmer 9s ease-in-out infinite;
@@ -822,7 +798,7 @@ body.page-home .hero-atelier__dots span {
   height: 0.42rem;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.75);
-  border: 1px solid rgba(232, 160, 176, 0.35);
+  border: 1px solid rgba(38, 166, 154, 0.35);
 }
 
 body.page-home .hero-atelier__dots span.is-active {
@@ -830,7 +806,7 @@ body.page-home .hero-atelier__dots span.is-active {
   height: 0.52rem;
   background: var(--home-rose);
   border-color: transparent;
-  box-shadow: 0 0 10px rgba(232, 160, 176, 0.55);
+  box-shadow: 0 0 10px rgba(38, 166, 154, 0.55);
 }
 
 @media (max-width: 899px) {
@@ -842,7 +818,7 @@ body.page-home .hero-atelier__dots span.is-active {
 
   body.page-home .home-landing-hero__exact-art,
   body.page-home .hero-atelier__exact-art {
-    object-position: center top;
+    object-position: center center;
   }
 
   /* Same % as desktop — panel keeps aspect-ratio; only tighten tap comfort slightly */
@@ -896,7 +872,7 @@ body.page-home .hero-atelier__dots span.is-active {
 body.page-home .band-shop--home {
   background:
     radial-gradient(ellipse 70% 50% at 10% 0%, rgba(158, 201, 232, 0.16), transparent 55%),
-    radial-gradient(ellipse 60% 45% at 95% 20%, rgba(240, 196, 204, 0.14), transparent 50%),
+    radial-gradient(ellipse 60% 45% at 95% 20%, rgba(216, 243, 239, 0.14), transparent 50%),
     transparent;
 }
 
@@ -936,24 +912,24 @@ body.page-home .featured-cat-card {
 
 body.page-home .featured-cat-card:hover {
   box-shadow: 0 22px 48px rgba(100, 120, 160, 0.16);
-  border-color: rgba(232, 160, 176, 0.45);
+  border-color: rgba(38, 166, 154, 0.45);
 }
 
 body.page-home .quote-card {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(240, 196, 204, 0.35);
+  border: 1px solid rgba(216, 243, 239, 0.35);
   box-shadow: var(--home-shadow);
 }
 
 body.page-home .quote-card--accent {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(240, 196, 204, 0.28));
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(216, 243, 239, 0.28));
 }
 
 body.page-home .connect-card {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.9);
-  border: 1px solid rgba(196, 181, 224, 0.28);
+  border: 1px solid rgba(125, 211, 199, 0.28);
   box-shadow: var(--home-shadow);
 }
 

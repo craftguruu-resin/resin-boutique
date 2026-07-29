@@ -1,7 +1,82 @@
 /**
- * Shared premium CTA overlay + entrance helpers for exact-panel heroes
- * (Home, Raw Materials, Photo Frames). Transparent hits over baked buttons.
+ * Shared exact-panel heroes (Home, Raw Materials, Photo Frames).
+ * 1) Frame sizes to the artwork — never crop / zoom the panel image.
+ * 2) Transparent CTA hits over baked buttons + micro-animations.
  */
+
+/* ---- Unified panel frame: container follows the image ---- */
+.home-landing-hero--exact,
+.hero-atelier__shell--exact-ref.home-landing-hero--exact,
+.rm-landing-hero--exact,
+.pf-landing-hero--exact {
+  box-sizing: border-box;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  flex: 0 0 auto !important;
+  line-height: 0;
+  /* Clip only for border-radius; art must not translate outside */
+  overflow: hidden;
+}
+
+.home-landing-hero__exact-art,
+.hero-atelier__exact-art.home-landing-hero__exact-art,
+.hero-atelier__shell--exact-ref .hero-atelier__exact-art,
+.rm-landing-hero__exact-art,
+.pf-landing-hero__exact-art {
+  position: relative !important;
+  z-index: 1;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  inset: auto !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: top;
+  object-fit: contain !important;
+  object-position: center center !important;
+  /* Intrinsic ratio from the file — do not force a mismatched aspect-ratio box */
+  aspect-ratio: auto !important;
+  pointer-events: none;
+  user-select: none;
+  border-radius: inherit;
+  /* Opacity-only entrance — no scale/translate that clips under overflow:hidden */
+  transform: none !important;
+  transform-origin: center center;
+  animation: heroExactArtFade 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  will-change: opacity;
+}
+
+@keyframes heroExactArtFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Hits stay locked to the static art frame (no float desync / crop) */
+.home-landing-hero__hits,
+.rm-landing-hero__hits,
+.pf-landing-hero__hits {
+  animation: none !important;
+  transform: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-landing-hero__exact-art,
+  .hero-atelier__exact-art.home-landing-hero__exact-art,
+  .rm-landing-hero__exact-art,
+  .pf-landing-hero__exact-art {
+    animation: none !important;
+  }
+}
+
+/* ---- CTA hit targets ---- */
 
 .hero-exact-hit {
   position: absolute;

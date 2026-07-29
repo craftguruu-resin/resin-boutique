@@ -1554,25 +1554,25 @@ body.rm-page-wide .rm-card-shop__desc {
    -------------------------------------------------------------------------- */
 
 body.rm-theme--photo-frame {
-  --pf-teal-deep: #1a4d61;
-  --pf-teal: #2c5f78;
-  --pf-teal-mid: #3d7a96;
-  --pf-teal-soft: #6fa3b8;
-  --pf-rose: #e6b3b8;
-  --pf-rose-soft: #f2d1d4;
-  --pf-rose-deep: #d8a7b1;
-  --pf-lavender: #c9b8d4;
-  --pf-cream: #fdf8f6;
-  --pf-cream-soft: #f7f0ec;
+  --pf-teal-deep: #0f766e;
+  --pf-teal: #26a69a;
+  --pf-teal-mid: #1e8e84;
+  --pf-teal-soft: #7dd3c7;
+  --pf-rose: #26a69a;
+  --pf-rose-soft: #d8f3ef;
+  --pf-rose-deep: #1e8e84;
+  --pf-lavender: #7dd3c7;
+  --pf-cream: #f4f9f7;
+  --pf-cream-soft: #eef8f6;
   --pf-gold: #d4af37;
   --pf-gold-soft: #e8d48b;
-  --pf-ink: #1d293f;
-  --pf-ink-muted: rgba(29, 41, 63, 0.62);
+  --pf-ink: #1a2b48;
+  --pf-ink-muted: rgba(26, 43, 72, 0.62);
   --pf-glass: rgba(255, 255, 255, 0.55);
   --pf-glass-strong: rgba(255, 255, 255, 0.72);
   background:
-    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(230, 179, 184, 0.14), transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 30%, rgba(44, 95, 120, 0.08), transparent 50%),
+    radial-gradient(ellipse 90% 50% at 50% -10%, rgba(125, 211, 199, 0.16), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 30%, rgba(38, 166, 154, 0.08), transparent 50%),
     var(--pf-cream);
   color: var(--pf-ink);
 }
