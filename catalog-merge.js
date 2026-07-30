@@ -78,6 +78,55 @@
 
   var mergeInflight = null;
   var mergeFinished = false;
+  var VENDOR_CACHE_KEY = "__cgVendorProductsCache";
+  var OVERRIDES_CACHE_KEY = "__cgCatalogOverridesCache";
+  var CACHE_TTL_MS = 5 * 60 * 1000;
+
+  function readSessionJson(key) {
+    try {
+      var raw = sessionStorage.getItem(key);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeSessionJson(key, value) {
+    try {
+      sessionStorage.setItem(key, JSON.stringify(value));
+    } catch (_) {}
+  }
+
+  function hydrateCatalogFromSessionCache() {
+    var now = Date.now();
+    var vendor = readSessionJson(VENDOR_CACHE_KEY);
+    if (vendor && vendor.products && vendor.ts && now - vendor.ts < CACHE_TTL_MS) {
+      if (typeof D.applyVendorProductsMerge === "function") {
+        D.applyVendorProductsMerge(vendor.products);
+      }
+    }
+    var ovWrap = readSessionJson(OVERRIDES_CACHE_KEY);
+    if (ovWrap && ovWrap.overrides && ovWrap.ts && now - ovWrap.ts < CACHE_TTL_MS) {
+      try {
+        window.__cgCatalogOverrides = ovWrap.overrides;
+      } catch (_) {}
+      if (ovWrap.suppressed && ovWrap.suppressed.length && typeof D.applyCatalogSuppressions === "function") {
+        try {
+          window.__cgCatalogSuppressions = ovWrap.suppressed;
+        } catch (_) {}
+        D.applyCatalogSuppressions(ovWrap.suppressed);
+      }
+      if (typeof D.applyPriceOverrides === "function") {
+        D.applyPriceOverrides(ovWrap.overrides);
+      }
+      if (typeof D.rebuildCategoryProductIndex === "function") {
+        D.rebuildCategoryProductIndex();
+      }
+    }
+  }
+
+  hydrateCatalogFromSessionCache();
 
   function runMerge() {
     if (mergeInflight) return mergeInflight;
@@ -109,6 +158,7 @@
       .then(function (j2) {
         if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
           D.applyVendorProductsMerge(j2.products);
+          writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j2.products });
         }
         dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
         return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" }).then(function (res) {
@@ -138,6 +188,13 @@
               window.__cgCatalogSuppressions = suppressed;
             } catch (_) {}
             D.applyCatalogSuppressions(suppressed);
+          }
+          if (j.overrides) {
+            writeSessionJson(OVERRIDES_CACHE_KEY, {
+              ts: Date.now(),
+              overrides: j.overrides,
+              suppressed: suppressed,
+            });
           }
         }
         if (typeof D.rebuildCategoryProductIndex === "function") {

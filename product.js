@@ -218,13 +218,37 @@
   function paintProductAfterCatalog(allowNotFound) {
     applyCachedCatalogOverrides();
     refreshProductRef();
-    if (!product) {
-      if (!allowNotFound) return;
-      render404();
+    if (product) {
+      ensureLayoutBeforePaint();
+      render();
       return;
     }
-    ensureLayoutBeforePaint();
-    render();
+    if (!allowNotFound || !catalogMergeComplete) return;
+    render404();
+  }
+
+  function onCatalogMergeProgress() {
+    applyCachedCatalogOverrides();
+    refreshProductRef();
+    if (!product) return;
+    paintProductAfterCatalog(false);
+  }
+
+  function onCatalogMergeComplete() {
+    if (catalogMergeComplete) return;
+    catalogMergeComplete = true;
+    paintProductAfterCatalog(true);
+  }
+
+  function catchUpCatalogPaint() {
+    var cm = window.CraftguruCatalogMerge;
+    if (!cm || typeof cm.whenReady !== "function") {
+      if (!catalogMergeComplete) onCatalogMergeComplete();
+      return;
+    }
+    cm.whenReady().then(function () {
+      onCatalogMergeComplete();
+    });
   }
 
   function productLayoutInDocument() {
@@ -254,19 +278,6 @@
     if (qp) {
       qp.disabled = selectedQty >= maxSelectableQty();
     }
-  }
-
-  function onCatalogMergeProgress() {
-    applyCachedCatalogOverrides();
-    refreshProductRef();
-    if (!product) return;
-    paintProductAfterCatalog(false);
-  }
-
-  function onCatalogMergeComplete() {
-    if (catalogMergeComplete) return;
-    catalogMergeComplete = true;
-    paintProductAfterCatalog(true);
   }
 
   var selected = "";
@@ -1195,21 +1206,9 @@
 
     if (product) {
       render();
-    } else {
-      renderLoadingForCatalog();
     }
 
-    var cm = window.CraftguruCatalogMerge;
-    if (cm && typeof cm.whenReady === "function") {
-      cm.whenReady().then(function () {
-        if (catalogMergeComplete) return;
-        catalogMergeComplete = true;
-        paintProductAfterCatalog(true);
-      });
-    } else if (!product) {
-      catalogMergeComplete = true;
-      paintProductAfterCatalog(true);
-    }
+    catchUpCatalogPaint();
   }
 
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogMergeComplete);

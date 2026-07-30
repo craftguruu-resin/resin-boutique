@@ -813,12 +813,26 @@ body.page-home .hero-atelier__dots span.is-active {
   body.page-home .hero-atelier__shell--exact-ref,
   body.page-home .home-landing-hero--exact {
     grid-template-columns: 1fr;
-    min-height: 0;
+    min-height: 0 !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body.page-home .hero-atelier {
+    padding-inline: clamp(0.35rem, 2.5vw, 0.85rem);
+    max-width: 100%;
+    overflow: hidden;
   }
 
   body.page-home .home-landing-hero__exact-art,
   body.page-home .hero-atelier__exact-art {
     object-position: center center;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    object-fit: contain !important;
   }
 
   /* Same % as desktop — panel keeps aspect-ratio; only tighten tap comfort slightly */

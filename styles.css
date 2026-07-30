@@ -7017,6 +7017,25 @@ a.home-auth-btn {
     0 0 0 1px rgba(255, 255, 255, 0.9) inset;
 }
 
+@media (max-width: 899px) {
+  .page-home .hero-atelier__shell {
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .page-home .hero-atelier__shell.home-landing-hero--exact,
+  .page-home .hero-atelier__shell--exact-ref {
+    overflow: hidden;
+  }
+
+  .page-home .hero-atelier {
+    padding-inline: clamp(0.35rem, 2.5vw, 0.85rem);
+  }
+}
+
 /* Exact panel heroes size to artwork — do not force a tall crop box */
 .page-home .hero-atelier__shell.home-landing-hero--exact,
 .page-home .hero-atelier__shell--exact-ref {

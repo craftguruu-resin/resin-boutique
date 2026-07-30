@@ -645,7 +645,6 @@
     if (!root) return;
     if (!m) {
       if (pdpFetch.status !== "done") {
-        renderLoadingShell(root);
         return;
       }
       state._lastHeroResolvedSrc = "";
@@ -952,11 +951,6 @@
         }
       });
   }
-
-  (function primePdpShell() {
-    var root = document.getElementById("rmPdpRoot");
-    if (root) renderLoadingShell(root);
-  })();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", load);
