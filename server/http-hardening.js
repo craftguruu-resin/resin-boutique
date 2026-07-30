@@ -71,26 +71,99 @@ function applyHttpHardening(app) {
   });
 }
 
+var IMAGE_EXT_RE = /\.(png|jpe?g|webp|gif|svg|ico)$/i;
+var STYLE_SCRIPT_EXT_RE = /\.(js|css)$/i;
+var FONT_EXT_RE = /\.(woff2?|ttf|otf|eot)$/i;
+
+var BUNDLED_MEDIA_MARKERS = [
+  "/media/home-showcase/",
+  "/media/photo-frames-showcase/",
+  "/media/raw-material-showcase/",
+];
+
+/** Browser cache: images load fast; HTML stays fresh to avoid stale-page flashes. */
+var CACHE = {
+  html: "no-cache, must-revalidate",
+  scriptStyle: "public, max-age=300, must-revalidate",
+  font: "public, max-age=604800, must-revalidate",
+  mutableUploadImage: "public, max-age=86400, must-revalidate",
+  bundledImage: "public, max-age=2592000, stale-while-revalidate=86400",
+  defaultImage: "public, max-age=604800, stale-while-revalidate=86400",
+};
+
+function normalizeStaticFilePath(filePath) {
+  var p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
+  var idx = p.indexOf("/media/");
+  if (idx >= 0) p = p.slice(idx);
+  return p;
+}
+
 /**
- * Cache headers for static assets served by Express.
- * @param {import("express").Request} _req
+ * Set Cache-Control for a file served by express.static.
+ * @param {import("express").Response} res
+ * @param {string} filePath absolute or relative path
+ * @param {"site-root"|"mutable-upload"} [profile]
+ */
+function setStaticFileCacheHeaders(res, filePath, profile) {
+  var p = normalizeStaticFilePath(filePath);
+  if (/\.html$/.test(p)) {
+    res.setHeader("Cache-Control", CACHE.html);
+    return;
+  }
+  if (STYLE_SCRIPT_EXT_RE.test(p)) {
+    res.setHeader("Cache-Control", CACHE.scriptStyle);
+    return;
+  }
+  if (FONT_EXT_RE.test(p)) {
+    res.setHeader("Cache-Control", CACHE.font);
+    return;
+  }
+  if (!IMAGE_EXT_RE.test(p)) return;
+
+  if (profile === "mutable-upload") {
+    res.setHeader("Cache-Control", CACHE.mutableUploadImage);
+    return;
+  }
+
+  for (var i = 0; i < BUNDLED_MEDIA_MARKERS.length; i++) {
+    if (p.indexOf(BUNDLED_MEDIA_MARKERS[i]) >= 0) {
+      res.setHeader("Cache-Control", CACHE.bundledImage);
+      return;
+    }
+  }
+
+  res.setHeader("Cache-Control", CACHE.defaultImage);
+}
+
+/**
+ * Cache headers for static assets served by Express (path-based middleware).
+ * @param {import("express").Request} req
  * @param {import("express").Response} res
  * @param {() => void} next
  */
 function staticCacheHeaders(req, res, next) {
   var p = String((req && req.path) || "").toLowerCase();
-  if (
-    p.indexOf("/media/catalog/") === 0 ||
-    p.indexOf("/media/hero/") === 0 ||
-    p.indexOf("/media/raw-materials/") === 0 ||
-    p.indexOf("/media/photo-frame-products/") === 0 ||
-    p.indexOf("/media/raw-material-showcase/") === 0 ||
-    p.indexOf("/media/photo-frames-showcase/") === 0 ||
-    p.indexOf("/media/home-showcase/") === 0
-  ) {
-    res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
+  if (/\.html$/.test(p)) {
+    res.setHeader("Cache-Control", CACHE.html);
+  } else if (IMAGE_EXT_RE.test(p)) {
+    if (
+      p.indexOf("/media/catalog/") === 0 ||
+      p.indexOf("/media/hero/") === 0 ||
+      p.indexOf("/media/raw-materials/") === 0 ||
+      p.indexOf("/media/photo-frame-products/") === 0
+    ) {
+      res.setHeader("Cache-Control", CACHE.mutableUploadImage);
+    } else if (
+      p.indexOf("/media/home-showcase/") === 0 ||
+      p.indexOf("/media/photo-frames-showcase/") === 0 ||
+      p.indexOf("/media/raw-material-showcase/") === 0
+    ) {
+      res.setHeader("Cache-Control", CACHE.bundledImage);
+    } else {
+      res.setHeader("Cache-Control", CACHE.defaultImage);
+    }
   } else {
-    res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+    res.setHeader("Cache-Control", CACHE.scriptStyle);
   }
   next();
 }
@@ -102,8 +175,21 @@ function staticCacheHeaders(req, res, next) {
  * @param {() => void} next
  */
 function htmlCacheHeaders(_req, res, next) {
-  res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
+  res.setHeader("Cache-Control", CACHE.html);
   next();
+}
+
+/**
+ * @param {"site-root"|"mutable-upload"} profile
+ */
+function makeExpressStaticOptions(profile) {
+  return {
+    etag: true,
+    lastModified: true,
+    setHeaders: function (res, filePath) {
+      setStaticFileCacheHeaders(res, filePath, profile);
+    },
+  };
 }
 
 /**
@@ -155,6 +241,8 @@ module.exports = {
   isProduction: isProduction,
   isCloudHosted: isCloudHosted,
   applyHttpHardening: applyHttpHardening,
+  setStaticFileCacheHeaders: setStaticFileCacheHeaders,
+  makeExpressStaticOptions: makeExpressStaticOptions,
   staticCacheHeaders: staticCacheHeaders,
   htmlCacheHeaders: htmlCacheHeaders,
   wireGracefulShutdown: wireGracefulShutdown,

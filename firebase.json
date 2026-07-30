@@ -19,27 +19,69 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css)",
+        "source": "media/catalog/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=604800, immutable" }
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
         ]
       },
       {
-        "source": "favicon.ico",
+        "source": "media/hero/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+        ]
+      },
+      {
+        "source": "media/raw-materials/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+        ]
+      },
+      {
+        "source": "media/photo-frame-products/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+        ]
+      },
+      {
+        "source": "media/home-showcase/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+        ]
+      },
+      {
+        "source": "media/photo-frames-showcase/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+        ]
+      },
+      {
+        "source": "media/raw-material-showcase/**",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
         ]
       },
       {
         "source": "media/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=2592000" }
+          { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }
+        ]
+      },
+      {
+        "source": "favicon.ico",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+        ]
+      },
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
         ]
       },
       {
         "source": "**/*.html",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=300" }
+          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
         ]
       }
     ]

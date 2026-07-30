@@ -1,0 +1,38 @@
+# Cloudflare Pages — browser cache for faster image loads.
+# HTML stays uncached so pages/scripts never go stale (no flash / not-found regressions).
+
+/media/catalog/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/media/hero/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/media/raw-materials/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/media/photo-frame-products/*
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/media/home-showcase/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/media/photo-frames-showcase/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/media/raw-material-showcase/*
+  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400
+
+/media/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=86400
+
+/favicon.ico
+  Cache-Control: public, max-age=86400, must-revalidate
+
+/*.html
+  Cache-Control: no-cache, must-revalidate
+
+/*.js
+  Cache-Control: public, max-age=300, must-revalidate
+
+/*.css
+  Cache-Control: public, max-age=300, must-revalidate

@@ -3769,37 +3769,8 @@ app.get("/vendor/returns", function (_req, res) {
 app.get("/vendororder", function (_req, res) {
   res.redirect(302, "/vendor-tags.html");
 });
-var staticOpts = {
-  etag: true,
-  lastModified: true,
-  setHeaders: function (res, filePath) {
-    var p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
-    /* Uploaded catalog / product media: never immutable — replaces at the same path must reach all visitors. */
-    if (
-      p.indexOf("/media/catalog/") >= 0 ||
-      p.indexOf("/media/hero/") >= 0 ||
-      p.indexOf("/media/raw-materials/") >= 0 ||
-      p.indexOf("/media/photo-frame-products/") >= 0 ||
-      p.indexOf("/media/raw-material-showcase/") >= 0 ||
-      p.indexOf("/media/photo-frames-showcase/") >= 0 ||
-      p.indexOf("/media/home-showcase/") >= 0
-    ) {
-      res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
-      return;
-    }
-    if (/\.(png|jpe?g|webp|gif|svg|ico)$/.test(p)) {
-      res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
-      return;
-    }
-    if (/\.(js|css|woff2?|ttf)$/.test(p)) {
-      res.setHeader("Cache-Control", "public, max-age=300, must-revalidate");
-      return;
-    }
-    if (/\.html$/.test(p)) {
-      res.setHeader("Cache-Control", "public, max-age=60, must-revalidate");
-    }
-  },
-};
+var staticSiteOpts = httpHardening.makeExpressStaticOptions("site-root");
+var staticUploadOpts = httpHardening.makeExpressStaticOptions("mutable-upload");
 
 /** Legacy shop URL — single Photo Frames page is photo-frames.html (hero + shop). */
 app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
@@ -3814,11 +3785,14 @@ app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
   res.redirect(302, "/photo-frames.html" + q);
 });
 
-app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticOpts));
-app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticOpts));
-app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticOpts));
-app.use("/media/photo-frame-products", express.static(catalogMediaPath.photoFrameProductsMediaFsRoot(), staticOpts));
-app.use(express.static(siteRoot, staticOpts));
+app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
+app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticUploadOpts));
+app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticUploadOpts));
+app.use(
+  "/media/photo-frame-products",
+  express.static(catalogMediaPath.photoFrameProductsMediaFsRoot(), staticUploadOpts)
+);
+app.use(express.static(siteRoot, staticSiteOpts));
 
 function onServerListen() {
   console.log("Craftguru server listening on http://" + HOST + ":" + PORT);
