@@ -204,18 +204,14 @@
 
   function renderLoadingForCatalog() {
     if (!els.root) return;
-    els.root.innerHTML =
-      '<div class="product-missing product-page-awaiting-catalog" role="status" aria-live="polite">' +
-      '<div class="pdp-loading-skel" aria-hidden="true">' +
-      '<div class="pdp-loading-skel__media"></div>' +
-      '<div class="pdp-loading-skel__lines">' +
-      '<span class="pdp-loading-skel__line pdp-loading-skel__line--lg"></span>' +
-      '<span class="pdp-loading-skel__line"></span>' +
-      '<span class="pdp-loading-skel__line pdp-loading-skel__line--sm"></span>' +
-      "</div></div>" +
-      "<h1>Loading</h1>" +
-      "<p>Preparing the latest size and pricing options…</p>" +
-      "</div>";
+    var L = window.CRAFTGURU_PDP_LOAD;
+    var html =
+      L && typeof L.catalogLoadingHtml === "function"
+        ? L.catalogLoadingHtml()
+        : '<div class="product-missing product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading">' +
+          '<div class="pdp-loading-skel" aria-hidden="true"><div class="pdp-loading-skel__media"></div></div>' +
+          "<h1>Loading</h1><p>Preparing the latest size and pricing options…</p></div>";
+    els.root.innerHTML = html;
     els.root.setAttribute("data-pdp-ready", "1");
   }
 
@@ -225,13 +221,17 @@
     restoreProductLayout();
   }
 
-  function paintProductAfterCatalog() {
+  var catalogMergeComplete = false;
+
+  function paintProductAfterCatalog(allowNotFound) {
     applyCachedCatalogOverrides();
     refreshProductRef();
     clearCatalogWaitTimer();
     if (!product) {
-      if (pendingLayoutHtml || (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id))) {
-        render404();
+      if (!allowNotFound) {
+        if (id && pendingLayoutHtml && els.root && !isLoadingPhase(els.root)) {
+          renderLoadingForCatalog();
+        }
         return;
       }
       render404();
@@ -239,6 +239,12 @@
     }
     ensureLayoutBeforePaint();
     render();
+  }
+
+  function isLoadingPhase(root) {
+    var L = window.CRAFTGURU_PDP_LOAD;
+    if (L && typeof L.isLoadingPhase === "function") return L.isLoadingPhase(root);
+    return !!(root && root.querySelector(".product-page-awaiting-catalog"));
   }
 
   function productLayoutInDocument() {
@@ -270,8 +276,17 @@
     }
   }
 
-  function onCatalogPricesMerged() {
-    paintProductAfterCatalog();
+  function onCatalogMergeProgress() {
+    applyCachedCatalogOverrides();
+    refreshProductRef();
+    if (!product) return;
+    clearCatalogWaitTimer();
+    paintProductAfterCatalog(false);
+  }
+
+  function onCatalogMergeComplete() {
+    catalogMergeComplete = true;
+    paintProductAfterCatalog(true);
   }
 
   var selected = "";
@@ -1202,51 +1217,39 @@
 
     function armCatalogPaint() {
       clearCatalogWaitTimer();
-      /* Never leave the skeleton up if the network hangs — paint whatever we have. */
       catalogWaitTimer = setTimeout(function () {
         catalogWaitTimer = null;
-        paintProductAfterCatalog();
+        catalogMergeComplete = true;
+        paintProductAfterCatalog(true);
       }, 8000);
       if (typeof merge === "function") {
-        merge().finally(paintProductAfterCatalog);
+        merge().finally(function () {
+          catalogMergeComplete = true;
+          paintProductAfterCatalog(true);
+        });
       } else {
-        paintProductAfterCatalog();
+        catalogMergeComplete = true;
+        paintProductAfterCatalog(true);
       }
     }
 
-    /*
-     * Full-page skeleton only when the product is not in the bundled catalog yet
-     * (vendor rows arrive via catalog-merge). If we already have a product, keep the
-     * layout in the DOM and paint once after merge — wiping the root previously left
-     * els.* pointing at detached nodes, so the loading screen never cleared.
-     */
-    if (!product && pendingLayoutHtml) {
+    if (!product) {
       renderLoadingForCatalog();
-      armCatalogPaint();
-      return;
-    }
-
-    if (product) {
+    } else {
       if (els.sizes) els.sizes.innerHTML = "";
       if (els.priceSizeLabel) els.priceSizeLabel.textContent = "";
       if (els.sizeScale) {
         els.sizeScale.hidden = true;
         els.sizeScale.setAttribute("aria-hidden", "true");
       }
-      armCatalogPaint();
-      return;
     }
 
-    if (D.productExistsInBundledCatalog && D.productExistsInBundledCatalog(id)) {
-      render404();
-      return;
-    }
-    render404();
+    armCatalogPaint();
   }
 
-  window.addEventListener("craftguruCatalogPricesMerged", onCatalogPricesMerged);
-  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogPricesMerged);
-  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogPricesMerged);
+  window.addEventListener("craftguruCatalogPricesMerged", onCatalogMergeComplete);
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogMergeProgress);
+  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogMergeProgress);
 
   /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {
@@ -1255,6 +1258,7 @@
       var nextId = new URLSearchParams(window.location.search).get("id");
       if (!nextId || nextId === id) return;
       id = nextId;
+      catalogMergeComplete = false;
       applyCachedCatalogOverrides();
       refreshProductRef();
       clearCatalogWaitTimer();

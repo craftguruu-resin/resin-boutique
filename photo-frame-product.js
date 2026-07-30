@@ -216,6 +216,8 @@
     _lastHeroResolvedSrc: "",
   };
 
+  var pdpFetch = { status: "idle" };
+
   /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
   function applyPdpHtml(root, html) {
     root.innerHTML = html;
@@ -626,13 +628,28 @@
     return "#888888";
   }
 
+  function renderLoadingShell(root) {
+    if (!root) return;
+    var L = window.CRAFTGURU_PDP_LOAD;
+    root.innerHTML =
+      L && typeof L.rmLoadingHtml === "function"
+        ? L.rmLoadingHtml()
+        : '<div class="rm-pdp rm-pdp--modern rm-pdp--loading" role="status" aria-live="polite" data-pdp-phase="loading"><p class="band-empty">Loading product details…</p></div>';
+    root.setAttribute("data-pdp-ready", "1");
+  }
+
   function render() {
     var m = state.material;
     var root = document.getElementById("rmPdpRoot");
     if (!root) return;
     if (!m) {
+      if (pdpFetch.status !== "done") {
+        renderLoadingShell(root);
+        return;
+      }
       state._lastHeroResolvedSrc = "";
       root.innerHTML = '<p class="band-empty">Product not found.</p>';
+      root.setAttribute("data-pdp-ready", "1");
       return;
     }
     var opt = m.options || {};
@@ -877,12 +894,17 @@
     mountRmPdpShare(root);
     mountRmBulkBuy(root);
     fadeHeroImageIn(root);
+    root.setAttribute("data-pdp-ready", "1");
   }
 
   function load() {
     var id = qs().trim();
     var b = catalogApiBase();
+    pdpFetch.status = "loading";
+    render();
+
     if (!id) {
+      pdpFetch.status = "done";
       state.material = null;
       document.title = "Product — Craft guru";
       render();
@@ -909,6 +931,12 @@
           syncDefaults(state.material);
           document.title = (state.material.name || "Product") + " — Craft guru";
         }
+      })
+      .catch(function () {
+        state.material = null;
+      })
+      .finally(function () {
+        pdpFetch.status = "done";
         render();
         var navEl = document.getElementById("rmNavTree");
         if (state.material && navEl && window.PfShopNav) {
@@ -918,14 +946,6 @@
           });
         } else if (navEl && window.PfShopNav) {
           window.PfShopNav.mount(navEl, { activeBase: "", activeSub: "" });
-        }
-      })
-      .catch(function () {
-        state.material = null;
-        render();
-        var navEl2 = document.getElementById("rmNavTree");
-        if (navEl2 && window.PfShopNav) {
-          window.PfShopNav.mount(navEl2, { activeBase: "", activeSub: "" });
         }
       });
   }

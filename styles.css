@@ -3445,6 +3445,17 @@ body.product-page--oos .btn-add-lg {
   width: 54%;
 }
 
+.rm-pdp--loading {
+  padding: 1.5rem 0 2rem;
+}
+
+.pdp-load-shell__msg {
+  margin: 0.75rem 0 0;
+  text-align: center;
+  color: rgba(26, 43, 72, 0.55);
+  font-size: 0.9rem;
+}
+
 @keyframes pdpSkelShine {
   0% {
     background-position: 100% 0;
