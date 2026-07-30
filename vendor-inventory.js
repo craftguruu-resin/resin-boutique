@@ -701,6 +701,32 @@
       .then(renderRows);
   }
 
+  function catalogTierCell(pid, letter, priceVal, costVal) {
+    var p =
+      priceVal != null && Number.isFinite(Number(priceVal)) ? esc(String(priceVal)) : "";
+    var c = costVal != null && Number.isFinite(Number(costVal)) ? esc(String(costVal)) : "";
+    return (
+      "<td class='vi-cat-tier-cell'><div class='vi-cat-tier-stack'>" +
+      "<span class='vi-cat-tier-stack__lbl'>Sell</span>" +
+      "<input class='vi-cat-price' data-k='" +
+      letter +
+      "' data-pid='" +
+      pid +
+      "' type='number' min='0' step='1' value='" +
+      p +
+      "' />" +
+      "<span class='vi-cat-tier-stack__lbl vi-cat-tier-stack__lbl--cost'>Cost</span>" +
+      "<input class='vi-cat-cost' data-k='" +
+      letter +
+      "' data-pid='" +
+      pid +
+      "' type='number' min='0' step='0.01' value='" +
+      c +
+      "' placeholder='0' />" +
+      "</div></td>"
+    );
+  }
+
   function loadCatalogPage(reset) {
     if (reset) catalogOffset = 0;
     var base = V.apiBase();
@@ -752,6 +778,7 @@
           tb.innerHTML += rows
             .map(function (it) {
               var e = it.effectivePrices || {};
+              var cst = it.effectiveCosts || {};
               var st = it.effectiveStock || {};
               var bid = esc(it.id);
               var imgUrl = resolveMediaUrl(it.image || "");
@@ -773,19 +800,11 @@
                 (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
                 "</div></div></td><td>" +
                 esc(it.category) +
-                "</td><td><input class='vi-cat-price' data-k='s' data-pid='" +
-                bid +
-                "' type='number' min='0' step='1' value='" +
-                esc(String(e.s)) +
-                "' style='width:4.5rem'/></td><td><input class='vi-cat-price' data-k='m' data-pid='" +
-                bid +
-                "' type='number' min='0' step='1' value='" +
-                esc(String(e.m)) +
-                "' style='width:4.5rem'/></td><td><input class='vi-cat-price' data-k='l' data-pid='" +
-                bid +
-                "' type='number' min='0' step='1' value='" +
-                esc(String(e.l)) +
-                "' style='width:4.5rem'/></td><td><input class='vi-cat-stock' data-k='s' data-pid='" +
+                "</td>" +
+                catalogTierCell(bid, "s", e.s, cst.s) +
+                catalogTierCell(bid, "m", e.m, cst.m) +
+                catalogTierCell(bid, "l", e.l, cst.l) +
+                "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
                 bid +
                 "' type='number' min='0' step='0.01' value='" +
                 esc(catalogStockFieldValue(st.s)) +
@@ -1116,6 +1135,15 @@
         if (k === "s") body.priceS = Number(inp.value);
         if (k === "m") body.priceM = Number(inp.value);
         if (k === "l") body.priceL = Number(inp.value);
+      });
+      tr.querySelectorAll(".vi-cat-cost").forEach(function (inp) {
+        var k = inp.getAttribute("data-k");
+        var raw = String(inp.value || "").trim();
+        var n = raw === "" ? null : Number(raw);
+        var v = n != null && Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+        if (k === "s") body.costS = v;
+        if (k === "m") body.costM = v;
+        if (k === "l") body.costL = v;
       });
       tr.querySelectorAll(".vi-cat-stock").forEach(function (inp) {
         var k = inp.getAttribute("data-k");

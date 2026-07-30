@@ -52,6 +52,9 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS out_of_stock BOOLEAN NOT NULL DEFAULT false",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS return_gift BOOLEAN NOT NULL DEFAULT false",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_s NUMERIC(14, 2)",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_m NUMERIC(14, 2)",
+    "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_l NUMERIC(14, 2)",
     "CREATE TABLE IF NOT EXISTS storefront_hero_slides (" +
       "id SERIAL PRIMARY KEY," +
       "image_path TEXT NOT NULL," +

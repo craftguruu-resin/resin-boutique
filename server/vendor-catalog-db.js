@@ -27,6 +27,9 @@ function ensureCatalogOverridesColumns(cb) {
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
       "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS name_override VARCHAR(500)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_s NUMERIC(14, 2)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_m NUMERIC(14, 2)",
+      "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_l NUMERIC(14, 2)",
     ].forEach(function (sql) {
       chain = chain.then(function () {
         return pool.query(sql);
@@ -147,7 +150,7 @@ function listOverridesMap(cb) {
     if (e0) return cb(e0);
     pool
       .query(
-        "SELECT product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json, name_override " +
+        "SELECT product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json, name_override " +
           "FROM catalog_price_overrides ORDER BY product_id"
       )
       .then(function (r) {
@@ -169,6 +172,9 @@ function listOverridesMap(cb) {
             s: row.price_s != null ? Number(row.price_s) : null,
             m: row.price_m != null ? Number(row.price_m) : null,
             l: row.price_l != null ? Number(row.price_l) : null,
+            costS: row.cost_s != null ? Number(row.cost_s) : null,
+            costM: row.cost_m != null ? Number(row.cost_m) : null,
+            costL: row.cost_l != null ? Number(row.cost_l) : null,
             stockS: row.stock_s != null ? Number(row.stock_s) : null,
             stockM: row.stock_m != null ? Number(row.stock_m) : null,
             stockL: row.stock_l != null ? Number(row.stock_l) : null,
@@ -246,6 +252,43 @@ function resolveBasePrices(productId, cb) {
     .catch(cb);
 }
 
+function mergeCostPatch(cur, patch) {
+  var ct = {
+    s: cur.costS != null && Number.isFinite(Number(cur.costS)) ? Number(cur.costS) : null,
+    m: cur.costM != null && Number.isFinite(Number(cur.costM)) ? Number(cur.costM) : null,
+    l: cur.costL != null && Number.isFinite(Number(cur.costL)) ? Number(cur.costL) : null,
+  };
+  if (!patch) return ct;
+  ["costS", "costM", "costL"].forEach(function (k) {
+    var letter = k === "costS" ? "s" : k === "costM" ? "m" : "l";
+    if (!Object.prototype.hasOwnProperty.call(patch, k)) return;
+    var v = patch[k];
+    if (v === null || v === "" || (typeof v === "string" && !String(v).trim())) {
+      ct[letter] = null;
+      return;
+    }
+    var n = Number(v);
+    if (Number.isFinite(n) && n >= 0) ct[letter] = n;
+  });
+  return ct;
+}
+
+/** Strip vendor-only cost fields before guest-facing API responses. */
+function sanitizeOptionsForPublic(opt) {
+  if (!opt || typeof opt !== "object" || Array.isArray(opt)) return opt;
+  var out = Object.assign({}, opt);
+  ["sizes", "qtyOptions", "colors"].forEach(function (key) {
+    if (!Array.isArray(out[key])) return;
+    out[key] = out[key].map(function (row) {
+      if (!row || typeof row !== "object") return row;
+      var copy = Object.assign({}, row);
+      delete copy.costInr;
+      return copy;
+    });
+  });
+  return out;
+}
+
 function mergeStockPatch(cur, patch) {
   var st = {
     s: cur.stockS != null && Number.isFinite(Number(cur.stockS)) ? Number(cur.stockS) : null,
@@ -301,6 +344,7 @@ function upsertOverride(productId, patch, cb) {
         if (patch.l != null && Number.isFinite(Number(patch.l))) eff.l = Number(patch.l);
       }
       var st = mergeStockPatch(cur, patch);
+      var ct = mergeCostPatch(cur, patch);
       var patchListed = !!(patch && Object.prototype.hasOwnProperty.call(patch, "listed"));
       var listedInsert = patchListed ? !!patch.listed : cur.listed !== false;
       var listedUpdateParam = patchListed ? !!patch.listed : null;
@@ -342,18 +386,19 @@ function upsertOverride(productId, patch, cb) {
       }
       pool
         .query(
-          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override) " +
-            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12::jsonb, $13) " +
+          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override) " +
+            "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14::jsonb, $15::jsonb, $16) " +
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
-            "price_l = EXCLUDED.price_l, stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
+            "price_l = EXCLUDED.price_l, cost_s = EXCLUDED.cost_s, cost_m = EXCLUDED.cost_m, cost_l = EXCLUDED.cost_l, " +
+            "stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
             "out_of_stock = false, " +
-            "listed = COALESCE($14::boolean, catalog_price_overrides.listed), " +
+            "listed = COALESCE($17::boolean, catalog_price_overrides.listed), " +
             "return_gift = EXCLUDED.return_gift, " +
             "size_labels = EXCLUDED.size_labels, " +
             "options_json = EXCLUDED.options_json, " +
             "name_override = EXCLUDED.name_override, " +
-            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override, updated_at",
-          [id, eff.s, eff.m, eff.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, nameOverride, listedUpdateParam]
+            "updated_at = now() RETURNING product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override, updated_at",
+          [id, eff.s, eff.m, eff.l, ct.s, ct.m, ct.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, nameOverride, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];
@@ -364,6 +409,11 @@ function upsertOverride(productId, patch, cb) {
               s: row.price_s != null ? Number(row.price_s) : null,
               m: row.price_m != null ? Number(row.price_m) : null,
               l: row.price_l != null ? Number(row.price_l) : null,
+            },
+            costs: {
+              s: row.cost_s != null ? Number(row.cost_s) : null,
+              m: row.cost_m != null ? Number(row.cost_m) : null,
+              l: row.cost_l != null ? Number(row.cost_l) : null,
             },
             stock: {
               s: row.stock_s != null ? Number(row.stock_s) : null,
@@ -532,6 +582,7 @@ module.exports = {
   upsertOverride: upsertOverride,
   deleteBundledCatalogOverride: deleteBundledCatalogOverride,
   catalogOptionsHasPayload: catalogOptionsHasPayload,
+  sanitizeOptionsForPublic: sanitizeOptionsForPublic,
   listSuppressedProductIds: listSuppressedProductIds,
   addSuppressedProductIds: addSuppressedProductIds,
 };

@@ -1623,6 +1623,31 @@ app.get("/api/vendor/dashboard-summary", function (req, res) {
   });
 });
 
+/** Sales, Razorpay fee (2.5%), unit cost, and profit — vendor token. */
+app.get("/api/vendor/analytics/sales-profit", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var period = String((req.query && req.query.period) || "monthly").toLowerCase();
+    if (period !== "daily" && period !== "weekly" && period !== "monthly" && period !== "yearly") {
+      period = "monthly";
+    }
+    ordersRepo.getVendorSalesProfit(period, function (e2, data) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("not configured") >= 0 ? 503 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, insights: data });
+    });
+  });
+});
+
 /** Orders + revenue KPIs, charts (IST), top base categories — vendor token. */
 app.get("/api/vendor/analytics/order-insights", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
@@ -2253,7 +2278,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
         o.sizeLabels = slOut;
       }
       if (vendorCatalogDb.catalogOptionsHasPayload(x.options)) {
-        o.options = x.options;
+        o.options = vendorCatalogDb.sanitizeOptionsForPublic(x.options);
       }
       out[key] = o;
     });
@@ -3359,6 +3384,11 @@ app.get("/api/vendor/catalog-products", function (req, res) {
                   m: ov.m != null ? Number(ov.m) : p.prices.m,
                   l: ov.l != null ? Number(ov.l) : p.prices.l,
                 };
+                var effCost = {
+                  s: ov.costS != null ? Number(ov.costS) : null,
+                  m: ov.costM != null ? Number(ov.costM) : null,
+                  l: ov.costL != null ? Number(ov.costL) : null,
+                };
                 var ovHasStock = ov.stockS != null || ov.stockM != null || ov.stockL != null;
                 var agg = aggMap[p.id];
                 var st = ovHasStock
@@ -3379,6 +3409,7 @@ app.get("/api/vendor/catalog-products", function (req, res) {
                   image: p.image,
                   basePrices: p.prices,
                   effectivePrices: eff,
+                  effectiveCosts: effCost,
                   effectiveStock: st,
                   hasOverride: !!(
                     ov &&
@@ -3475,6 +3506,9 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         s: b.priceS != null ? Number(b.priceS) : b.s != null ? Number(b.s) : undefined,
         m: b.priceM != null ? Number(b.priceM) : b.m != null ? Number(b.m) : undefined,
         l: b.priceL != null ? Number(b.priceL) : b.l != null ? Number(b.l) : undefined,
+        costS: b.costS !== undefined ? b.costS : b.cost_s !== undefined ? b.cost_s : undefined,
+        costM: b.costM !== undefined ? b.costM : b.cost_m !== undefined ? b.cost_m : undefined,
+        costL: b.costL !== undefined ? b.costL : b.cost_l !== undefined ? b.cost_l : undefined,
         stockS: b.stockS !== undefined ? b.stockS : b.stock_s !== undefined ? b.stock_s : undefined,
         stockM: b.stockM !== undefined ? b.stockM : b.stock_m !== undefined ? b.stock_m : undefined,
         stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,

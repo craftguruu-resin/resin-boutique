@@ -53,6 +53,7 @@
         p === "vendor-raw-materials.html" ||
         p === "vendor-photo-frames.html" ||
         p === "vendor-inventory.html" ||
+        p === "vendor-sales-profit.html" ||
         p === "vendor-categories-manage.html"
       ) {
         return true;
@@ -351,6 +352,7 @@
       "<ul class='vs-nav'>" +
       link("dashboard", vendorPageHref("vendor-dashboard.html"), "Dashboard", "▣") +
       link("tags", vendorPageHref("vendor-tags.html"), "Orders &amp; tags", "◇") +
+      link("salesProfit", vendorPageHref("vendor-sales-profit.html"), "Sales &amp; profit", "₹") +
       link("inventory", vendorPageHref("vendor-inventory.html"), "Inventory", "◫") +
       link("products", vendorPageHref("vendor-products-manage.html"), "Products", "✎") +
       link("categories", vendorPageHref("vendor-categories-manage.html"), "Categories", "▦") +

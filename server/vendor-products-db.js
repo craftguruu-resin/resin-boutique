@@ -715,6 +715,11 @@ function pushStaticManageRow(p, omap, skuMap, out) {
       m: ov.m != null ? Number(ov.m) : p.prices.m,
       l: ov.l != null ? Number(ov.l) : p.prices.l,
     },
+    costs: {
+      s: ov.costS != null ? Number(ov.costS) : null,
+      m: ov.costM != null ? Number(ov.costM) : null,
+      l: ov.costL != null ? Number(ov.costL) : null,
+    },
     sku: skuMap[p.id] || "",
     returnGift: !!(ov && ov.returnGift),
     source: "catalog",
@@ -775,6 +780,11 @@ function pushVendorManageRow(row, omap, skuMap, out) {
       s: ov.s != null ? Number(ov.s) : row.prices.s,
       m: ov.m != null ? Number(ov.m) : row.prices.m,
       l: ov.l != null ? Number(ov.l) : row.prices.l,
+    },
+    costs: {
+      s: ov.costS != null ? Number(ov.costS) : null,
+      m: ov.costM != null ? Number(ov.costM) : null,
+      l: ov.costL != null ? Number(ov.costL) : null,
     },
     sku: skuMap[row.id] || "",
     returnGift: !!(ov && ov.returnGift),

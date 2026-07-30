@@ -114,6 +114,57 @@
   color: rgba(15, 23, 42, 0.55);
 }
 
+.vi-cat-tier-cell {
+  min-width: 5.5rem;
+  vertical-align: top;
+}
+
+.vi-cat-tier-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 4.75rem;
+}
+
+.vi-cat-tier-stack__lbl {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(15, 23, 42, 0.45);
+  line-height: 1.1;
+}
+
+.vi-cat-tier-stack__lbl--cost {
+  margin-top: 0.15rem;
+  color: rgba(30, 142, 132, 0.85);
+}
+
+.vi-cat-tier-stack .vi-cat-price,
+.vi-cat-tier-stack .vi-cat-cost {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 0.28rem 0.35rem;
+  border: 1px solid var(--vs-border);
+  border-radius: 0.35rem;
+  font-size: 0.82rem;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  background: var(--vs-surface);
+}
+
+.vi-cat-tier-stack .vi-cat-cost {
+  background: rgba(38, 166, 154, 0.06);
+  border-color: rgba(38, 166, 154, 0.22);
+}
+
+.vi-cat-tier-stack .vi-cat-price:focus,
+.vi-cat-tier-stack .vi-cat-cost:focus {
+  outline: 2px solid rgba(38, 166, 154, 0.35);
+  outline-offset: 1px;
+}
+
 .vi-cat-product-cell {
   display: flex;
   align-items: flex-start;
@@ -2031,4 +2082,44 @@ a.vd-kpi-card--link:focus-visible {
 
 .vendor-saas .vcm-field-full {
   grid-column: 1 / -1;
+}
+
+/* Sales & profit (vendor-sales-profit) */
+.vsp-kpi-card--profit {
+  border-color: rgba(22, 163, 74, 0.28);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.06), var(--vs-surface));
+}
+
+.vsp-kpi-value--neg {
+  color: #dc2626;
+}
+
+.vsp-table th,
+.vsp-table td {
+  font-size: 0.82rem;
+  vertical-align: top;
+}
+
+.vsp-table--lines td {
+  white-space: nowrap;
+}
+
+.vsp-table--lines td:nth-child(3) {
+  white-space: normal;
+  min-width: 8rem;
+}
+
+.vsp-cell--profit {
+  font-weight: 700;
+  color: var(--vd-green);
+  font-variant-numeric: tabular-nums;
+}
+
+.vsp-cell--neg {
+  color: #dc2626;
+}
+
+.vsp-id {
+  font-size: 0.75rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }

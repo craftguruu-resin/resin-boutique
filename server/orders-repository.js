@@ -5,6 +5,7 @@ var ordersDb = require("./orders-db.js");
 var ordersStore = require("./orders-store.js");
 var guestDb = require("./guest-db.js");
 var vendorOrderInsightsPg = require("./vendor-order-insights.js");
+var vendorSalesProfitPg = require("./vendor-sales-profit.js");
 
 /**
  * @param {{ guest: object, items: object[], totals: object, orderType: string, tagRef: string }} opts
@@ -492,6 +493,15 @@ function resolveSkuMapPool(items, cb) {
   });
 }
 
+function getVendorSalesProfit(period, cb) {
+  if (poolMod.isEnabled()) {
+    return vendorSalesProfitPg.getSalesProfitInsights(period, cb);
+  }
+  process.nextTick(function () {
+    cb(new Error("Database not configured"));
+  });
+}
+
 module.exports = {
   createCheckoutParcelOrder,
   getOrdersToday,
@@ -501,6 +511,7 @@ module.exports = {
   getVendorMonthlySummary,
   getVendorDashboardSummary,
   getVendorOrderInsights,
+  getVendorSalesProfit,
   updateOrderFulfillment,
   listOrdersByGuestId,
   loadPaidOrderForGuestBill,

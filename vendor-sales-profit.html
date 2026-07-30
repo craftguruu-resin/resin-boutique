@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<!-- Local dev: Node API. Production same-origin: clear data-bill-api-base. -->
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
+  <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
+  <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="media/brand-craftguru.png?v=20260730" />
+  <title>Sales &amp; profit — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+  <link rel="stylesheet" href="craftguru-theme.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="salesProfit">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Sales &amp; profit</h1>
+          <p class="vs-topbar__sub">Paid orders only · profit = selling price − 2.5% Razorpay − unit cost (from inventory / edit product).</p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vspRefreshBtn">Refresh</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <div id="vspSection">
+          <div class="vd-ledger">
+            <p id="vspErr" class="vd-ledger__err" hidden></p>
+
+            <div class="vd-ledger__toolbar">
+              <div class="vd-ledger__tabs" role="tablist" aria-label="Profit period">
+                <button type="button" class="vd-ledger__tab" data-vsp-period="daily">Daily</button>
+                <button type="button" class="vd-ledger__tab" data-vsp-period="weekly">Weekly</button>
+                <button type="button" class="vd-ledger__tab vd-ledger__tab--active" data-vsp-period="monthly">Monthly</button>
+                <button type="button" class="vd-ledger__tab" data-vsp-period="yearly">Yearly</button>
+              </div>
+              <div class="vd-ledger__period">
+                <span id="vspPeriodLabel">—</span>
+              </div>
+            </div>
+
+            <div class="vd-kpi-row">
+              <div class="vd-kpi-card">
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Revenue (sell price)</p>
+                  <p class="vd-kpi-card__value" id="vspKpiRevenue">₹0</p>
+                  <p class="vd-kpi-card__sub" id="vspKpiRevenueSub">Qty sold in period</p>
+                </div>
+              </div>
+              <div class="vd-kpi-card">
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Razorpay fee (2.5%)</p>
+                  <p class="vd-kpi-card__value" id="vspKpiRazorpay">₹0</p>
+                  <p class="vd-kpi-card__sub">Flat 2.5% of line revenue</p>
+                </div>
+              </div>
+              <div class="vd-kpi-card">
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Product cost</p>
+                  <p class="vd-kpi-card__value" id="vspKpiCost">₹0</p>
+                  <p class="vd-kpi-card__sub">Unit cost × qty (inventory / edit product)</p>
+                </div>
+              </div>
+              <div class="vd-kpi-card vsp-kpi-card--profit">
+                <div class="vd-kpi-card__body">
+                  <p class="vd-kpi-card__label">Net profit</p>
+                  <p class="vd-kpi-card__value" id="vspKpiProfit">₹0</p>
+                  <p class="vd-kpi-card__sub" id="vspKpiProfitSub">After Razorpay &amp; cost</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="vd-panel">
+              <h2 class="vd-panel__title" id="vspChartTitle">Revenue &amp; profit</h2>
+              <p class="vd-panel__hint" id="vspChartHint">Bars = revenue · green line = estimated profit.</p>
+              <div class="vs-chart-wrap vd-chart-wrap--tall"><canvas id="vspMainChart" aria-label="Sales and profit chart"></canvas></div>
+            </div>
+
+            <div class="vd-panel">
+              <h3 class="vd-panel__title" style="margin-top: 0">Profit by product</h3>
+              <p class="vd-panel__hint">Rollup for the selected period · sorted by profit</p>
+              <div class="vs-table-wrap">
+                <table class="vs-table vsp-table">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Qty</th>
+                      <th>Revenue</th>
+                      <th>Razorpay</th>
+                      <th>Cost</th>
+                      <th>Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="vspProductRows">
+                    <tr><td colspan="6" class="vs-muted">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="vd-panel">
+              <h3 class="vd-panel__title" style="margin-top: 0">Order line detail</h3>
+              <p class="vd-panel__hint">Latest paid lines in period (up to 200)</p>
+              <div class="vs-table-wrap">
+                <table class="vs-table vsp-table vsp-table--lines">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Order</th>
+                      <th>Product</th>
+                      <th>Size</th>
+                      <th>Qty</th>
+                      <th>Sell</th>
+                      <th>Razorpay</th>
+                      <th>Cost</th>
+                      <th>Profit</th>
+                    </tr>
+                  </thead>
+                  <tbody id="vspLineRows">
+                    <tr><td colspan="9" class="vs-muted">Loading…</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-sales-profit.js"></script>
+</body>
+</html>

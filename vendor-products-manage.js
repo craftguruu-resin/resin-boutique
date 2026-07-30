@@ -522,6 +522,13 @@
     document.getElementById("vpmPriceS").value = pr.s != null ? pr.s : "";
     document.getElementById("vpmPriceM").value = pr.m != null ? pr.m : "";
     document.getElementById("vpmPriceL").value = pr.l != null ? pr.l : "";
+    var co = p.costs || {};
+    var costS = document.getElementById("vpmCostS");
+    var costM = document.getElementById("vpmCostM");
+    var costL = document.getElementById("vpmCostL");
+    if (costS) costS.value = co.s != null ? co.s : "";
+    if (costM) costM.value = co.m != null ? co.m : "";
+    if (costL) costL.value = co.l != null ? co.l : "";
     var sl = p.sizeLabels || {};
     document.getElementById("vpmLblS").value = (sl.s && sl.s.name) || "";
     document.getElementById("vpmLblM").value = (sl.m && sl.m.name) || "";
@@ -722,6 +729,17 @@
     var ps = Number(document.getElementById("vpmPriceS").value);
     var pm = Number(document.getElementById("vpmPriceM").value);
     var pl = Number(document.getElementById("vpmPriceL").value);
+    function readCost(id) {
+      var el = document.getElementById(id);
+      if (!el) return null;
+      var t = String(el.value || "").trim();
+      if (!t) return null;
+      var n = Number(t);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+    }
+    var cs = readCost("vpmCostS");
+    var cm = readCost("vpmCostM");
+    var cl = readCost("vpmCostL");
 
     var returnGift = !!(document.getElementById("vpmReturnGiftYes") && document.getElementById("vpmReturnGiftYes").checked);
     var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
@@ -744,6 +762,9 @@
         priceS: Number.isFinite(ps) ? ps : 0,
         priceM: Number.isFinite(pm) ? pm : 0,
         priceL: Number.isFinite(pl) ? pl : 0,
+        costS: cs,
+        costM: cm,
+        costL: cl,
         returnGift: returnGift,
         sizeLabelS: String((document.getElementById("vpmLblS") && document.getElementById("vpmLblS").value) || "").trim(),
         sizeLabelM: String((document.getElementById("vpmLblM") && document.getElementById("vpmLblM").value) || "").trim(),
@@ -816,6 +837,12 @@
         migrated2.detailBody = descTxt;
         return putCatalogPrices(editingId, {
           name: vendorName,
+          priceS: Number.isFinite(ps) ? ps : 0,
+          priceM: Number.isFinite(pm) ? pm : 0,
+          priceL: Number.isFinite(pl) ? pl : 0,
+          costS: cs,
+          costM: cm,
+          costL: cl,
           returnGift: returnGift,
           description: descTxt,
           options: migrated2,

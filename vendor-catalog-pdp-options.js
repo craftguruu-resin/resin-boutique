@@ -84,8 +84,9 @@
         '<div style="grid-column:1/-1">' +
           rowInput("Label", (o && o.label) || "", "Compact · 6 inch") +
           "</div>" +
-          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
+          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem">' +
           rowMoney("Price (INR)", o && o.priceInr, "vpm-sz-price") +
+          rowMoney("Cost (INR)", o && o.costInr, "vpm-sz-cost") +
           rowMoney("MRP (optional)", o && o.mrpInr, "vpm-sz-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
@@ -103,8 +104,9 @@
         '<div style="grid-column:1/-1">' +
           rowInput("Pack label", (o && o.label) || "", "Pack of 3") +
           "</div>" +
-          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
+          '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem">' +
           rowMoney("Price add-on (INR)", o && o.priceInr, "vpm-qty-price") +
+          rowMoney("Cost add-on (INR)", o && o.costInr, "vpm-qty-cost") +
           rowMoney("MRP add-on (optional)", o && o.mrpInr, "vpm-qty-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
@@ -131,6 +133,9 @@
       '<code class="vrm-color-readout vpm-color-readout"></code></div></div>' +
       '<div style="grid-column:1/-1">' +
       rowUrl("Image URL (optional)", (o && o.image) || "") +
+      "</div>" +
+      '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
+      rowMoney("Colour cost (INR)", o && o.costInr, "vpm-cl-cost") +
       "</div>";
     var row = wrapRow(inner);
     if (o && o.id) row.setAttribute("data-color-id", String(o.id));
@@ -225,44 +230,53 @@
         var labInp = row.querySelector("input.vpm-opt-inp");
         var pick = row.querySelector("input.vpm-color-pick");
         var urlInp = row.querySelector("input.vpm-opt-url");
+        var coInp = row.querySelector(".vpm-cl-cost");
         var lab = labInp && labInp.value.trim();
         if (!lab) return;
+        var co = coInp && coInp.value.trim() !== "" ? Number(coInp.value) : null;
         out.push({
           id: String(row.getAttribute("data-color-id") || ("c" + (out.length + 1))).slice(0, 40),
           label: lab.slice(0, 120),
           hex: normalizeHexVendor((pick && pick.value) || "#888888"),
           image: urlInp ? urlInp.value.trim() : "",
+          costInr: Number.isFinite(co) && co >= 0 ? co : null,
         });
       } else if (kind === "size") {
         var labS = row.querySelector("input.vpm-opt-inp");
         var urlS = row.querySelector("input.vpm-opt-url");
         var prS = row.querySelector(".vpm-sz-price");
+        var coS = row.querySelector(".vpm-sz-cost");
         var mrS = row.querySelector(".vpm-sz-mrp");
         var lab = labS && labS.value.trim();
         if (!lab) return;
         var pr = prS && prS.value.trim() !== "" ? Number(prS.value) : null;
+        var co = coS && coS.value.trim() !== "" ? Number(coS.value) : null;
         var mr = mrS && mrS.value.trim() !== "" ? Number(mrS.value) : null;
         out.push({
           id: "s" + (out.length + 1),
           label: lab.slice(0, 120),
           image: urlS ? urlS.value.trim() : "",
           priceInr: Number.isFinite(pr) && pr >= 0 ? pr : null,
+          costInr: Number.isFinite(co) && co >= 0 ? co : null,
           mrpInr: Number.isFinite(mr) && mr >= 0 ? mr : null,
         });
       } else if (kind === "qty") {
         var labQ = row.querySelector("input.vpm-opt-inp");
         var urlQ = row.querySelector("input.vpm-opt-url");
         var prQ = row.querySelector(".vpm-qty-price");
+        var coQ = row.querySelector(".vpm-qty-cost");
         var mrQ = row.querySelector(".vpm-qty-mrp");
         var labq = labQ && labQ.value.trim();
         if (!labq) return;
         var prq = prQ && prQ.value.trim() !== "" ? Number(prQ.value) : null;
+        var coq = coQ && coQ.value.trim() !== "" ? Number(coQ.value) : null;
         var mrq = mrQ && mrQ.value.trim() !== "" ? Number(mrQ.value) : null;
         out.push({
           id: "q" + (out.length + 1),
           label: labq.slice(0, 120),
           image: urlQ ? urlQ.value.trim() : "",
           priceInr: Number.isFinite(prq) && prq >= 0 ? prq : null,
+          costInr: Number.isFinite(coq) && coq >= 0 ? coq : null,
           mrpInr: Number.isFinite(mrq) && mrq >= 0 ? mrq : null,
         });
       }
