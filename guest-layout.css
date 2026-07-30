@@ -203,8 +203,10 @@ body.guest-site.page-product--resin-rm main.sub-main {
 }
 
 body.guest-site .guest-page-category-rail {
-  flex: 0 0 auto;
-  width: min(220px, 28vw);
+  flex: var(--cg-sidebar-flex, 0 0 clamp(13rem, 15vw, 17rem));
+  width: clamp(var(--cg-sidebar-w-min, 13rem), 15vw, var(--cg-sidebar-w-max, 17rem));
+  max-width: var(--cg-sidebar-w-max, 17rem);
+  min-width: var(--cg-sidebar-w-min, 13rem);
   max-height: calc(100vh - 5.5rem);
   position: sticky;
   top: 5.25rem;
@@ -276,6 +278,9 @@ body.guest-site .global-find {
 
   body.guest-site .guest-page-category-rail {
     width: 100%;
+    min-width: 0;
+    max-width: none;
+    flex: 1 1 auto;
     max-height: none;
     position: relative;
     top: auto;

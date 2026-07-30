@@ -6772,7 +6772,7 @@ a.home-auth-btn {
 @media (min-width: 960px) {
   .home-landing-layout {
     display: grid;
-    grid-template-columns: minmax(13rem, 17rem) minmax(0, 1fr);
+    grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
     align-items: stretch;
     column-gap: clamp(1rem, 2.5vw, 1.85rem);
     row-gap: 0;

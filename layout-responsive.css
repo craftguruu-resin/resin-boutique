@@ -1,0 +1,333 @@
+/**
+ * Craftguru storefront — unified responsive layout layer.
+ * Loaded by guest-layout.js on all guest pages (after craftguru-theme.css tokens).
+ * Scope: layout, overflow, touch targets — no branding changes.
+ */
+
+/* ── Global media & overflow hygiene ── */
+body.guest-site img,
+body.guest-site video {
+  max-width: 100%;
+  height: auto;
+}
+
+body.guest-site table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+body.guest-site .band-shop-inner,
+body.guest-site .checkout-page,
+body.guest-site .product-page,
+body.guest-site .sub-main {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Reserve space for stacked social FABs so content is not obscured */
+body.guest-site {
+  padding-bottom: calc(
+    var(--cg-float-edge-y, clamp(1rem, 3.5vw, 1.65rem)) +
+      (var(--cg-float-fab, 3.75rem) * 2) +
+      var(--cg-float-gap, 0.75rem) +
+      0.35rem +
+      env(safe-area-inset-bottom, 0px)
+  );
+}
+
+@media (max-width: 480px) {
+  body.guest-site {
+    padding-bottom: calc(
+      1rem + (var(--cg-float-fab, 3.5rem) * 2) + var(--cg-float-gap, 0.65rem) + 0.35rem +
+        env(safe-area-inset-bottom, 0px)
+    );
+  }
+}
+
+/* ── Header & navigation ── */
+@media (max-width: 900px) {
+  body.guest-site .site-top {
+    padding-inline: clamp(0.75rem, 3vw, 1.25rem);
+    gap: 0.5rem;
+  }
+
+  body.guest-site .brand__logo-img {
+    max-width: min(42vw, 11.5rem);
+    height: auto;
+  }
+
+  body.guest-site .nav-dock {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    padding-inline: 0.15rem;
+  }
+
+  body.guest-site .nav-dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.guest-site .nav-dock-link {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  body.guest-site .site-top-end {
+    gap: 0.35rem;
+  }
+
+  body.guest-site .btn-cart,
+  body.guest-site .header-orders-link {
+    min-height: 2.5rem;
+  }
+}
+
+@media (max-width: 520px) {
+  body.guest-site .nav-dock-link {
+    padding: 0.42rem 0.58rem;
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+  }
+
+  body.guest-site .btn-cart-label {
+    display: none;
+  }
+}
+
+/* ── Main content padding ── */
+@media (max-width: 640px) {
+  body.guest-site .sub-main {
+    padding-top: 0.85rem;
+    padding-inline: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  body.guest-site .home-landing-layout {
+    padding-inline: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  body.guest-site .band-shop {
+    padding-inline: clamp(0.75rem, 3vw, 1rem);
+  }
+
+  body.guest-site .checkout-page {
+    padding-inline: clamp(0.75rem, 3vw, 1rem);
+    padding-bottom: 2.5rem;
+  }
+}
+
+/* ── Product grids & cards ── */
+@media (max-width: 639px) {
+  body.guest-site .product-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem 0.55rem;
+  }
+}
+
+@media (max-width: 380px) {
+  body.guest-site .product-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Product detail / gallery ── */
+@media (max-width: 720px) {
+  body.guest-site .product-catalog-gallery--multi {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.guest-site .product-catalog-gallery__thumb-col {
+    order: 2;
+  }
+
+  body.guest-site .product-catalog-gallery__thumb-track {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  body.guest-site .product-layout--split {
+    gap: 1.35rem;
+  }
+
+  body.guest-site .product-visual--fx .product-hero-img--fx {
+    max-width: 100%;
+  }
+}
+
+/* ── RM / PF shop filters & grids ── */
+@media (max-width: 720px) {
+  body.guest-site .rm-filter-toolbar .category-toolbar__group,
+  body.guest-site .rm-filter-toolbar .category-toolbar__group--grow,
+  body.guest-site .rm-filter-toolbar .category-toolbar__group--actions {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+
+  body.guest-site .rm-filter-toolbar .category-toolbar__btn-row {
+    width: 100%;
+  }
+
+  body.guest-site .rm-filter-toolbar .category-toolbar__btn-row .category-toolbar__btn {
+    flex: 1 1 calc(50% - 0.25rem);
+    min-height: 2.75rem;
+  }
+
+  body.guest-site .rm-grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.65rem;
+  }
+}
+
+@media (max-width: 400px) {
+  body.guest-site .rm-grid-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ── Checkout & forms ── */
+@media (max-width: 859px) {
+  body.guest-site .checkout-layout {
+    gap: 1.35rem;
+  }
+
+  body.guest-site .checkout-panel--sticky {
+    position: static;
+    top: auto;
+  }
+
+  body.guest-site .checkout-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  body.guest-site .checkout-pay-modal__sheet {
+    width: min(100%, calc(100vw - 1.5rem));
+    max-height: min(92vh, 720px);
+    margin-inline: auto;
+  }
+}
+
+@media (max-width: 768px) {
+  body.guest-site input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+  body.guest-site select,
+  body.guest-site textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+@media (pointer: coarse) {
+  body.guest-site .category-pill--rail,
+  body.guest-site .cart-item__qty,
+  body.guest-site .icon-btn {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+}
+
+/* ── Cart drawer ── */
+@media (max-width: 480px) {
+  body.guest-site .cart-drawer {
+    width: 100%;
+  }
+
+  body.guest-site .cart-drawer-inner {
+    border-radius: var(--radius-xl, 1.75rem) 0 0 var(--radius-xl, 1.75rem);
+    padding-inline: 1rem;
+  }
+
+  body.guest-site .cart-item {
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  body.guest-site .cart-item__side {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+/* ── Footer ── */
+@media (max-width: 640px) {
+  body.guest-site .footer-sitemap {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.25rem;
+  }
+
+  body.guest-site .site-footer--craftguru {
+    padding-inline: clamp(0.75rem, 3vw, 1.25rem);
+  }
+}
+
+/* ── Auth / account modals ── */
+@media (max-width: 560px) {
+  body.guest-site .auth-modal__sheet,
+  body.guest-site .checkout-auth-sheet {
+    width: min(100%, calc(100vw - 1.25rem));
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+
+  body.guest-site .account-layout {
+    gap: 1rem;
+  }
+
+  body.guest-site .account-side-nav {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ── Search popover ── */
+@media (max-width: 640px) {
+  body.guest-site .global-find__popover {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(calc(100vw - 1.5rem), 20rem);
+  }
+
+  body.guest-site .guest-header-search {
+    max-width: calc(100vw - 1.5rem);
+  }
+
+  body.guest-site .guest-header-search__results {
+    width: min(calc(100vw - 1.5rem), 22rem);
+    max-width: none;
+  }
+}
+
+/* ── Hero sections — prevent horizontal bleed ── */
+body.guest-site .hero-atelier,
+body.guest-site .rm-hero,
+body.guest-site .pf-hero-exact,
+body.guest-site .home-ethereal-hero {
+  max-width: 100%;
+  overflow: hidden;
+}
+
+body.guest-site .rm-hero__media img,
+body.guest-site .pf-hero-exact__panel img,
+body.guest-site .home-ethereal-hero__art img {
+  max-width: 100%;
+}
+
+/* ── Category listing toolbar ── */
+@media (max-width: 720px) {
+  body.guest-site .category-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  body.guest-site .category-toolbar__group {
+    width: 100%;
+    min-width: 0;
+  }
+}

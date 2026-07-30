@@ -273,11 +273,32 @@
     });
   }
 
+  var mountRegistry = typeof WeakMap !== "undefined" ? new WeakMap() : null;
+
+  function mountWithRegistry(el, ctx) {
+    if (mountRegistry && el) mountRegistry.set(el, ctx || {});
+    return mount(el, ctx);
+  }
+
+  function refreshMountedNavs() {
+    if (!mountRegistry) return;
+    document.querySelectorAll("[data-rm-nav-built]").forEach(function (el) {
+      var ctx = mountRegistry.get(el);
+      if (!ctx) return;
+      mount(el, Object.assign({}, ctx, { forceRebuild: true }));
+    });
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") refreshMountedNavs();
+  });
+
   window.RmShopNav = {
     fetchTaxonomy: fetchTaxonomy,
-    mount: mount,
+    mount: mountWithRegistry,
     updateActive: updateActive,
     shopHref: shopHref,
     preferredListingSub: preferredListingSub,
+    refresh: refreshMountedNavs,
   };
 })();

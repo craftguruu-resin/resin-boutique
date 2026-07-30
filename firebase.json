@@ -25,6 +25,12 @@
         ]
       },
       {
+        "source": "favicon.ico",
+        "headers": [
+          { "key": "Cache-Control", "value": "public, max-age=300, must-revalidate" }
+        ]
+      },
+      {
         "source": "media/**",
         "headers": [
           { "key": "Cache-Control", "value": "public, max-age=2592000" }

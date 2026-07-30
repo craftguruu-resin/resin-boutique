@@ -336,6 +336,9 @@
     window.addEventListener("craftguruCatalogPricesMerged", function () {
       runSearch();
     });
+    window.addEventListener("craftguruCatalogCategoriesMerged", function () {
+      runSearch();
+    });
   }
 
   /** Catalog subpages historically omitted the home auth bar — inject so Sign up / Log in match index.html. */
@@ -436,16 +439,62 @@
     document.head.appendChild(script);
   }
 
-  function injectWhatsAppWidget() {
-    if (document.getElementById("cgWhatsAppWidget")) return;
-    if (!document.querySelector('link[href*="whatsapp-widget.css"]')) {
-      var link = document.createElement("link");
-      link.rel = "stylesheet";
-      link.href = "whatsapp-widget.css";
-      document.head.appendChild(link);
-    }
+  function ensureStylesheet(href) {
+    if (document.querySelector('link[href*="' + href + '"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
+  function ensureSocialFloatStack() {
+    var stack = document.getElementById("cgSocialFloatStack");
+    if (stack) return stack;
+    stack = document.createElement("div");
+    stack.id = "cgSocialFloatStack";
+    stack.className = "cg-social-float-stack";
+    stack.setAttribute("aria-label", "Contact shortcuts");
+    document.body.appendChild(stack);
+    return stack;
+  }
+
+  function injectSocialFloatWidgets() {
+    ensureSocialFloatStack();
+    ensureStylesheet("social-float-stack.css");
+    ensureStylesheet("whatsapp-widget.css");
+    ensureStylesheet("instagram-widget.css");
     injectScriptOnce("craftguru-whatsapp.js", false);
+    injectScriptOnce("craftguru-instagram.js", false);
     injectScriptOnce("whatsapp-widget.js", true);
+    injectScriptOnce("instagram-widget.js", true);
+  }
+
+  function ensureLayoutResponsiveStyles() {
+    ensureStylesheet("layout-responsive.css");
+  }
+
+  function injectFooterMainMenu() {
+    var D = window.RESIN_DATA;
+    if (!D || !D.categories) return;
+    var cols = document.querySelectorAll(".footer-sitemap__col");
+    var col = null;
+    cols.forEach(function (c) {
+      var h = c.querySelector(".footer-sitemap__title");
+      if (h && /main menu/i.test(String(h.textContent || ""))) col = c;
+    });
+    if (!col) return;
+    var ul = col.querySelector(".footer-sitemap__list");
+    if (!ul) return;
+    ul.innerHTML = "";
+    D.categories.forEach(function (c) {
+      if (!c || !c.id) return;
+      var li = document.createElement("li");
+      var a = document.createElement("a");
+      a.href = "category.html?cat=" + encodeURIComponent(String(c.id));
+      a.textContent = D.getCategoryLabel ? D.getCategoryLabel(c.id) : c.label || c.id;
+      li.appendChild(a);
+      ul.appendChild(li);
+    });
   }
 
   function ensureIconRailStyles() {
@@ -458,13 +507,15 @@
 
   function boot() {
     document.body.classList.add("guest-site");
+    ensureLayoutResponsiveStyles();
     ensureIconRailStyles();
     ensureRailIconsLoaded(function () {
       injectCategoryRail();
     });
     injectHeaderSearch();
     injectStorefrontAuthChrome();
-    injectWhatsAppWidget();
+    injectSocialFloatWidgets();
+    injectFooterMainMenu();
   }
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
@@ -473,6 +524,7 @@
         /* Rebuild rail so renamed category labels from /api/catalog/categories apply. */
         injectCategoryRail();
       });
+      injectFooterMainMenu();
     } catch (_) {}
   });
 

@@ -1,0 +1,134 @@
+/* Craftguru Instagram widget — premium FAB (matches WhatsApp stack) */
+
+.cg-ig-widget {
+  position: relative;
+  z-index: 1;
+  font-family: inherit;
+}
+
+.cg-ig-widget__fab {
+  position: relative;
+  width: var(--cg-float-fab, 3.75rem);
+  height: var(--cg-float-fab, 3.75rem);
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  background: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cg-ig-widget__fab-core {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: linear-gradient(
+    135deg,
+    #f09433 0%,
+    #e6683c 22%,
+    #dc2743 48%,
+    #cc2366 72%,
+    #bc1888 100%
+  );
+  box-shadow:
+    0 4px 14px rgba(188, 24, 136, 0.32),
+    0 12px 32px rgba(204, 35, 102, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s ease;
+}
+
+.cg-ig-widget__icon {
+  width: 1.65rem;
+  height: 1.65rem;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.12));
+}
+
+.cg-ig-widget__glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(225, 48, 108, 0.42) 0%, rgba(225, 48, 108, 0) 68%);
+  animation: cg-ig-glow 3s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cg-ig-widget__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(225, 48, 108, 0.45);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.cg-ig-widget__ring--1 {
+  animation: cg-ig-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+
+.cg-ig-widget__ring--2 {
+  animation: cg-ig-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite 1.2s;
+}
+
+.cg-ig-widget__fab:hover .cg-ig-widget__fab-core,
+.cg-ig-widget__fab:focus-visible .cg-ig-widget__fab-core {
+  transform: scale(1.08);
+  box-shadow:
+    0 6px 18px rgba(188, 24, 136, 0.4),
+    0 18px 40px rgba(204, 35, 102, 0.3),
+    0 0 0 4px rgba(225, 48, 108, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.32);
+  outline: none;
+}
+
+.cg-ig-widget__fab:active .cg-ig-widget__fab-core {
+  transform: scale(0.96);
+}
+
+@keyframes cg-ig-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(1.55);
+    opacity: 0;
+  }
+}
+
+@keyframes cg-ig-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: scale(0.95);
+  }
+  50% {
+    opacity: 0.9;
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-ig-widget__ring,
+  .cg-ig-widget__glow {
+    animation: none !important;
+  }
+
+  .cg-ig-widget__fab-core {
+    transition: none !important;
+  }
+}

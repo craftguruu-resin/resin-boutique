@@ -323,6 +323,14 @@
 
   window.addEventListener("resinCartChanged", onCartChanged);
 
+  function onCatalogNamesMerged() {
+    updateBadge();
+    renderDrawer();
+  }
+  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogNamesMerged);
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogNamesMerged);
+  window.addEventListener("craftguruCatalogPricesMerged", onCatalogNamesMerged);
+
   window.RESIN_SHELL = {
     updateBadge: updateBadge,
     renderDrawer: renderDrawer,

@@ -66,6 +66,20 @@
   --cg-rail-blush: var(--cg-mint-soft);
   --cg-rail-lavender: var(--cg-mint);
   --cg-rail-shadow: var(--cg-shadow);
+
+  /* ---- Shared sidebar / category rail width (single source of truth) ---- */
+  --cg-sidebar-w-min: 13rem;
+  --cg-sidebar-w-max: 17rem;
+  --cg-sidebar-col: minmax(var(--cg-sidebar-w-min), var(--cg-sidebar-w-max));
+  --cg-sidebar-flex: 0 0 clamp(var(--cg-sidebar-w-min), 15vw, var(--cg-sidebar-w-max));
+
+  /* ---- Responsive breakpoints (reference for layout-responsive.css) ---- */
+  --bp-xs: 480px;
+  --bp-sm: 640px;
+  --bp-md: 768px;
+  --bp-lg: 900px;
+  --bp-xl: 1100px;
+  --bp-2xl: 1200px;
 }
 
 /* ================================================================== */

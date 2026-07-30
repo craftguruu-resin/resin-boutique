@@ -1,0 +1,52 @@
+/* Shared fixed stack for guest social FABs (Instagram + WhatsApp) */
+
+.cg-social-float-stack {
+  --cg-float-gap: 0.75rem;
+  --cg-float-fab: 3.75rem;
+  --cg-float-edge-x: clamp(1rem, 3.5vw, 1.65rem);
+  --cg-float-edge-y: clamp(1rem, 3.5vw, 1.65rem);
+
+  position: fixed;
+  right: var(--cg-float-edge-x);
+  bottom: calc(var(--cg-float-edge-y) + env(safe-area-inset-bottom, 0px));
+  z-index: 12050;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: var(--cg-float-gap);
+  pointer-events: none;
+  animation: cg-social-float 5s ease-in-out infinite;
+}
+
+.cg-social-float-stack > * {
+  pointer-events: auto;
+}
+
+.cg-social-float-stack:has(.cg-wa-widget.is-open) {
+  animation: none;
+}
+
+@keyframes cg-social-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@media (max-width: 480px) {
+  .cg-social-float-stack {
+    --cg-float-fab: 3.5rem;
+    --cg-float-edge-x: 1rem;
+    --cg-float-edge-y: 1rem;
+    --cg-float-gap: 0.65rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cg-social-float-stack {
+    animation: none !important;
+  }
+}

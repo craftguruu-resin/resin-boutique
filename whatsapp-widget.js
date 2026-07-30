@@ -42,6 +42,10 @@
     }).join("");
   }
 
+  function getMountRoot() {
+    return document.getElementById("cgSocialFloatStack") || document.body;
+  }
+
   function mountWidget() {
     if (document.getElementById("cgWhatsAppWidget")) return;
 
@@ -64,7 +68,7 @@
       "</span>" +
       "</button>";
 
-    document.body.appendChild(root);
+    getMountRoot().appendChild(root);
 
     var fab = document.getElementById("cgWhatsAppFab");
     var panel = document.getElementById("cgWhatsAppPanel");

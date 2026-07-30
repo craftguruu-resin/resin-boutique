@@ -1571,5 +1571,16 @@
     refreshCheckout();
   });
 
+  function onCatalogNamesMerged() {
+    if (els.success && !els.success.classList.contains("checkout-hidden")) return;
+    refreshCheckout();
+    if (window.RESIN_SHELL && window.RESIN_SHELL.renderDrawer) {
+      window.RESIN_SHELL.renderDrawer();
+    }
+  }
+  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogNamesMerged);
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogNamesMerged);
+  window.addEventListener("craftguruCatalogPricesMerged", onCatalogNamesMerged);
+
   boot();
 })();

@@ -153,6 +153,18 @@
     return out;
   }
 
+  function readField(id) {
+    var el = document.getElementById(id);
+    return el ? String(el.value || "").trim() : "";
+  }
+
+  function readMoney(id) {
+    var raw = readField(id);
+    if (!raw) return null;
+    var n = Number(raw);
+    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
+  }
+
   function buildCreateProductOptions(coverUrl) {
     var cover = String(coverUrl || "").trim();
     var labelEl = document.getElementById("viApCoverColorLabel");
@@ -184,34 +196,62 @@
       m: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
       l: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
     };
+    var mrps = {
+      s: readMoney("viApMrpS"),
+      m: readMoney("viApMrpM"),
+      l: readMoney("viApMrpL"),
+    };
     var sizes = [
       {
         id: "sz-s",
         label: String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim() || "Compact",
         priceInr: prices.s,
+        mrpInr: mrps.s,
       },
       {
         id: "sz-m",
         label: String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim() || "Classic",
         priceInr: prices.m,
+        mrpInr: mrps.m,
       },
       {
         id: "sz-l",
         label: String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim() || "Grand",
         priceInr: prices.l,
+        mrpInr: mrps.l,
       },
     ];
+    sizes.forEach(function (sz) {
+      if (sz.mrpInr == null) delete sz.mrpInr;
+    });
     var descEl = document.getElementById("viApDescription");
+    var trust = readField("viApTrust")
+      .split("\n")
+      .map(function (l) {
+        return l.trim();
+      })
+      .filter(Boolean);
+    var stockQtyEl = document.getElementById("viApStockQty");
+    var stockQtyRaw = stockQtyEl && stockQtyEl.value.trim() !== "" ? Number(stockQtyEl.value) : null;
+    var stockQty =
+      stockQtyRaw != null && Number.isFinite(stockQtyRaw) && stockQtyRaw >= 0 ? Math.floor(stockQtyRaw) : null;
     return {
       useSize: true,
       useQty: false,
       useColor: colors.length > 0,
+      badge: readField("viApBadge").slice(0, 80),
+      shipNote: readField("viApNote").slice(0, 300),
+      trustBullets: trust.slice(0, 8),
       sizes: sizes,
       qtyOptions: [],
       colors: colors,
       heroImage: cover,
       galleryImages: galleryImages,
       detailBody: descEl ? String(descEl.value || "").trim().slice(0, 8000) : "",
+      vendorInventory: {
+        qtyOnHand: stockQty,
+        note: readField("viApStockNote").slice(0, 500),
+      },
     };
   }
 
@@ -227,6 +267,14 @@
     if (gal) gal.value = "";
     var desc = document.getElementById("viApDescription");
     if (desc) desc.value = "";
+    ["viApNote", "viApBadge", "viApTrust", "viApStockNote", "viApMrpS", "viApMrpM", "viApMrpL"].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.value = "";
+    });
+    var stockQty = document.getElementById("viApStockQty");
+    if (stockQty) stockQty.value = "";
+    var returnGift = document.getElementById("viApReturnGift");
+    if (returnGift) returnGift.checked = false;
     var cLab = document.getElementById("viApCoverColorLabel");
     if (cLab) cLab.value = "Default";
     var cHex = document.getElementById("viApCoverColorHex");
@@ -344,6 +392,7 @@
       .then(function (p) {
         var cover = String((p && p.image) || imageUrl || "").trim();
         var options = buildCreateProductOptions(cover);
+        var returnGift = !!(document.getElementById("viApReturnGift") && document.getElementById("viApReturnGift").checked);
         if (!p || !p.id) return p;
         return vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(p.id) + "/prices"), {
           method: "PUT",
@@ -353,6 +402,7 @@
             priceM: options.sizes[1] && options.sizes[1].priceInr,
             priceL: options.sizes[2] && options.sizes[2].priceInr,
             description: options.detailBody || "",
+            returnGift: returnGift,
             options: options,
           }),
           cache: "no-store",

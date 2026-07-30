@@ -3713,6 +3713,10 @@ app.post("/api/whatsapp-bill", function (req, res) {
 });
 
 var siteRoot = path.join(__dirname, "..");
+var FAVICON_ASSET = "/media/brand-craftguru.png?v=20260730";
+app.get("/favicon.ico", function (_req, res) {
+  res.redirect(302, FAVICON_ASSET);
+});
 app.get("/vendor", function (_req, res) {
   res.redirect(302, "/vendor-dashboard.html");
 });

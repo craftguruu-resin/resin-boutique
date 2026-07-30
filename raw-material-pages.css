@@ -1085,7 +1085,7 @@ a.rm-empty-link:hover {
 /* Raw material shop — category rail + filters (matches main dashboard spacing) */
 .rm-shop-layout {
   display: grid;
-  grid-template-columns: minmax(200px, 240px) 1fr;
+  grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 2.5rem);
   align-items: start;
   margin-top: 1.25rem;
@@ -1499,7 +1499,7 @@ body.rm-page-wide .band-shop-inner {
 }
 
 body.rm-page-wide .rm-shop-layout {
-  grid-template-columns: minmax(200px, min(17vw, 280px)) minmax(0, 1fr);
+  grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
   gap: clamp(1rem, 2.5vw, 2rem);
 }
 

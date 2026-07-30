@@ -116,6 +116,20 @@
     }).then(V.parseApiJson);
   }
 
+  function notifyGuestCatalogRefresh() {
+    try {
+      if (window.CraftguruCatalogMerge && typeof window.CraftguruCatalogMerge.refresh === "function") {
+        window.CraftguruCatalogMerge.refresh();
+      }
+      if (window.RmShopNav && typeof window.RmShopNav.refresh === "function") {
+        window.RmShopNav.refresh();
+      }
+      if (window.PfShopNav && typeof window.PfShopNav.refresh === "function") {
+        window.PfShopNav.refresh();
+      }
+    } catch (_) {}
+  }
+
   function refreshAll() {
     setMsg("Loading…");
     return loadResin()
@@ -575,6 +589,7 @@
               throw new Error((x.json && x.json.error) || "Save failed");
             }
             setMsg("Saved.");
+            notifyGuestCatalogRefresh();
             return loadResin().then(onEditDomainChange);
           })
           .catch(function (e) {
@@ -607,6 +622,7 @@
             throw new Error((x.json && x.json.error) || "Save failed");
           }
           setMsg("Saved.");
+          notifyGuestCatalogRefresh();
           return loadResin().then(onEditDomainChange);
         })
         .catch(function (e) {
@@ -644,6 +660,7 @@
           }
           rmTaxonomy = doc;
           setMsg("Saved.");
+          notifyGuestCatalogRefresh();
           return loadRm().then(onEditDomainChange);
         })
         .catch(function (e) {
@@ -693,6 +710,7 @@
         }
         pfNav = doc2;
         setMsg("Saved.");
+        notifyGuestCatalogRefresh();
         return loadPf().then(onEditDomainChange);
       })
       .catch(function (e) {

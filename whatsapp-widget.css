@@ -1,19 +1,25 @@
 /* Craftguru WhatsApp widget — premium FAB + glass panel */
 
 .cg-wa-widget {
+  position: relative;
+  z-index: 1;
+  font-family: inherit;
+}
+
+/* Legacy fallback when stack is not injected */
+body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
   position: fixed;
   right: clamp(1rem, 3.5vw, 1.65rem);
-  bottom: clamp(1rem, 3.5vw, 1.65rem);
+  bottom: calc(clamp(1rem, 3.5vw, 1.65rem) + env(safe-area-inset-bottom, 0px));
   z-index: 12050;
-  font-family: inherit;
   animation: cg-wa-float 5s ease-in-out infinite;
 }
 
 /* ── Floating action button ── */
 .cg-wa-widget__fab {
   position: relative;
-  width: 3.75rem;
-  height: 3.75rem;
+  width: var(--cg-float-fab, 3.75rem);
+  height: var(--cg-float-fab, 3.75rem);
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -276,14 +282,9 @@
 
 /* ── Mobile ── */
 @media (max-width: 480px) {
-  .cg-wa-widget {
+  body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
     right: 1rem;
-    bottom: 1rem;
-  }
-
-  .cg-wa-widget__fab {
-    width: 3.5rem;
-    height: 3.5rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 
   .cg-wa-widget__panel {

@@ -280,6 +280,9 @@
   window.addEventListener("craftguruCatalogPricesMerged", function () {
     paint();
   });
+  window.addEventListener("craftguruCatalogCategoriesMerged", function () {
+    paint();
+  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", paint);

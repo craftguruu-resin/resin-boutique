@@ -6,6 +6,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="media/brand-craftguru.png?v=20260730" />
@@ -74,6 +75,43 @@
                 <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
                   Shown on the product details page only — not on category listings. Up to 8,000 characters.
                 </p>
+              </div>
+              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.25rem; grid-column: 1 / -1">
+                <div class="vs-field" style="flex: 1; min-width: 8rem">
+                  <label for="viApStockQty">Qty on hand (optional)</label>
+                  <input type="number" id="viApStockQty" class="vs-input" min="0" step="1" placeholder="Warehouse" />
+                </div>
+                <div class="vs-field" style="flex: 2; min-width: 12rem">
+                  <label for="viApStockNote">Shelf note (optional)</label>
+                  <input type="text" id="viApStockNote" class="vs-input" maxlength="500" />
+                </div>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApNote">Short note (shipping / lead time)</label>
+                <input type="text" id="viApNote" maxlength="300" placeholder="e.g. Ships in 5–7 business days" />
+              </div>
+              <div class="vs-field">
+                <label for="viApMrpS">MRP tier S (optional)</label>
+                <input type="number" id="viApMrpS" min="0" step="0.01" placeholder="Strike-through" />
+              </div>
+              <div class="vs-field">
+                <label for="viApMrpM">MRP tier M (optional)</label>
+                <input type="number" id="viApMrpM" min="0" step="0.01" placeholder="Strike-through" />
+              </div>
+              <div class="vs-field">
+                <label for="viApMrpL">MRP tier L (optional)</label>
+                <input type="number" id="viApMrpL" min="0" step="0.01" placeholder="Strike-through" />
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApBadge">Badge (optional)</label>
+                <input type="text" id="viApBadge" maxlength="80" placeholder="e.g. BEST SELLER" />
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApTrust">Trust line bullets (one per line)</label>
+                <textarea id="viApTrust" rows="3" maxlength="800" placeholder="Safe &amp; non-toxic&#10;Lab tested"></textarea>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label><input type="checkbox" id="viApReturnGift" /> Mark as return gift collection</label>
               </div>
               <div class="vs-field">
                 <label for="viApPriceS">Price tier 1 (S) ₹</label>
