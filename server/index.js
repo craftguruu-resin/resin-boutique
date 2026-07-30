@@ -100,11 +100,32 @@ try {
   Razorpay = null;
 }
 
+function describeRazorpayConfig() {
+  var id = String(RAZORPAY_KEY_ID || "").trim();
+  var secret = String(RAZORPAY_KEY_SECRET || "").trim();
+  var sdk = Boolean(Razorpay);
+  var configured = Boolean(sdk && id && secret);
+  var mode = "missing";
+  if (id.indexOf("rzp_live_") === 0) mode = "live";
+  else if (id.indexOf("rzp_test_") === 0) mode = "test";
+  else if (configured) mode = "unknown";
+  var blockedInProduction =
+    String(NODE_ENV || "").toLowerCase() === "production" && mode === "test";
+  return {
+    configured: configured && !blockedInProduction,
+    sdkInstalled: sdk,
+    mode: mode,
+    blockedInProduction: blockedInProduction,
+    keyIdPrefix: id ? id.slice(0, 12) + "…" : "",
+  };
+}
+
 function getRazorpayClient() {
-  if (!Razorpay || !RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) return null;
+  var st = describeRazorpayConfig();
+  if (!st.configured) return null;
   return new Razorpay({
-    key_id: RAZORPAY_KEY_ID,
-    key_secret: RAZORPAY_KEY_SECRET,
+    key_id: String(RAZORPAY_KEY_ID).trim(),
+    key_secret: String(RAZORPAY_KEY_SECRET).trim(),
   });
 }
 
@@ -683,7 +704,8 @@ app.get("/api/health", function (_req, res) {
       ok: true,
       status: "ok",
       whatsappConfigured: hasToken,
-      razorpayConfigured: Boolean(RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET && Razorpay),
+      razorpay: describeRazorpayConfig(),
+      razorpayConfigured: describeRazorpayConfig().configured,
       emailConfigured: Boolean(createMailTransport()),
       googleSignInConfigured: guestGoogleAuth.googleSignInConfigured(),
       database: poolMod.isEnabled()
@@ -780,6 +802,24 @@ app.post("/api/preview-bill-pdf", function (req, res) {
       .catch(function (err) {
         res.status(500).json({ ok: false, error: err && err.message ? err.message : "PDF render failed" });
       });
+  });
+});
+
+/** Public: Razorpay readiness (no secrets). Checkout uses this for clearer errors. */
+app.get("/api/razorpay-status", function (_req, res) {
+  var st = describeRazorpayConfig();
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ok: true,
+    configured: st.configured,
+    mode: st.mode,
+    keyIdPrefix: st.keyIdPrefix,
+    blockedInProduction: st.blockedInProduction,
+    hint: st.configured
+      ? "Live Razorpay checkout is ready."
+      : st.blockedInProduction
+        ? "Test Razorpay keys are blocked in production. Set RAZORPAY_KEY_ID=rzp_live_… and RAZORPAY_KEY_SECRET on the server."
+        : "Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server environment (see server/.env.example).",
   });
 });
 
@@ -3802,6 +3842,18 @@ function onServerListen() {
     console.log("Postgres: DATABASE_URL set — run npm run db:migrate && npm run db:seed (from server/) once.");
   } else {
     console.log("Postgres: not configured — orders use server/data/orders.json (file mode).");
+  }
+  var rz = describeRazorpayConfig();
+  if (rz.configured) {
+    console.log("Razorpay: ready (" + rz.mode + " · " + rz.keyIdPrefix + "). Checkout → Pay securely now.");
+  } else if (rz.blockedInProduction) {
+    console.warn(
+      "[razorpay] Test keys detected with NODE_ENV=production — live checkout disabled. Use rzp_live_* keys in RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET."
+    );
+  } else {
+    console.warn(
+      "[razorpay] Not configured — checkout Pay button will fail until RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET are set (see server/.env.example)."
+    );
   }
   if (catalogMediaPath.hasExternalUploadRoot()) {
     console.log(

@@ -1323,7 +1323,7 @@
               order_id: order.orderId,
               name: "Craftguru",
               description: "Order payment",
-              theme: { color: "#3b6fd9" },
+              theme: { color: "#26a69a" },
               prefill: {
                 email: email,
                 contact: phoneDigits ? "+91" + phoneDigits : "",

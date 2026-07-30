@@ -388,6 +388,7 @@ body.rm-theme--photo-frame .rm-nav-tree__link.is-active {
 
 body:not(.vendor-saas) .btn-glass-dome,
 body:not(.vendor-saas) .hero-atelier__btn--primary,
+body:not(.vendor-saas) .hero-shop-now-btn,
 body:not(.vendor-saas) .rm-hero__cta:not(.rm-hero__cta--ghost),
 body.pdp-ethereal .add-btn,
 body.pdp-ethereal .size-dock__cta,
@@ -402,6 +403,7 @@ body.pdp-ethereal .rm-pdp__btn--primary {
 
 body:not(.vendor-saas) .btn-glass-dome:hover,
 body:not(.vendor-saas) .hero-atelier__btn--primary:hover,
+body:not(.vendor-saas) .hero-shop-now-btn:hover,
 body.pdp-ethereal .add-btn:hover,
 body.pdp-ethereal .rm-pdp__btn--primary:hover {
   transform: translateY(-2px);
