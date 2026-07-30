@@ -19,7 +19,7 @@
   function catalogLoadingHtml(message) {
     message = message || "Preparing the latest size and pricing options…";
     return (
-      '<div class="product-missing product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading">' +
+      '<div class="pdp-load-shell product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading">' +
       skeletonInner() +
       "<h1>Loading</h1>" +
       "<p>" +

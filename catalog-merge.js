@@ -76,10 +76,20 @@
     } catch (_) {}
   }
 
+  var mergeInflight = null;
+  var mergeFinished = false;
+
   function runMerge() {
+    if (mergeInflight) return mergeInflight;
+
     var base = billApiBase();
-    if (!base) return Promise.resolve();
-    return fetch(base + "/api/catalog/categories", { cache: "no-store" })
+    if (!base) {
+      mergeFinished = true;
+      dispatchCatalogEvent("craftguruCatalogPricesMerged");
+      return Promise.resolve();
+    }
+
+    mergeInflight = fetch(base + "/api/catalog/categories", { cache: "no-store" })
       .then(function (res) {
         return res.json();
       })
@@ -136,8 +146,26 @@
       })
       .catch(function () {})
       .finally(function () {
+        mergeFinished = true;
+        mergeInflight = null;
         dispatchCatalogEvent("craftguruCatalogPricesMerged");
       });
+
+    return mergeInflight;
+  }
+
+  function whenCatalogReady() {
+    if (mergeInflight) return mergeInflight;
+    if (mergeFinished) return Promise.resolve();
+    return new Promise(function (resolve) {
+      window.addEventListener(
+        "craftguruCatalogPricesMerged",
+        function () {
+          resolve();
+        },
+        { once: true }
+      );
+    });
   }
 
   if (document.readyState === "loading") {
@@ -146,7 +174,11 @@
     runMerge();
   }
 
-  window.CraftguruCatalogMerge = { refresh: runMerge, getApiBase: billApiBase };
+  window.CraftguruCatalogMerge = {
+    refresh: runMerge,
+    whenReady: whenCatalogReady,
+    getApiBase: billApiBase,
+  };
 
   function wireCatalogRefreshControl() {
     var cartEl = document.getElementById("cartToggle");

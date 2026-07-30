@@ -471,6 +471,142 @@
 
   function ensureLayoutResponsiveStyles() {
     ensureStylesheet("layout-responsive.css");
+    try {
+      document.documentElement.classList.add("guest-responsive-root");
+    } catch (_) {}
+  }
+
+  function wireMobileSidebarDrawers() {
+    var mq = window.matchMedia("(max-width: 899px)");
+    var backdrop = null;
+
+    function ensureBackdrop() {
+      if (backdrop) return backdrop;
+      backdrop = document.createElement("button");
+      backdrop.type = "button";
+      backdrop.className = "cg-rail-backdrop";
+      backdrop.setAttribute("aria-label", "Close navigation menu");
+      backdrop.hidden = true;
+      backdrop.addEventListener("click", closeAllDrawers);
+      document.body.appendChild(backdrop);
+      return backdrop;
+    }
+
+    function closeAllDrawers() {
+      document.body.classList.remove("cg-rail-open");
+      if (backdrop) backdrop.hidden = true;
+      document.querySelectorAll(".cg-rail-drawer-panel.is-open").forEach(function (panel) {
+        panel.classList.remove("is-open");
+      });
+      document.querySelectorAll(".cg-rail-toggle[aria-expanded='true']").forEach(function (btn) {
+        btn.setAttribute("aria-expanded", "false");
+      });
+    }
+
+    function collectSidebars() {
+      var items = [];
+      var home = document.getElementById("categories");
+      if (home && home.classList.contains("home-category-rail")) {
+        items.push({
+          el: home,
+          label: "Categories",
+          host: home.closest(".home-landing-layout"),
+        });
+      }
+      var guest = document.getElementById("guestPageCategoryRail");
+      if (guest) {
+        items.push({
+          el: guest,
+          label: "Shop by category",
+          host: guest.closest(".guest-main-with-rail-inner") || guest.parentElement,
+        });
+      }
+      document.querySelectorAll(".rm-shop-layout .rm-nav-tree-wrap").forEach(function (el) {
+        var titleEl = el.querySelector(".rm-nav-tree__title, .rm-nav-tree__title-link");
+        var label = titleEl ? String(titleEl.textContent || "").trim() : "Categories";
+        items.push({
+          el: el,
+          label: label || "Categories",
+          host: el.closest(".rm-shop-layout") || el.parentElement,
+        });
+      });
+      return items;
+    }
+
+    function wireSidebar(item) {
+      var sidebar = item.el;
+      if (!sidebar || sidebar.dataset.cgRailDrawer === "1") return;
+      sidebar.dataset.cgRailDrawer = "1";
+      sidebar.classList.add("cg-rail-drawer-panel");
+      if (!sidebar.id) {
+        sidebar.id = "cg-rail-drawer-" + Math.random().toString(36).slice(2, 9);
+      }
+
+      var btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "cg-rail-toggle";
+      btn.setAttribute("aria-expanded", "false");
+      btn.setAttribute("aria-controls", sidebar.id);
+      btn.innerHTML =
+        '<span class="cg-rail-toggle__bars" aria-hidden="true"><span></span><span></span><span></span></span>' +
+        '<span class="cg-rail-toggle__text">' +
+        escapeHtml(item.label) +
+        "</span>";
+
+      var host = item.host;
+      if (host) {
+        host.insertBefore(btn, host.firstChild);
+      } else if (sidebar.parentElement) {
+        sidebar.parentElement.insertBefore(btn, sidebar);
+      }
+
+      btn.addEventListener("click", function () {
+        if (btn.getAttribute("aria-expanded") === "true") {
+          closeAllDrawers();
+          return;
+        }
+        closeAllDrawers();
+        sidebar.classList.add("is-open");
+        btn.setAttribute("aria-expanded", "true");
+        document.body.classList.add("cg-rail-open");
+        ensureBackdrop().hidden = false;
+      });
+
+      sidebar.addEventListener("click", function (ev) {
+        var link = ev.target && ev.target.closest && ev.target.closest("a.rm-nav-tree__link, a.category-pill, .category-pill--rail");
+        if (link && mq.matches) closeAllDrawers();
+      });
+    }
+
+    function removeOrphanToggles() {
+      document.querySelectorAll(".cg-rail-toggle").forEach(function (btn) {
+        var id = btn.getAttribute("aria-controls");
+        if (!id || !document.getElementById(id)) btn.remove();
+      });
+    }
+
+    function applyDrawerMode() {
+      document.body.classList.toggle("cg-rail-drawer-enabled", mq.matches);
+      if (!mq.matches) {
+        closeAllDrawers();
+        return;
+      }
+      ensureBackdrop();
+      removeOrphanToggles();
+      collectSidebars().forEach(wireSidebar);
+    }
+
+    if (typeof mq.addEventListener === "function") {
+      mq.addEventListener("change", applyDrawerMode);
+    } else if (typeof mq.addListener === "function") {
+      mq.addListener(applyDrawerMode);
+    }
+
+    document.addEventListener("keydown", function (ev) {
+      if (ev.key === "Escape") closeAllDrawers();
+    });
+
+    applyDrawerMode();
   }
 
   function injectFooterMainMenu() {
@@ -511,7 +647,9 @@
     ensureIconRailStyles();
     ensureRailIconsLoaded(function () {
       injectCategoryRail();
+      wireMobileSidebarDrawers();
     });
+    wireMobileSidebarDrawers();
     injectHeaderSearch();
     injectStorefrontAuthChrome();
     injectSocialFloatWidgets();
@@ -523,6 +661,7 @@
       ensureRailIconsLoaded(function () {
         /* Rebuild rail so renamed category labels from /api/catalog/categories apply. */
         injectCategoryRail();
+        wireMobileSidebarDrawers();
       });
       injectFooterMainMenu();
     } catch (_) {}

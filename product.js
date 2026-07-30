@@ -83,7 +83,6 @@
   var productPageLayoutHtml = id && product && els.root ? els.root.innerHTML : "";
   /** Snapshot before first paint: vendor pieces are merged async (catalog-merge.js). */
   var pendingLayoutHtml = id && !product && els.root ? els.root.innerHTML : "";
-  var catalogWaitTimer = null;
 
   function teardownResinPdpBodyClasses() {
     document.body.classList.remove("page-product--resin-rm", "rm-page-wide");
@@ -163,13 +162,6 @@
 
   var selectedColorId = "";
 
-  function clearCatalogWaitTimer() {
-    if (catalogWaitTimer) {
-      clearTimeout(catalogWaitTimer);
-      catalogWaitTimer = null;
-    }
-  }
-
   function rewireProductEls() {
     els.addLabel = null;
     els.title = document.getElementById("productTitle");
@@ -208,7 +200,7 @@
     var html =
       L && typeof L.catalogLoadingHtml === "function"
         ? L.catalogLoadingHtml()
-        : '<div class="product-missing product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading">' +
+        : '<div class="pdp-load-shell product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading">' +
           '<div class="pdp-loading-skel" aria-hidden="true"><div class="pdp-loading-skel__media"></div></div>' +
           "<h1>Loading</h1><p>Preparing the latest size and pricing options…</p></div>";
     els.root.innerHTML = html;
@@ -226,25 +218,13 @@
   function paintProductAfterCatalog(allowNotFound) {
     applyCachedCatalogOverrides();
     refreshProductRef();
-    clearCatalogWaitTimer();
     if (!product) {
-      if (!allowNotFound) {
-        if (id && pendingLayoutHtml && els.root && !isLoadingPhase(els.root)) {
-          renderLoadingForCatalog();
-        }
-        return;
-      }
+      if (!allowNotFound) return;
       render404();
       return;
     }
     ensureLayoutBeforePaint();
     render();
-  }
-
-  function isLoadingPhase(root) {
-    var L = window.CRAFTGURU_PDP_LOAD;
-    if (L && typeof L.isLoadingPhase === "function") return L.isLoadingPhase(root);
-    return !!(root && root.querySelector(".product-page-awaiting-catalog"));
   }
 
   function productLayoutInDocument() {
@@ -280,11 +260,11 @@
     applyCachedCatalogOverrides();
     refreshProductRef();
     if (!product) return;
-    clearCatalogWaitTimer();
     paintProductAfterCatalog(false);
   }
 
   function onCatalogMergeComplete() {
+    if (catalogMergeComplete) return;
     catalogMergeComplete = true;
     paintProductAfterCatalog(true);
   }
@@ -821,13 +801,10 @@
   }
 
   function render() {
-    if (!product) {
-      render404();
-      return;
-    }
-
     applyCachedCatalogOverrides();
     refreshProductRef();
+    if (!product) return;
+
     ensureLayoutBeforePaint();
 
     if (productUsesVendorVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
@@ -1213,38 +1190,26 @@
       return;
     }
 
-    var merge = window.CraftguruCatalogMerge && window.CraftguruCatalogMerge.refresh;
+    applyCachedCatalogOverrides();
+    refreshProductRef();
 
-    function armCatalogPaint() {
-      clearCatalogWaitTimer();
-      catalogWaitTimer = setTimeout(function () {
-        catalogWaitTimer = null;
-        catalogMergeComplete = true;
-        paintProductAfterCatalog(true);
-      }, 8000);
-      if (typeof merge === "function") {
-        merge().finally(function () {
-          catalogMergeComplete = true;
-          paintProductAfterCatalog(true);
-        });
-      } else {
-        catalogMergeComplete = true;
-        paintProductAfterCatalog(true);
-      }
-    }
-
-    if (!product) {
-      renderLoadingForCatalog();
+    if (product) {
+      render();
     } else {
-      if (els.sizes) els.sizes.innerHTML = "";
-      if (els.priceSizeLabel) els.priceSizeLabel.textContent = "";
-      if (els.sizeScale) {
-        els.sizeScale.hidden = true;
-        els.sizeScale.setAttribute("aria-hidden", "true");
-      }
+      renderLoadingForCatalog();
     }
 
-    armCatalogPaint();
+    var cm = window.CraftguruCatalogMerge;
+    if (cm && typeof cm.whenReady === "function") {
+      cm.whenReady().then(function () {
+        if (catalogMergeComplete) return;
+        catalogMergeComplete = true;
+        paintProductAfterCatalog(true);
+      });
+    } else if (!product) {
+      catalogMergeComplete = true;
+      paintProductAfterCatalog(true);
+    }
   }
 
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogMergeComplete);
@@ -1261,7 +1226,6 @@
       catalogMergeComplete = false;
       applyCachedCatalogOverrides();
       refreshProductRef();
-      clearCatalogWaitTimer();
       initialRender();
     } catch (_) {}
   });

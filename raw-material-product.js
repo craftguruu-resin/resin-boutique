@@ -216,7 +216,8 @@
     _lastHeroResolvedSrc: "",
   };
 
-  var pdpFetch = { status: "idle" };
+  var pdpFetch = { status: "loading" };
+  var productFetchInflight = null;
 
   /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
   function applyPdpHtml(root, html) {
@@ -916,7 +917,8 @@
     }
     var path = "/api/catalog/raw-materials/" + encodeURIComponent(id);
     var url = b ? b + path : path;
-    fetch(url, { cache: "no-store" })
+    if (productFetchInflight) return;
+    productFetchInflight = fetch(url, { cache: "no-store" })
       .then(function (res) {
         return res.json().then(function (j) {
           return { okHttp: res.ok, j: j };
@@ -936,6 +938,7 @@
         state.material = null;
       })
       .finally(function () {
+        productFetchInflight = null;
         pdpFetch.status = "done";
         render();
         var navEl = document.getElementById("rmNavTree");
@@ -949,6 +952,11 @@
         }
       });
   }
+
+  (function primePdpShell() {
+    var root = document.getElementById("rmPdpRoot");
+    if (root) renderLoadingShell(root);
+  })();
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", load);

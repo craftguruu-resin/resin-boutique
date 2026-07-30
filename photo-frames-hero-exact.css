@@ -1,6 +1,6 @@
 /**
  * Photo Frames landing — exact design-reference hero (+ nav / sidebar match).
- * Source of truth: media/photo-frames-showcase/pf-hero-panel.png
+ * Source of truth: media/photo-frames-showcase/pf-hero-panel11.png
  * Scoped to body.rm-theme--photo-frame. Does not affect Raw Materials.
  */
 
@@ -233,7 +233,7 @@ body.rm-theme--photo-frame .pf-landing-hero__hit {
   pointer-events: auto;
 }
 
-/* Button positions calibrated to pf-hero-panel.png (1536×1024) — Shop frames + Browse styles */
+/* Button positions calibrated to pf-hero-panel11.png (1536×1024) — Shop frames + Browse styles */
 body.rm-theme--photo-frame .pf-landing-hero__hit--shop {
   left: 4.2%;
   top: 75.5%;

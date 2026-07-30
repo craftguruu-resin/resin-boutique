@@ -3396,14 +3396,22 @@ body.product-page--oos .btn-add-lg {
   line-height: 1.55;
 }
 
-.product-missing {
+.product-missing,
+.pdp-load-shell {
   text-align: center;
   padding: 4rem 1rem;
 }
 
-.product-missing h1 {
+.product-missing h1,
+.pdp-load-shell h1 {
   font-family: var(--font-display);
   margin-bottom: 0.5rem;
+}
+
+.pdp-load-shell h1 {
+  font-size: 1.35rem;
+  font-weight: 500;
+  color: rgba(26, 43, 72, 0.72);
 }
 
 .pdp-loading-skel {
