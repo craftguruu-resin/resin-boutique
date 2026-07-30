@@ -469,8 +469,8 @@
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     try {
-      if (document.getElementById("guestPageCategoryRail")) return;
       ensureRailIconsLoaded(function () {
+        /* Rebuild rail so renamed category labels from /api/catalog/categories apply. */
         injectCategoryRail();
       });
     } catch (_) {}

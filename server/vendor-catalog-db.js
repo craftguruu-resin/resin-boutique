@@ -328,8 +328,12 @@ function upsertOverride(productId, patch, cb) {
       }
       var optJson = JSON.stringify(nextOpt || {});
       var nameOverride = cur.name != null && String(cur.name).trim() ? String(cur.name).trim().slice(0, 500) : null;
-      if (patch && (Object.prototype.hasOwnProperty.call(patch, "name") || Object.prototype.hasOwnProperty.call(patch, "nameOverride"))) {
-        var rawName = Object.prototype.hasOwnProperty.call(patch, "name") ? patch.name : patch.nameOverride;
+      var nameProvided =
+        patch &&
+        ((Object.prototype.hasOwnProperty.call(patch, "name") && patch.name !== undefined) ||
+          (Object.prototype.hasOwnProperty.call(patch, "nameOverride") && patch.nameOverride !== undefined));
+      if (nameProvided) {
+        var rawName = Object.prototype.hasOwnProperty.call(patch, "name") && patch.name !== undefined ? patch.name : patch.nameOverride;
         var trimmedName = rawName == null ? "" : String(rawName).trim().slice(0, 500);
         if (!trimmedName) {
           return cb(new Error("Product name is required"));

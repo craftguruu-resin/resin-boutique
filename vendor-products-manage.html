@@ -6,6 +6,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
+  <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
+  <link rel="apple-touch-icon" href="media/brand-craftguru.png?v=20260730" />
   <title>Products — Craftguru vendor</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -20,18 +23,125 @@
     <div class="vs-main">
       <header class="vs-topbar">
         <div>
-          <h1 class="vs-topbar__title">Update or discontinue products</h1>
+          <h1 class="vs-topbar__title">Products (Resin Home)</h1>
           <p class="vs-topbar__sub">
-            Full guest storefront list (built-in catalog + products you added). Search by name, id, or studio SKU. Use <strong>Discontinue</strong> or <strong>Set active</strong> to control the guest shop listing. <strong>Delete</strong> next to those actions removes vendor-added products entirely, or clears saved database overrides for bundled catalog items (defaults apply; the item remains in the site catalog). Edit to change name, prices, photos, and more — updates sync to the guest storefront.
+            Full guest storefront list (built-in catalog + products you added). Use <strong>+ Add product</strong> for new Resin Home listings (same flow as Inventory). Search by name, id, or studio SKU. Use <strong>Discontinue</strong> or <strong>Set active</strong> to control the guest shop listing. <strong>Delete</strong> next to those actions removes vendor-added products entirely, or clears saved database overrides for bundled catalog items (defaults apply; the item remains in the site catalog). Edit to change name, prices, photos, and more — updates sync to the guest storefront.
             <a href="vendor-categories-manage.html">Categories &amp; raw material taxonomy</a>
           </p>
         </div>
         <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn vs-btn--primary" id="vpmAddNew">+ Add product</button>
           <button type="button" class="vs-btn" id="vpmRefresh">Refresh</button>
         </div>
       </header>
 
       <div class="vs-content">
+        <div id="vpmAddProductPanel" hidden>
+          <div class="vs-card" style="margin-bottom: 1rem">
+            <div class="vs-row-actions" style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem">
+              <h2 class="vs-login__title" style="margin: 0">Add storefront product</h2>
+              <button type="button" class="vs-btn vs-btn--ghost" id="vpmAddCancel">Back to list</button>
+            </div>
+            <p class="vs-muted" style="margin-top: 0">
+              Same create flow as Inventory → Add product. Pick the <strong>category</strong>, name, prices, and photo. The listing appears on the guest Resin Home storefront after save.
+            </p>
+            <p class="vs-muted" id="viApMsg" style="margin: 0 0 0.75rem; color: #b45309" hidden></p>
+            <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem">
+              <div class="vs-field">
+                <label for="viApCategory">Category</label>
+                <select id="viApCategory">
+                  <option value="">— Choose —</option>
+                </select>
+              </div>
+              <div class="vs-field" id="viApSubWrap" hidden>
+                <label for="viApSubcategory">Subcategory</label>
+                <select id="viApSubcategory">
+                  <option value="">— Choose —</option>
+                </select>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApName">Product name</label>
+                <input type="text" id="viApName" placeholder="Shown on the website" maxlength="500" />
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApDescription">Product description</label>
+                <textarea
+                  id="viApDescription"
+                  rows="5"
+                  maxlength="8000"
+                  placeholder="Detailed product description for the product page (line breaks preserved)."
+                ></textarea>
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                  Shown on the product details page only — not on category listings. Up to 8,000 characters.
+                </p>
+              </div>
+              <div class="vs-field">
+                <label for="viApPriceS">Price tier 1 (S) ₹</label>
+                <input type="number" id="viApPriceS" min="0" step="1" value="0" />
+              </div>
+              <div class="vs-field">
+                <label for="viApPriceM">Price tier 2 (M) ₹</label>
+                <input type="number" id="viApPriceM" min="0" step="1" value="0" />
+              </div>
+              <div class="vs-field">
+                <label for="viApPriceL">Price tier 3 (L) ₹</label>
+                <input type="number" id="viApPriceL" min="0" step="1" value="0" />
+              </div>
+              <div class="vs-field">
+                <label for="viApSizeS">Size label S (shown on website)</label>
+                <input type="text" id="viApSizeS" maxlength="120" placeholder="e.g. 6 inch" />
+              </div>
+              <div class="vs-field">
+                <label for="viApSizeM">Size label M</label>
+                <input type="text" id="viApSizeM" maxlength="120" placeholder="e.g. 8 inch" />
+              </div>
+              <div class="vs-field">
+                <label for="viApSizeL">Size label L</label>
+                <input type="text" id="viApSizeL" maxlength="120" placeholder="e.g. 10 inch or 44×23×34 cm" />
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApImageUrl">Cover image URL (optional — use instead of file for Cloudinary, etc.)</label>
+                <input type="url" id="viApImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                  Must start with <code>https://</code>. If you paste a URL, you can leave the file empty. If you choose a file, the file wins over the URL.
+                </p>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApImage">Cover photo (JPEG or PNG)</label>
+                <input type="file" id="viApImage" accept="image/jpeg,image/png,image/webp" />
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApCoverColorLabel">Cover colour name</label>
+                <input type="text" id="viApCoverColorLabel" maxlength="120" placeholder="e.g. White" value="Default" />
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                  The cover image is a colour variant on the product page. Guests can select it in the colour palette.
+                </p>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApCoverColorHex">Cover colour swatch</label>
+                <div class="vrm-color-swatch-controls" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 0.35rem">
+                  <input type="color" id="viApCoverColorHex" class="vrm-color-pick" value="#f8fafc" aria-label="Cover colour swatch" />
+                  <code class="vrm-color-readout" id="viApCoverColorReadout">#F8FAFC</code>
+                </div>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label>Additional colour variants (optional)</label>
+                <div id="viApExtraColors" class="vi-ap-extra-colors"></div>
+                <button type="button" class="vs-btn vs-btn--ghost" id="viApAddColor" style="margin-top: 0.45rem">+ Add colour variant</button>
+                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                  Each row needs a colour name, swatch, and HTTPS image URL. These appear alongside the cover colour on the product page.
+                </p>
+              </div>
+              <div class="vs-field" style="grid-column: 1 / -1">
+                <label for="viApGallery">Extra gallery images (optional)</label>
+                <textarea id="viApGallery" rows="3" maxlength="12000" placeholder="One HTTPS image URL per line — non-colour gallery thumbs."></textarea>
+              </div>
+            </div>
+            <button type="button" class="vs-btn vs-btn--primary" id="viApSubmit" style="margin-top: 1rem">Create product</button>
+          </div>
+        </div>
+
+        <div id="vpmListSection">
         <div class="vs-card vs-card--vpm-filters" style="margin-bottom: 1rem; padding: 0.75rem 1rem">
           <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.65rem">
             <div class="vs-field vs-field--vpm-status" style="margin: 0; min-width: 10rem">
@@ -239,11 +349,13 @@
             <button type="button" class="vs-btn vs-btn--ghost" id="vpmCancelEdit">Cancel</button>
           </div>
         </div>
+        </div>
       </div>
     </div>
   </div>
 
   <script src="vendor-shell.js"></script>
+  <script src="vendor-storefront-add-product.js"></script>
   <script src="vendor-catalog-pdp-options.js"></script>
   <script src="vendor-products-manage.js"></script>
 </body>

@@ -132,6 +132,27 @@ function createCategory(pool, body, cb) {
  * @param {{ label?: string, folder?: string, navImage?: string, nav_image?: string, subcategories?: unknown }} body
  * @param {(err?: Error, row?: object) => void} cb
  */
+function catalogSeedForCategory(catId) {
+  var seed = { label: catId, folder: "", subcategories: [{ id: "all", label: "All" }], nav_image: "" };
+  try {
+    var list = catalogFromData.getCategoriesList() || [];
+    for (var i = 0; i < list.length; i++) {
+      var c = list[i];
+      if (c && String(c.id).trim() === catId) {
+        seed.label = String(c.label || catId).slice(0, 200);
+        seed.folder = String(c.folder || "").slice(0, 200);
+        seed.subcategories = normalizeSubcategoriesJson(c.subcategories);
+        break;
+      }
+    }
+  } catch (_) {}
+  return seed;
+}
+
+/**
+ * Persist vendor renames for built-in catalog categories even when the row was never seeded.
+ * Without upsert, PATCH failed with "Category not found" while the vendor UI still listed data.js categories.
+ */
 function updateCategory(pool, catId, body, cb) {
   catId = String(catId || "").trim().slice(0, 80);
   if (!catId) {
@@ -139,14 +160,26 @@ function updateCategory(pool, catId, body, cb) {
       cb(new Error("Invalid category id"));
     });
   }
+  if (hiddenResinCatalog.isHiddenResinCategoryId(catId)) {
+    return process.nextTick(function () {
+      cb(new Error("This category id is reserved and cannot be used"));
+    });
+  }
   pool
     .query("SELECT id, label, folder, subcategories, vendor_owned, nav_image FROM categories WHERE id = $1 LIMIT 1", [catId])
     .then(function (r) {
-      if (!r.rows.length) {
-        var err = new Error("Category not found");
-        return cb(err);
+      var row = r.rows.length ? r.rows[0] : null;
+      if (!row) {
+        var seed = catalogSeedForCategory(catId);
+        row = {
+          id: catId,
+          label: seed.label,
+          folder: seed.folder,
+          subcategories: seed.subcategories,
+          vendor_owned: false,
+          nav_image: seed.nav_image || "",
+        };
       }
-      var row = r.rows[0];
       var label = body.label != null ? String(body.label).trim().slice(0, 200) : String(row.label || "");
       var folder = body.folder != null ? String(body.folder).trim().slice(0, 200) : String(row.folder || "");
       var navIn = body.navImage != null ? body.navImage : body.nav_image;
@@ -165,10 +198,14 @@ function updateCategory(pool, catId, body, cb) {
       if (catId === "resin-keychains") {
         subs = resinKeychainsTaxonomy.listCanonicalSubcategories();
       }
+      var vendorOwned = Boolean(row.vendor_owned);
       return pool
         .query(
-          "UPDATE categories SET label = $2, folder = $3, subcategories = $4::jsonb, nav_image = $5, updated_at = now() WHERE id = $1 RETURNING id, label, folder, subcategories, vendor_owned, nav_image",
-          [catId, label || catId, folder, JSON.stringify(subs), navImage]
+          "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image) VALUES ($1, $2, $3, $4::jsonb, $5, $6) " +
+            "ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, folder = EXCLUDED.folder, " +
+            "subcategories = EXCLUDED.subcategories, nav_image = EXCLUDED.nav_image, updated_at = now() " +
+            "RETURNING id, label, folder, subcategories, vendor_owned, nav_image",
+          [catId, label || catId, folder, JSON.stringify(subs), vendorOwned, navImage]
         )
         .then(function (r2) {
           catalogFromData.invalidateCache();

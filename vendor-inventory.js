@@ -145,7 +145,12 @@
       loadCatalogPage(true);
     }
     if (tab === "addproduct") {
-      refillApCategoryDropdowns();
+      if (window.CraftguruVendorStorefrontAddProduct) {
+        window.CraftguruVendorStorefrontAddProduct.setCategories(viCategoriesCache);
+        window.CraftguruVendorStorefrontAddProduct.refillCategoryDropdowns();
+      } else {
+        refillApCategoryDropdowns();
+      }
     }
     if (viPollTimer) {
       clearInterval(viPollTimer);
@@ -250,6 +255,9 @@
         }
         refill("viCatalogCategoryFilter", "All");
         refill("viCategory", "— Unsorted —");
+        if (window.CraftguruVendorStorefrontAddProduct) {
+          window.CraftguruVendorStorefrontAddProduct.setCategories(viCategoriesCache);
+        }
       });
   }
 
@@ -814,21 +822,19 @@
   function boot() {
     showDesk(true);
     var startTab = window.location.hash === "#add-product" ? "addproduct" : "studio";
-    on("viApAddColor", "click", function () {
-      addViExtraColorRow({});
-    });
-    var coverHex = document.getElementById("viApCoverColorHex");
-    if (coverHex) {
-      coverHex.addEventListener("input", syncViCoverColorReadout);
-      coverHex.addEventListener("change", syncViCoverColorReadout);
-      syncViCoverColorReadout();
-    }
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
       })
       .then(function () {
-        refillApCategoryDropdowns();
+        if (window.CraftguruVendorStorefrontAddProduct) {
+          window.CraftguruVendorStorefrontAddProduct.init({
+            V: V,
+            categories: viCategoriesCache,
+          });
+        } else {
+          refillApCategoryDropdowns();
+        }
         syncListFiltersFromForm();
         return loadList();
       })
@@ -1053,121 +1059,7 @@
     };
   }
 
-  on("viApSubmit", "click", function () {
-    var msg = document.getElementById("viApMsg");
-    if (msg) {
-      msg.textContent = "";
-      msg.setAttribute("hidden", "hidden");
-    }
-    var catId = document.getElementById("viApCategory") && document.getElementById("viApCategory").value.trim();
-    var name = document.getElementById("viApName") && document.getElementById("viApName").value.trim();
-    var fileInp = document.getElementById("viApImage");
-    var file = fileInp && fileInp.files && fileInp.files[0];
-    var urlEl = document.getElementById("viApImageUrl");
-    var imageUrl = urlEl ? String(urlEl.value || "").trim() : "";
-    if (!catId || !name) {
-      window.alert("Category and name are required.");
-      return;
-    }
-    if (!file && !imageUrl) {
-      window.alert("Choose a product photo file or paste an HTTPS image URL.");
-      return;
-    }
-    if (imageUrl && !/^https:\/\//i.test(imageUrl)) {
-      window.alert("Image URL must start with https://");
-      return;
-    }
-    var coverColorLabel = String((document.getElementById("viApCoverColorLabel") && document.getElementById("viApCoverColorLabel").value) || "").trim();
-    if (!coverColorLabel) {
-      window.alert("Enter a colour name for the cover image (e.g. White).");
-      return;
-    }
-    var fd = new FormData();
-    fd.append("name", name);
-    fd.append("categoryId", catId);
-    fd.append("priceS", String(document.getElementById("viApPriceS").value || "0"));
-    fd.append("priceM", String(document.getElementById("viApPriceM").value || "0"));
-    fd.append("priceL", String(document.getElementById("viApPriceL").value || "0"));
-    fd.append("sizeLabelS", String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim());
-    fd.append("sizeLabelM", String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim());
-    fd.append("sizeLabelL", String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim());
-    if (imageUrl) fd.append("imageUrl", imageUrl);
-    if (file) fd.append("image", file, file.name);
-    var galEl = document.getElementById("viApGallery");
-    if (galEl) fd.append("gallery", String(galEl.value || ""));
-    var descEl = document.getElementById("viApDescription");
-    if (descEl) fd.append("description", String(descEl.value || ""));
-    var subEl = document.getElementById("viApSubcategory");
-    var subPick = subEl && !subEl.closest("[hidden]") ? String(subEl.value || "").trim() : "";
-    if (subPick) fd.append("subcategoryId", subPick);
-    var base = V.apiBase();
-    vf(V.vendorApiUrl("/api/vendor/products"), {
-      method: "POST",
-      headers: V.authHeaders(),
-      body: fd,
-    })
-      .then(function (res) {
-        return V.parseApiJson(res).then(function (x) {
-          if (x.status === 401) return V.explainVendor401(base);
-          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Create failed");
-          return x.json.product;
-        });
-      })
-      .then(function (p) {
-        var cover = String((p && p.image) || imageUrl || "").trim();
-        var options = buildCreateProductOptions(cover);
-        if (!p || !p.id) return p;
-        return vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(p.id) + "/prices"), {
-          method: "PUT",
-          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify({
-            priceS: options.sizes[0] && options.sizes[0].priceInr,
-            priceM: options.sizes[1] && options.sizes[1].priceInr,
-            priceL: options.sizes[2] && options.sizes[2].priceInr,
-            description: options.detailBody || "",
-            options: options,
-          }),
-          cache: "no-store",
-        }).then(function (res2) {
-          return V.parseApiJson(res2).then(function (x2) {
-            if (!x2.okHttp || !(x2.json && x2.json.ok)) {
-              throw new Error((x2.json && x2.json.error) || "Product created but colour options failed to save");
-            }
-            return p;
-          });
-        });
-      })
-      .then(function (p) {
-        if (msg) {
-          msg.textContent =
-            "Created · id " +
-            (p && p.id ? p.id : "") +
-            " — cover colour is a selectable variant on the product page. Customers see it after a page refresh.";
-          msg.removeAttribute("hidden");
-        }
-        if (document.getElementById("viApName")) document.getElementById("viApName").value = "";
-        ["viApSizeS", "viApSizeM", "viApSizeL"].forEach(function (id) {
-          var el = document.getElementById(id);
-          if (el) el.value = "";
-        });
-        if (fileInp) fileInp.value = "";
-        if (urlEl) urlEl.value = "";
-        var gal = document.getElementById("viApGallery");
-        if (gal) gal.value = "";
-        var desc = document.getElementById("viApDescription");
-        if (desc) desc.value = "";
-        var cLab = document.getElementById("viApCoverColorLabel");
-        if (cLab) cLab.value = "Default";
-        var cHex = document.getElementById("viApCoverColorHex");
-        if (cHex) cHex.value = "#f8fafc";
-        syncViCoverColorReadout();
-        var extra = document.getElementById("viApExtraColors");
-        if (extra) extra.innerHTML = "";
-      })
-      .catch(function (e) {
-        window.alert(String((e && e.message) || e));
-      });
-  });
+  /* Add-product create flow lives in vendor-storefront-add-product.js */
 
   document.querySelectorAll(".vi-tab").forEach(function (b) {
     b.addEventListener("click", function () {
@@ -1175,12 +1067,7 @@
     });
   });
 
-  var viApCategorySel = document.getElementById("viApCategory");
-  if (viApCategorySel) {
-    viApCategorySel.addEventListener("change", function () {
-      refillApSubcategoryDropdown(viApCategorySel.value);
-    });
-  }
+  /* Add-product submit / colour UI: vendor-storefront-add-product.js */
 
   var catalogSearchTimer = null;
   function scheduleCatalogSearch() {

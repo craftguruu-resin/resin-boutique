@@ -850,6 +850,48 @@
     }, 220);
   }
 
+  function showAddPanel(show) {
+    var add = document.getElementById("vpmAddProductPanel");
+    var list = document.getElementById("vpmListSection");
+    if (add) add.hidden = !show;
+    if (list) list.hidden = !!show;
+    if (show) {
+      closeEdit();
+      if (window.CraftguruVendorStorefrontAddProduct) {
+        window.CraftguruVendorStorefrontAddProduct.refillCategoryDropdowns();
+      }
+    }
+  }
+
+  function loadCategoriesForAdd() {
+    return fetch(base() + "/api/vendor/categories", {
+      headers: V.authHeaders(),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (x.status === 401) return V.explainVendor401(base());
+          if (!x.okHttp || !x.json.ok) {
+            throw new Error((x.json && x.json.error) || "Categories failed");
+          }
+          return x.json.categories || [];
+        });
+      })
+      .then(function (cats) {
+        if (window.CraftguruVendorStorefrontAddProduct) {
+          window.CraftguruVendorStorefrontAddProduct.init({
+            V: V,
+            categories: cats,
+            onCreated: function () {
+              loadList().catch(function () {});
+            },
+            successMessage:
+              "Created. The product is on the guest storefront list — use Refresh if needed, then Edit for advanced options.",
+          });
+        }
+      });
+  }
+
   function boot() {
     if (V.injectSidebar) V.injectSidebar();
     if (window.VendorCatalogPdpOptions && typeof window.VendorCatalogPdpOptions.boot === "function") {
@@ -859,6 +901,18 @@
     document.getElementById("vpmRefresh").addEventListener("click", function () {
       loadList();
     });
+    var addBtn = document.getElementById("vpmAddNew");
+    if (addBtn) {
+      addBtn.addEventListener("click", function () {
+        showAddPanel(true);
+      });
+    }
+    var addCancel = document.getElementById("vpmAddCancel");
+    if (addCancel) {
+      addCancel.addEventListener("click", function () {
+        showAddPanel(false);
+      });
+    }
     document.getElementById("vpmSearchBtn").addEventListener("click", runSearch);
     document.getElementById("vpmSearchClear").addEventListener("click", function () {
       var el = document.getElementById("vpmSearch");
@@ -966,7 +1020,15 @@
     document.getElementById("vpmSave").addEventListener("click", saveEdit);
     document.getElementById("vpmCancelEdit").addEventListener("click", closeEdit);
 
-    loadList().catch(function () {});
+    loadCategoriesForAdd()
+      .catch(function () {})
+      .then(function () {
+        if (window.location.hash === "#add-product") {
+          showAddPanel(true);
+        }
+        return loadList();
+      })
+      .catch(function () {});
   }
 
   if (document.readyState === "loading") {

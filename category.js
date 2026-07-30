@@ -627,16 +627,37 @@
   }
 
   function onCatalogDataMerged() {
+    labelForList = D.getCategoryLabel(cat);
+    if (els.heading) els.heading.textContent = labelForList;
+    if (els.crumbCat) els.crumbCat.textContent = labelForList;
+    document.title = labelForList + " — Craft guru";
     if (els.productGrid && els.productGrid.querySelectorAll(".product-card[data-product-id]").length) {
       patchProductGridPrices();
+      patchProductGridNames();
       applyCatalogFilters(false);
     } else {
       applyCatalogFilters(false);
     }
   }
 
+  function patchProductGridNames() {
+    if (!els.productGrid) return;
+    els.productGrid.querySelectorAll(".product-card[data-product-id]").forEach(function (card) {
+      var id = card.getAttribute("data-product-id");
+      if (!id || !D.getProduct) return;
+      var p = D.getProduct(id);
+      if (!p || !p.name) return;
+      card.setAttribute("data-product-name", String(p.name).toLowerCase());
+      var h = card.querySelector("h3");
+      if (h) h.textContent = p.name;
+      var img = card.querySelector(".product-card-image img, img");
+      if (img) img.alt = p.name;
+    });
+  }
+
   window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogDataMerged);
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogDataMerged);
+  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogDataMerged);
 
   render();
 })();

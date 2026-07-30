@@ -68,8 +68,9 @@ function bootstrapCategoriesPromise(p) {
       if (!c.id) return Promise.resolve();
       return p.query(
         "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image) VALUES ($1, $2, $3, $4::jsonb, false, '') " +
-          "ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, folder = EXCLUDED.folder, " +
-          "subcategories = EXCLUDED.subcategories, updated_at = now() " +
+          "ON CONFLICT (id) DO UPDATE SET " +
+          "folder = CASE WHEN COALESCE(categories.folder, '') = '' THEN EXCLUDED.folder ELSE categories.folder END, " +
+          "updated_at = now() " +
           "WHERE NOT COALESCE(categories.vendor_owned, false)",
         [c.id.slice(0, 80), String(c.label || c.id).slice(0, 200), String(c.folder || "").slice(0, 200), JSON.stringify(c.subcategories || [])]
       );

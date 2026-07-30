@@ -1245,6 +1245,8 @@
   }
 
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogPricesMerged);
+  window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogPricesMerged);
+  window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogPricesMerged);
 
   /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {
