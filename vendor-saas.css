@@ -2247,3 +2247,235 @@ a.vd-kpi-card--link:focus-visible {
     margin-left: -6px;
   }
 }
+
+/* —— Vendor orders: compact detail panel (tag + shipment side-by-side) —— */
+[data-vendor-nav="tags"] .vs-split {
+  grid-template-columns: minmax(0, 1fr) minmax(560px, 46%);
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (max-width: 1280px) {
+  [data-vendor-nav="tags"] .vs-split {
+    grid-template-columns: minmax(0, 1fr) minmax(480px, 52%);
+  }
+}
+
+.vt-detail {
+  padding: 0.65rem 0.75rem;
+  max-height: calc(100vh - 5rem);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vt-detail__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  flex-shrink: 0;
+}
+
+.vt-detail__title {
+  margin: 0;
+  font-size: 0.88rem;
+}
+
+.vt-detail__meta {
+  margin: 0.15rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.vt-detail__print {
+  flex-shrink: 0;
+  padding: 0.35rem 0.65rem;
+  font-size: 0.72rem;
+}
+
+.vt-detail__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.vt-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: start;
+}
+
+.vt-detail .cg-ship-panel {
+  margin-bottom: 0;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+}
+
+.vt-detail .cg-ship-panel .vs-section-title {
+  margin: 0 0 0.25rem;
+  font-size: 0.78rem;
+}
+
+.vt-detail .cg-ship-panel__hint {
+  margin: 0 0 0.4rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+}
+
+.vt-detail .cg-ship-form-grid {
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+}
+
+.vt-detail .vs-field {
+  margin: 0;
+}
+
+.vt-detail .vs-field label {
+  font-size: 0.68rem;
+  margin-bottom: 0.15rem;
+}
+
+.vt-detail .vs-field input,
+.vt-detail .vs-field select,
+.vt-detail .vs-field textarea {
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+.vt-detail .vs-field textarea {
+  min-height: 2.2rem;
+}
+
+.vt-detail .cg-ship-readonly {
+  font-size: 0.78rem;
+}
+
+.vt-detail .cg-ship-timeline--admin {
+  flex-direction: row;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: 0.45rem 0 0;
+  padding-bottom: 0.15rem;
+  max-height: 3.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.vt-detail .cg-ship-timeline__step {
+  flex: 0 0 68px;
+  min-width: 68px;
+  padding-top: 0.85rem;
+  font-size: 0.62rem;
+}
+
+.vt-detail .cg-ship-timeline__dot {
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+}
+
+.vt-detail .cg-ship-timeline__body strong {
+  font-weight: 600;
+  font-size: 0.62rem;
+  line-height: 1.2;
+}
+
+.vt-detail .cg-ship-timeline__body .vs-muted {
+  font-size: 0.58rem;
+}
+
+.vt-detail .vs-row-actions {
+  gap: 0.25rem;
+  margin-top: 0.45rem !important;
+}
+
+.vt-detail .vs-row-actions .vs-btn {
+  padding: 0.3rem 0.55rem;
+  font-size: 0.72rem;
+}
+
+.vt-detail .vendor-inline-tag {
+  padding: 0.55rem 0.6rem;
+  margin-bottom: 0.45rem;
+  border-width: 1.5px;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.vt-detail .vendor-inline-tag p {
+  margin: 0 0 0.25rem;
+}
+
+.vt-detail .vendor-inline-tag__k {
+  margin: 0 0 0.35rem;
+  font-size: 0.58rem;
+}
+
+.vt-detail .vendor-inline-tag__name {
+  font-size: 0.88rem;
+  margin: 0 0 0.25rem;
+}
+
+.vt-detail .vendor-inline-bill h3 {
+  margin: 0 0 0.3rem;
+  font-size: 0.78rem;
+}
+
+.vt-detail .vendor-inline-bill p {
+  margin: 0 0 0.25rem;
+  font-size: 0.72rem;
+}
+
+.vt-detail .vendor-inline-bill__table {
+  margin: 0.25rem 0 0.4rem;
+  font-size: 0.68rem;
+}
+
+.vt-detail .vendor-inline-bill__table th,
+.vt-detail .vendor-inline-bill__table td {
+  padding: 0.2rem 0.3rem;
+}
+
+.vt-detail .vendor-inline-bill__sum {
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.vt-detail .vendor-inline-bill__pay-row {
+  font-size: 0.72rem;
+}
+
+@media (max-width: 1024px) {
+  [data-vendor-nav="tags"] .vs-split {
+    grid-template-columns: 1fr;
+  }
+
+  .vt-detail {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .vt-detail__body {
+    overflow: visible;
+  }
+
+  .vt-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .vt-detail__head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vt-detail-layout {
+    grid-template-columns: 1fr;
+  }
+}

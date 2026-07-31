@@ -184,7 +184,7 @@
       esc(ship.trackingUrl || s.trackingUrl || "") +
       "' placeholder='https://www.delhivery.com/track/package/…' /></div>" +
       "<div class='vs-field vs-field--wide'><label for='vtShipNotes'>Shipment notes</label>" +
-      "<textarea id='vtShipNotes' rows='2' placeholder='Internal notes for studio'>" +
+      "<textarea id='vtShipNotes' rows='1' placeholder='Internal notes for studio'>" +
       esc(ship.shipmentNotes || s.shipmentNotes || "") +
       "</textarea></div>" +
       "</div>" +
@@ -583,7 +583,16 @@
             esc(String(order.orderId)) +
             '">Mark payment received</button></p>';
         }
-        body.innerHTML = markHtml + buildShipmentForm(order) + B.buildInlineTagBillHtml(order);
+        body.innerHTML =
+          markHtml +
+          "<div class='vt-detail-layout'>" +
+          "<div class='vt-detail-layout__tag'>" +
+          B.buildInlineTagBillHtml(order) +
+          "</div>" +
+          "<div class='vt-detail-layout__ship'>" +
+          buildShipmentForm(order) +
+          "</div>" +
+          "</div>";
         var saveBtn = document.getElementById("vtSaveShipmentBtn");
         if (saveBtn) {
           saveBtn.addEventListener("click", function () {

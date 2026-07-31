@@ -98,13 +98,15 @@
                 </table>
               </div>
             </div>
-            <div class="vs-detail" id="vtDetail" hidden>
-              <p class="vs-section-title" style="margin-top: 0">Order detail</p>
-              <p class="vs-muted" id="vtDetailMeta"></p>
-              <div class="vs-row-actions" style="margin: 0.75rem 0">
-                <button type="button" class="vs-btn vs-btn--primary" id="vtPrintBtn">Print tag + bill</button>
+            <div class="vs-detail vt-detail" id="vtDetail" hidden>
+              <div class="vt-detail__head">
+                <div class="vt-detail__head-copy">
+                  <p class="vs-section-title vt-detail__title">Order detail</p>
+                  <p class="vs-muted vt-detail__meta" id="vtDetailMeta"></p>
+                </div>
+                <button type="button" class="vs-btn vs-btn--primary vt-detail__print" id="vtPrintBtn">Print tag + bill</button>
               </div>
-              <div id="vtDetailBody"></div>
+              <div class="vt-detail__body" id="vtDetailBody"></div>
             </div>
           </div>
         </div>
