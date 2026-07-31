@@ -1,6 +1,15 @@
 (function () {
   "use strict";
 
+  var core = window.CraftguruCraftCategoryCard;
+
+  if (core && core.buildCategoryCard) {
+    window.CraftguruPremiumCards = core;
+    window.CraftguruCategoryCard = core;
+    return;
+  }
+
+  /* Fallback if craft-category-card.js failed to load */
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s == null ? "" : String(s);
@@ -11,14 +20,11 @@
     return String(s == null ? "" : s).replace(/"/g, "&quot;");
   }
 
-  /**
-   * Premium category card — cover image, overlapping white panel, title, subtitle, CTA. No icon badge.
-   */
   function buildCategoryCard(opts) {
     opts = opts || {};
     var card = document.createElement("article");
     var extra = opts.extraClass ? " " + opts.extraClass : "";
-    card.className = "featured-collection-card is-inview" + extra;
+    card.className = "craft-cat-card is-inview" + extra;
     if (opts.stagger != null) card.style.setProperty("--stagger", String(opts.stagger));
     if (opts.searchText) card.setAttribute("data-search-text", opts.searchText);
     if (opts.minPrice != null && opts.minPrice !== "") {
@@ -34,67 +40,35 @@
     var ctaText = opts.ctaText || "Explore collection →";
     var ariaLabel = opts.ariaLabel || "Explore " + title + " collection";
 
-    var mediaInner;
-    if (opts.imgSrc) {
-      var fitAttr =
-        opts.imgFit === "contain" || opts.imgFit === "cover"
-          ? ' data-image-fit="' + escAttr(opts.imgFit) + '"'
-          : "";
-      mediaInner =
-        '<img src="' +
+    var mediaInner = opts.imgSrc
+      ? '<img src="' +
         escAttr(opts.imgSrc) +
-        '" alt="" loading="lazy" decoding="async"' +
-        fitAttr +
-        " />";
-    } else {
-      mediaInner = '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>';
-    }
+        '" alt="" loading="lazy" decoding="async" data-image-fit="contain" />'
+      : '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
 
     card.innerHTML =
-      '<a class="featured-collection-card__hit" href="' +
+      '<a class="craft-cat-card__hit" href="' +
       escAttr(href) +
       '" aria-label="' +
       escAttr(ariaLabel) +
       '">' +
-      '<div class="featured-collection-card__visual">' +
-      '<div class="featured-collection-card__media">' +
+      '<div class="craft-cat-card__shell">' +
+      '<div class="craft-cat-card__media">' +
       mediaInner +
       "</div>" +
-      '<div class="featured-collection-card__panel">' +
-      '<h3 class="featured-collection-card__name">' +
+      '<div class="craft-cat-card__body">' +
+      '<h3 class="craft-cat-card__name">' +
       esc(title) +
       "</h3>" +
-      (subtitle ? '<p class="featured-collection-card__count">' + esc(subtitle) + "</p>" : "") +
-      '<span class="featured-collection-card__cta">' +
+      (subtitle ? '<p class="craft-cat-card__count">' + esc(subtitle) + "</p>" : "") +
+      '<span class="craft-cat-card__cta">' +
       esc(ctaText) +
       "</span>" +
-      "</div>" +
-      "</div>" +
-      "</a>";
-
-    if (opts.imgSrc && opts.imgFallback && typeof opts.onImgError === "function") {
-      var previewImg = card.querySelector(".featured-collection-card__media img");
-      if (previewImg) opts.onImgError(previewImg, opts.imgFallback);
-    }
-
-    if (opts.imgFit && opts.imgSrc) {
-      var fitImg = card.querySelector(".featured-collection-card__media img");
-      if (fitImg && window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
-        window.CraftguruImageFit.applyImageFit(fitImg, opts.imgFit);
-      } else if (fitImg && (opts.imgFit === "contain" || opts.imgFit === "cover")) {
-        fitImg.setAttribute("data-image-fit", opts.imgFit);
-      }
-    }
+      "</div></div></a>";
 
     return card;
   }
 
-  window.CraftguruPremiumCards = {
-    buildCategoryCard: buildCategoryCard,
-    esc: esc,
-    escAttr: escAttr,
-  };
-
-  // Back-compat for cached pages that still call CraftguruCategoryCard.
+  window.CraftguruPremiumCards = { buildCategoryCard: buildCategoryCard, esc: esc, escAttr: escAttr };
   window.CraftguruCategoryCard = window.CraftguruPremiumCards;
 })();

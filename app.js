@@ -97,9 +97,9 @@
         return;
       }
       img.removeEventListener("error", onPreviewImgError);
-      var media = img.closest(".featured-collection-card__media, .featured-cat-card__media");
+      var media = img.closest(".craft-cat-card__media, .featured-cat-card__media");
       if (media) {
-        media.classList.add("featured-collection-card__media-empty", "featured-cat-card__media--empty");
+        media.classList.add("craft-cat-card__media-empty", "featured-cat-card__media--empty");
         img.remove();
       }
     });
@@ -580,7 +580,7 @@
       });
     }
     if (els.productGrid) {
-      var cards = els.productGrid.querySelectorAll(".featured-collection-card");
+      var cards = els.productGrid.querySelectorAll(".craft-cat-card");
       var n = 0;
       var total = cards.length;
       cards.forEach(function (card) {
@@ -649,8 +649,7 @@
     els.productGrid.className = "featured-collections-grid";
     els.productGrid.innerHTML = "";
     if (els.filterLabel && !els.filterLabel.textContent.trim()) {
-      els.filterLabel.textContent =
-        "Explore our most loved handcrafted resin creations, made to add beauty to every moment.";
+      els.filterLabel.textContent = "Shop by category";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
@@ -694,40 +693,43 @@
         });
       } else {
         card = document.createElement("article");
-        card.className = "featured-collection-card is-inview";
+        card.className = "craft-cat-card is-inview";
         card.style.setProperty("--stagger", String(i));
         card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
         card.setAttribute("data-search-text", bits.join(" "));
         card.setAttribute("data-has-preview", hasPreview ? "1" : "0");
         card.innerHTML =
-          '<a class="featured-collection-card__hit" href="' +
+          '<a class="craft-cat-card__hit" href="' +
           catHref +
           '" aria-label="Explore ' +
           escapeAttr(cat.label) +
           ' collection">' +
-          '<div class="featured-collection-card__visual">' +
-          '<div class="featured-collection-card__media">' +
+          '<div class="craft-cat-card__shell">' +
+          '<div class="craft-cat-card__media">' +
           (imgRel || imgFallback
-            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" loading="lazy" decoding="async" />'
-            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
+            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" loading="lazy" decoding="async" data-image-fit="contain" />'
+            : '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>') +
           "</div>" +
-          '<div class="featured-collection-card__panel">' +
-          '<h3 class="featured-collection-card__name">' +
+          '<div class="craft-cat-card__body">' +
+          '<h3 class="craft-cat-card__name">' +
           escapeHtml(cat.label) +
           "</h3>" +
-          '<p class="featured-collection-card__count">' +
+          '<p class="craft-cat-card__count">' +
           countLabel +
           "</p>" +
-          '<span class="featured-collection-card__cta">Explore collection →</span>' +
+          '<span class="craft-cat-card__cta">Explore collection →</span>' +
           "</div></div></a>";
         if (imgRel && imgFallback) {
-          wireCategoryPreviewImgOnerror(card.querySelector(".featured-collection-card__media img"), imgFallback);
+          wireCategoryPreviewImgOnerror(card.querySelector(".craft-cat-card__media img"), imgFallback);
         }
-        var previewImgFit = card.querySelector(".featured-collection-card__media img");
-        if (previewImgFit) applyImageFitToImg(previewImgFit, categoryPreviewFit(cat.id, imgRel || imgFallback));
+        var previewImgFit = card.querySelector(".craft-cat-card__media img");
+        if (previewImgFit) applyImageFitToImg(previewImgFit, "contain");
       }
       els.productGrid.appendChild(card);
     });
+    if (window.CraftguruCraftCategoryCard && window.CraftguruCraftCategoryCard.ensureCategoryGridsVisible) {
+      window.CraftguruCraftCategoryCard.ensureCategoryGridsVisible();
+    }
     if (!cats.length && D.listAllListedProducts) {
       var featuredPool = D.listAllListedProducts().filter(function (p) {
         return p && productDisplayImageSafe(p);
@@ -1170,11 +1172,11 @@
 
   function patchFeaturedCardPrices() {
     if (!els.productGrid) return;
-    var cards = els.productGrid.querySelectorAll(".featured-collection-card[data-min-price]");
+    var cards = els.productGrid.querySelectorAll(".craft-cat-card[data-min-price]");
     if (!cards.length) return false;
     cards.forEach(function (card) {
       var catId = "";
-      var link = card.querySelector(".featured-collection-card__hit");
+      var link = card.querySelector(".craft-cat-card__hit");
       if (link && link.getAttribute("href")) {
         try {
           var u = new URL(link.href, window.location.href);

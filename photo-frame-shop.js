@@ -541,36 +541,37 @@
         });
       } else {
         card = document.createElement("article");
-        card.className = "featured-collection-card is-inview";
+        card.className = "craft-cat-card is-inview";
         card.style.setProperty("--stagger", String(idx % 10));
         card.innerHTML =
-          '<a class="featured-collection-card__hit" href="' +
+          '<a class="craft-cat-card__hit" href="' +
           escAttr(href) +
           '" aria-label="Browse ' +
           escAttr(c.name) +
           '">' +
-          '<div class="featured-collection-card__visual">' +
-          '<div class="featured-collection-card__media">' +
+          '<div class="craft-cat-card__shell">' +
+          '<div class="craft-cat-card__media">' +
           (imgRel
             ? '<img src="' +
               escAttr(imgSrc(imgRel)) +
-              '" alt="" loading="lazy" width="1200" height="800"' +
-              (imgFit === "contain" || imgFit === "cover" ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
-              " />"
-            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
+              '" alt="" loading="lazy" width="1200" height="800" data-image-fit="contain" />'
+            : '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>') +
           "</div>" +
-          '<div class="featured-collection-card__panel">' +
-          "<h3 class=\"featured-collection-card__name\">" +
+          '<div class="craft-cat-card__body">' +
+          "<h3 class=\"craft-cat-card__name\">" +
           esc(c.name) +
           "</h3>" +
-          '<p class="featured-collection-card__count">' +
+          '<p class="craft-cat-card__count">' +
           esc(countLabel) +
           "</p>" +
-          '<span class="featured-collection-card__cta">Explore collection →</span>' +
+          '<span class="craft-cat-card__cta">Explore collection →</span>' +
           "</div></div></a>";
       }
       hub.appendChild(card);
     });
+    if (window.CraftguruCraftCategoryCard && window.CraftguruCraftCategoryCard.ensureCategoryGridsVisible) {
+      window.CraftguruCraftCategoryCard.ensureCategoryGridsVisible();
+    }
   }
 
   function wireFiltersOnce() {

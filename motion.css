@@ -181,3 +181,13 @@
   transform: translate3d(0, 0, 0) scale(1);
   filter: blur(0);
 }
+
+/* Category hub: never hide #shop or cards behind reveal fade */
+body.page-home #shop,
+body.page-home #shop .featured-collections-grid,
+#rmCategoryHub,
+.craft-cat-card {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+}

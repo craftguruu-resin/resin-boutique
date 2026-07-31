@@ -1,6 +1,5 @@
 /**
- * Premium category cards — homepage featured section + sitewide hub grids.
- * Cover image, white overlapping panel, title, count/subtitle, explore CTA. No icon badges.
+ * Category hub grids + trust bars — card visuals live in craft-category-card.css.
  */
 
 /* ── Section header (homepage only) ── */
@@ -163,127 +162,6 @@ body.page-home .featured-collections-pill__arrow {
   }
 }
 
-/* ── Premium collection card (sitewide) ── */
-.featured-collection-card {
-  position: relative;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-  overflow: visible;
-  height: auto;
-  min-height: 0;
-  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.featured-collection-card:hover {
-  transform: translateY(-4px);
-  border-color: transparent;
-  box-shadow: none;
-}
-
-.featured-collection-card__hit {
-  display: block;
-  text-decoration: none;
-  color: inherit;
-  height: 100%;
-  min-height: 2.75rem;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.featured-collection-card__visual {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.featured-collection-card__media {
-  position: relative;
-  aspect-ratio: 4 / 3;
-  border-radius: 18px;
-  overflow: hidden;
-  background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
-  box-shadow: 0 10px 32px rgba(15, 23, 42, 0.08);
-}
-
-.featured-collection-card__media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  display: block;
-  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.featured-collection-card:hover .featured-collection-card__media img {
-  transform: scale(1.04);
-}
-
-.featured-collection-card__media:has(> img[data-image-fit="contain"]) {
-  background: #ffffff;
-}
-
-.featured-collection-card__media img[data-image-fit="contain"] {
-  object-fit: contain !important;
-  object-position: center !important;
-}
-
-.featured-collection-card__media-empty {
-  width: 100%;
-  height: 100%;
-  min-height: 8rem;
-}
-
-.featured-collection-card__panel {
-  position: relative;
-  z-index: 2;
-  margin: -1.15rem 0.55rem 0;
-  padding: 1rem 0.85rem 1rem;
-  border-radius: 16px;
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.95) inset,
-    0 16px 40px rgba(15, 23, 42, 0.1);
-  text-align: center;
-  flex: 1;
-}
-
-.featured-collection-card__name {
-  margin: 0;
-  font-family: var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif);
-  font-size: 0.88rem;
-  font-weight: 700;
-  line-height: 1.35;
-  color: var(--home-ink, #1a2b48);
-  letter-spacing: -0.01em;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  hyphens: auto;
-}
-
-.featured-collection-card__count {
-  margin: 0.28rem 0 0.65rem;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: rgba(26, 43, 72, 0.48);
-}
-
-.featured-collection-card__cta {
-  display: inline-block;
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--cg-teal-deep, #1e8e84);
-  transition: color 0.2s ease;
-}
-
-.featured-collection-card:hover .featured-collection-card__cta {
-  color: var(--cg-teal, #26a69a);
-}
-
 /* ── Trust bar (homepage only) ── */
 body.page-home .featured-collections-trust {
   display: grid;
@@ -426,29 +304,6 @@ body.page-home .band-shop-inner--home {
     line-height: 1.35;
   }
 
-  .featured-collection-card__panel {
-    margin-inline: 0.35rem;
-    padding: 0.9rem 0.65rem 0.9rem;
-  }
-
-  .featured-collection-card__media {
-    border-radius: 14px;
-  }
-
-  .featured-collection-card__name {
-    font-size: 0.82rem;
-  }
-
-  .featured-collection-card__cta {
-    font-size: 0.6rem;
-    letter-spacing: 0.12em;
-    padding: 0.35rem 0;
-    min-height: 1.75rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
   body.page-home .featured-collections-trust {
     padding: 1rem 0.85rem;
     border-radius: 14px;
@@ -476,33 +331,14 @@ body.page-home .band-shop-inner--home {
 }
 
 @media (pointer: coarse) {
-  .featured-collection-card:hover {
-    transform: none;
-  }
-
-  .featured-collection-card:hover .featured-collection-card__media img {
-    transform: none;
-  }
-
-  .featured-collection-card:active {
-    transform: scale(0.985);
-  }
-
   body.page-home .featured-collections-pill:active {
     transform: scale(0.98);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .featured-collection-card,
-  .featured-collection-card__media img,
   body.page-home .featured-collections-pill {
     transition: none;
-  }
-
-  .featured-collection-card:hover,
-  .featured-collection-card:active {
-    transform: none;
   }
 }
 

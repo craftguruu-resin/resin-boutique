@@ -1,0 +1,236 @@
+/**
+ * Craft category card — solid white, image top / text bottom. Sitewide hub grids.
+ */
+
+/* ── Visibility safeguards (no blank #shop / hub grids) ── */
+body.page-home #shop,
+body.page-home #shop .featured-collections-grid,
+#rmCategoryHub,
+.rm-cat-hub .featured-collections-grid,
+.craft-cat-card,
+.craft-cat-card.is-inview {
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+}
+
+.craft-cat-card.reveal,
+.craft-cat-card.reveal-tile,
+.craft-cat-card.reveal-tile:not(.is-inview) {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* ── Section header (match reference) ── */
+.craft-cat-section__head {
+  margin-bottom: clamp(1.5rem, 3.5vw, 2.25rem);
+}
+
+.craft-cat-section__title {
+  margin: 0;
+  font-family: var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif);
+  font-size: clamp(1.65rem, 3.5vw, 2rem);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--home-ink, #1a2b48);
+}
+
+.craft-cat-section__all-link {
+  display: inline-block;
+  margin-top: 0.55rem;
+  font-family: var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif);
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--cg-teal-deep, #1e8e84);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+  transition: color 0.2s ease;
+}
+
+.craft-cat-section__all-link:hover,
+.craft-cat-section__all-link:focus-visible {
+  color: var(--cg-teal, #26a69a);
+}
+
+/* ── Card shell ── */
+.craft-cat-card {
+  position: relative;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: visible;
+  height: 100%;
+  min-height: 0;
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.craft-cat-card__hit {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  min-height: 2.75rem;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.craft-cat-card__shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: #ffffff;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow:
+    0 24px 48px rgba(15, 23, 42, 0.07),
+    0 8px 24px rgba(15, 23, 42, 0.04);
+  transition:
+    transform 0.35s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.craft-cat-card:hover {
+  transform: translateY(-5px);
+}
+
+.craft-cat-card:hover .craft-cat-card__shell {
+  box-shadow:
+    0 32px 64px rgba(15, 23, 42, 0.1),
+    0 12px 32px rgba(15, 23, 42, 0.06);
+}
+
+/* ── Image area (~70%) ── */
+.craft-cat-card__media {
+  position: relative;
+  flex: 7 1 0;
+  min-height: 0;
+  aspect-ratio: 4 / 2.85;
+  background: #ffffff;
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+}
+
+.craft-cat-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  display: block;
+  transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.craft-cat-card:hover .craft-cat-card__media img {
+  transform: scale(1.02);
+}
+
+.craft-cat-card__media-empty {
+  width: 100%;
+  height: 100%;
+  min-height: 8rem;
+  background: #f4f6f9;
+}
+
+/* ── Text body (~30%) ── */
+.craft-cat-card__body {
+  flex: 3 1 0;
+  padding: 1.15rem 1.25rem 1.35rem;
+  background: #ffffff;
+  border-radius: 0 0 24px 24px;
+}
+
+.craft-cat-card__name {
+  margin: 0;
+  font-family: var(--font-body, "Plus Jakarta Sans", system-ui, sans-serif);
+  font-size: clamp(1rem, 2.2vw, 1.15rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--home-ink, #1a2b48);
+  letter-spacing: -0.01em;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.craft-cat-card__count {
+  margin: 0.35rem 0 0.85rem;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1.4;
+  color: rgba(26, 43, 72, 0.52);
+}
+
+.craft-cat-card__cta {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--cg-teal-deep, #1e8e84);
+  transition: color 0.2s ease;
+}
+
+.craft-cat-card:hover .craft-cat-card__cta {
+  color: var(--cg-teal, #26a69a);
+}
+
+/* ── Mobile ── */
+@media (max-width: 719px) {
+  .craft-cat-card__shell {
+    border-radius: 20px;
+  }
+
+  .craft-cat-card__media {
+    border-radius: 20px 20px 0 0;
+    aspect-ratio: 4 / 3;
+  }
+
+  .craft-cat-card__body {
+    padding: 1rem 1rem 1.15rem;
+    border-radius: 0 0 20px 20px;
+  }
+
+  .craft-cat-card__name {
+    font-size: 1rem;
+  }
+
+  .craft-cat-card__count {
+    font-size: 0.875rem;
+  }
+}
+
+@media (max-width: 399px) {
+  .craft-cat-card__media {
+    aspect-ratio: 1 / 0.85;
+  }
+}
+
+@media (pointer: coarse) {
+  .craft-cat-card:hover {
+    transform: none;
+  }
+
+  .craft-cat-card:hover .craft-cat-card__media img {
+    transform: none;
+  }
+
+  .craft-cat-card:active {
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .craft-cat-card,
+  .craft-cat-card__shell,
+  .craft-cat-card__media img {
+    transition: none;
+  }
+
+  .craft-cat-card:hover,
+  .craft-cat-card:active {
+    transform: none;
+  }
+}
