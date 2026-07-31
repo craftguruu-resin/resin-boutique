@@ -53,7 +53,7 @@ body.page-home #shop .featured-collections-grid,
   color: var(--cg-teal, #26a69a);
 }
 
-/* ── Card shell ── */
+/* ── Card shell — stretch to equal row height in grid ── */
 .craft-cat-card {
   position: relative;
   border: none;
@@ -61,16 +61,17 @@ body.page-home #shop .featured-collections-grid,
   background: transparent;
   box-shadow: none;
   overflow: visible;
-  height: auto;
+  height: 100%;
   min-height: 0;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .craft-cat-card__hit {
-  display: block;
+  display: flex;
+  flex-direction: column;
   text-decoration: none;
   color: inherit;
-  height: auto;
+  height: 100%;
   min-height: 2.75rem;
   -webkit-tap-highlight-color: transparent;
 }
@@ -78,7 +79,8 @@ body.page-home #shop .featured-collections-grid,
 .craft-cat-card__shell {
   display: flex;
   flex-direction: column;
-  height: auto;
+  flex: 1;
+  height: 100%;
   background: #ffffff;
   border-radius: 24px;
   overflow: hidden;
@@ -148,9 +150,11 @@ body.page-home #shop .featured-collections-grid,
     center / contain no-repeat;
 }
 
-/* ── Text body (~30%) ── */
+/* ── Text body (~30%) — flex column pushes CTA to bottom ── */
 .craft-cat-card__body {
-  flex: 0 0 auto;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
   padding: 1.15rem 1.25rem 1.35rem;
   background: #ffffff;
   border-radius: 0 0 24px 24px;
@@ -162,6 +166,7 @@ body.page-home #shop .featured-collections-grid,
   font-size: clamp(1rem, 2.2vw, 1.15rem);
   font-weight: 700;
   line-height: 1.35;
+  min-height: calc(2 * 1.35em);
   color: var(--home-ink, #1a2b48);
   letter-spacing: -0.01em;
   display: -webkit-box;
@@ -182,6 +187,7 @@ body.page-home #shop .featured-collections-grid,
 
 .craft-cat-card__cta {
   display: inline-block;
+  margin-top: auto;
   font-size: 0.6875rem;
   font-weight: 600;
   letter-spacing: 0.12em;
