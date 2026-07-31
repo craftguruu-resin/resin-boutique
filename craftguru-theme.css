@@ -211,8 +211,9 @@ body:not(.vendor-saas) .band-shop .product-card:hover {
   box-shadow: var(--cg-shadow-green);
 }
 
-body:not(.vendor-saas) .band-shop .product-card-image {
-  background: linear-gradient(160deg, var(--cg-mint-pale), var(--cg-mint-soft));
+body:not(.vendor-saas) .band-shop .product-card-image,
+body:not(.vendor-saas) .band-shop .product-card__media {
+  background: #ffffff;
 }
 
 body:not(.vendor-saas) .band-shop .add-btn {

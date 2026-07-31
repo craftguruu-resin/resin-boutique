@@ -97,8 +97,9 @@ body:not(.vendor-saas) .band-shop .product-card {
   -webkit-backdrop-filter: none;
 }
 
-body:not(.vendor-saas) .band-shop .product-card-image {
-  background: linear-gradient(160deg, #f0f3f8, #dde4ef);
+body:not(.vendor-saas) .band-shop .product-card-image,
+body:not(.vendor-saas) .band-shop .product-card__media {
+  background: #ffffff;
 }
 
 body:not(.vendor-saas) .band-shop .product-card h3,
@@ -1441,16 +1442,18 @@ button.rm-pdp__bulk.bulk-buy-btn--pdp {
 .product-card__media {
   width: 100%;
   height: 100%;
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(0.45rem, 2.5vw, 0.75rem);
+  padding: clamp(0.35rem, 1.8vw, 0.55rem);
   box-sizing: border-box;
 }
 
 .product-card__media img {
-  width: 100%;
-  height: 100%;
+  flex: 0 1 auto;
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
@@ -7595,12 +7598,13 @@ a.home-category-rail__title-link:focus-visible {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 0;
-  background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: clamp(0.45rem, 2.5vw, 0.75rem);
+  padding: clamp(0.35rem, 1.8vw, 0.55rem);
   box-sizing: border-box;
+  min-height: 0;
 }
 
 .featured-cat-card__media--empty {
@@ -7608,8 +7612,9 @@ a.home-category-rail__title-link:focus-visible {
 }
 
 .featured-cat-card__media img {
-  width: 100%;
-  height: 100%;
+  flex: 0 1 auto;
+  width: auto;
+  height: auto;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
