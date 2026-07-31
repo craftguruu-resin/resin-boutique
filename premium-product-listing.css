@@ -172,30 +172,38 @@ body:not(.vendor-saas) {
   line-height: 1.3;
 }
 
-/* ── Product grid ── */
-.plp-grid,
-.plp-grid.product-grid,
-.plp-grid.rm-grid-cards {
+/* ── Product grid (overrides legacy styles.css .product-grid 3-col @540px) ── */
+body:not(.vendor-saas) .plp-grid,
+body:not(.vendor-saas) .plp-grid.product-grid,
+body:not(.vendor-saas) .plp-grid.rm-grid-cards {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.15rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.85rem;
   margin: 0 0 1.5rem;
+  align-items: stretch;
 }
 
-@media (min-width: 520px) {
-  .plp-grid:not(.plp-grid--list),
-  .plp-grid.product-grid:not(.plp-grid--list) {
+@media (min-width: 640px) {
+  body:not(.vendor-saas) .plp-grid:not(.plp-grid--list),
+  body:not(.vendor-saas) .plp-grid.product-grid:not(.plp-grid--list),
+  body:not(.vendor-saas) .plp-grid.rm-grid-cards:not(.plp-grid--list) {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.95rem;
   }
 }
 
-@media (min-width: 900px) {
-  .plp-grid:not(.plp-grid--list),
-  .plp-grid.product-grid:not(.plp-grid--list),
-  .plp-grid.rm-grid-cards:not(.plp-grid--list) {
+@media (min-width: 768px) {
+  body:not(.vendor-saas) .plp-grid:not(.plp-grid--list),
+  body:not(.vendor-saas) .plp-grid.product-grid:not(.plp-grid--list),
+  body:not(.vendor-saas) .plp-grid.rm-grid-cards:not(.plp-grid--list) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 1.1rem;
+    gap: 0.85rem;
   }
+}
+
+/* Wider PLP content band — more room for 4 cols beside category rail */
+body:not(.vendor-saas) .band-shop-inner:has(.plp-shell) {
+  max-width: min(1360px, calc(100vw - 1.5rem));
 }
 
 /* ── Product card ── */
@@ -218,7 +226,7 @@ body:not(.vendor-saas) {
 
 .plp-card__media-wrap {
   position: relative;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--plp-card-radius) var(--plp-card-radius) 0 0;
   background: #f8fafb;
@@ -297,8 +305,11 @@ body:not(.vendor-saas) {
 }
 
 .plp-card__body {
-  padding: 0.85rem 1rem 0.35rem;
+  display: flex;
+  flex-direction: column;
   flex: 1 1 auto;
+  padding: 0.85rem 1rem 0.35rem;
+  min-height: 0;
 }
 
 .plp-card__name-row {
@@ -377,6 +388,7 @@ body:not(.vendor-saas) {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  margin-top: auto;
   padding: 0.65rem 1rem 1rem;
 }
 
@@ -453,83 +465,89 @@ body:not(.vendor-saas) {
 }
 
 /* ── Desktop 4-col: tighter card proportions ── */
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .plp-card {
-    --plp-card-radius: 14px;
+    --plp-card-radius: 13px;
+    height: 100%;
+  }
+
+  .plp-card__media-wrap {
+    aspect-ratio: 4 / 3;
   }
 
   .plp-card__media {
-    padding: clamp(0.25rem, 1.2vw, 0.45rem);
+    padding: clamp(0.2rem, 1vw, 0.4rem);
   }
 
   .plp-card__media img {
-    border-radius: 8px;
+    border-radius: 7px;
   }
 
   .plp-card__badge {
-    top: 0.5rem;
-    left: 0.5rem;
-    padding: 0.18rem 0.45rem;
-    font-size: 0.58rem;
+    top: 0.45rem;
+    left: 0.45rem;
+    padding: 0.16rem 0.4rem;
+    font-size: 0.56rem;
   }
 
   .plp-card__wish {
-    top: 0.45rem;
-    right: 0.45rem;
-    width: 1.75rem;
-    height: 1.75rem;
-    font-size: 0.88rem;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 1.65rem;
+    height: 1.65rem;
+    font-size: 0.82rem;
   }
 
   .plp-card__body {
-    padding: 0.7rem 0.8rem 0.3rem;
+    padding: 0.62rem 0.72rem 0.25rem;
   }
 
   .plp-card__name {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
+    line-height: 1.2;
   }
 
   .plp-card__spark {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 
   .plp-card__rating {
-    margin-top: 0.32rem;
+    margin-top: 0.28rem;
   }
 
   .plp-card__stars {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
   }
 
   .plp-card__review-count {
-    font-size: 0.66rem;
+    font-size: 0.62rem;
   }
 
   .plp-card__price {
-    margin-top: 0.35rem;
-    font-size: 0.88rem;
+    margin-top: 0.3rem;
+    font-size: 0.82rem;
   }
 
   .plp-card__actions {
-    padding: 0.55rem 0.8rem 0.85rem;
-    gap: 0.4rem;
+    padding: 0.5rem 0.72rem 0.75rem;
+    gap: 0.35rem;
   }
 
   .plp-card__cta {
-    min-height: 2.25rem;
-    padding: 0.45rem 0.65rem;
-    font-size: 0.66rem;
+    min-height: 2.1rem;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.62rem;
   }
 
   .plp-card__actions .bulk-buy-btn--plp-icon {
-    width: 2.25rem;
-    height: 2.25rem;
-    min-width: 2.25rem;
+    width: 2.1rem;
+    height: 2.1rem;
+    min-width: 2.1rem;
   }
 
   .plp-card__actions .bulk-buy-btn--plp-icon .bulk-buy-btn__icon {
-    width: 1rem;
-    height: 1rem;
+    width: 0.95rem;
+    height: 0.95rem;
   }
 }
 
