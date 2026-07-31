@@ -109,6 +109,28 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(40) NOT NULL 
 -- Optional dispatch state (vendor can PATCH later). Default keeps existing rows valid.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'new';
 
+-- Shipment tracking (1:1 with orders; Delhivery default courier)
+CREATE TABLE IF NOT EXISTS order_shipments (
+  id BIGSERIAL PRIMARY KEY,
+  order_id INTEGER NOT NULL UNIQUE REFERENCES orders (id) ON DELETE CASCADE,
+  tracking_number VARCHAR(80) NOT NULL DEFAULT '',
+  courier_name VARCHAR(80) NOT NULL DEFAULT 'Delhivery',
+  shipment_status VARCHAR(80) NOT NULL DEFAULT '',
+  shipment_status_code VARCHAR(80) NOT NULL DEFAULT '',
+  tracking_url TEXT NOT NULL DEFAULT '',
+  dispatch_date TIMESTAMPTZ,
+  estimated_delivery_date TIMESTAMPTZ,
+  actual_delivery_date TIMESTAMPTZ,
+  shipment_notes TEXT NOT NULL DEFAULT '',
+  shipment_history JSONB NOT NULL DEFAULT '[]'::jsonb,
+  last_tracking_sync TIMESTAMPTZ,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_order_shipments_tracking ON order_shipments (tracking_number);
+CREATE INDEX IF NOT EXISTS idx_order_shipments_status_code ON order_shipments (shipment_status_code);
+
 CREATE TABLE IF NOT EXISTS vendor_inventory_items (
   id BIGSERIAL PRIMARY KEY,
   name VARCHAR(300) NOT NULL,

@@ -1,0 +1,64 @@
+"use strict";
+
+var delhivery = require("./courier-delhivery.js");
+
+var COURIERS = {
+  delhivery: delhivery,
+};
+
+var ALIASES = {
+  "blue dart": "bluedart",
+  bluedart: "bluedart",
+  dtdc: "dtdc",
+  delhivery: "delhivery",
+};
+
+function normalizeCourierId(name) {
+  var s = String(name || "Delhivery")
+    .trim()
+    .toLowerCase();
+  if (ALIASES[s]) return ALIASES[s];
+  return s.replace(/\s+/g, "");
+}
+
+function getCourier(name) {
+  var id = normalizeCourierId(name);
+  if (COURIERS[id]) return COURIERS[id];
+  return delhivery;
+}
+
+function listCouriers() {
+  return Object.keys(COURIERS).map(function (id) {
+    var c = COURIERS[id];
+    return { id: id, displayName: c.displayName, configured: typeof c.isConfigured === "function" ? c.isConfigured() : false };
+  });
+}
+
+/**
+ * Fetch tracking from the appropriate courier adapter.
+ * @param {string} courierName
+ * @param {string} trackingNumber
+ * @returns {Promise<object>}
+ */
+function fetchTracking(courierName, trackingNumber) {
+  var courier = getCourier(courierName);
+  if (courier.id === "delhivery" && typeof courier.fetchTracking === "function") {
+    return courier.fetchTracking(trackingNumber);
+  }
+  return Promise.reject(new Error("Courier adapter not implemented: " + String(courierName || "")));
+}
+
+function validateTracking(courierName, trackingNumber) {
+  var courier = getCourier(courierName);
+  if (typeof courier.validateAwb === "function") return courier.validateAwb(trackingNumber);
+  var shipmentStatus = require("./shipment-status.js");
+  return shipmentStatus.validateTrackingNumber(trackingNumber, courierName);
+}
+
+module.exports = {
+  getCourier: getCourier,
+  listCouriers: listCouriers,
+  fetchTracking: fetchTracking,
+  validateTracking: validateTracking,
+  normalizeCourierId: normalizeCourierId,
+};

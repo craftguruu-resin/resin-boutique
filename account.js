@@ -219,6 +219,131 @@
     return "";
   }
 
+  function fmtShortDate(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleDateString(undefined, {
+        weekday: "short",
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      });
+    } catch (_) {
+      return "—";
+    }
+  }
+
+  function renderShipmentTimelineHtml(timeline) {
+    if (!timeline || !Array.isArray(timeline.steps) || !timeline.steps.length) return "";
+    var steps = timeline.steps
+      .map(function (s) {
+        return (
+          "<li class='cg-ship-timeline__step cg-ship-timeline__step--" +
+          escapeAttr(s.state) +
+          "'><span class='cg-ship-timeline__dot' aria-hidden='true'></span>" +
+          "<div class='cg-ship-timeline__body'><strong>" +
+          escapeHtml(s.label) +
+          "</strong>" +
+          (s.timestamp ? "<span class='account-order-card__pay-sub'>" + escapeHtml(fmtShortDate(s.timestamp)) + "</span>" : "") +
+          "</div></li>"
+        );
+      })
+      .join("");
+    var alert =
+      timeline.alert && timeline.alert.label
+        ? "<p class='account-shipment__alert'>" + escapeHtml(timeline.alert.label) + "</p>"
+        : "";
+    return "<ol class='cg-ship-timeline'>" + steps + "</ol>" + alert;
+  }
+
+  function buildShipmentSectionHtml(o) {
+    var s = o.shipment;
+    if (!s || !String(s.trackingNumber || "").trim()) return "";
+    var trackUrl = s.trackingUrl || "";
+    var staleNote =
+      s.stale && s.lastTrackingSync
+        ? "<p class='account-shipment__stale'>Showing last synced status (" +
+          escapeHtml(fmtShortDate(s.lastTrackingSync)) +
+          "). Courier API may be temporarily unavailable.</p>"
+        : "";
+    var deliveredBadge =
+      s.delivered || String(s.shipmentStatusCode || "").toLowerCase() === "delivered"
+        ? "<span class='account-order-card__status account-order-card__status--ok account-shipment__delivered'>Delivered</span>"
+        : "";
+    return (
+      "<section class='account-shipment' data-shipment-order='" +
+      escapeAttr(String(o.orderId)) +
+      "'>" +
+      "<div class='account-shipment__head'>" +
+      "<h3 class='account-shipment__title'>Shipment tracking</h3>" +
+      deliveredBadge +
+      "</div>" +
+      "<div class='account-shipment__grid'>" +
+      "<div><span class='account-order-card__cell-label'>Courier</span><span>" +
+      escapeHtml(s.courierName || "Delhivery") +
+      "</span></div>" +
+      "<div><span class='account-order-card__cell-label'>Tracking ID</span><span>" +
+      escapeHtml(s.trackingNumber) +
+      "</span></div>" +
+      "<div><span class='account-order-card__cell-label'>Status</span><span>" +
+      escapeHtml(s.shipmentStatus || "—") +
+      "</span></div>" +
+      "<div><span class='account-order-card__cell-label'>Dispatch</span><span>" +
+      escapeHtml(fmtShortDate(s.dispatchDate)) +
+      "</span></div>" +
+      "<div><span class='account-order-card__cell-label'>Est. delivery</span><span>" +
+      escapeHtml(fmtShortDate(s.estimatedDeliveryDate)) +
+      "</span></div>" +
+      "<div><span class='account-order-card__cell-label'>Delivered</span><span>" +
+      escapeHtml(fmtShortDate(s.actualDeliveryDate)) +
+      "</span></div>" +
+      "</div>" +
+      staleNote +
+      renderShipmentTimelineHtml(s.timeline) +
+      "<div class='account-shipment__actions'>" +
+      "<button type='button' class='checkout-submit account-shipment-track' data-track-order='" +
+      escapeAttr(String(o.orderId)) +
+      "'>Track shipment</button>" +
+      (trackUrl
+        ? " <a class='checkout-pay-secondary account-shipment-ext' href='" +
+          escapeAttr(trackUrl) +
+          "' target='_blank' rel='noopener noreferrer'>Open Delhivery</a>"
+        : "") +
+      "</div></section>"
+    );
+  }
+
+  function refreshGuestShipmentTracking(orderId, btn) {
+    var base = billApiBase();
+    if (!base) return;
+    if (btn) btn.disabled = true;
+    fetch(base + "/api/guest/order/" + encodeURIComponent(orderId) + "/tracking?live=1", {
+      headers: guestAuthHeaders(),
+      cache: "no-store",
+    })
+      .then(function (res) {
+        return parseApiJson(res).then(function (x) {
+          return { x: x, status: res.status };
+        });
+      })
+      .then(function (o) {
+        if (!o.x.okHttp || !o.x.json.ok) throw new Error((o.x.json && o.x.json.error) || "Could not refresh tracking");
+        var ship = o.x.json.shipment;
+        ordersCache.forEach(function (ord, idx) {
+          if (String(ord.orderId) === String(orderId)) {
+            ordersCache[idx] = Object.assign({}, ord, { shipment: ship });
+          }
+        });
+        renderOrdersFromCache();
+      })
+      .catch(function (e) {
+        window.alert(String((e && e.message) || e || "Tracking refresh failed"));
+      })
+      .finally(function () {
+        if (btn) btn.disabled = false;
+      });
+  }
+
   function buildOrderBillHtml(o) {
     function totalRow(label, val) {
       return (
@@ -260,11 +385,13 @@
 
     var fs = String(o.fulfillmentStatus || "").toLowerCase();
     var deliveryLine =
-      fs === "delivered"
-        ? formatLongDate(o.createdAt)
+      fs === "delivered" || (o.shipment && o.shipment.actualDeliveryDate)
+        ? fmtShortDate((o.shipment && o.shipment.actualDeliveryDate) || o.createdAt)
         : fs === "cancelled"
           ? "—"
-          : "Not delivered yet";
+          : o.shipment && o.shipment.estimatedDeliveryDate
+            ? "Expected " + fmtShortDate(o.shipment.estimatedDeliveryDate)
+            : "Not delivered yet";
 
     var linesHtml = "";
     if (!items.length) {
@@ -366,6 +493,7 @@
         : "") +
       "</span></div>" +
       "</div>" +
+      buildShipmentSectionHtml(o) +
       '<div class="account-order-bill">' +
       '<div class="account-order-bill__lines">' +
       linesHtml +
@@ -1245,6 +1373,12 @@
         if (dlBtn) {
           ev.preventDefault();
           downloadGuestOrderBillPdf(dlBtn.getAttribute("data-dl-bill-order"));
+          return;
+        }
+        var trackBtn = ev.target && ev.target.closest ? ev.target.closest("[data-track-order]") : null;
+        if (trackBtn) {
+          ev.preventDefault();
+          refreshGuestShipmentTracking(trackBtn.getAttribute("data-track-order"), trackBtn);
           return;
         }
         var btn = ev.target && ev.target.closest ? ev.target.closest("[data-cancel-id]") : null;

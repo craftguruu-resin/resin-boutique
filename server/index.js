@@ -82,6 +82,8 @@ var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
 var httpHardening = require("./http-hardening.js");
 var orderPricing = require("./order-pricing.js");
+var shipmentSync = require("./shipment/shipment-sync.js");
+var shipmentDb = require("./shipment/shipment-db.js");
 
 /** Cloud Run sets PORT=8080; local default 8080 (use PORT=3847 in server/.env for legacy local). */
 var PORT = Number(process.env.PORT) || 8080;
@@ -1564,6 +1566,55 @@ app.get("/api/guest/order/:orderId/bill-pdf", function (req, res) {
   });
 });
 
+/** Live shipment tracking for signed-in guest (own orders only). */
+app.get("/api/guest/order/:orderId/tracking", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!row) {
+      return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
+    }
+    var oid = Number(req.params.orderId);
+    if (!Number.isFinite(oid)) {
+      return res.status(400).json({ ok: false, error: "Invalid order" });
+    }
+    var live = String(req.query && req.query.live) === "1";
+    ordersRepo.getGuestOrderTracking(row.guestId, oid, function (e2, base) {
+      if (e2) {
+        var msg = String(e2.message || e2);
+        return res.status(msg.indexOf("not found") >= 0 ? 404 : 500).json({ ok: false, error: msg });
+      }
+      if (!base || !base.shipment) {
+        res.setHeader("Cache-Control", "no-store");
+        return res.json({ ok: true, orderId: oid, shipment: null });
+      }
+      if (!live) {
+        res.setHeader("Cache-Control", "no-store");
+        return res.json({ ok: true, orderId: oid, shipment: base.shipment });
+      }
+      shipmentSync.syncOrderShipment(oid, { skipCache: false }, function (e3, out) {
+        if (e3) {
+          res.setHeader("Cache-Control", "no-store");
+          return res.json({
+            ok: true,
+            orderId: oid,
+            shipment: base.shipment,
+            syncError: String(e3.message || e3),
+            stale: true,
+          });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({
+          ok: true,
+          orderId: oid,
+          shipment: shipmentDb.publicShipmentView(out.shipment, { includeNotes: false }),
+        });
+      });
+    });
+  });
+});
+
 /** Cancel an unpaid order (guest only, fulfillment must still be "new"). */
 app.post("/api/guest/order/cancel", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
@@ -1650,6 +1701,13 @@ app.get("/api/vendor/orders/today", function (req, res) {
             paymentStatus: o.paymentStatus,
             paymentMethod: o.paymentMethod,
             fulfillmentStatus: o.fulfillmentStatus || "new",
+            trackingNumber: o.trackingNumber || "",
+            courierName: o.courierName || "",
+            shipmentStatus: o.shipmentStatus || "",
+            shipmentStatusCode: o.shipmentStatusCode || "",
+            dispatchDate: o.dispatchDate || null,
+            estimatedDeliveryDate: o.estimatedDeliveryDate || null,
+            shipment: o.shipment || null,
           };
         }),
       });
@@ -1687,6 +1745,13 @@ app.get("/api/vendor/orders/recent", function (req, res) {
             paymentStatus: o.paymentStatus,
             paymentMethod: o.paymentMethod,
             fulfillmentStatus: o.fulfillmentStatus || "new",
+            trackingNumber: o.trackingNumber || "",
+            courierName: o.courierName || "",
+            shipmentStatus: o.shipmentStatus || "",
+            shipmentStatusCode: o.shipmentStatusCode || "",
+            dispatchDate: o.dispatchDate || null,
+            estimatedDeliveryDate: o.estimatedDeliveryDate || null,
+            shipment: o.shipment || null,
           };
         }),
       });
@@ -1795,6 +1860,72 @@ app.patch("/api/vendor/order/:orderId/fulfillment", function (req, res) {
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, orderId: out.orderId, fulfillmentStatus: out.fulfillmentStatus });
+    });
+  });
+});
+
+/** Save / update shipment details (vendor auth). Validates AWB with Delhivery when token set. */
+app.patch("/api/vendor/order/:orderId/shipment", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    if (!poolMod.isEnabled()) {
+      return res.status(503).json({ ok: false, error: "Database not configured" });
+    }
+    var oid = Number(req.params.orderId);
+    if (!Number.isFinite(oid)) {
+      return res.status(400).json({ ok: false, error: "Invalid order id" });
+    }
+    ordersRepo.getOrderById(oid, function (e0, order) {
+      if (e0) return res.status(500).json({ ok: false, error: String(e0.message || e0) });
+      if (!order) return res.status(404).json({ ok: false, error: "Order not found" });
+      shipmentSync.saveAdminShipment(oid, req.body || {}, function (e2, out) {
+        if (e2) {
+          var msg = String(e2.message || e2);
+          var code =
+            msg.indexOf("Tracking ID") >= 0 || msg.indexOf("AWB") >= 0 || msg.indexOf("already used") >= 0 ? 400 : 502;
+          return res.status(code).json({ ok: false, error: msg });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({
+          ok: true,
+          orderId: oid,
+          shipment: shipmentDb.publicShipmentView(out.shipment, { includeNotes: true }),
+          courierValidated: !!out.courierValidated,
+          message: out.message || "Shipment saved",
+        });
+      });
+    });
+  });
+});
+
+/** Force courier sync for one order (vendor auth). */
+app.post("/api/vendor/order/:orderId/shipment/sync", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var oid = Number(req.params.orderId);
+    if (!Number.isFinite(oid)) {
+      return res.status(400).json({ ok: false, error: "Invalid order id" });
+    }
+    shipmentSync.syncOrderShipment(oid, { skipCache: true }, function (e2, out) {
+      if (e2) {
+        return res.status(400).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        ok: true,
+        orderId: oid,
+        shipment: shipmentDb.publicShipmentView(out.shipment, { includeNotes: true }),
+      });
     });
   });
 });
@@ -3797,6 +3928,14 @@ function onServerListen() {
       "[media] Production + Postgres but no UPLOADED_MEDIA_ROOT or CATALOG_MEDIA_ROOT — " +
         "uploaded catalog/hero/raw images live on the app disk and can disappear after redeploy. " +
         "Prefer Cloudinary HTTPS URLs. See server/.env.example (Persistent uploads)."
+    );
+  }
+  if (poolMod.isEnabled()) {
+    shipmentSync.startBackgroundSyncTimer();
+    console.log(
+      "Shipment sync: active AWBs refresh every " +
+        (Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30) +
+        " min (or run: node scripts/sync-shipments.js)"
     );
   }
 }

@@ -15,6 +15,8 @@
   var filter = "all";
   var ffFilter = "all";
   var searchQ = "";
+  var shipFilter = "all";
+  var tableSort = { key: "createdAt", dir: "desc" };
   var lastOrder = null;
   /** Set from URL ?range=today|week|month|revenue — filters table + drives product rollup. */
   var rangeFilter = null;
@@ -97,6 +99,179 @@
     return m || "—";
   }
 
+  function fmtShortDate(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric", timeZone: "Asia/Kolkata" });
+    } catch (_) {
+      return "—";
+    }
+  }
+
+  function shipmentBadge(o) {
+    var st = String(o.shipmentStatus || "").trim();
+    var code = String(o.shipmentStatusCode || "").toLowerCase();
+    if (!st && !code) return "<span class='vs-muted'>—</span>";
+    var cls = "vs-badge";
+    if (code === "delivered") cls += " vs-badge--paid";
+    else if (code === "out_for_delivery" || code === "in_transit") cls += " vs-badge--pending";
+    else if (code === "returned" || code === "cancelled" || code === "lost" || code === "undelivered") cls += " vs-badge--err";
+    return "<span class='" + cls + "'>" + esc(st || code) + "</span>";
+  }
+
+  function isActiveShipment(o) {
+    var code = String(o.shipmentStatusCode || "").toLowerCase();
+    if (!String(o.trackingNumber || "").trim()) return false;
+    return code && code !== "delivered" && code !== "returned" && code !== "cancelled" && code !== "lost" && code !== "undelivered";
+  }
+
+  function renderShipmentTimeline(timeline) {
+    if (!timeline || !timeline.steps || !timeline.steps.length) return "";
+    var steps = timeline.steps
+      .map(function (s) {
+        return (
+          "<li class='cg-ship-timeline__step cg-ship-timeline__step--" +
+          esc(s.state) +
+          "'><span class='cg-ship-timeline__dot'></span><div class='cg-ship-timeline__body'><strong>" +
+          esc(s.label) +
+          "</strong>" +
+          (s.timestamp ? "<span class='vs-muted'>" + esc(fmtShortDate(s.timestamp)) + "</span>" : "") +
+          "</div></li>"
+        );
+      })
+      .join("");
+    var alert =
+      timeline.alert && timeline.alert.label
+        ? "<p class='vs-err cg-ship-timeline__alert'>" + esc(timeline.alert.label) + "</p>"
+        : "";
+    return "<ol class='cg-ship-timeline cg-ship-timeline--admin'>" + steps + "</ol>" + alert;
+  }
+
+  function buildShipmentForm(order) {
+    var s = (order && order.shipment) || {};
+    var ship = order || {};
+    return (
+      "<div class='vs-card cg-ship-panel' id='vtShipmentPanel'>" +
+      "<p class='vs-section-title' style='margin-top:0'>Shipment information</p>" +
+      "<p class='vs-muted cg-ship-panel__hint'>Default courier Delhivery. Saving validates AWB when DELHIVERY_API_TOKEN is set on the server.</p>" +
+      "<div id='vtShipmentMsg' class='vs-err' hidden></div>" +
+      "<div class='vs-form-grid cg-ship-form-grid'>" +
+      "<div class='vs-field'><label for='vtShipCourier'>Courier partner</label>" +
+      "<select id='vtShipCourier'><option value='Delhivery'" +
+      (String(ship.courierName || s.courierName || "Delhivery") === "Delhivery" ? " selected" : "") +
+      ">Delhivery</option></select></div>" +
+      "<div class='vs-field'><label for='vtShipAwb'>Tracking ID / AWB</label>" +
+      "<input id='vtShipAwb' type='text' autocomplete='off' value='" +
+      esc(ship.trackingNumber || s.trackingNumber || "") +
+      "' placeholder='10–16 digit AWB' /></div>" +
+      "<div class='vs-field'><label>Shipment status</label><p class='cg-ship-readonly'>" +
+      esc(ship.shipmentStatus || s.shipmentStatus || "—") +
+      (s.lastTrackingSync ? " <span class='vs-muted'>(synced " + esc(fmtShortDate(s.lastTrackingSync)) + ")</span>" : "") +
+      "</p></div>" +
+      "<div class='vs-field'><label for='vtShipDispatch'>Dispatch date</label>" +
+      "<input id='vtShipDispatch' type='date' value='" +
+      esc((ship.dispatchDate || s.dispatchDate || "").slice(0, 10)) +
+      "' /></div>" +
+      "<div class='vs-field'><label for='vtShipEta'>Est. delivery</label>" +
+      "<input id='vtShipEta' type='date' value='" +
+      esc((ship.estimatedDeliveryDate || s.estimatedDeliveryDate || "").slice(0, 10)) +
+      "' /></div>" +
+      "<div class='vs-field'><label>Delivered date</label><p class='cg-ship-readonly'>" +
+      esc(fmtShortDate(ship.actualDeliveryDate || s.actualDeliveryDate)) +
+      "</p></div>" +
+      "<div class='vs-field vs-field--wide'><label for='vtShipTrackUrl'>Tracking URL (optional)</label>" +
+      "<input id='vtShipTrackUrl' type='url' value='" +
+      esc(ship.trackingUrl || s.trackingUrl || "") +
+      "' placeholder='https://www.delhivery.com/track/package/…' /></div>" +
+      "<div class='vs-field vs-field--wide'><label for='vtShipNotes'>Shipment notes</label>" +
+      "<textarea id='vtShipNotes' rows='2' placeholder='Internal notes for studio'>" +
+      esc(ship.shipmentNotes || s.shipmentNotes || "") +
+      "</textarea></div>" +
+      "</div>" +
+      (s.timeline ? renderShipmentTimeline(s.timeline) : "") +
+      "<div class='vs-row-actions' style='margin-top:0.75rem'>" +
+      "<button type='button' class='vs-btn vs-btn--primary' id='vtSaveShipmentBtn' data-oid='" +
+      esc(String(order.orderId)) +
+      "'>Save shipment details</button> " +
+      "<button type='button' class='vs-btn' id='vtSyncShipmentBtn' data-oid='" +
+      esc(String(order.orderId)) +
+      "'>Sync from Delhivery</button>" +
+      "</div></div>"
+    );
+  }
+
+  function saveShipment(orderId) {
+    var msgEl = document.getElementById("vtShipmentMsg");
+    showErr(msgEl, "");
+    var body = {
+      courierName: (document.getElementById("vtShipCourier") && document.getElementById("vtShipCourier").value) || "Delhivery",
+      trackingNumber: document.getElementById("vtShipAwb") && document.getElementById("vtShipAwb").value,
+      trackingUrl: document.getElementById("vtShipTrackUrl") && document.getElementById("vtShipTrackUrl").value,
+      dispatchDate: document.getElementById("vtShipDispatch") && document.getElementById("vtShipDispatch").value,
+      estimatedDeliveryDate: document.getElementById("vtShipEta") && document.getElementById("vtShipEta").value,
+      shipmentNotes: document.getElementById("vtShipNotes") && document.getElementById("vtShipNotes").value,
+      validateWithCourier: true,
+    };
+    vf(V.vendorApiUrl("/api/vendor/order/" + encodeURIComponent(orderId) + "/shipment"), {
+      method: "PATCH",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: JSON.stringify(body),
+    })
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Save failed");
+          return x.json;
+        });
+      })
+      .then(function (j) {
+        if (msgEl) {
+          msgEl.className = "vs-muted";
+          showErr(msgEl, j.message || "Shipment saved.");
+        }
+        allOrders.forEach(function (o) {
+          if (String(o.orderId) !== String(orderId)) return;
+          if (j.shipment) {
+            o.shipment = j.shipment;
+            o.trackingNumber = j.shipment.trackingNumber;
+            o.courierName = j.shipment.courierName;
+            o.shipmentStatus = j.shipment.shipmentStatus;
+            o.shipmentStatusCode = j.shipment.shipmentStatusCode;
+            o.dispatchDate = j.shipment.dispatchDate;
+            o.estimatedDeliveryDate = j.shipment.estimatedDeliveryDate;
+          }
+        });
+        renderTable();
+        openDetail(orderId);
+      })
+      .catch(function (e) {
+        if (msgEl) {
+          msgEl.className = "vs-err";
+          showErr(msgEl, String((e && e.message) || e));
+        }
+      });
+  }
+
+  function syncShipment(orderId) {
+    vf(V.vendorApiUrl("/api/vendor/order/" + encodeURIComponent(orderId) + "/shipment/sync"), {
+      method: "POST",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: "{}",
+    })
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Sync failed");
+          return x.json;
+        });
+      })
+      .then(function () {
+        openDetail(orderId);
+        loadOrders().catch(function () {});
+      })
+      .catch(function (e) {
+        window.alert(String((e && e.message) || e));
+      });
+  }
+
   function patchPaymentReceived(orderId) {
     vf(V.vendorApiUrl("/api/vendor/order/" + encodeURIComponent(orderId) + "/payment-received"), {
       method: "PATCH",
@@ -141,11 +316,30 @@
       var fs = o.fulfillmentStatus || "new";
       if (ffFilter === "open") {
         if (fs === "delivered" || fs === "cancelled") return false;
-      } else if (ffFilter !== "all" && fs !== ffFilter) {
+      } else       if (ffFilter !== "all" && fs !== ffFilter) {
         return false;
       }
+      if (shipFilter === "none") {
+        if (String(o.trackingNumber || "").trim()) return false;
+      } else if (shipFilter === "delivered") {
+        if (String(o.shipmentStatusCode || "").toLowerCase() !== "delivered") return false;
+      } else if (shipFilter === "active") {
+        if (!isActiveShipment(o)) return false;
+      }
       if (searchQ) {
-        var hay = (o.orderId + " " + (o.tagRef || "") + " " + (o.guestName || "") + " " + (o.guestPhone || "")).toLowerCase();
+        var hay = (
+          o.orderId +
+          " " +
+          (o.tagRef || "") +
+          " " +
+          (o.guestName || "") +
+          " " +
+          (o.guestPhone || "") +
+          " " +
+          (o.trackingNumber || "") +
+          " " +
+          (o.shipmentStatus || "")
+        ).toLowerCase();
         if (hay.indexOf(searchQ) === -1) return false;
       }
       return true;
@@ -170,6 +364,15 @@
     });
     document.querySelectorAll(".vt-ful-filter").forEach(function (b) {
       b.classList.toggle("vs-pill--active", (b.getAttribute("data-ff") || "") === ffFilter);
+    });
+    document.querySelectorAll(".vt-ship-filter").forEach(function (b) {
+      b.classList.toggle("vs-pill--active", (b.getAttribute("data-ship") || "") === shipFilter);
+    });
+    document.querySelectorAll(".vt-sort").forEach(function (b) {
+      var k = b.getAttribute("data-sort") || "";
+      var on = k === tableSort.key;
+      b.classList.toggle("vt-sort--active", on);
+      b.setAttribute("aria-sort", on ? (tableSort.dir === "asc" ? "ascending" : "descending") : "none");
     });
   }
 
@@ -203,10 +406,32 @@
     );
   }
 
+  function sortRows(rows) {
+    var key = tableSort.key;
+    var dir = tableSort.dir === "asc" ? 1 : -1;
+    return rows.slice().sort(function (a, b) {
+      var av = a[key];
+      var bv = b[key];
+      if (key === "orderId") {
+        av = Number(av) || 0;
+        bv = Number(bv) || 0;
+      } else if (key === "dispatchDate" || key === "estimatedDeliveryDate" || key === "createdAt") {
+        av = av ? new Date(av).getTime() : 0;
+        bv = bv ? new Date(bv).getTime() : 0;
+      } else {
+        av = String(av || "").toLowerCase();
+        bv = String(bv || "").toLowerCase();
+      }
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return 0;
+    });
+  }
+
   function renderTable() {
     var tb = document.getElementById("vtTbody");
     if (!tb) return;
-    var rows = filtered();
+    var rows = sortRows(filtered());
     tb.innerHTML = rows
       .map(function (o) {
         return (
@@ -216,17 +441,27 @@
           esc(String(o.orderId)) +
           "</strong><br/><span class='vs-muted'>" +
           esc(o.tagRef || "") +
+          "</span><br/><span class='vs-muted'>₹" +
+          esc(money(o.total != null ? o.total : o.totals && o.totals.total)) +
           "</span></td><td>" +
           esc(o.guestName || "") +
           "<br/><span class='vs-muted'>" +
           esc(o.guestPhone || "") +
           "</span></td><td>" +
-          esc(money(o.total != null ? o.total : o.totals && o.totals.total)) +
+          esc(o.trackingNumber || "—") +
+          "</td><td>" +
+          esc(o.courierName || "—") +
+          "</td><td>" +
+          shipmentBadge(o) +
           "</td><td>" +
           payBadge(o.paymentStatus) +
           "<br/><span class='vs-muted'>" +
           esc(payMethodLabel(o.paymentMethod)) +
           "</span></td><td>" +
+          esc(fmtShortDate(o.dispatchDate)) +
+          "</td><td>" +
+          esc(fmtShortDate(o.estimatedDeliveryDate)) +
+          "</td><td>" +
           renderFulEditor(o) +
           "</td><td><button type='button' class='vs-btn vs-btn--primary vt-open' data-oid='" +
           esc(String(o.orderId)) +
@@ -348,7 +583,19 @@
             esc(String(order.orderId)) +
             '">Mark payment received</button></p>';
         }
-        body.innerHTML = markHtml + B.buildInlineTagBillHtml(order);
+        body.innerHTML = markHtml + buildShipmentForm(order) + B.buildInlineTagBillHtml(order);
+        var saveBtn = document.getElementById("vtSaveShipmentBtn");
+        if (saveBtn) {
+          saveBtn.addEventListener("click", function () {
+            saveShipment(saveBtn.getAttribute("data-oid"));
+          });
+        }
+        var syncBtn = document.getElementById("vtSyncShipmentBtn");
+        if (syncBtn) {
+          syncBtn.addEventListener("click", function () {
+            syncShipment(syncBtn.getAttribute("data-oid"));
+          });
+        }
         var markBtn = document.getElementById("vtMarkPaidBtn");
         if (markBtn) {
           markBtn.addEventListener("click", function () {
@@ -496,7 +743,7 @@
     var tb = document.getElementById("vtTbody");
     if (tb) {
       tb.innerHTML =
-        "<tr><td colspan='6' class='vs-err'>" + esc(String((e && e.message) || e)) + "</td></tr>";
+        "<tr><td colspan='10' class='vs-err'>" + esc(String((e && e.message) || e)) + "</td></tr>";
     }
   }
 
@@ -530,6 +777,25 @@
   document.querySelectorAll(".vt-ful-filter").forEach(function (btn) {
     btn.addEventListener("click", function () {
       ffFilter = btn.getAttribute("data-ff") || "all";
+      renderTable();
+    });
+  });
+
+  document.querySelectorAll(".vt-ship-filter").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      shipFilter = btn.getAttribute("data-ship") || "all";
+      renderTable();
+    });
+  });
+
+  document.querySelectorAll(".vt-sort").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var k = btn.getAttribute("data-sort") || "orderId";
+      if (tableSort.key === k) tableSort.dir = tableSort.dir === "asc" ? "desc" : "asc";
+      else {
+        tableSort.key = k;
+        tableSort.dir = "desc";
+      }
       renderTable();
     });
   });

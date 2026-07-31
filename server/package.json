@@ -10,6 +10,7 @@
     "db:migrate": "node scripts/migrate-cli.js",
     "db:vendor-login": "node scripts/vendor-login-cli.js",
     "db:seed": "node scripts/seed-catalog.js",
+    "shipment:sync": "node scripts/sync-shipments.js",
     "media:copy-to-disk": "node scripts/media-copy-to-persistent.js"
   },
   "engines": {

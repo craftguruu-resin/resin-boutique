@@ -3,6 +3,76 @@
 var poolMod = require("./db/pool.js");
 var guestDb = require("./guest-db.js");
 var inventoryDecrement = require("./inventory-decrement.js");
+var shipmentDb = require("./shipment/shipment-db.js");
+var shipmentStatusMod = require("./shipment/shipment-status.js");
+
+var SHIPMENT_JOIN =
+  " LEFT JOIN order_shipments sh ON sh.order_id = o.id ";
+
+var SHIPMENT_SELECT =
+  "sh.tracking_number AS sh_tracking_number, sh.courier_name AS sh_courier_name, " +
+  "sh.shipment_status AS sh_shipment_status, sh.shipment_status_code AS sh_shipment_status_code, " +
+  "sh.tracking_url AS sh_tracking_url, sh.dispatch_date AS sh_dispatch_date, " +
+  "sh.estimated_delivery_date AS sh_estimated_delivery_date, sh.actual_delivery_date AS sh_actual_delivery_date, " +
+  "sh.shipment_notes AS sh_shipment_notes, sh.shipment_history AS sh_shipment_history, " +
+  "sh.last_tracking_sync AS sh_last_tracking_sync, sh.created_at AS sh_created_at, sh.updated_at AS sh_updated_at ";
+
+function mapShipmentFromJoinRow(row) {
+  if (!row) return null;
+  if (!String(row.sh_tracking_number || "").trim() && !String(row.sh_shipment_status_code || "").trim()) {
+    return null;
+  }
+  return shipmentDb.mapRow({
+    tracking_number: row.sh_tracking_number,
+    courier_name: row.sh_courier_name,
+    shipment_status: row.sh_shipment_status,
+    shipment_status_code: row.sh_shipment_status_code,
+    tracking_url: row.sh_tracking_url,
+    dispatch_date: row.sh_dispatch_date,
+    estimated_delivery_date: row.sh_estimated_delivery_date,
+    actual_delivery_date: row.sh_actual_delivery_date,
+    shipment_notes: row.sh_shipment_notes,
+    shipment_history: row.sh_shipment_history,
+    last_tracking_sync: row.sh_last_tracking_sync,
+    created_at: row.sh_created_at,
+    updated_at: row.sh_updated_at,
+  });
+}
+
+function attachShipmentSummary(orderObj, row) {
+  var ship = mapShipmentFromJoinRow(row);
+  if (!ship) {
+    orderObj.shipment = null;
+    return orderObj;
+  }
+  orderObj.shipment = shipmentDb.publicShipmentView(ship, { includeNotes: false });
+  orderObj.trackingNumber = ship.trackingNumber;
+  orderObj.courierName = ship.courierName;
+  orderObj.shipmentStatus = ship.shipmentStatus || shipmentStatusMod.statusLabel(ship.shipmentStatusCode);
+  orderObj.shipmentStatusCode = ship.shipmentStatusCode;
+  orderObj.dispatchDate = ship.dispatchDate;
+  orderObj.estimatedDeliveryDate = ship.estimatedDeliveryDate;
+  return orderObj;
+}
+
+function attachShipmentAdmin(orderObj, row) {
+  var ship = mapShipmentFromJoinRow(row);
+  if (!ship) {
+    orderObj.shipment = null;
+    return orderObj;
+  }
+  orderObj.shipment = shipmentDb.publicShipmentView(ship, { includeNotes: true });
+  orderObj.trackingNumber = ship.trackingNumber;
+  orderObj.courierName = ship.courierName;
+  orderObj.shipmentStatus = ship.shipmentStatus;
+  orderObj.shipmentStatusCode = ship.shipmentStatusCode;
+  orderObj.dispatchDate = ship.dispatchDate;
+  orderObj.estimatedDeliveryDate = ship.estimatedDeliveryDate;
+  orderObj.actualDeliveryDate = ship.actualDeliveryDate;
+  orderObj.trackingUrl = ship.trackingUrl;
+  orderObj.shipmentNotes = ship.shipmentNotes;
+  return orderObj;
+}
 
 function parseGuestSnapshot(raw) {
   var g = raw;
@@ -261,8 +331,10 @@ function getOrdersToday(cb) {
   }
   var sql =
     "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.subtotal, o.shipping, o.tax, o.total, o.guest_snapshot, " +
-    "o.payment_status, o.payment_method, o.fulfillment_status " +
+    "o.payment_status, o.payment_method, o.fulfillment_status, " +
+    SHIPMENT_SELECT +
     "FROM orders o " +
+    SHIPMENT_JOIN +
     "WHERE (timezone('Asia/Kolkata', o.created_at))::date = (timezone('Asia/Kolkata', now()))::date " +
     "ORDER BY o.created_at DESC";
   pool
@@ -270,22 +342,25 @@ function getOrdersToday(cb) {
     .then(function (r) {
       var list = r.rows.map(function (row) {
         var g = parseGuestSnapshot(row.guest_snapshot);
-        return {
-          orderId: row.order_id,
-          tagRef: row.tag_ref,
-          createdAt: new Date(row.created_at).toISOString(),
-          orderType: row.order_type,
-          paymentStatus: row.payment_status,
-          paymentMethod: row.payment_method,
-          fulfillmentStatus: row.fulfillment_status != null ? row.fulfillment_status : "new",
-          guest: { name: g.name, phone: g.phone, email: g.email },
-          totals: {
-            subtotal: Number(row.subtotal),
-            shipping: Number(row.shipping),
-            tax: Number(row.tax),
-            total: Number(row.total),
+        return attachShipmentSummary(
+          {
+            orderId: row.order_id,
+            tagRef: row.tag_ref,
+            createdAt: new Date(row.created_at).toISOString(),
+            orderType: row.order_type,
+            paymentStatus: row.payment_status,
+            paymentMethod: row.payment_method,
+            fulfillmentStatus: row.fulfillment_status != null ? row.fulfillment_status : "new",
+            guest: { name: g.name, phone: g.phone, email: g.email },
+            totals: {
+              subtotal: Number(row.subtotal),
+              shipping: Number(row.shipping),
+              tax: Number(row.tax),
+              total: Number(row.total),
+            },
           },
-        };
+          row
+        );
       });
       cb(null, list);
     })
@@ -307,7 +382,7 @@ function getOrderById(orderId, cb) {
     });
   }
   pool
-    .query("SELECT * FROM orders WHERE id = $1", [want])
+    .query("SELECT o.*, " + SHIPMENT_SELECT + " FROM orders o " + SHIPMENT_JOIN + " WHERE o.id = $1", [want])
     .then(function (r) {
       if (!r.rows.length) {
         cb(null, null);
@@ -344,29 +419,35 @@ function getOrderById(orderId, cb) {
               lineExtra: le && typeof le === "object" ? le : null,
             };
           });
-          cb(null, {
-            orderId: o.id,
-            tagRef: o.tag_ref,
-            createdAt: new Date(o.created_at).toISOString(),
-            paidAt: o.paid_at ? new Date(o.paid_at).toISOString() : null,
-            orderType: o.order_type,
-            paymentStatus: o.payment_status != null ? o.payment_status : "pending_payment",
-            paymentMethod: o.payment_method != null ? o.payment_method : "",
-            fulfillmentStatus: o.fulfillment_status != null ? o.fulfillment_status : "new",
-            guest: {
-              name: guest.name,
-              email: guest.email,
-              phone: guest.phone,
-              addrLine1: guest.addrLine1,
-              addrLine2: guest.addrLine2,
-              city: guest.city,
-              state: guest.state,
-              zip: guest.zip,
-              country: guest.country,
-            },
-            items: items,
-            totals: mapOrderTotalsRow(o),
-          });
+          cb(
+            null,
+            attachShipmentAdmin(
+              {
+                orderId: o.id,
+                tagRef: o.tag_ref,
+                createdAt: new Date(o.created_at).toISOString(),
+                paidAt: o.paid_at ? new Date(o.paid_at).toISOString() : null,
+                orderType: o.order_type,
+                paymentStatus: o.payment_status != null ? o.payment_status : "pending_payment",
+                paymentMethod: o.payment_method != null ? o.payment_method : "",
+                fulfillmentStatus: o.fulfillment_status != null ? o.fulfillment_status : "new",
+                guest: {
+                  name: guest.name,
+                  email: guest.email,
+                  phone: guest.phone,
+                  addrLine1: guest.addrLine1,
+                  addrLine2: guest.addrLine2,
+                  city: guest.city,
+                  state: guest.state,
+                  zip: guest.zip,
+                  country: guest.country,
+                },
+                items: items,
+                totals: mapOrderTotalsRow(o),
+              },
+              o
+            )
+          );
         });
     })
     .catch(cb);
@@ -427,25 +508,31 @@ function getOrdersRecent(limit, cb) {
   var lim = Math.max(1, Math.min(200, Math.floor(Number(limit) || 40)));
   var sql =
     "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, o.guest_snapshot, " +
-    "o.payment_status, o.payment_method, o.fulfillment_status " +
-    "FROM orders o ORDER BY o.created_at DESC LIMIT $1";
+    "o.payment_status, o.payment_method, o.fulfillment_status, " +
+    SHIPMENT_SELECT +
+    "FROM orders o " +
+    SHIPMENT_JOIN +
+    "ORDER BY o.created_at DESC LIMIT $1";
   pool
     .query(sql, [lim])
     .then(function (r) {
       var list = r.rows.map(function (row) {
         var g = parseGuestSnapshot(row.guest_snapshot);
-        return {
-          orderId: row.order_id,
-          tagRef: row.tag_ref,
-          createdAt: new Date(row.created_at).toISOString(),
-          orderType: row.order_type,
-          paymentStatus: row.payment_status,
-          paymentMethod: row.payment_method,
-          fulfillmentStatus: row.fulfillment_status != null ? row.fulfillment_status : "new",
-          guest: { name: g.name, phone: g.phone, email: g.email },
-          totals: mapOrderTotalsRow(row),
-          total: Number(row.total),
-        };
+        return attachShipmentSummary(
+          {
+            orderId: row.order_id,
+            tagRef: row.tag_ref,
+            createdAt: new Date(row.created_at).toISOString(),
+            orderType: row.order_type,
+            paymentStatus: row.payment_status,
+            paymentMethod: row.payment_method,
+            fulfillmentStatus: row.fulfillment_status != null ? row.fulfillment_status : "new",
+            guest: { name: g.name, phone: g.phone, email: g.email },
+            totals: mapOrderTotalsRow(row),
+            total: Number(row.total),
+          },
+          row
+        );
       });
       cb(null, list);
     })
@@ -654,6 +741,13 @@ function listOrdersByGuestId(guestId, cb) {
         "o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, " +
         "o.payment_status AS \"paymentStatus\", o.payment_method AS \"paymentMethod\", " +
         "o.fulfillment_status AS \"fulfillmentStatus\", o.guest_snapshot, " +
+        "MAX(sh.tracking_number) AS sh_tracking_number, MAX(sh.courier_name) AS sh_courier_name, " +
+        "MAX(sh.shipment_status) AS sh_shipment_status, MAX(sh.shipment_status_code) AS sh_shipment_status_code, " +
+        "MAX(sh.tracking_url) AS sh_tracking_url, MAX(sh.dispatch_date) AS sh_dispatch_date, " +
+        "MAX(sh.estimated_delivery_date) AS sh_estimated_delivery_date, MAX(sh.actual_delivery_date) AS sh_actual_delivery_date, " +
+        "MAX(sh.shipment_notes) AS sh_shipment_notes, " +
+        "(array_agg(sh.shipment_history))[1] AS sh_shipment_history, " +
+        "MAX(sh.last_tracking_sync) AS sh_last_tracking_sync, MAX(sh.created_at) AS sh_created_at, MAX(sh.updated_at) AS sh_updated_at, " +
         "COALESCE(" +
         "json_agg(" +
         "json_build_object(" +
@@ -663,6 +757,7 @@ function listOrdersByGuestId(guestId, cb) {
         ") FILTER (WHERE i.id IS NOT NULL), '[]'::json) AS items " +
         "FROM orders o " +
         "LEFT JOIN order_items i ON i.order_id = o.id " +
+        SHIPMENT_JOIN +
         "WHERE o.guest_id = $1 " +
         "GROUP BY o.id " +
         "ORDER BY o.created_at DESC LIMIT 80",
@@ -692,31 +787,67 @@ function listOrdersByGuestId(guestId, cb) {
             sku: it.sku != null ? String(it.sku) : "",
           };
         });
-        return {
-          orderId: row.orderId,
-          tagRef: row.tagRef,
-          createdAt: new Date(row.createdAt).toISOString(),
-          paidAt: row.paidAt ? new Date(row.paidAt).toISOString() : null,
-          orderType: row.orderType != null ? String(row.orderType) : "",
-          paymentStatus: row.paymentStatus,
-          paymentMethod: row.paymentMethod != null ? String(row.paymentMethod) : "",
-          fulfillmentStatus: row.fulfillmentStatus != null ? row.fulfillmentStatus : "new",
-          guest: {
-            name: guest.name,
-            email: guest.email,
-            phone: guest.phone,
-            addrLine1: guest.addrLine1,
-            addrLine2: guest.addrLine2,
-            city: guest.city,
-            state: guest.state,
-            zip: guest.zip,
-            country: guest.country,
+        return attachShipmentSummary(
+          {
+            orderId: row.orderId,
+            tagRef: row.tagRef,
+            createdAt: new Date(row.createdAt).toISOString(),
+            paidAt: row.paidAt ? new Date(row.paidAt).toISOString() : null,
+            orderType: row.orderType != null ? String(row.orderType) : "",
+            paymentStatus: row.paymentStatus,
+            paymentMethod: row.paymentMethod != null ? String(row.paymentMethod) : "",
+            fulfillmentStatus: row.fulfillmentStatus != null ? row.fulfillmentStatus : "new",
+            guest: {
+              name: guest.name,
+              email: guest.email,
+              phone: guest.phone,
+              addrLine1: guest.addrLine1,
+              addrLine2: guest.addrLine2,
+              city: guest.city,
+              state: guest.state,
+              zip: guest.zip,
+              country: guest.country,
+            },
+            totals: mapOrderTotalsRow(row),
+            items: items,
           },
-          totals: mapOrderTotalsRow(row),
-          items: items,
-        };
+          row
+        );
       });
       cb(null, list);
+    })
+    .catch(cb);
+}
+
+/** Guest order tracking (must belong to guest). */
+function getGuestOrderTracking(guestId, orderId, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  var gid = Number(guestId);
+  var oid = Number(orderId);
+  if (!Number.isFinite(gid) || !Number.isFinite(oid)) {
+    return process.nextTick(function () {
+      cb(new Error("Invalid order"));
+    });
+  }
+  pool
+    .query("SELECT id FROM orders WHERE id = $1 AND guest_id = $2 LIMIT 1", [oid, gid])
+    .then(function (r) {
+      if (!r.rows.length) return cb(new Error("Order not found"));
+      shipmentDb.getShipmentByOrderId(oid, function (e2, shipment) {
+        if (e2) return cb(e2);
+        if (!shipment || !String(shipment.trackingNumber || "").trim()) {
+          return cb(null, { orderId: oid, shipment: null });
+        }
+        cb(null, {
+          orderId: oid,
+          shipment: shipmentDb.publicShipmentView(shipment, { includeNotes: false }),
+        });
+      });
     })
     .catch(cb);
 }
@@ -792,6 +923,7 @@ module.exports = {
   updateOrderFulfillment,
   markOrderPaymentReceived,
   listOrdersByGuestId,
+  getGuestOrderTracking,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,
   resolveSkuMapPool: resolveSkuMapPool,

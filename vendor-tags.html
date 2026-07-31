@@ -54,8 +54,15 @@
               <button type="button" class="vs-pill vt-ful-filter" data-ff="open">Open</button>
             </div>
             <div class="vs-field" style="margin-bottom: 0; margin-top: 0.85rem">
-              <label for="vtSearch">Search order # or tag</label>
-              <input type="search" id="vtSearch" placeholder="e.g. 10042 or CG-…" />
+              <label for="vtSearch">Search order #, tag, tracking ID</label>
+              <input type="search" id="vtSearch" placeholder="e.g. 10042, CG-… or AWB" />
+            </div>
+            <p class="vs-toolbar-heading" style="margin-top: 0.85rem">Shipment</p>
+            <div class="vs-pill-row">
+              <button type="button" class="vs-pill vt-ship-filter" data-ship="all">All shipments</button>
+              <button type="button" class="vs-pill vt-ship-filter" data-ship="active">In transit</button>
+              <button type="button" class="vs-pill vt-ship-filter" data-ship="delivered">Delivered</button>
+              <button type="button" class="vs-pill vt-ship-filter" data-ship="none">No AWB yet</button>
             </div>
           </div>
 
@@ -75,10 +82,14 @@
                 <table class="vs-table" id="vtTable">
                   <thead>
                     <tr>
-                      <th>Order</th>
+                      <th><button type="button" class="vt-sort" data-sort="orderId">Order</button></th>
                       <th>Customer</th>
-                      <th>Total</th>
-                      <th>Payment</th>
+                      <th><button type="button" class="vt-sort" data-sort="trackingNumber">Tracking</button></th>
+                      <th><button type="button" class="vt-sort" data-sort="courierName">Courier</button></th>
+                      <th><button type="button" class="vt-sort" data-sort="shipmentStatus">Shipment</button></th>
+                      <th><button type="button" class="vt-sort" data-sort="paymentStatus">Payment</button></th>
+                      <th><button type="button" class="vt-sort" data-sort="dispatchDate">Dispatch</button></th>
+                      <th><button type="button" class="vt-sort" data-sort="estimatedDeliveryDate">Est delivery</button></th>
                       <th>Fulfillment</th>
                       <th></th>
                     </tr>

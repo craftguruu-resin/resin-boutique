@@ -817,3 +817,136 @@ body.page-account .account-orders-panel.checkout-auth-sheet {
     width: 100%;
   }
 }
+
+/* Shipment tracking (My orders) */
+.account-shipment {
+  margin: 1rem 0 0;
+  padding: 1rem 1.05rem;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.95));
+}
+
+.account-shipment__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.account-shipment__title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.account-shipment__delivered {
+  font-size: 0.78rem;
+}
+
+.account-shipment__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.account-shipment__stale {
+  margin: 0 0 0.75rem;
+  font-size: 0.82rem;
+  color: #92400e;
+}
+
+.account-shipment__alert {
+  margin: 0.5rem 0 0;
+  color: #b45309;
+  font-size: 0.86rem;
+}
+
+.account-shipment__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.account-shipment-ext {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.55rem 0.9rem;
+  text-decoration: none;
+}
+
+.cg-ship-timeline {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+}
+
+.cg-ship-timeline__step {
+  position: relative;
+  padding: 0 0 0.9rem 1.35rem;
+  border-left: 2px solid #e2e8f0;
+  margin-left: 6px;
+}
+
+.cg-ship-timeline__step:last-child {
+  padding-bottom: 0;
+}
+
+.cg-ship-timeline__dot {
+  position: absolute;
+  left: -1px;
+  top: 0.2rem;
+  width: 12px;
+  height: 12px;
+  margin-left: -6px;
+  border-radius: 50%;
+  background: #cbd5e1;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px #cbd5e1;
+}
+
+.cg-ship-timeline__step--complete .cg-ship-timeline__dot {
+  background: #059669;
+  box-shadow: 0 0 0 1px #059669;
+}
+
+.cg-ship-timeline__step--current .cg-ship-timeline__dot {
+  background: #0d9488;
+  box-shadow: 0 0 0 2px rgba(13, 148, 136, 0.25);
+}
+
+.cg-ship-timeline__body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+@media (min-width: 720px) {
+  .account-shipment__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .cg-ship-timeline {
+    display: flex;
+    gap: 0.35rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+  }
+
+  .cg-ship-timeline__step {
+    flex: 1 0 92px;
+    min-width: 92px;
+    padding: 1.1rem 0 0;
+    border-left: 0;
+    margin-left: 0;
+    text-align: center;
+  }
+
+  .cg-ship-timeline__dot {
+    left: 50%;
+    top: 0;
+    margin-left: -6px;
+  }
+}

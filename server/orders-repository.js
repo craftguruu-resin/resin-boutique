@@ -475,6 +475,15 @@ function listOrdersByGuestId(guestId, cb) {
   });
 }
 
+function getGuestOrderTracking(guestId, orderId, cb) {
+  if (poolMod.isEnabled()) {
+    return ordersDb.getGuestOrderTracking(guestId, orderId, cb);
+  }
+  process.nextTick(function () {
+    cb(null, { orderId: orderId, shipment: null });
+  });
+}
+
 function loadPaidOrderForGuestBill(guestId, orderId, cb) {
   if (poolMod.isEnabled()) {
     return ordersDb.loadPaidOrderForGuestBill(guestId, orderId, cb);
@@ -524,6 +533,7 @@ module.exports = {
   updateOrderFulfillment,
   markOrderPaymentReceived,
   listOrdersByGuestId,
+  getGuestOrderTracking,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,
   resolveSkuMapPool: resolveSkuMapPool,

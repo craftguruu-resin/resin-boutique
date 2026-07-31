@@ -133,7 +133,28 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS options_json JSONB NOT NULL DEFAULT '{}'::jsonb",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS name_override VARCHAR(500)",
     "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS line_extra JSONB",
-    "ALTER TABLE order_items ALTER COLUMN size_key TYPE VARCHAR(200) USING size_key::varchar(200)"
+    "ALTER TABLE order_items ALTER COLUMN size_key TYPE VARCHAR(200) USING size_key::varchar(200)",
+    /* Order shipment tracking (Delhivery default courier). */
+    "CREATE TABLE IF NOT EXISTS order_shipments (" +
+      "id BIGSERIAL PRIMARY KEY," +
+      "order_id INTEGER NOT NULL UNIQUE REFERENCES orders (id) ON DELETE CASCADE," +
+      "tracking_number VARCHAR(80) NOT NULL DEFAULT ''," +
+      "courier_name VARCHAR(80) NOT NULL DEFAULT 'Delhivery'," +
+      "shipment_status VARCHAR(80) NOT NULL DEFAULT ''," +
+      "shipment_status_code VARCHAR(80) NOT NULL DEFAULT ''," +
+      "tracking_url TEXT NOT NULL DEFAULT ''," +
+      "dispatch_date TIMESTAMPTZ," +
+      "estimated_delivery_date TIMESTAMPTZ," +
+      "actual_delivery_date TIMESTAMPTZ," +
+      "shipment_notes TEXT NOT NULL DEFAULT ''," +
+      "shipment_history JSONB NOT NULL DEFAULT '[]'::jsonb," +
+      "last_tracking_sync TIMESTAMPTZ," +
+      "created_at TIMESTAMPTZ NOT NULL DEFAULT now()," +
+      "updated_at TIMESTAMPTZ NOT NULL DEFAULT now()" +
+      ")",
+    "CREATE INDEX IF NOT EXISTS idx_order_shipments_tracking ON order_shipments (tracking_number)",
+    "CREATE INDEX IF NOT EXISTS idx_order_shipments_status_code ON order_shipments (shipment_status_code)",
+    "CREATE INDEX IF NOT EXISTS idx_order_shipments_last_sync ON order_shipments (last_tracking_sync)"
   ];
 
   var chain = Promise.resolve();
