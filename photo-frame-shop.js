@@ -536,7 +536,7 @@
       var preview = hubCategoryPreview(c);
       var imgRel = preview.image || "";
       var imgFit = preview.fit || "";
-      var countLabel = String(count) + (count === 1 ? " product in this category" : " products in this category");
+      var countLabel = String(count) + (count === 1 ? " product" : " products");
       var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
       var card;
       if (buildCard) {
@@ -544,7 +544,7 @@
           href: href,
           title: c.name,
           subtitle: countLabel,
-          ctaText: "Explore collection →",
+          ctaText: "EXPLORE COLLECTION →",
           imgSrc: imgRel ? imgSrc(imgRel) : "",
           imgFit: imgFit,
           hasPreview: !!imgRel,
@@ -572,14 +572,16 @@
             : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
           "</div>" +
           '<div class="featured-collection-card__panel">' +
+          '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true"><path d="M0,38 C200,6 400,54 600,26 C800,0 1000,46 1200,22 C1320,8 1380,32 1440,28 L1440,56 L0,56 Z" fill="currentColor"/></svg>' +
+          '<div class="featured-collection-card__panel-body">' +
           "<h3 class=\"featured-collection-card__name\">" +
           esc(c.name) +
           "</h3>" +
           '<p class="featured-collection-card__count">' +
           esc(countLabel) +
           "</p>" +
-          '<span class="featured-collection-card__cta">Explore collection →</span>' +
-          "</div></div></a>";
+          '<span class="featured-collection-card__cta">EXPLORE COLLECTION →</span>' +
+          "</div></div></div></a>";
       }
       hub.appendChild(card);
     });

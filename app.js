@@ -681,7 +681,7 @@
           href: catHref,
           title: cat.label,
           subtitle: countLabel,
-          ctaText: "Explore collection →",
+          ctaText: "EXPLORE COLLECTION →",
           imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
           imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback),
           imgFallback: imgFallback,
@@ -712,14 +712,16 @@
             : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
           "</div>" +
           '<div class="featured-collection-card__panel">' +
+          '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true"><path d="M0,38 C200,6 400,54 600,26 C800,0 1000,46 1200,22 C1320,8 1380,32 1440,28 L1440,56 L0,56 Z" fill="currentColor"/></svg>' +
+          '<div class="featured-collection-card__panel-body">' +
           '<h3 class="featured-collection-card__name">' +
           escapeHtml(cat.label) +
           "</h3>" +
           '<p class="featured-collection-card__count">' +
           countLabel +
           "</p>" +
-          '<span class="featured-collection-card__cta">Explore collection →</span>' +
-          "</div></div></a>";
+          '<span class="featured-collection-card__cta">EXPLORE COLLECTION →</span>' +
+          "</div></div></div></a>";
         if (imgRel && imgFallback) {
           wireCategoryPreviewImgOnerror(card.querySelector(".featured-collection-card__media img"), imgFallback);
         }

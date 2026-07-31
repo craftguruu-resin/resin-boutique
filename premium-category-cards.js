@@ -1,6 +1,11 @@
 (function () {
   "use strict";
 
+  var WAVE_SVG =
+    '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path d="M0,38 C200,6 400,54 600,26 C800,0 1000,46 1200,22 C1320,8 1380,32 1440,28 L1440,56 L0,56 Z" fill="currentColor"/>' +
+    "</svg>";
+
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s == null ? "" : String(s);
@@ -12,7 +17,7 @@
   }
 
   /**
-   * Premium category card — cover image, overlapping white panel, title, subtitle, CTA. No icon badge.
+   * Glass-theme category card — cover image, frosted panel with wavy top edge, title, count, CTA.
    */
   function buildCategoryCard(opts) {
     opts = opts || {};
@@ -31,7 +36,7 @@
     var href = opts.href || "#";
     var title = opts.title || "";
     var subtitle = opts.subtitle || "";
-    var ctaText = opts.ctaText || "Explore collection →";
+    var ctaText = opts.ctaText || "EXPLORE COLLECTION →";
     var ariaLabel = opts.ariaLabel || "Explore " + title + " collection";
 
     var mediaInner;
@@ -61,6 +66,8 @@
       mediaInner +
       "</div>" +
       '<div class="featured-collection-card__panel">' +
+      WAVE_SVG +
+      '<div class="featured-collection-card__panel-body">' +
       '<h3 class="featured-collection-card__name">' +
       esc(title) +
       "</h3>" +
@@ -68,6 +75,7 @@
       '<span class="featured-collection-card__cta">' +
       esc(ctaText) +
       "</span>" +
+      "</div>" +
       "</div>" +
       "</div>" +
       "</a>";
