@@ -1,9 +1,10 @@
 (function () {
   "use strict";
 
+  /* Organic S-curve — taller, softer crest; pairs with --glass-wave-mask in CSS */
   var WAVE_SVG =
-    '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 56" preserveAspectRatio="none" aria-hidden="true">' +
-    '<path d="M0,38 C200,6 400,54 600,26 C800,0 1000,46 1200,22 C1320,8 1380,32 1440,28 L1440,56 L0,56 Z" fill="currentColor"/>' +
+    '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 96" preserveAspectRatio="none" aria-hidden="true">' +
+    '<path d="M0,68 C180,68 320,22 520,38 C720,54 900,14 1100,30 C1260,42 1360,26 1440,34 L1440,96 L0,96 Z" fill="currentColor"/>' +
     "</svg>";
 
   function esc(s) {
@@ -99,6 +100,7 @@
 
   window.CraftguruPremiumCards = {
     buildCategoryCard: buildCategoryCard,
+    WAVE_SVG: WAVE_SVG,
     esc: esc,
     escAttr: escAttr,
   };

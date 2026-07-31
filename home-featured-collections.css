@@ -40,7 +40,7 @@ body.page-home #shop {
   font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--cg-teal-deep, #1e8e84);
+  color: #1a535c;
 }
 
 .featured-eyebrow--collections__arrow {
@@ -55,7 +55,7 @@ body.page-home #shop {
   font-weight: 600;
   line-height: 1.08;
   letter-spacing: -0.02em;
-  color: var(--cg-teal-deep, #1e8e84);
+  color: #1a535c;
 }
 
 .featured-collections-title__accent {
@@ -87,9 +87,9 @@ body.page-home #shop {
   gap: 0.35rem;
   padding: 0.62rem 1.2rem;
   border-radius: 999px;
-  border: 1.5px solid rgba(38, 166, 154, 0.55);
+  border: 1.5px solid rgba(26, 83, 92, 0.45);
   background: rgba(255, 255, 255, 0.35);
-  color: var(--cg-teal-deep, #1e8e84);
+  color: #1a535c;
   font-size: 0.64rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -203,7 +203,7 @@ body.page-home #shop {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: clamp(15.5rem, 38vw, 19.5rem);
+  min-height: clamp(16.5rem, 40vw, 21rem);
   border-radius: 20px;
   overflow: hidden;
   box-shadow:
@@ -248,53 +248,100 @@ body.page-home #shop {
   min-height: 8rem;
 }
 
-/* Frosted glass panel with wavy top edge */
+/* Frosted glass panel — wave bleed, gradient, backdrop blur */
 .featured-collection-card__panel {
+  --glass-teal: #1a535c;
+  --glass-wave-height: clamp(2.75rem, 7.5vw, 3.5rem);
+  --glass-wave-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 96' preserveAspectRatio='none'%3E%3Cpath d='M0,68 C180,68 320,22 520,38 C720,54 900,14 1100,30 C1260,42 1360,26 1440,34 L1440,96 L0,96 Z' fill='%23000'/%3E%3C/svg%3E");
   position: relative;
   z-index: 2;
   margin-top: auto;
-  padding: 0 0.85rem 1rem;
+  padding: 0 clamp(0.65rem, 2vw, 0.85rem) clamp(0.85rem, 2vw, 1rem);
   text-align: left;
-  color: var(--cg-teal-deep, #1e8e84);
-  --glass-wave: rgba(255, 255, 255, 0.72);
+  color: var(--glass-teal);
+  isolation: isolate;
+}
+
+/* Unified frosted shell — spans wave + body so image bleeds through */
+.featured-collection-card__panel::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: clamp(0.65rem, 2vw, 0.85rem);
+  right: clamp(0.65rem, 2vw, 0.85rem);
+  bottom: clamp(0.85rem, 2vw, 1rem);
+  top: calc(-1 * var(--glass-wave-height));
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.28) 0%,
+    rgba(255, 255, 255, 0.52) 16%,
+    rgba(255, 255, 255, 0.72) 38%,
+    rgba(224, 247, 243, 0.84) 72%,
+    rgba(204, 236, 228, 0.9) 100%
+  );
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-top: none;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.72) inset,
+    0 -8px 32px rgba(26, 83, 92, 0.06);
+  -webkit-mask-image: var(--glass-wave-mask);
+  mask-image: var(--glass-wave-mask);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  pointer-events: none;
+}
+
+/* Pink-to-teal accent stripe at bottom edge */
+.featured-collection-card__panel::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  left: clamp(0.65rem, 2vw, 0.85rem);
+  right: clamp(0.65rem, 2vw, 0.85rem);
+  bottom: clamp(0.85rem, 2vw, 1rem);
+  height: 2.5px;
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(
+    90deg,
+    rgba(232, 160, 176, 0.92) 0%,
+    rgba(196, 224, 216, 0.88) 42%,
+    rgba(38, 166, 154, 0.82) 100%
+  );
+  pointer-events: none;
 }
 
 .featured-collection-card__wave {
+  position: relative;
+  z-index: 1;
   display: block;
   width: calc(100% + 2px);
-  margin-left: -1px;
-  height: clamp(1.35rem, 4vw, 1.75rem);
-  color: var(--glass-wave);
-  filter: drop-shadow(0 -1px 0 rgba(255, 255, 255, 0.45));
+  margin: calc(-1 * var(--glass-wave-height)) -1px 0;
+  height: var(--glass-wave-height);
+  color: rgba(255, 255, 255, 0.42);
+  filter: drop-shadow(0 -1px 2px rgba(255, 255, 255, 0.35));
   pointer-events: none;
 }
 
 .featured-collection-card__panel-body {
   position: relative;
-  padding: 0.15rem 0.15rem 0.35rem;
+  z-index: 2;
+  min-height: 5.75rem;
+  padding: 1.5rem 0.85rem 0.65rem;
   border-radius: 0 0 18px 18px;
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.58) 0%,
-    rgba(255, 255, 255, 0.82) 38%,
-    rgba(224, 247, 243, 0.88) 100%
-  );
-  backdrop-filter: blur(20px) saturate(1.35);
-  -webkit-backdrop-filter: blur(20px) saturate(1.35);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-top: none;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.85) inset,
-    0 -8px 32px rgba(38, 166, 154, 0.06);
+  background: transparent;
+  border: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
 }
 
 .featured-collection-card__panel-body::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35) 0%, transparent 48%);
-  pointer-events: none;
+  content: none;
 }
 
 .featured-collection-card__name {
@@ -326,12 +373,12 @@ body.page-home #shop {
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--cg-teal-deep, #1e8e84);
+  color: #1a535c;
   transition: color 0.2s ease, transform 0.2s ease;
 }
 
 .featured-collection-card:hover .featured-collection-card__cta {
-  color: var(--cg-teal, #26a69a);
+  color: #26a69a;
   transform: translateX(2px);
 }
 
@@ -376,7 +423,7 @@ body.page-home #shop {
   flex-shrink: 0;
   width: 1.75rem;
   height: 1.75rem;
-  color: var(--cg-teal-deep, #1e8e84);
+  color: #1a535c;
 }
 
 .featured-collections-trust__icon svg {
@@ -450,16 +497,17 @@ body.page-home .band-shop-inner--home {
   }
 
   .featured-collection-card__visual {
-    min-height: 14.5rem;
+    min-height: 15.5rem;
     border-radius: 16px;
   }
 
   .featured-collection-card__panel {
-    padding-inline: 0.65rem;
+    --glass-wave-height: clamp(2.35rem, 8vw, 3rem);
   }
 
   .featured-collection-card__panel-body {
-    padding: 0.1rem 0.1rem 0.3rem;
+    min-height: 5.25rem;
+    padding: 1.35rem 0.65rem 0.55rem;
   }
 
   .featured-collection-card__name {
