@@ -305,16 +305,14 @@ body.guest-site .global-find {
   overflow: hidden;
 }
 
-/* Listing cards — seamless white image well (guest storefront) */
+/* Category listing cards — seamless white image well (guest storefront) */
 body:not(.vendor-saas) .product-card-image,
-body:not(.vendor-saas) .product-card__media,
-body:not(.vendor-saas) .featured-cat-card__media {
+body:not(.vendor-saas) .product-card__media {
   background: #ffffff;
 }
 
 @media (max-width: 639px) {
-  body:not(.vendor-saas) .product-card__media,
-  body:not(.vendor-saas) .featured-cat-card__media {
+  body:not(.vendor-saas) .product-card__media {
     padding: clamp(0.3rem, 1.4vw, 0.45rem);
   }
 }

@@ -997,6 +997,21 @@ body.page-home .featured-cat-card:hover {
   border-color: rgba(38, 166, 154, 0.45);
 }
 
+/* Home featured hub — full-bleed image, larger media well (not listing contain) */
+body.page-home .featured-cat-card__media {
+  aspect-ratio: 3 / 2;
+  min-height: clamp(9.5rem, 26vw, 13.5rem);
+  padding: 0;
+  background: transparent;
+}
+
+body.page-home .featured-cat-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
 body.page-home .quote-card {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.9);

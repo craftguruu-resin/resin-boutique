@@ -7598,26 +7598,18 @@ a.home-category-rail__title-link:focus-visible {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: 0;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: clamp(0.35rem, 1.8vw, 0.55rem);
-  box-sizing: border-box;
-  min-height: 0;
+  background: transparent;
 }
 
 .featured-cat-card__media--empty {
   min-height: 8rem;
+  background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
 }
 
 .featured-cat-card__media img {
-  flex: 0 1 auto;
-  width: auto;
-  height: auto;
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
   object-position: center;
   display: block;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
