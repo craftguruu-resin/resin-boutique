@@ -61,8 +61,19 @@
               <input id="vcmCreateSubName" class="vs-input" type="text" maxlength="200" placeholder="Optional — e.g. Summer line" autocomplete="off" />
             </div>
             <div class="vs-field" style="margin: 0">
-              <label for="vcmCreateCatImg">Category / group image URL</label>
+              <label for="vcmCreateCatImg">Category cover photo URL</label>
               <input id="vcmCreateCatImg" class="vs-input" type="text" maxlength="500" placeholder="https://… or /media/…" autocomplete="off" />
+              <p class="vcm-cover-hint">Recommended ratio: <strong>3:2</strong> (e.g. 1200×800). Shown on home and shop category cards.</p>
+            </div>
+            <div class="vs-field vcm-cover-preview-field" style="margin: 0">
+              <span class="vs-label-like">Cover preview</span>
+              <div class="vcm-cover-preview-row">
+                <div class="vcm-cover-preview-frame">
+                  <img id="vcmCreateCatPreview" class="vcm-cover-preview" alt="" hidden />
+                  <span id="vcmCreateCatPreviewEmpty" class="vcm-cover-preview-empty">No image</span>
+                </div>
+                <button type="button" class="vs-btn vs-btn--ghost vpm-img-fit-btn" id="vcmCreateCatFitBtn" title="Toggle contain fit when image looks cropped">Fit image</button>
+              </div>
             </div>
             <div class="vs-field" style="margin: 0">
               <label for="vcmCreateSubImg">Subcategory / line image URL</label>
@@ -107,8 +118,19 @@
               <input id="vcmEditSubName" class="vs-input" type="text" maxlength="200" autocomplete="off" placeholder="Select a sub line to edit its name" />
             </div>
             <div class="vs-field" style="margin: 0">
-              <label for="vcmEditImg">Image URL</label>
-              <input id="vcmEditImg" class="vs-input" type="text" maxlength="500" autocomplete="off" />
+              <label for="vcmEditImg">Category cover photo URL</label>
+              <input id="vcmEditImg" class="vs-input" type="text" maxlength="500" autocomplete="off" placeholder="https://… or /media/…" />
+              <p class="vcm-cover-hint" id="vcmEditCoverHint">Recommended ratio: <strong>3:2</strong> (e.g. 1200×800). Used on storefront category cards instead of random product previews.</p>
+            </div>
+            <div class="vs-field vcm-cover-preview-field" style="margin: 0">
+              <span class="vs-label-like">Cover preview</span>
+              <div class="vcm-cover-preview-row">
+                <div class="vcm-cover-preview-frame">
+                  <img id="vcmEditPreview" class="vcm-cover-preview" alt="" hidden />
+                  <span id="vcmEditPreviewEmpty" class="vcm-cover-preview-empty">No image</span>
+                </div>
+                <button type="button" class="vs-btn vs-btn--ghost vpm-img-fit-btn" id="vcmEditFitBtn" title="Toggle contain fit when image looks cropped">Fit image</button>
+              </div>
             </div>
             <div class="vs-field vcm-field-full" id="vcmEditHrefWrap" style="margin: 0" hidden>
               <label for="vcmEditHref">Shop link</label>
@@ -125,6 +147,7 @@
     </div>
   </div>
   <script src="vendor-shell.js"></script>
+  <script src="image-fit.js"></script>
   <script src="vendor-categories-manage.js"></script>
 </body>
 </html>

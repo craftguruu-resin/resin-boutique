@@ -26,6 +26,14 @@ function slugifyId(s) {
   return t || "vendor-category";
 }
 
+function normalizeNavImageFit(raw) {
+  var f = String(raw == null ? "" : raw)
+    .trim()
+    .toLowerCase();
+  if (f === "contain" || f === "cover") return f;
+  return "";
+}
+
 function normalizeSubcategoriesJson(subs) {
   if (typeof subs === "string") {
     try {
@@ -109,10 +117,12 @@ function createCategory(pool, body, cb) {
   var navImage = String((body && body.navImage) || (body && body.nav_image) || "")
     .trim()
     .slice(0, 500);
+  var navFitIn = body.navImageFit != null ? body.navImageFit : body.nav_image_fit;
+  var navImageFit = normalizeNavImageFit(navFitIn);
   var subs = normalizeSubcategoriesJson(body && body.subcategories);
   pool.query(
-    "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image) VALUES ($1, $2, $3, $4::jsonb, true, $5) RETURNING id, label, folder, subcategories, vendor_owned, nav_image",
-    [id.slice(0, 80), label, folder, JSON.stringify(subs), navImage]
+    "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit) VALUES ($1, $2, $3, $4::jsonb, true, $5, $6) RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit",
+    [id.slice(0, 80), label, folder, JSON.stringify(subs), navImage, navImageFit]
   )
     .then(function (r) {
       catalogFromData.invalidateCache();
@@ -133,7 +143,7 @@ function createCategory(pool, body, cb) {
  * @param {(err?: Error, row?: object) => void} cb
  */
 function catalogSeedForCategory(catId) {
-  var seed = { label: catId, folder: "", subcategories: [{ id: "all", label: "All" }], nav_image: "" };
+  var seed = { label: catId, folder: "", subcategories: [{ id: "all", label: "All" }], nav_image: "", nav_image_fit: "" };
   try {
     var list = catalogFromData.getCategoriesList() || [];
     for (var i = 0; i < list.length; i++) {
@@ -166,7 +176,7 @@ function updateCategory(pool, catId, body, cb) {
     });
   }
   pool
-    .query("SELECT id, label, folder, subcategories, vendor_owned, nav_image FROM categories WHERE id = $1 LIMIT 1", [catId])
+    .query("SELECT id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit FROM categories WHERE id = $1 LIMIT 1", [catId])
     .then(function (r) {
       var row = r.rows.length ? r.rows[0] : null;
       if (!row) {
@@ -178,6 +188,7 @@ function updateCategory(pool, catId, body, cb) {
           subcategories: seed.subcategories,
           vendor_owned: false,
           nav_image: seed.nav_image || "",
+          nav_image_fit: seed.nav_image_fit || "",
         };
       }
       var label = body.label != null ? String(body.label).trim().slice(0, 200) : String(row.label || "");
@@ -185,6 +196,11 @@ function updateCategory(pool, catId, body, cb) {
       var navIn = body.navImage != null ? body.navImage : body.nav_image;
       var navImage =
         navIn != null ? String(navIn).trim().slice(0, 500) : String(row.nav_image != null ? row.nav_image : "").trim();
+      var navFitIn = body.navImageFit != null ? body.navImageFit : body.nav_image_fit;
+      var navImageFit =
+        navFitIn != null
+          ? normalizeNavImageFit(navFitIn)
+          : normalizeNavImageFit(row.nav_image_fit != null ? row.nav_image_fit : "");
       var subs =
         body.subcategories != null
           ? normalizeSubcategoriesJson(body.subcategories)
@@ -201,11 +217,11 @@ function updateCategory(pool, catId, body, cb) {
       var vendorOwned = Boolean(row.vendor_owned);
       return pool
         .query(
-          "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image) VALUES ($1, $2, $3, $4::jsonb, $5, $6) " +
+          "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7) " +
             "ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, folder = EXCLUDED.folder, " +
-            "subcategories = EXCLUDED.subcategories, nav_image = EXCLUDED.nav_image, updated_at = now() " +
-            "RETURNING id, label, folder, subcategories, vendor_owned, nav_image",
-          [catId, label || catId, folder, JSON.stringify(subs), vendorOwned, navImage]
+            "subcategories = EXCLUDED.subcategories, nav_image = EXCLUDED.nav_image, nav_image_fit = EXCLUDED.nav_image_fit, updated_at = now() " +
+            "RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit",
+          [catId, label || catId, folder, JSON.stringify(subs), vendorOwned, navImage, navImageFit]
         )
         .then(function (r2) {
           catalogFromData.invalidateCache();

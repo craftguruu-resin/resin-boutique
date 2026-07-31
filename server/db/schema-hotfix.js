@@ -154,7 +154,9 @@ function ensureVendorInventoryColumns() {
       ")",
     "CREATE INDEX IF NOT EXISTS idx_order_shipments_tracking ON order_shipments (tracking_number)",
     "CREATE INDEX IF NOT EXISTS idx_order_shipments_status_code ON order_shipments (shipment_status_code)",
-    "CREATE INDEX IF NOT EXISTS idx_order_shipments_last_sync ON order_shipments (last_tracking_sync)"
+    "CREATE INDEX IF NOT EXISTS idx_order_shipments_last_sync ON order_shipments (last_tracking_sync)",
+    "ALTER TABLE categories ADD COLUMN IF NOT EXISTS nav_image VARCHAR(500) NOT NULL DEFAULT ''",
+    "ALTER TABLE categories ADD COLUMN IF NOT EXISTS nav_image_fit VARCHAR(20) NOT NULL DEFAULT ''"
   ];
 
   var chain = Promise.resolve();

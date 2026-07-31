@@ -377,6 +377,16 @@ var SIZE_DEFAULT = {
     return String((cat.nav_image != null && cat.nav_image) || (cat.navImage != null && cat.navImage) || "").trim();
   }
 
+  function getCategoryNavImageFit(catId) {
+    var cat = getCategoryObject(catId);
+    if (!cat) return "";
+    return String(
+      (cat.nav_image_fit != null && cat.nav_image_fit) ||
+        (cat.navImageFit != null && cat.navImageFit) ||
+        ""
+    ).trim();
+  }
+
   function collectListedProductImagesInCategory(catId, subId) {
     var list = listProductsAll(catId, subId || null);
     var imgs = [];
@@ -654,6 +664,8 @@ var SIZE_DEFAULT = {
     if (typeof window !== "undefined" && window.CraftguruImageFit) {
       return window.CraftguruImageFit.getCategoryPreviewImageFit(catId, imageUrl, {
         listProductsAll: listProductsAll,
+        getCategoryNavImage: getCategoryNavImage,
+        getCategoryNavImageFit: getCategoryNavImageFit,
       });
     }
     return "";
@@ -1001,6 +1013,13 @@ var SIZE_DEFAULT = {
       if (nav) {
         row.nav_image = nav.slice(0, 500);
       }
+      var navFit =
+        (c.nav_image_fit != null && String(c.nav_image_fit).trim()) ||
+        (c.navImageFit != null && String(c.navImageFit).trim()) ||
+        "";
+      if (navFit) {
+        row.nav_image_fit = navFit.slice(0, 20);
+      }
       CATEGORIES.push(row);
     });
     rebuildCategoryProductIndex();
@@ -1018,6 +1037,7 @@ var SIZE_DEFAULT = {
     getCategoryLabel: getCategoryLabel,
     getCategoryPreviewImage: getCategoryPreviewImage,
     getCategoryPreviewImagePair: getCategoryPreviewImagePair,
+    getCategoryNavImageFit: getCategoryNavImageFit,
     listAllListedProducts: listAllListedProducts,
     pickRandomCatalogProductImage: pickRandomCatalogProductImage,
     getSubcategoryPreviewImage: getSubcategoryPreviewImage,

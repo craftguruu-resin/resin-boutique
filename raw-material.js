@@ -408,6 +408,7 @@
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
       var imgRel = c.image || "";
+      var imgFit = String((c && c.imageFit) || "").trim().toLowerCase();
       var imgBlock = imgRel
         ? '<a class="featured-cat-card__media-hit" href="' +
           escAttr(href) +
@@ -415,7 +416,9 @@
           escAttr(c.name) +
           '"><div class="featured-cat-card__media"><img src="' +
           escAttr(imgSrc(imgRel)) +
-          '" alt="" loading="lazy" width="640" height="480" /></div></a>'
+          '" alt="" loading="lazy" width="1200" height="800"' +
+          (imgFit === "contain" || imgFit === "cover" ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
+          " /></div></a>"
         : '<a class="featured-cat-card__media-hit" href="' +
           escAttr(href) +
           '"><div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div></a>';

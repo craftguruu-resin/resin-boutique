@@ -1450,6 +1450,10 @@ a.rm-nav-tree__title-link:focus-visible {
   white-space: nowrap;
 }
 
+.rm-cat-hub .featured-cat-card__media {
+  aspect-ratio: 3 / 2;
+}
+
 /* Premium micro-interactions on category cards */
 .rm-cat-hub .featured-cat-card {
   transition:

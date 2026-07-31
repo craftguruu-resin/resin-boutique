@@ -8,6 +8,80 @@
   var rmTaxonomy = { version: 1, categories: [] };
   var pfNav = { version: 1, categories: [] };
   var CAT_ONLY = "__category_only__";
+  var IF = window.CraftguruImageFit;
+  var editImageFit = "";
+  var createCatImageFit = "";
+
+  function normalizeFit(v) {
+    return IF && IF.normalizeImageFit ? IF.normalizeImageFit(v) : String(v || "").trim().toLowerCase() === "contain" ? "contain" : "";
+  }
+
+  function syncFitButton(btn, fit) {
+    if (!btn) return;
+    var f = normalizeFit(fit);
+    btn.setAttribute("data-image-fit", f || "");
+    btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(f) : f === "contain" ? "Fit: contain ✓" : "Fit image";
+    btn.classList.toggle("vpm-img-fit-btn--on", f === "contain");
+  }
+
+  function applyPreviewFit(img, fit) {
+    if (!img) return;
+    if (IF && IF.applyImageFit) IF.applyImageFit(img, fit);
+    else if (normalizeFit(fit) === "contain") img.setAttribute("data-image-fit", "contain");
+    else img.removeAttribute("data-image-fit");
+  }
+
+  function resolvePreviewUrl(rel) {
+    rel = String(rel || "").trim();
+    if (!rel) return "";
+    if (/^https?:\/\//i.test(rel)) return rel;
+    try {
+      return new URL(rel.replace(/^\//, ""), window.location.origin + "/").href;
+    } catch (_) {
+      return rel;
+    }
+  }
+
+  function syncCoverPreview(imgEl, emptyEl, url, fit) {
+    var u = resolvePreviewUrl(url);
+    if (!imgEl) return;
+    if (!u) {
+      imgEl.hidden = true;
+      imgEl.removeAttribute("src");
+      if (emptyEl) emptyEl.hidden = false;
+      applyPreviewFit(imgEl, "");
+      return;
+    }
+    imgEl.hidden = false;
+    imgEl.src = u;
+    if (emptyEl) emptyEl.hidden = true;
+    applyPreviewFit(imgEl, fit);
+  }
+
+  function syncEditCoverPreview() {
+    syncCoverPreview(
+      document.getElementById("vcmEditPreview"),
+      document.getElementById("vcmEditPreviewEmpty"),
+      document.getElementById("vcmEditImg") && document.getElementById("vcmEditImg").value,
+      editImageFit
+    );
+    syncFitButton(document.getElementById("vcmEditFitBtn"), editImageFit);
+  }
+
+  function syncCreateCoverPreview() {
+    syncCoverPreview(
+      document.getElementById("vcmCreateCatPreview"),
+      document.getElementById("vcmCreateCatPreviewEmpty"),
+      document.getElementById("vcmCreateCatImg") && document.getElementById("vcmCreateCatImg").value,
+      createCatImageFit
+    );
+    syncFitButton(document.getElementById("vcmCreateCatFitBtn"), createCatImageFit);
+  }
+
+  function readStoredImageFit(obj) {
+    if (!obj) return "";
+    return normalizeFit(obj.imageFit || obj.nav_image_fit || obj.navImageFit || "");
+  }
 
   function catNameInput() {
     return document.getElementById("vcmEditCatName");
@@ -225,8 +299,13 @@
       sn.value = "";
       sn.disabled = true;
       sn.placeholder = "Select a category first";
+      document.getElementById("vcmEditImg").value = "";
+      editImageFit = "";
+      syncEditCoverPreview();
       return;
     }
+    var imgInput = document.getElementById("vcmEditImg");
+    var hrefInput = document.getElementById("vcmEditHref");
     if (d === "resin-products") {
       var c = resinCategories.find(function (x) {
         return String(x.id) === catId;
@@ -236,6 +315,9 @@
         sn.value = "";
         sn.disabled = true;
         sn.placeholder = "Entire category — pick a line to edit its name";
+        if (imgInput) imgInput.value = (c && c.nav_image) || "";
+        editImageFit = readStoredImageFit(c);
+        if (hrefInput) hrefInput.value = "";
       } else {
         var s = (c && c.subcategories && c.subcategories.find(function (y) {
           return String(y.id) === subVal;
@@ -243,7 +325,11 @@
         sn.disabled = false;
         sn.placeholder = "Subcategory / line name";
         sn.value = s.label || "";
+        if (imgInput) imgInput.value = s.image || "";
+        editImageFit = readStoredImageFit(s);
+        if (hrefInput) hrefInput.value = "";
       }
+      syncEditCoverPreview();
       return;
     }
     if (d === "resin-raw-material") {
@@ -255,6 +341,9 @@
         sn.value = "";
         sn.disabled = true;
         sn.placeholder = "Entire category — pick a line to edit its name";
+        if (imgInput) imgInput.value = (c2 && c2.image) || "";
+        editImageFit = readStoredImageFit(c2);
+        if (hrefInput) hrefInput.value = "";
       } else {
         var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
           return String(y.id) === subVal;
@@ -262,7 +351,11 @@
         sn.disabled = false;
         sn.placeholder = "Subcategory / line name";
         sn.value = s2.name || "";
+        if (imgInput) imgInput.value = s2.image || "";
+        editImageFit = readStoredImageFit(s2);
+        if (hrefInput) hrefInput.value = "";
       }
+      syncEditCoverPreview();
       return;
     }
     if (d === "resin-photo-frame") {
@@ -274,6 +367,9 @@
         sn.value = "";
         sn.disabled = true;
         sn.placeholder = "Entire group — pick a line to edit its name";
+        if (imgInput) imgInput.value = (c3 && c3.image) || "";
+        editImageFit = readStoredImageFit(c3);
+        if (hrefInput) hrefInput.value = "";
       } else {
         var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
           return String(y.id) === subVal;
@@ -281,7 +377,11 @@
         sn.disabled = false;
         sn.placeholder = "Line name";
         sn.value = s3.name || "";
+        if (imgInput) imgInput.value = s3.image || "";
+        editImageFit = readStoredImageFit(s3);
+        if (hrefInput) hrefInput.value = (s3.href != null && String(s3.href)) || "";
       }
+      syncEditCoverPreview();
       return;
     }
     cn.value = "";
@@ -348,6 +448,8 @@
     document.getElementById("vcmCreateSubName").value = "";
     document.getElementById("vcmCreateCatImg").value = "";
     document.getElementById("vcmCreateSubImg").value = "";
+    createCatImageFit = "";
+    syncCreateCoverPreview();
     var h = document.getElementById("vcmCreateHref");
     if (h) h.value = "";
   }
@@ -356,6 +458,29 @@
   document.getElementById("vcmEditDomain").addEventListener("change", onEditDomainChange);
   document.getElementById("vcmEditCat").addEventListener("change", onEditCatChange);
   document.getElementById("vcmEditSub").addEventListener("change", hydrateEditFieldsFromSelection);
+
+  var createCatImgEl = document.getElementById("vcmCreateCatImg");
+  if (createCatImgEl) {
+    createCatImgEl.addEventListener("input", syncCreateCoverPreview);
+  }
+  var editImgEl = document.getElementById("vcmEditImg");
+  if (editImgEl) {
+    editImgEl.addEventListener("input", syncEditCoverPreview);
+  }
+  var createFitBtn = document.getElementById("vcmCreateCatFitBtn");
+  if (createFitBtn) {
+    createFitBtn.addEventListener("click", function () {
+      createCatImageFit = IF && IF.toggleImageFit ? IF.toggleImageFit(createCatImageFit) : createCatImageFit === "contain" ? "" : "contain";
+      syncCreateCoverPreview();
+    });
+  }
+  var editFitBtn = document.getElementById("vcmEditFitBtn");
+  if (editFitBtn) {
+    editFitBtn.addEventListener("click", function () {
+      editImageFit = IF && IF.toggleImageFit ? IF.toggleImageFit(editImageFit) : editImageFit === "contain" ? "" : "contain";
+      syncEditCoverPreview();
+    });
+  }
 
   document.getElementById("vcmCreateSubmit").addEventListener("click", function () {
     var domain = String(document.getElementById("vcmCreateDomain").value || "");
@@ -383,6 +508,7 @@
           label: catName,
           folder: catName,
           navImage: catImg,
+          navImageFit: createCatImageFit || undefined,
           subcategories: subs,
         }),
       })
@@ -408,11 +534,13 @@
         return c.id === bid;
       });
       if (!grp) {
-        grp = { id: bid, name: catName, image: catImg || "", subcategories: [] };
+        grp = { id: bid, name: catName, image: catImg || "", imageFit: createCatImageFit || undefined, subcategories: [] };
         doc.categories.push(grp);
       } else {
         if (catImg) grp.image = catImg;
         grp.name = catName;
+        if (createCatImageFit) grp.imageFit = createCatImageFit;
+        else delete grp.imageFit;
       }
       if (subName) {
         var sid2 = slugify(subName);
@@ -507,13 +635,16 @@
       hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditImg").value = (c && c.nav_image) || "";
+        editImageFit = readStoredImageFit(c);
       } else {
         var s = (c && c.subcategories && c.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
         document.getElementById("vcmEditImg").value = s.image || "";
+        editImageFit = readStoredImageFit(s);
       }
       document.getElementById("vcmEditHref").value = "";
+      syncEditCoverPreview();
       setMsg("Loaded.");
       return;
     }
@@ -524,13 +655,16 @@
       hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditImg").value = (c2 && c2.image) || "";
+        editImageFit = readStoredImageFit(c2);
       } else {
         var s2 = (c2 && c2.subcategories && c2.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
         document.getElementById("vcmEditImg").value = s2.image || "";
+        editImageFit = readStoredImageFit(s2);
       }
       document.getElementById("vcmEditHref").value = "";
+      syncEditCoverPreview();
       setMsg("Loaded.");
       return;
     }
@@ -541,14 +675,17 @@
       hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditImg").value = (c3 && c3.image) || "";
+        editImageFit = readStoredImageFit(c3);
         document.getElementById("vcmEditHref").value = "";
       } else {
         var s3 = (c3 && c3.subcategories && c3.subcategories.find(function (y) {
           return String(y.id) === subVal;
         })) || {};
         document.getElementById("vcmEditImg").value = s3.image || "";
+        editImageFit = readStoredImageFit(s3);
         document.getElementById("vcmEditHref").value = (s3.href != null && String(s3.href)) || "";
       }
+      syncEditCoverPreview();
       setMsg("Loaded.");
       return;
     }
@@ -581,7 +718,7 @@
         V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
           method: "PATCH",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify({ label: catName, navImage: img }),
+          body: JSON.stringify({ label: catName, navImage: img, navImageFit: editImageFit || "" }),
         })
           .then(V.parseApiJson)
           .then(function (x) {
@@ -611,6 +748,8 @@
       subs[ix].label = subName;
       if (img) subs[ix].image = img;
       else delete subs[ix].image;
+      if (editImageFit) subs[ix].imageFit = editImageFit;
+      else delete subs[ix].imageFit;
       V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
         method: "PATCH",
         headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
@@ -642,6 +781,8 @@
       grp.name = catName;
       if (subVal === CAT_ONLY) {
         grp.image = img;
+        if (editImageFit) grp.imageFit = editImageFit;
+        else delete grp.imageFit;
       } else {
         var sx = (grp.subcategories || []).find(function (y) {
           return String(y.id) === subVal;
@@ -652,6 +793,8 @@
         }
         sx.name = subName;
         sx.image = img;
+        if (editImageFit) sx.imageFit = editImageFit;
+        else delete sx.imageFit;
       }
       putRm(doc)
         .then(function (x) {
@@ -683,6 +826,8 @@
     grp2.name = catName;
     if (subVal === CAT_ONLY) {
       grp2.image = img;
+      if (editImageFit) grp2.imageFit = editImageFit;
+      else delete grp2.imageFit;
     } else {
       var sx2 = (grp2.subcategories || []).find(function (y) {
         return String(y.id) === subVal;
@@ -693,6 +838,8 @@
       }
       sx2.name = subName;
       sx2.image = img;
+      if (editImageFit) sx2.imageFit = editImageFit;
+      else delete sx2.imageFit;
       if (hrefE) {
         sx2.href = hrefE;
       } else if (!String(sx2.href || "").trim()) {
@@ -883,6 +1030,7 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     onCreateDomainChange();
+    syncCreateCoverPreview();
     refreshAll();
   });
 })();

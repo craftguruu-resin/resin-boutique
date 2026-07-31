@@ -2195,6 +2195,64 @@ a.vd-kpi-card--link:focus-visible {
   grid-column: 1 / -1;
 }
 
+.vendor-saas .vcm-cover-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--vs-muted);
+}
+
+.vendor-saas .vs-label-like {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+  color: var(--vs-text);
+}
+
+.vendor-saas .vcm-cover-preview-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  align-items: flex-end;
+}
+
+.vendor-saas .vcm-cover-preview-frame {
+  width: 150px;
+  aspect-ratio: 3 / 2;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: #e2e8f0;
+  position: relative;
+}
+
+.vendor-saas .vcm-cover-preview {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vendor-saas .vcm-cover-preview[data-image-fit="contain"] {
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.vendor-saas .vcm-cover-preview-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  color: #64748b;
+}
+
+.vendor-saas .vcm-cover-preview-field {
+  align-self: start;
+}
+
 /* Sales & profit (vendor-sales-profit) */
 .vsp-kpi-card--profit {
   border-color: rgba(22, 163, 74, 0.28);

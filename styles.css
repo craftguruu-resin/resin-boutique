@@ -7595,7 +7595,7 @@ a.home-category-rail__title-link:focus-visible {
 
 .featured-cat-card__media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 3 / 2;
   overflow: hidden;
   border-radius: 0;
   background: transparent;

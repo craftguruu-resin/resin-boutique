@@ -120,6 +120,19 @@
 
   function getCategoryPreviewImageFit(catId, imageUrl, dataApi) {
     if (!imageUrl) return "";
+    var nav = "";
+    var navFit = "";
+    if (dataApi && typeof dataApi.getCategoryNavImage === "function") {
+      nav = String(dataApi.getCategoryNavImage(catId) || "").trim();
+    }
+    if (dataApi && typeof dataApi.getCategoryNavImageFit === "function") {
+      navFit = normalizeImageFit(dataApi.getCategoryNavImageFit(catId));
+    }
+    if (nav && navFit) {
+      var key = stripUrlCache(imageUrl).toLowerCase();
+      var navKey = stripUrlCache(nav).toLowerCase();
+      if (key === navKey) return navFit;
+    }
     var fit = "";
     if (dataApi && typeof dataApi.listProductsAll === "function") {
       fit = findImageFitInCategory(catId, imageUrl, dataApi.listProductsAll);

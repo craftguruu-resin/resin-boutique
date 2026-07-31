@@ -468,6 +468,7 @@ function mergeCategoriesDbWithCatalog(dbRows) {
       folder: row.folder || "",
       subcategories: normalizeCategorySubcategories(row.subcategories),
       nav_image: String((row.nav_image != null && row.nav_image) || "").trim(),
+      nav_image_fit: String((row.nav_image_fit != null && row.nav_image_fit) || "").trim(),
       vendor_owned: Boolean(row.vendor_owned),
     };
   });
@@ -2007,6 +2008,7 @@ app.get("/api/vendor/categories", function (_req, res) {
           folder: c.folder || "",
           subcategories: normalizeCategorySubcategories(c.subcategories),
           nav_image: "",
+          nav_image_fit: "",
           vendor_owned: false,
         };
       });
@@ -2028,7 +2030,7 @@ app.get("/api/vendor/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit FROM categories ORDER BY label ASC"
     )
     .then(function (r) {
       var dbRowCount = r.rows.length;
@@ -2039,6 +2041,7 @@ app.get("/api/vendor/categories", function (_req, res) {
           folder: row.folder || "",
           subcategories: normalizeCategorySubcategories(row.subcategories),
           nav_image: String(row.nav_image || "").trim(),
+          nav_image_fit: String(row.nav_image_fit || "").trim(),
           vendor_owned: Boolean(row.vendor_owned),
         };
       });
@@ -2609,6 +2612,7 @@ app.get("/api/catalog/categories", function (_req, res) {
           folder: c.folder || "",
           subcategories: normalizeCategorySubcategories(c.subcategories),
           nav_image: "",
+          nav_image_fit: "",
           vendor_owned: false,
         };
       });
@@ -2629,7 +2633,7 @@ app.get("/api/catalog/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit FROM categories ORDER BY label ASC"
     )
     .then(function (r) {
       var merged = mergeCategoriesDbWithCatalog(r.rows);
