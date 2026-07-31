@@ -650,7 +650,7 @@
     els.productGrid.innerHTML = "";
     if (els.filterLabel && !els.filterLabel.textContent.trim()) {
       els.filterLabel.textContent =
-        "Explore our most loved handcrafted resin creations, made to add beauty to every moment.";
+        "Same card layout as the main Craftguru storefront — open a world of creativity.";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;

@@ -1,11 +1,8 @@
 (function () {
   "use strict";
 
-  /* Organic S-curve — taller, softer crest; pairs with --glass-wave-mask in CSS */
-  var WAVE_SVG =
-    '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 96" preserveAspectRatio="none" aria-hidden="true">' +
-    '<path d="M0,68 C180,68 320,22 520,38 C720,54 900,14 1100,30 C1260,42 1360,26 1440,34 L1440,96 L0,96 Z" fill="currentColor"/>' +
-    "</svg>";
+  /* Wave shape lives in CSS mask only — no DOM overlay (avoids hard image cut). */
+  var WAVE_SVG = "";
 
   function esc(s) {
     var el = document.createElement("div");
@@ -67,7 +64,6 @@
       mediaInner +
       "</div>" +
       '<div class="featured-collection-card__panel">' +
-      WAVE_SVG +
       '<div class="featured-collection-card__panel-body">' +
       '<h3 class="featured-collection-card__name">' +
       esc(title) +
