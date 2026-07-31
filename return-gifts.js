@@ -248,6 +248,7 @@
     wireControlsOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
+    grid.className = "featured-collections-grid";
     var base = collectReturnGifts();
     var items = sortItems(filterByPriceAndView(filterBySearch(base)));
     grid.innerHTML = "";
@@ -259,40 +260,53 @@
     }
     items.forEach(function (p, i) {
       var minP = minPrice(p);
-      var card = document.createElement("article");
-      card.className = "product-card is-inview";
-      card.style.setProperty("--stagger", String(i));
-      card.innerHTML =
-        '<a class="product-card__link" href="product.html?id=' +
-        encodeURIComponent(p.id) +
-        '" aria-label="View ' +
-        escAttr(p.name) +
-        '"></a>' +
-        '<div class="product-card__shine" aria-hidden="true"></div>' +
-        '<div class="product-card-image">' +
-        '<div class="product-card__media">' +
-        '<img src="' +
-        escAttr(imgSrc(p.image)) +
-        '" alt="" loading="lazy" decoding="async" />' +
-        "</div>" +
-        "</div>" +
-        '<div class="product-card-body">' +
-        "<h3>" +
-        esc(p.name) +
-        "</h3>" +
-        '<p class="product-card__from">' +
-        esc(fromPriceLabel(p)) +
-        "</p>" +
-        '<div class="product-meta product-meta--cta">' +
-        '<a class="add-btn add-btn--mini" href="product.html?id=' +
-        encodeURIComponent(p.id) +
-        '">Open piece →</a>' +
-        bulkBuyCardHtml(p) +
-        "</div>" +
-        "</div>";
-      if (minP > 0) card.setAttribute("data-min-price", String(minP));
+      var pHref = "product.html?id=" + encodeURIComponent(p.id);
+      var priceLabel = fromPriceLabel(p);
+      var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
+      var card;
+      if (buildCard) {
+        card = buildCard({
+          href: pHref,
+          title: p.name,
+          subtitle: priceLabel,
+          ctaText: "View piece →",
+          imgSrc: p.image ? imgSrc(p.image) : "",
+          imgFit: D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "",
+          hasPreview: !!(p.image && String(p.image).trim()),
+          minPrice: minP > 0 ? String(minP) : "",
+          searchText: D.productSearchHaystack
+            ? D.productSearchHaystack(p)
+            : ((p.name || "") + " " + (p.id || "")).toLowerCase(),
+          stagger: i,
+          ariaLabel: "View " + p.name,
+        });
+      } else {
+        card = document.createElement("article");
+        card.className = "featured-collection-card is-inview";
+        card.style.setProperty("--stagger", String(i));
+        card.innerHTML =
+          '<a class="featured-collection-card__hit" href="' +
+          escAttr(pHref) +
+          '" aria-label="View ' +
+          escAttr(p.name) +
+          '">' +
+          '<div class="featured-collection-card__visual">' +
+          '<div class="featured-collection-card__media">' +
+          (p.image
+            ? '<img src="' + escAttr(imgSrc(p.image)) + '" alt="" loading="lazy" decoding="async" />'
+            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
+          "</div>" +
+          '<div class="featured-collection-card__panel">' +
+          "<h3 class=\"featured-collection-card__name\">" +
+          esc(p.name) +
+          "</h3>" +
+          (priceLabel ? '<p class="featured-collection-card__count">' + esc(priceLabel) + "</p>" : "") +
+          '<span class="featured-collection-card__cta">View piece →</span>' +
+          "</div></div></a>";
+        if (minP > 0) card.setAttribute("data-min-price", String(minP));
+      }
       grid.appendChild(card);
-      var cardImg = card.querySelector(".product-card__media img, .product-card-image img");
+      var cardImg = card.querySelector(".featured-collection-card__media img");
       if (cardImg) {
         var cardFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
         if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {

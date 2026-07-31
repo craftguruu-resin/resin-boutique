@@ -421,6 +421,7 @@
     var mats = materials || [];
     var cats = doc.categories;
     var hubN = normalizeHubFilter(hubFilter);
+    hub.className = "featured-collections-grid";
     hub.innerHTML = "";
     var catsToShow = cats.slice();
     if (hubN && hubN.base) {
@@ -464,46 +465,54 @@
       var href = window.RmShopNav
         ? window.RmShopNav.shopHref(c.id, "")
         : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
-      var card = document.createElement("article");
-      card.className = "featured-cat-card reveal-tile is-inview";
-      card.style.setProperty("--stagger", String(idx % 10));
       var preview = hubCategoryPreview(c);
       var imgRel = preview.image || "";
       var imgFit = preview.fit || "";
-      var imgBlock = imgRel
-        ? '<a class="featured-cat-card__media-hit" href="' +
+      var countLabel = String(count) + (count === 1 ? " product in this category" : " products in this category");
+      var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
+      var card;
+      if (buildCard) {
+        card = buildCard({
+          href: href,
+          title: c.name,
+          subtitle: countLabel,
+          ctaText: "Explore collection →",
+          imgSrc: imgRel ? imgSrc(imgRel) : "",
+          imgFit: imgFit,
+          hasPreview: !!imgRel,
+          stagger: idx % 10,
+          ariaLabel: "Browse " + c.name,
+        });
+      } else {
+        card = document.createElement("article");
+        card.className = "featured-collection-card is-inview";
+        card.style.setProperty("--stagger", String(idx % 10));
+        card.innerHTML =
+          '<a class="featured-collection-card__hit" href="' +
           escAttr(href) +
           '" aria-label="Browse ' +
           escAttr(c.name) +
-          '"><div class="featured-cat-card__media"><img src="' +
-          escAttr(imgSrc(imgRel)) +
-          '" alt="" loading="lazy" width="1200" height="800"' +
-          (imgFit === "contain" || imgFit === "cover" ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
-          " /></div></a>"
-        : '<a class="featured-cat-card__media-hit" href="' +
-          escAttr(href) +
-          '"><div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div></a>';
-      card.innerHTML =
-        '<div class="featured-cat-card__shine" aria-hidden="true"></div>' +
-        imgBlock +
-        '<div class="featured-cat-card__body">' +
-        '<h3><a href="' +
-        escAttr(href) +
-        '">' +
-        esc(c.name) +
-        "</a></h3>" +
-        "<p>" +
-        esc(String(count)) +
-        (count === 1 ? " product in this category" : " products in this category") +
-        "</p>" +
-        '<div class="featured-cat-card__row">' +
-        '<a class="featured-cat-card__cta" href="' +
-        escAttr(href) +
-        '">View collection →</a>' +
-        '<a class="featured-cat-card__quick-add" href="' +
-        escAttr(href) +
-        '">Choose product</a>' +
-        "</div></div>";
+          '">' +
+          '<div class="featured-collection-card__visual">' +
+          '<div class="featured-collection-card__media">' +
+          (imgRel
+            ? '<img src="' +
+              escAttr(imgSrc(imgRel)) +
+              '" alt="" loading="lazy" width="1200" height="800"' +
+              (imgFit === "contain" || imgFit === "cover" ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
+              " />"
+            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
+          "</div>" +
+          '<div class="featured-collection-card__panel">' +
+          "<h3 class=\"featured-collection-card__name\">" +
+          esc(c.name) +
+          "</h3>" +
+          '<p class="featured-collection-card__count">' +
+          esc(countLabel) +
+          "</p>" +
+          '<span class="featured-collection-card__cta">Explore collection →</span>' +
+          "</div></div></a>";
+      }
       hub.appendChild(card);
     });
   }

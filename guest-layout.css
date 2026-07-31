@@ -1266,6 +1266,7 @@ body.subpage .mesh-gradient {
 
 body.subpage .product-grid,
 body.subpage .featured-cat-grid,
+body.subpage .featured-collections-grid,
 body.subpage .rm-shop-grid,
 body.subpage #rmGrid {
   contain: layout style;
