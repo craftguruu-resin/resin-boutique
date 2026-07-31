@@ -41,6 +41,28 @@
     "photo-frame-shop.html": "resin-customised-frames",
     "photo-frames.html": "resin-customised-frames",
     "return-gifts.html": "resin-keychains",
+    /* Raw material top-level categories */
+    "basic-resin-material": "resin-coasters",
+    "clock-material": "resin-clocks",
+    "cutouts": "resin-customised-frames",
+    "dryed-flowers": "resin-guruji-products",
+    "glitters-beads-and-decoration": "resin-keychains",
+    "handles": "resin-name-plates",
+    "jewellery-and-keychain-material": "resin-keychains",
+    "packing-material": "resin-coasters",
+    "pouring-and-mixing": "resin-coasters",
+    "resin-and-pigments": "resin-coasters",
+    "resin-learning-kit": "mini-resin-deshboard",
+    "safty-and-cleaning-material": "resin-coasters",
+    "sea-shells": "resin-guruji-products",
+    "silicon-molds": "resin-coasters",
+    "stands-and-hanging-hooks": "resin-key-holder",
+    "stickers-and-cards": "resin-mantra-frame",
+    "stones-and-chips": "resin-guruji-products",
+    "tools": "resin-cutlery-and-tissue-holder",
+    "wooden-raw-frames-special-for-vermala-preservation": "resin-customised-frames",
+    /* Photo frame top-level categories */
+    "photo-frame-lines": "resin-customised-frames",
   };
 
   var RM_PALETTE = ["#1e8e84", "#148f7f", "#26a69a", "#0f766e", "#1e8e84", "#243656", "#1a2b48", "#148f7f", "#26a69a", "#0f766e"];

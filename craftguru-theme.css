@@ -363,20 +363,26 @@ body.page-home .category-grid--rail .category-pill:hover .category-pill__chev {
   color: var(--cg-teal-deep);
 }
 
+body.rm-theme--materials .rm-category-rail,
 body.rm-theme--materials .rm-nav-tree-wrap,
+body.rm-theme--photo-frame .rm-category-rail,
 body.rm-theme--photo-frame .rm-nav-tree-wrap {
   background: var(--cg-white);
   border: 1px solid var(--cg-border);
   box-shadow: var(--cg-shadow);
 }
 
+body.rm-theme--materials .rm-category-rail .category-pill--rail:hover,
 body.rm-theme--materials .rm-nav-tree__link:hover,
+body.rm-theme--photo-frame .rm-category-rail .category-pill--rail:hover,
 body.rm-theme--photo-frame .rm-nav-tree__link:hover {
   background: rgba(216, 243, 239, 0.75);
   color: var(--cg-navy);
 }
 
+body.rm-theme--materials .rm-category-rail .category-pill--rail.is-active,
 body.rm-theme--materials .rm-nav-tree__link.is-active,
+body.rm-theme--photo-frame .rm-category-rail .category-pill--rail.is-active,
 body.rm-theme--photo-frame .rm-nav-tree__link.is-active {
   background: linear-gradient(135deg, rgba(216, 243, 239, 0.95), rgba(125, 211, 199, 0.35));
   color: var(--cg-navy);

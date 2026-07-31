@@ -1,40 +1,12 @@
 (function () {
   "use strict";
 
-  /** Show category tree on the photo-frames shop page (same pattern as raw materials). */
-  window.CRAFT_PF_NAV_LINES_HIDDEN = false;
-
-  var LS_KEY = "craftguruPfNavExpanded";
-
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
-  }
-
-  function readExpanded() {
-    try {
-      var j = JSON.parse(localStorage.getItem(LS_KEY) || "[]");
-      return Array.isArray(j) ? j : [];
-    } catch (_) {
-      return [];
-    }
-  }
-
-  function writeExpanded(ids) {
-    try {
-      localStorage.setItem(LS_KEY, JSON.stringify(ids.slice(0, 80)));
-    } catch (_) {}
-  }
-
-  function toggleExpanded(baseId, on) {
-    var cur = readExpanded();
-    var i = cur.indexOf(baseId);
-    if (on && i < 0) cur.push(baseId);
-    if (!on && i >= 0) cur.splice(i, 1);
-    writeExpanded(cur);
   }
 
   function shopHref(base, sub) {
@@ -117,7 +89,7 @@
   }
 
   /**
-   * Update active link styles without replacing the tree (keeps scroll + avoids flicker).
+   * Update active pill without replacing the rail (keeps scroll + avoids flicker).
    * @param {HTMLElement} el
    * @param {{ activeBase?: string, activeSub?: string }} ctx
    */
@@ -125,36 +97,18 @@
     if (!el) return;
     ctx = ctx || {};
     var activeBase = String(ctx.activeBase || "").trim();
-    var activeSub = String(ctx.activeSub || "").trim();
-    el.querySelectorAll(".rm-nav-tree__link.is-active").forEach(function (a) {
+    el.querySelectorAll(".category-pill--rail.is-active").forEach(function (a) {
       a.classList.remove("is-active");
     });
-    el.querySelectorAll("a.rm-nav-tree__link").forEach(function (a) {
+    el.querySelectorAll("a.category-pill--rail").forEach(function (a) {
       var p = hrefParams(a.getAttribute("href") || "");
-      if (p.base === activeBase && p.sub === activeSub) {
+      if (p.base === activeBase) {
         a.classList.add("is-active");
       }
     });
-    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActiveNavLink) {
-      window.CraftguruCategoryScroll.scrollActiveNavLink(el);
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActivePill) {
+      window.CraftguruCategoryScroll.scrollActivePill(el);
     }
-  }
-
-  function wireNavDelegationOnce(el) {
-    if (!el || el.dataset.rmNavChevDelegation === "1") return;
-    el.dataset.rmNavChevDelegation = "1";
-    el.addEventListener("click", function (e) {
-      var btn = e.target && e.target.closest && e.target.closest(".rm-nav-tree__chev");
-      if (!btn || !el.contains(btn)) return;
-      e.preventDefault();
-      var bid = btn.getAttribute("data-base");
-      var ul = el.querySelector('[data-subs-for="' + bid + '"]');
-      var open = !btn.classList.contains("is-open");
-      btn.classList.toggle("is-open", open);
-      btn.setAttribute("aria-expanded", open ? "true" : "false");
-      if (ul) ul.classList.toggle("is-open", open);
-      toggleExpanded(bid, open);
-    });
   }
 
   /**
@@ -165,90 +119,29 @@
     ctx = ctx || {};
     var activeBase = String(ctx.activeBase || "").trim();
     var activeSub = String(ctx.activeSub || "").trim();
-    var materials = Array.isArray(ctx.materials) ? ctx.materials : [];
     if (!el) return Promise.resolve(null);
-    if (window.CRAFT_PF_NAV_LINES_HIDDEN) {
-      el.innerHTML = '<ul class="rm-nav-tree__root"></ul>';
-      el.dataset.rmNavBuilt = "1";
-      wireNavDelegationOnce(el);
-      updateActive(el, { activeBase: activeBase, activeSub: activeSub });
-      return Promise.resolve(null);
-    }
     if (el.dataset.rmNavBuilt === "1" && !ctx.forceRebuild) {
       updateActive(el, { activeBase: activeBase, activeSub: activeSub });
       return Promise.resolve(null);
     }
     return fetchTaxonomy().then(function (doc) {
       var cats = (doc && doc.categories) || [];
-      var expanded = readExpanded();
-      var html = '<ul class="rm-nav-tree__root">';
+      var railApi = window.CRAFT_RAIL_ICONS;
+      el.innerHTML = "";
+      el.className = "category-grid category-grid--rail";
       cats.forEach(function (c) {
-        var subs = c.subcategories || [];
-        var hasSubs = subs.length > 0;
-        var isOpen = expanded.indexOf(c.id) >= 0 || (activeBase === c.id && hasSubs);
-        var baseActive = activeBase === c.id && !activeSub;
-        var baseHref = shopHref(c.id, "");
-        var ico =
-          window.CRAFT_RAIL_ICONS
-            ? window.CRAFT_RAIL_ICONS.treeIconHtml(c.id || c.name, cats.indexOf(c))
-            : '<span class="rm-nav-tree__ico rm-nav-tree__ico--ph" aria-hidden="true"></span>';
-        if (!hasSubs) {
-          html +=
-            '<li class="rm-nav-tree__item">' +
-            '<a class="rm-nav-tree__link' +
-            (baseActive ? " is-active" : "") +
-            '" href="' +
-            esc(baseHref) +
-            '">' +
-            ico +
-            "<span>" +
-            esc(c.name) +
-            "</span></a></li>";
-          return;
+        var a = document.createElement("a");
+        a.className = "category-pill category-pill--rail";
+        a.href = shopHref(c.id, "");
+        a.setAttribute("data-base-id", esc(c.id));
+        if (railApi && railApi.fillRailLink) {
+          railApi.fillRailLink(a, { id: c.id, label: c.name });
+        } else {
+          a.textContent = c.name;
         }
-        html +=
-          '<li class="rm-nav-tree__item rm-nav-tree__item--branch">' +
-          '<div class="rm-nav-tree__row">' +
-          '<button type="button" class="rm-nav-tree__chev' +
-          (isOpen ? " is-open" : "") +
-          '" data-base="' +
-          esc(c.id) +
-          '" aria-expanded="' +
-          (isOpen ? "true" : "false") +
-          '" aria-label="Toggle ' +
-          esc(c.name) +
-          '"></button>' +
-          '<a class="rm-nav-tree__link rm-nav-tree__link--base' +
-          (baseActive ? " is-active" : "") +
-          '" href="' +
-          esc(baseHref) +
-          '">' +
-          ico +
-          "<span>" +
-          esc(c.name) +
-          "</span></a></div>" +
-          '<ul class="rm-nav-tree__subs' +
-          (isOpen ? " is-open" : "") +
-          '" data-subs-for="' +
-          esc(c.id) +
-          '">';
-        subs.forEach(function (s) {
-          var subAct = activeBase === c.id && activeSub === s.id;
-          html +=
-            '<li><a class="rm-nav-tree__link rm-nav-tree__link--sub' +
-            (subAct ? " is-active" : "") +
-            '" href="' +
-            esc(shopHref(c.id, s.id)) +
-            '">' +
-            esc(s.name) +
-            "</a></li>";
-        });
-        html += "</ul></li>";
+        el.appendChild(a);
       });
-      html += "</ul>";
-      el.innerHTML = html;
       el.dataset.rmNavBuilt = "1";
-      wireNavDelegationOnce(el);
       updateActive(el, { activeBase: activeBase, activeSub: activeSub });
       return doc;
     });

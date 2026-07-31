@@ -808,7 +808,7 @@
       function (e) {
         var navRoot = document.getElementById("rmNavTree");
         if (!navRoot || !navRoot.contains(e.target)) return;
-        var a = e.target && e.target.closest && e.target.closest("a.rm-nav-tree__link");
+        var a = e.target && e.target.closest && e.target.closest("a.category-pill--rail");
         if (!a || !a.getAttribute("href")) return;
         if (e.defaultPrevented) return;
         if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;

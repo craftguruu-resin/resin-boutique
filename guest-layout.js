@@ -718,9 +718,9 @@
           host: guest.closest(".guest-main-with-rail-inner") || guest.parentElement,
         });
       }
-      document.querySelectorAll(".rm-shop-layout .rm-nav-tree-wrap").forEach(function (el) {
-        var titleEl = el.querySelector(".rm-nav-tree__title, .rm-nav-tree__title-link");
-        var label = titleEl ? String(titleEl.textContent || "").trim() : "Categories";
+      document.querySelectorAll(".rm-shop-layout .rm-category-rail, .rm-shop-layout .rm-nav-tree-wrap").forEach(function (el) {
+        var titleEl = el.querySelector(".home-category-rail__label, .rm-nav-tree__title, .rm-nav-tree__title-link");
+        var label = titleEl ? String(titleEl.textContent || "").trim() : "Shop by category";
         items.push({
           el: el,
           label: label || "Categories",
@@ -774,7 +774,7 @@
         var link =
           ev.target &&
           ev.target.closest &&
-          ev.target.closest("a.rm-nav-tree__link, a.category-pill, a.category-pill--rail");
+          ev.target.closest("a.category-pill--rail, a.rm-nav-tree__link, a.category-pill");
         if (!link || !mq.matches) return;
         var dest = String(link.getAttribute("href") || "").trim();
         /* Restoring the panel during click can cancel first-tap navigation on mobile. */

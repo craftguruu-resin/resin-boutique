@@ -67,7 +67,8 @@ body.rm-theme--photo-frame .crumb a:hover {
   color: var(--pf-coral-deep);
 }
 
-/* ---- Left sidebar (white card + green glow) ---- */
+/* ---- Left sidebar (white card + green glow, matching Home rail) ---- */
+body.rm-theme--photo-frame .rm-category-rail,
 body.rm-theme--photo-frame .rm-nav-tree-wrap {
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.95);
@@ -81,6 +82,7 @@ body.rm-theme--photo-frame .rm-nav-tree-wrap {
   color: var(--pf-ink);
 }
 
+body.rm-theme--photo-frame .rm-category-rail .home-category-rail__label,
 body.rm-theme--photo-frame .rm-nav-tree__title,
 body.rm-theme--photo-frame a.rm-nav-tree__title-link {
   color: var(--pf-navy);
@@ -90,6 +92,7 @@ body.rm-theme--photo-frame a.rm-nav-tree__title-link {
   text-transform: uppercase;
 }
 
+body.rm-theme--photo-frame .rm-category-rail .category-pill--rail,
 body.rm-theme--photo-frame .rm-nav-tree__link {
   color: var(--pf-ink);
   border-radius: 14px;
@@ -97,12 +100,14 @@ body.rm-theme--photo-frame .rm-nav-tree__link {
   gap: 0.7rem;
 }
 
+body.rm-theme--photo-frame .rm-category-rail .category-pill--rail:hover,
 body.rm-theme--photo-frame .rm-nav-tree__link:hover {
   background: rgba(245, 208, 212, 0.35);
   border-color: rgba(38, 166, 154, 0.35);
   color: var(--pf-ink);
 }
 
+body.rm-theme--photo-frame .rm-category-rail .category-pill--rail.is-active,
 body.rm-theme--photo-frame .rm-nav-tree__link.is-active {
   background: rgba(245, 208, 212, 0.55);
   border-color: rgba(38, 166, 154, 0.55);

@@ -156,7 +156,33 @@ body.guest-site .guest-page-category-rail.home-category-rail--icons .category-pi
   }
 }
 
-/* ---- RM / Photo Frame tree: SVG icons, hide thumbnails ---- */
+/* ---- RM / Photo Frame flat rails (match Home shop-by-category) ---- */
+.rm-shop-layout .rm-category-rail {
+  position: sticky;
+  top: 5.5rem;
+  align-self: start;
+  max-height: calc(100vh - 6.25rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.rm-shop-layout .rm-category-rail .category-grid--rail {
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+}
+
+@media (max-width: 900px) {
+  .rm-shop-layout .rm-category-rail {
+    position: static;
+    max-height: min(42vh, 20rem);
+  }
+}
+
+/* ---- RM / Photo Frame tree (legacy PDP): SVG icons, hide thumbnails ---- */
 .rm-nav-tree__ico img {
   display: none !important;
 }

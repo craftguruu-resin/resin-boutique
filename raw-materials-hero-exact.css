@@ -68,7 +68,8 @@ body.rm-theme--materials .crumb a:hover {
   color: var(--rm-exact-teal-deep);
 }
 
-/* ---- Left sidebar (white card + teal glow, matching reference) ---- */
+/* ---- Left sidebar (white card + teal glow, matching Home rail) ---- */
+body.rm-theme--materials .rm-category-rail,
 body.rm-theme--materials .rm-nav-tree-wrap {
   background: #ffffff;
   border: 1px solid rgba(255, 255, 255, 0.95);
@@ -82,6 +83,7 @@ body.rm-theme--materials .rm-nav-tree-wrap {
   color: var(--rm-exact-ink);
 }
 
+body.rm-theme--materials .rm-category-rail .home-category-rail__label,
 body.rm-theme--materials .rm-nav-tree__title,
 body.rm-theme--materials a.rm-nav-tree__title-link {
   color: var(--rm-exact-navy);
@@ -91,6 +93,7 @@ body.rm-theme--materials a.rm-nav-tree__title-link {
   text-transform: uppercase;
 }
 
+body.rm-theme--materials .rm-category-rail .category-pill--rail,
 body.rm-theme--materials .rm-nav-tree__link {
   color: var(--rm-exact-ink);
   border-radius: 14px;
@@ -98,12 +101,14 @@ body.rm-theme--materials .rm-nav-tree__link {
   gap: 0.7rem;
 }
 
+body.rm-theme--materials .rm-category-rail .category-pill--rail:hover,
 body.rm-theme--materials .rm-nav-tree__link:hover {
   background: rgba(216, 243, 239, 0.55);
   border-color: rgba(38, 166, 154, 0.28);
   color: var(--rm-exact-ink);
 }
 
+body.rm-theme--materials .rm-category-rail .category-pill--rail.is-active,
 body.rm-theme--materials .rm-nav-tree__link.is-active {
   background: rgba(216, 243, 239, 0.75);
   border-color: rgba(30, 142, 132, 0.45);

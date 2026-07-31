@@ -37,12 +37,14 @@ body.guest-site {
 /* Category sidebar rails — vertical scroll only on desktop / drawer panels */
 @media (min-width: 901px) {
   body.guest-site .guest-page-category-rail,
-  body.guest-site .home-category-rail {
+  body.guest-site .home-category-rail,
+  body.guest-site .rm-category-rail {
     overflow-x: hidden;
   }
 
   body.guest-site .guest-page-category-rail .category-grid--rail,
-  body.guest-site .home-category-rail .category-grid--rail {
+  body.guest-site .home-category-rail .category-grid--rail,
+  body.guest-site .rm-category-rail .category-grid--rail {
     overflow-x: hidden;
   }
 }
@@ -631,7 +633,8 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
 
   body.cg-rail-drawer-enabled .home-category-rail.cg-rail-drawer-panel,
   body.cg-rail-drawer-enabled .guest-page-category-rail.cg-rail-drawer-panel,
-  body.cg-rail-drawer-enabled .rm-nav-tree-wrap.cg-rail-drawer-panel {
+  body.cg-rail-drawer-enabled .rm-nav-tree-wrap.cg-rail-drawer-panel,
+  body.cg-rail-drawer-enabled .rm-category-rail.cg-rail-drawer-panel {
     position: fixed;
     top: 0;
     left: 0;
@@ -668,14 +671,16 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
     overflow-y: visible;
   }
 
-  body.cg-rail-drawer-enabled .home-category-rail.cg-rail-drawer-panel .category-grid--rail {
+  body.cg-rail-drawer-enabled .home-category-rail.cg-rail-drawer-panel .category-grid--rail,
+  body.cg-rail-drawer-enabled .rm-category-rail.cg-rail-drawer-panel .category-grid--rail {
     flex-direction: column;
     flex-wrap: nowrap;
     overflow-x: hidden;
     overflow-y: visible;
   }
 
-  body.cg-rail-drawer-enabled .rm-nav-tree-wrap.cg-rail-drawer-panel {
+  body.cg-rail-drawer-enabled .rm-nav-tree-wrap.cg-rail-drawer-panel,
+  body.cg-rail-drawer-enabled .rm-category-rail.cg-rail-drawer-panel {
     border-radius: 0 1.25rem 1.25rem 0;
   }
 
