@@ -25,6 +25,24 @@ body.page-checkout .sub-main {
   padding-top: 0.5rem;
 }
 
+/* Guest layout uses flex row on sub-main for category rails; checkout has no rail */
+body.guest-site.page-checkout main.sub-main {
+  display: block;
+  width: 100%;
+}
+
+body.guest-site.page-checkout #checkoutMain {
+  width: 100%;
+  max-width: 100%;
+}
+
+body.guest-site.page-checkout .checkout-page {
+  width: 100%;
+  max-width: min(1480px, 96vw);
+  margin-inline: auto;
+  box-sizing: border-box;
+}
+
 /* Top bar: stepper + secure badge */
 .ck-topbar {
   display: flex;
