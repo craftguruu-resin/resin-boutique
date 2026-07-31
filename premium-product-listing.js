@@ -317,56 +317,6 @@
     return banner;
   }
 
-  function wireGridListToggle(gridEl, storageKey) {
-    if (!gridEl) return;
-    storageKey = storageKey || "plp-view-mode";
-    var toolbar = gridEl.closest(".plp-shell");
-    if (!toolbar) return;
-    var gridBtn = toolbar.querySelector('[data-plp-view="grid"]');
-    var listBtn = toolbar.querySelector('[data-plp-view="list"]');
-    if (!gridBtn || !listBtn) return;
-    if (gridBtn.dataset.plpViewWired === "1") return;
-    gridBtn.dataset.plpViewWired = "1";
-    listBtn.dataset.plpViewWired = "1";
-
-    function apply(mode) {
-      var isList = mode === "list";
-      gridEl.classList.toggle("plp-grid--list", isList);
-      gridBtn.classList.toggle("is-active", !isList);
-      listBtn.classList.toggle("is-active", isList);
-      gridBtn.setAttribute("aria-pressed", isList ? "false" : "true");
-      listBtn.setAttribute("aria-pressed", isList ? "true" : "false");
-      try {
-        localStorage.setItem(storageKey, mode);
-      } catch (_) {}
-    }
-
-    var saved = "grid";
-    try {
-      saved = localStorage.getItem(storageKey) || "grid";
-    } catch (_) {}
-    apply(saved === "list" ? "list" : "grid");
-
-    gridBtn.addEventListener("click", function () {
-      apply("grid");
-    });
-    listBtn.addEventListener("click", function () {
-      apply("list");
-    });
-  }
-
-  function wireFiltersToggle(toggleBtn, panelEl) {
-    if (!toggleBtn || !panelEl || toggleBtn.dataset.plpFilterWired === "1") return;
-    toggleBtn.dataset.plpFilterWired = "1";
-    toggleBtn.addEventListener("click", function () {
-      var open = panelEl.hasAttribute("hidden");
-      if (open) panelEl.removeAttribute("hidden");
-      else panelEl.setAttribute("hidden", "");
-      toggleBtn.classList.toggle("is-active", open);
-      toggleBtn.setAttribute("aria-expanded", open ? "true" : "false");
-    });
-  }
-
   function mountListingShell(opts) {
     opts = opts || {};
     var grid = opts.gridEl || (opts.gridId ? document.getElementById(opts.gridId) : null);
@@ -374,13 +324,6 @@
     grid.classList.add("plp-grid");
     if (opts.trustBar !== false) injectTrustBar(grid);
     if (opts.bulkBanner !== false) injectBulkBanner(grid);
-    wireGridListToggle(grid, opts.storageKey);
-    if (opts.filtersToggleId && opts.filtersPanelId) {
-      wireFiltersToggle(
-        document.getElementById(opts.filtersToggleId),
-        document.getElementById(opts.filtersPanelId)
-      );
-    }
   }
 
   window.addEventListener("resinWishlistChanged", function () {
@@ -401,8 +344,6 @@
     bulkBannerHtml: bulkBannerHtml,
     injectTrustBar: injectTrustBar,
     injectBulkBanner: injectBulkBanner,
-    wireGridListToggle: wireGridListToggle,
-    wireFiltersToggle: wireFiltersToggle,
     mountListingShell: mountListingShell,
   };
 })();

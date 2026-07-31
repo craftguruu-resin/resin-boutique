@@ -12,7 +12,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="catalog-filters.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
@@ -117,52 +116,6 @@
           <p class="flow-step flow-step--on-dark" id="categoryFlowStep" hidden></p>
           <p class="band-sub" id="categorySub" hidden></p>
         </header>
-        <div class="plp-toolbar" aria-label="Filter and sort products">
-          <div class="plp-toolbar__left">
-            <button type="button" class="plp-toolbar__btn" id="categoryFiltersToggle" aria-expanded="false" aria-controls="categoryFiltersPanel">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Filters
-            </button>
-            <div class="plp-toolbar__select-wrap">
-              <select id="categoryFilterView" class="plp-toolbar__select" aria-label="Filter by type">
-                <option value="all">All types</option>
-                <option value="photo">With product photo</option>
-              </select>
-            </div>
-          </div>
-          <div class="plp-toolbar__right">
-            <div class="plp-toolbar__select-wrap">
-              <span class="plp-toolbar__select-label">Sort by:</span>
-              <select id="categorySortSelect" class="plp-toolbar__select" aria-label="Sort products"></select>
-            </div>
-            <div class="plp-toolbar__view-toggle" role="group" aria-label="Grid or list view">
-              <button type="button" class="plp-toolbar__view-btn is-active" data-plp-view="grid" aria-pressed="true" aria-label="Grid view">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
-              </button>
-              <button type="button" class="plp-toolbar__view-btn" data-plp-view="list" aria-pressed="false" aria-label="List view">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="plp-filters-panel cg-filter-panel cg-filter-panel--light" id="categoryFiltersPanel" hidden aria-label="Advanced filters">
-          <div class="cg-filter-panel__inner">
-            <div class="category-toolbar__group cg-filter-panel__group--range">
-              <div class="cg-dual-range" id="categoryPriceDualWrap">
-                <span class="cg-dual-range__label">Price range (₹)</span>
-                <div class="cg-dual-range__slider">
-                  <div class="cg-dual-range__track" aria-hidden="true"></div>
-                  <input type="range" class="cg-dual-range__lo" id="categoryPriceRangeLo" aria-label="Minimum from-price" />
-                  <input type="range" class="cg-dual-range__hi" id="categoryPriceRangeHi" aria-label="Maximum from-price" />
-                </div>
-                <span class="cg-dual-range__value" id="categoryPriceRangeLabel">Any price</span>
-              </div>
-              <input type="hidden" id="categoryPriceMin" value="" />
-              <input type="hidden" id="categoryPriceMax" value="" />
-            </div>
-            <button type="button" class="category-toolbar__clear" id="categoryFilterClear">Clear filters</button>
-          </div>
-        </div>
         <div class="plp-grid product-grid" id="subcategoryGrid" hidden></div>
         <div class="plp-grid product-grid" id="productGrid"></div>
         <nav class="pagination" id="pagination" aria-label="Pagination"></nav>

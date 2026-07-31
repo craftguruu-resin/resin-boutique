@@ -217,18 +217,6 @@
       gridEl: grid,
       storageKey: "plp-view-raw-material",
     });
-    var plpSort = document.getElementById("rmPlpSortSelect");
-    var hubSort = document.getElementById("rmSortSelect");
-    if (plpSort && hubSort) {
-      plpSort.value = hubSort.value || DEFAULT_SORT;
-      plpSort.addEventListener("change", function () {
-        hubSort.value = plpSort.value;
-        render(lastMaterials);
-      });
-      hubSort.addEventListener("change", function () {
-        plpSort.value = hubSort.value;
-      });
-    }
   }
 
   function updateRmPlpHeader(par) {

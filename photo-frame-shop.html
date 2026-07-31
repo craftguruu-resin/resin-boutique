@@ -125,56 +125,7 @@
             <nav class="category-grid category-grid--rail" id="rmNavTree" aria-label="Photo frame categories"></nav>
           </aside>
           <div class="rm-shop-layout__main">
-            <div id="rm-shop">
-              <div id="rm-toolbar" class="category-toolbar rm-filter-toolbar" aria-label="Filter Shop by category">
-                <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmFilterBase">Base category</label>
-                  <select id="rmFilterBase" class="category-toolbar__select">
-                    <option value="">All categories</option>
-                  </select>
-                </div>
-                <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmFilterSub">Subcategory</label>
-                  <select id="rmFilterSub" class="category-toolbar__select" disabled>
-                    <option value="">All</option>
-                  </select>
-                </div>
-                <div class="category-toolbar__group category-toolbar__group--grow">
-                  <label class="category-toolbar__label" for="rmFilterSearch">Search name or SKU</label>
-                  <input type="search" id="rmFilterSearch" class="category-toolbar__search" placeholder="Search, then Apply" autocomplete="off" />
-                </div>
-                <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmFilterPriceMax">Max “from” price</label>
-                  <select id="rmFilterPriceMax" class="category-toolbar__select">
-                    <option value="">Any price</option>
-                    <option value="35">≤ ₹35</option>
-                    <option value="50">≤ ₹50</option>
-                    <option value="75">≤ ₹75</option>
-                    <option value="100">≤ ₹100</option>
-                    <option value="150">≤ ₹150</option>
-                    <option value="250">≤ ₹250</option>
-                    <option value="500">≤ ₹500</option>
-                    <option value="1000">≤ ₹1,000</option>
-                  </select>
-                </div>
-                <div class="category-toolbar__group">
-                  <label class="category-toolbar__label" for="rmSortSelect">Sort</label>
-                  <select id="rmSortSelect" class="category-toolbar__select">
-                    <option value="name-asc">Name · A → Z</option>
-                    <option value="name-desc">Name · Z → A</option>
-                    <option value="price-asc">Price · low → high</option>
-                    <option value="price-desc">Price · high → low</option>
-                  </select>
-                </div>
-                <div class="category-toolbar__group category-toolbar__group--actions">
-                  <label class="category-toolbar__label" for="rmFilterApply">Shop by category</label>
-                  <div class="category-toolbar__btn-row">
-                    <button type="button" class="category-toolbar__btn" id="rmFilterApply">Apply</button>
-                    <button type="button" class="category-toolbar__btn category-toolbar__btn--ghost" id="rmFilterClear">Reset</button>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <div id="rm-shop"></div>
             <section class="rm-cat-hub" aria-labelledby="rmCatHubHeading">
               <div class="rm-cat-hub__head">
                 <h2 id="rmCatHubHeading" class="rm-best-sellers__title">Shop by category</h2>

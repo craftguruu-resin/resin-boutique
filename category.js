@@ -27,8 +27,6 @@
     PLP.mountListingShell({
       gridEl: els.productGrid,
       storageKey: "plp-view-category",
-      filtersToggleId: "categoryFiltersToggle",
-      filtersPanelId: "categoryFiltersPanel",
     });
   }
 
@@ -45,9 +43,14 @@
     return document.getElementById("globalFindPriceCap");
   }
 
-  /** On category page, primary sort control is the in-page toolbar (falls back to header popover). */
+  /** On category page, sort is internal only (header search remains the user-facing filter). */
   function categorySortEl() {
-    return document.getElementById("categorySortSelect") || gfSort();
+    return null;
+  }
+
+  function effectiveSort() {
+    var allowed = { relevance: 1, "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 };
+    return allowed[urlSort] ? urlSort : DEFAULT_SORT;
   }
 
   function categoryPriceMinEl() {
@@ -90,8 +93,8 @@
     return bits.join(" ").replace(/\s+/g, " ");
   }
 
-  /** Default when no `sort` query param — stable, not reshuffled on background catalog merges. */
-  var DEFAULT_SORT = "name-asc";
+  /** Default when no visible sort control — stable popularity order. */
+  var DEFAULT_SORT = "relevance";
 
   var params = new URLSearchParams(window.location.search);
   var cat = D.normalizeCategoryId(params.get("cat"));
@@ -213,23 +216,16 @@
 
   function syncUrl() {
     var qEl = gfQuery();
-    var sEl = categorySortEl();
-    var minEl = categoryPriceMinEl();
-    var maxEl = categoryPriceMaxEl();
-    if (!qEl || !sEl) return;
+    if (!qEl) return;
     var q = qEl.value.trim();
-    var sort = sEl.value || DEFAULT_SORT;
-    var minp = minEl && minEl.value != null ? String(minEl.value).trim() : "";
-    var maxp = maxEl && maxEl.value != null ? String(maxEl.value).trim() : "";
+    var sort = effectiveSort();
     var u = new URL(window.location.href);
     if (q) u.searchParams.set("q", q);
     else u.searchParams.delete("q");
     if (sort && sort !== DEFAULT_SORT) u.searchParams.set("sort", sort);
     else u.searchParams.delete("sort");
-    if (minp) u.searchParams.set("minp", minp);
-    else u.searchParams.delete("minp");
-    if (maxp) u.searchParams.set("maxp", maxp);
-    else u.searchParams.delete("maxp");
+    u.searchParams.delete("minp");
+    u.searchParams.delete("maxp");
     if (page > 1) u.searchParams.set("page", String(page));
     else u.searchParams.delete("page");
     u.searchParams.set("cat", cat);
@@ -241,34 +237,13 @@
 
   function getFilteredSortedItems() {
     var qEl = gfQuery();
-    var sEl = categorySortEl();
     var q = (qEl && qEl.value) || "";
     q = String(q).trim();
-    var sort = (sEl && sEl.value) || DEFAULT_SORT;
+    var sort = effectiveSort();
     var arr = liveCatalogList().slice();
     if (q) {
       arr = arr.filter(function (p) {
         return partialTokenMatch(productSearchHaystack(p), q);
-      });
-    }
-    var fv = categoryFilterViewEl();
-    if (fv && fv.value === "photo") {
-      arr = arr.filter(function (p) {
-        return !!(p && String(p.image || "").trim());
-      });
-    }
-    var minEl = categoryPriceMinEl();
-    var maxEl = categoryPriceMaxEl();
-    var lo = minEl && String(minEl.value || "").trim() !== "" ? parseFloat(minEl.value, 10) : NaN;
-    var hi = maxEl && String(maxEl.value || "").trim() !== "" ? parseFloat(maxEl.value, 10) : NaN;
-    if (Number.isFinite(lo)) {
-      arr = arr.filter(function (p) {
-        return minPrice(p) >= lo;
-      });
-    }
-    if (Number.isFinite(hi)) {
-      arr = arr.filter(function (p) {
-        return minPrice(p) <= hi;
       });
     }
     if (sort === "name-asc") {
@@ -312,18 +287,12 @@
   function updateCatalogHint(result, q) {
     var h = gfHint();
     if (!h) return;
-    var minEl = categoryPriceMinEl();
-    var maxEl = categoryPriceMaxEl();
-    var rangeOn =
-      (minEl && String(minEl.value || "").trim() !== "") || (maxEl && String(maxEl.value || "").trim() !== "");
-    var viewOn = !!(categoryFilterViewEl() && categoryFilterViewEl().value === "photo");
     var qOn = !!(q && String(q).trim());
     var totalInCat = liveCatalogList().length;
-    if (!qOn && !rangeOn && !viewOn && result.total === totalInCat) {
-      h.textContent =
-        "Showing all " + result.total + " piece(s). Use search in the header, or sort and price range above.";
+    if (!qOn && result.total === totalInCat) {
+      h.textContent = "Showing all " + result.total + " piece(s). Use search in the header to narrow results.";
     } else if (result.total === 0) {
-      h.textContent = "No match — try different words, adjust the price range, or tap Clear filters.";
+      h.textContent = "No match — try different words in the header search.";
     } else {
       h.textContent = "Showing " + result.total + " of " + totalInCat + " piece(s).";
     }
@@ -459,7 +428,7 @@
 
     if (result.items.length === 0) {
       els.productGrid.innerHTML =
-        '<p class="band-empty" style="grid-column:1/-1">No products match your filters. Clear search or change sort.</p>';
+        '<p class="band-empty" style="grid-column:1/-1">No products match your search. Try different words in the header.</p>';
       if (els.pager) els.pager.innerHTML = "";
       return;
     }

@@ -12,7 +12,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="catalog-filters.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
@@ -204,41 +203,6 @@
           </div>
           <a href="#categories" class="featured-collections-ghost-btn" aria-label="View all categories">View all categories →</a>
         </header>
-        <div class="cg-filter-panel cg-filter-panel--light home-featured-toolbar" id="homeFeaturedToolbar" aria-label="Filter and sort featured lines">
-          <div class="cg-filter-panel__glow" aria-hidden="true"></div>
-          <div class="cg-filter-panel__inner">
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="homeFeaturedView">Filter</label>
-              <select id="homeFeaturedView" class="category-toolbar__select">
-                <option value="all">All lines</option>
-                <option value="photo">With preview photo</option>
-              </select>
-            </div>
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="homeFeaturedSort">Sort lines</label>
-              <select id="homeFeaturedSort" class="category-toolbar__select">
-                <option value="name-asc">Name · A → Z</option>
-                <option value="name-desc">Name · Z → A</option>
-                <option value="price-asc">From price · low → high</option>
-                <option value="price-desc">From price · high → low</option>
-              </select>
-            </div>
-            <div class="category-toolbar__group cg-filter-panel__group--range">
-              <div class="cg-dual-range" id="homePriceDualWrap">
-                <span class="cg-dual-range__label">“From” price (₹)</span>
-                <div class="cg-dual-range__slider">
-                  <div class="cg-dual-range__track" aria-hidden="true"></div>
-                  <input type="range" class="cg-dual-range__lo" id="homePriceRangeLo" aria-label="Minimum from-price for a line" />
-                  <input type="range" class="cg-dual-range__hi" id="homePriceRangeHi" aria-label="Maximum from-price for a line" />
-                </div>
-                <span class="cg-dual-range__value" id="homePriceRangeLabel">Any price</span>
-              </div>
-              <input type="hidden" id="homePriceMin" value="" />
-              <input type="hidden" id="homePriceMax" value="" />
-            </div>
-            <button type="button" class="category-toolbar__clear" id="homeFeaturedFilterClear">Clear filters</button>
-          </div>
-        </div>
         <div class="product-grid featured-collections-grid" id="productGrid"></div>
         <div class="featured-collections-trust" aria-label="Why customers trust Craftguru">
           <div class="featured-collections-trust__item">

@@ -6,9 +6,6 @@
   if (!D || !CART || !D.listProductsAll) return;
 
   var DEFAULT_SORT = "name-asc";
-  var rgControlsWired = false;
-  var rgDualApi = null;
-  var rgDualWired = false;
   var PLP = window.CraftguruProductListing;
   var rgPlpMounted = false;
 
@@ -20,8 +17,6 @@
     PLP.mountListingShell({
       gridEl: grid,
       storageKey: "plp-view-return-gifts",
-      filtersToggleId: "rgFiltersToggle",
-      filtersPanelId: "rgFiltersPanel",
     });
   }
 
@@ -81,59 +76,11 @@
     return minP > 0 ? "From " + CART.formatMoney(minP) : "";
   }
 
-  function sortSelect() {
-    return document.getElementById("rgSortSelect");
-  }
-
-  function filterViewEl() {
-    return document.getElementById("rgFilterView");
-  }
-
-  function allowedSort(s) {
-    return { "name-asc": 1, "name-desc": 1, "price-asc": 1, "price-desc": 1 }[s] ? s : DEFAULT_SORT;
-  }
-
-  function syncReturnGiftsUrl() {
-    var sel = sortSelect();
-    if (!sel) return;
-    try {
-      var u = new URL(window.location.href);
-      var sort = allowedSort(sel.value);
-      if (sort !== DEFAULT_SORT) u.searchParams.set("sort", sort);
-      else u.searchParams.delete("sort");
-      var minEl = document.getElementById("rgPriceMin");
-      var maxEl = document.getElementById("rgPriceMax");
-      var lo = minEl && String(minEl.value || "").trim();
-      var hi = maxEl && String(maxEl.value || "").trim();
-      if (lo && /^[0-9]+(\.[0-9]+)?$/.test(lo)) u.searchParams.set("minp", lo);
-      else u.searchParams.delete("minp");
-      if (hi && /^[0-9]+(\.[0-9]+)?$/.test(hi)) u.searchParams.set("maxp", hi);
-      else u.searchParams.delete("maxp");
-      history.replaceState({}, "", u.pathname + (u.search ? "?" + u.searchParams.toString() : ""));
-    } catch (_) {}
-  }
-
   function sortItems(items) {
-    var sel = sortSelect();
-    var sort = sel ? allowedSort(sel.value) : DEFAULT_SORT;
     var arr = items.slice();
-    if (sort === "name-desc") {
-      arr.sort(function (a, b) {
-        return String(b.name || "").localeCompare(String(a.name || ""), undefined, { sensitivity: "base" });
-      });
-    } else if (sort === "price-asc") {
-      arr.sort(function (a, b) {
-        return minPrice(a) - minPrice(b);
-      });
-    } else if (sort === "price-desc") {
-      arr.sort(function (a, b) {
-        return minPrice(b) - minPrice(a);
-      });
-    } else {
-      arr.sort(function (a, b) {
-        return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
-      });
-    }
+    arr.sort(function (a, b) {
+      return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
+    });
     return arr;
   }
 
@@ -149,91 +96,6 @@
       });
     });
     return out;
-  }
-
-  function filterByPriceAndView(items) {
-    var arr = items.slice();
-    var fv = filterViewEl();
-    if (fv && fv.value === "photo") {
-      arr = arr.filter(function (p) {
-        return !!(p && String(p.image || "").trim());
-      });
-    }
-    var minEl = document.getElementById("rgPriceMin");
-    var maxEl = document.getElementById("rgPriceMax");
-    var lo = minEl && String(minEl.value || "").trim() !== "" ? parseFloat(minEl.value, 10) : NaN;
-    var hi = maxEl && String(maxEl.value || "").trim() !== "" ? parseFloat(maxEl.value, 10) : NaN;
-    if (Number.isFinite(lo)) {
-      arr = arr.filter(function (p) {
-        return minPrice(p) >= lo;
-      });
-    }
-    if (Number.isFinite(hi)) {
-      arr = arr.filter(function (p) {
-        return minPrice(p) <= hi;
-      });
-    }
-    return arr;
-  }
-
-  function wireControlsOnce() {
-    if (rgControlsWired) return;
-    var sel = sortSelect();
-    if (!sel) return;
-    rgControlsWired = true;
-    var params = new URLSearchParams(window.location.search);
-    sel.value = allowedSort(params.get("sort") || DEFAULT_SORT);
-    sel.addEventListener("change", function () {
-      syncReturnGiftsUrl();
-      paint();
-    });
-    var fv = filterViewEl();
-    if (fv) {
-      fv.addEventListener("change", function () {
-        paint();
-        syncReturnGiftsUrl();
-      });
-    }
-    var minEl = document.getElementById("rgPriceMin");
-    var maxEl = document.getElementById("rgPriceMax");
-    var numOk = function (s) {
-      return /^[0-9]+(\.[0-9]+)?$/.test(String(s || "").trim());
-    };
-    if (minEl && numOk(params.get("minp"))) minEl.value = params.get("minp").trim();
-    if (maxEl && numOk(params.get("maxp"))) maxEl.value = params.get("maxp").trim();
-
-    if (window.CraftguruCatalogFilterUi && !rgDualWired) {
-      rgDualWired = true;
-      rgDualApi = window.CraftguruCatalogFilterUi.wireDualPriceRange({
-        rootId: "rgFiltersPanel",
-        rangeMinId: "rgPriceRangeLo",
-        rangeMaxId: "rgPriceRangeHi",
-        inputMinId: "rgPriceMin",
-        inputMaxId: "rgPriceMax",
-        labelId: "rgPriceRangeLabel",
-        absMax: 8000,
-        step: 25,
-        onCommit: function () {
-          paint();
-          syncReturnGiftsUrl();
-        },
-      });
-    } else if (rgDualApi && rgDualApi.syncFromInputs) {
-      rgDualApi.syncFromInputs();
-    }
-
-    var clr = document.getElementById("rgFilterClear");
-    if (clr) {
-      clr.addEventListener("click", function () {
-        if (minEl) minEl.value = "";
-        if (maxEl) maxEl.value = "";
-        if (rgDualApi && typeof rgDualApi.reset === "function") rgDualApi.reset();
-        if (fv) fv.value = "all";
-        sel.value = DEFAULT_SORT;
-        paint();
-        syncReturnGiftsUrl();
-      });
-    }
   }
 
   function filterBySearch(items) {
@@ -259,19 +121,16 @@
 
   function paint() {
     wireReturnGiftsSearchOnce();
-    wireControlsOnce();
     mountRgPlpOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
-    var isList = grid.classList.contains("plp-grid--list");
-    grid.className = "plp-grid product-grid" + (isList ? " plp-grid--list" : "");
+    grid.className = "plp-grid product-grid";
     var base = collectReturnGifts();
-    var items = sortItems(filterByPriceAndView(filterBySearch(base)));
+    var items = sortItems(filterBySearch(base));
     grid.innerHTML = "";
     if (!items.length) {
       grid.innerHTML =
-        '<p class="band-empty" style="grid-column:1/-1">No corporate gifting pieces match these filters. Try clearing filters or changing the price range.</p>';
-      syncReturnGiftsUrl();
+        '<p class="band-empty" style="grid-column:1/-1">No corporate gifting pieces match your search. Try different words in the header.</p>';
       return;
     }
     items.forEach(function (p, i) {
@@ -319,7 +178,6 @@
       grid.appendChild(card);
     });
     if (PLP && PLP.wireAllCardWishlists) PLP.wireAllCardWishlists(grid);
-    syncReturnGiftsUrl();
   }
 
   window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
