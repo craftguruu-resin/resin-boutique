@@ -212,7 +212,9 @@ body.guest-site .guest-page-category-rail {
   top: 5.25rem;
   align-self: flex-start;
   z-index: 2;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
   /* Let clicks reach the main column when the rail overlaps wide cards (Browse by line). */
   pointer-events: none;
 }
@@ -237,6 +239,8 @@ body.guest-site:not(.page-home) .guest-page-category-rail .category-grid--rail {
   flex-wrap: nowrap;
   align-items: stretch;
   gap: 0.42rem;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail {
@@ -251,6 +255,14 @@ body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail {
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.05);
   font-size: 0.8rem;
   font-weight: 600;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+body.guest-site .guest-page-category-rail .category-pill__label {
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail:hover,

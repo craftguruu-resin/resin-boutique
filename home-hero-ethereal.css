@@ -128,6 +128,8 @@ body.page-home .home-category-rail--split .category-grid--rail {
   flex-wrap: nowrap;
   align-items: stretch;
   gap: 0.15rem;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 body.page-home .category-grid--rail .category-pill,
@@ -269,7 +271,8 @@ body.page-home .category-grid--rail .category-pill.is-active {
   body.page-home.cg-rail-drawer-enabled .home-shop-nav.home-category-rail--split.cg-rail-drawer-panel .category-grid--rail {
     flex-direction: column;
     flex-wrap: nowrap;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
     gap: 0.15rem;
   }
 

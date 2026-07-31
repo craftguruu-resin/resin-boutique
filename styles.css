@@ -7035,8 +7035,10 @@ a.home-auth-btn {
 
   .home-category-rail--split .category-grid--rail {
     flex: 1 1 auto;
+    overflow-x: hidden;
     overflow-y: auto;
     min-height: 0;
+    min-width: 0;
     padding-right: 0.15rem;
     scrollbar-width: thin;
   }

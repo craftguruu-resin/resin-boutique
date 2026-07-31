@@ -30,6 +30,25 @@ body.guest-site .sub-main {
 /* FABs are position:fixed — avoid body padding-bottom (creates blank gap below footer). */
 body.guest-site {
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
+/* Category sidebar rails — vertical scroll only on desktop / drawer panels */
+@media (min-width: 901px) {
+  body.guest-site .guest-page-category-rail,
+  body.guest-site .home-category-rail {
+    overflow-x: hidden;
+  }
+
+  body.guest-site .guest-page-category-rail .category-grid--rail,
+  body.guest-site .home-category-rail .category-grid--rail {
+    overflow-x: hidden;
+  }
+}
+
+body.cg-rail-drawer-enabled .cg-rail-drawer-panel {
+  overflow-x: hidden;
 }
 
 /* Keep footer link columns clear of the stacked WA/IG FABs (non-home guest pages). */
@@ -610,6 +629,7 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
     margin: 0;
     transform: translateX(-108%);
     transition: transform 0.34s cubic-bezier(0.22, 1, 0.36, 1);
+    overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
@@ -629,14 +649,15 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
   body.cg-rail-drawer-enabled .guest-page-category-rail.cg-rail-drawer-panel .category-grid--rail {
     flex-direction: column;
     flex-wrap: nowrap;
-    overflow-x: visible;
+    overflow-x: hidden;
     overflow-y: visible;
   }
 
   body.cg-rail-drawer-enabled .home-category-rail.cg-rail-drawer-panel .category-grid--rail {
     flex-direction: column;
     flex-wrap: nowrap;
-    overflow: visible;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
 
   body.cg-rail-drawer-enabled .rm-nav-tree-wrap.cg-rail-drawer-panel {

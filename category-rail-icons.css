@@ -36,6 +36,8 @@
   flex-wrap: nowrap;
   align-items: stretch;
   gap: 0.15rem;
+  overflow-x: hidden;
+  min-width: 0;
 }
 
 .home-category-rail--icons .category-pill,
