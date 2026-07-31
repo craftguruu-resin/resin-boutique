@@ -97,9 +97,9 @@
         return;
       }
       img.removeEventListener("error", onPreviewImgError);
-      var media = img.closest(".cg-category-card__media, .featured-cat-card__media");
+      var media = img.closest(".featured-collection-card__media, .featured-cat-card__media");
       if (media) {
-        media.classList.add("cg-category-card__media-empty", "featured-cat-card__media--empty");
+        media.classList.add("featured-collection-card__media-empty", "featured-cat-card__media--empty");
         img.remove();
       }
     });
@@ -580,7 +580,7 @@
       });
     }
     if (els.productGrid) {
-      var cards = els.productGrid.querySelectorAll(".cg-category-card");
+      var cards = els.productGrid.querySelectorAll(".featured-collection-card");
       var n = 0;
       var total = cards.length;
       cards.forEach(function (card) {
@@ -646,11 +646,11 @@
   function renderFeatured() {
     if (!els.productGrid) return;
     wireHomeFiltersOnce();
-    els.productGrid.className = "cg-category-grid";
+    els.productGrid.className = "featured-collections-grid";
     els.productGrid.innerHTML = "";
     if (els.filterLabel && !els.filterLabel.textContent.trim()) {
       els.filterLabel.textContent =
-        "Same card layout as the main Craftguru storefront — open a world of creativity.";
+        "Explore our most loved handcrafted resin creations, made to add beauty to every moment.";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
@@ -674,21 +674,58 @@
         bits.push(String(minFrom));
         if (CART.formatMoney) bits.push(CART.formatMoney(minFrom).toLowerCase().replace(/\s/g, ""));
       }
-      var card = window.CraftguruCategoryCard.buildCategoryCard({
-        href: catHref,
-        title: cat.label,
-        subtitle: countLabel,
-        ctaText: "EXPLORE COLLECTION →",
-        imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
-        imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback) || "contain",
-        imgFallback: imgFallback,
-        onImgError: wireCategoryPreviewImgOnerror,
-        searchText: bits.join(" "),
-        minPrice: minFrom != null ? String(minFrom) : "",
-        hasPreview: hasPreview,
-        stagger: i,
-        ariaLabel: "Explore " + cat.label + " collection",
-      });
+      var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
+      var card;
+      if (buildCard) {
+        card = buildCard({
+          href: catHref,
+          title: cat.label,
+          subtitle: countLabel,
+          ctaText: "Explore collection →",
+          imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
+          imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback),
+          imgFallback: imgFallback,
+          onImgError: wireCategoryPreviewImgOnerror,
+          searchText: bits.join(" "),
+          minPrice: minFrom != null ? String(minFrom) : "",
+          hasPreview: hasPreview,
+          stagger: i,
+          ariaLabel: "Explore " + cat.label + " collection",
+        });
+      } else {
+        card = document.createElement("article");
+        card.className = "featured-collection-card is-inview";
+        card.style.setProperty("--stagger", String(i));
+        card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
+        card.setAttribute("data-search-text", bits.join(" "));
+        card.setAttribute("data-has-preview", hasPreview ? "1" : "0");
+        card.innerHTML =
+          '<a class="featured-collection-card__hit" href="' +
+          catHref +
+          '" aria-label="Explore ' +
+          escapeAttr(cat.label) +
+          ' collection">' +
+          '<div class="featured-collection-card__visual">' +
+          '<div class="featured-collection-card__media">' +
+          (imgRel || imgFallback
+            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" loading="lazy" decoding="async" />'
+            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
+          "</div>" +
+          '<div class="featured-collection-card__panel">' +
+          '<h3 class="featured-collection-card__name">' +
+          escapeHtml(cat.label) +
+          "</h3>" +
+          '<p class="featured-collection-card__count">' +
+          countLabel +
+          "</p>" +
+          '<span class="featured-collection-card__cta">Explore collection →</span>' +
+          "</div></div></a>";
+        if (imgRel && imgFallback) {
+          wireCategoryPreviewImgOnerror(card.querySelector(".featured-collection-card__media img"), imgFallback);
+        }
+        var previewImgFit = card.querySelector(".featured-collection-card__media img");
+        if (previewImgFit) applyImageFitToImg(previewImgFit, categoryPreviewFit(cat.id, imgRel || imgFallback));
+      }
       els.productGrid.appendChild(card);
     });
     if (!cats.length && D.listAllListedProducts) {
@@ -1131,11 +1168,11 @@
 
   function patchFeaturedCardPrices() {
     if (!els.productGrid) return;
-    var cards = els.productGrid.querySelectorAll(".cg-category-card[data-min-price]");
+    var cards = els.productGrid.querySelectorAll(".featured-collection-card[data-min-price]");
     if (!cards.length) return false;
     cards.forEach(function (card) {
       var catId = "";
-      var link = card.querySelector(".cg-category-card__link");
+      var link = card.querySelector(".featured-collection-card__hit");
       if (link && link.getAttribute("href")) {
         try {
           var u = new URL(link.href, window.location.href);

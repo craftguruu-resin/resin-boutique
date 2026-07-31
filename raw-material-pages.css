@@ -1459,7 +1459,29 @@ a.rm-nav-tree__title-link:focus-visible {
   white-space: nowrap;
 }
 
-/* Legacy hub card overrides removed — glass theme in cg-category-card.css */
+.rm-cat-hub .featured-collection-card__media {
+  aspect-ratio: 4 / 3;
+}
+
+/* Premium micro-interactions on category cards */
+.rm-cat-hub .featured-collection-card {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.rm-cat-hub .featured-collection-card:hover {
+  transform: translateY(-4px);
+}
+
+.rm-cat-hub .featured-collection-card:hover .featured-collection-card__media img {
+  transform: scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-card-shop,
+  .rm-cat-hub .featured-collection-card {
+    transition: none;
+  }
+}
 
 @media (max-width: 900px) {
   .rm-shop-layout {
@@ -2223,28 +2245,33 @@ body.rm-theme--photo-frame .category-toolbar__btn--ghost {
   border: 1px solid rgba(44, 95, 120, 0.2);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub__head .cg-category-section__sub {
+body.rm-theme--photo-frame .rm-cat-hub__head .rm-best-sellers__sub {
   color: var(--pf-ink-muted);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__title {
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card {
+  transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card:hover {
+  transform: translateY(-4px);
+}
+
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__name {
   color: var(--pf-ink);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__count {
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__count {
   color: var(--pf-ink-muted);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__cta {
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__cta {
   color: var(--pf-teal-deep);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .cg-category-card:hover .cg-category-card__cta {
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__cta:hover,
+body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card:hover .featured-collection-card__cta {
   color: var(--pf-teal);
-}
-
-body.rm-theme--photo-frame .rm-cat-hub .cg-category-section__title {
-  color: var(--pf-teal-deep);
 }
 
 body.rm-theme--photo-frame .band-shop {
