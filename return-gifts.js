@@ -263,7 +263,8 @@
     mountRgPlpOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
-    grid.className = "plp-grid featured-collections-grid";
+    var isList = grid.classList.contains("plp-grid--list");
+    grid.className = "plp-grid product-grid" + (isList ? " plp-grid--list" : "");
     var base = collectReturnGifts();
     var items = sortItems(filterByPriceAndView(filterBySearch(base)));
     grid.innerHTML = "";

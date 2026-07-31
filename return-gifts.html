@@ -20,12 +20,11 @@
   <link rel="stylesheet" href="raw-material-pages.css" />
   <link rel="stylesheet" href="hero-exact-shared.css" />
   <link rel="stylesheet" href="corporate-gifting-hero-exact.css" />
-  <link rel="stylesheet" href="home-featured-collections.css" />
   <link rel="stylesheet" href="premium-product-listing.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <link rel="stylesheet" href="layout-responsive.css" />
 </head>
-<body class="subpage page-category rm-page-wide rm-theme--corporate-gifting">
+<body class="subpage page-category rm-theme--corporate-gifting">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -142,58 +141,7 @@
         </div>
         <div id="rg-shop">
         <div class="plp-shell" id="rgPlpShell">
-        <div class="plp-toolbar" aria-label="Filter and sort corporate gifting">
-          <div class="plp-toolbar__left">
-            <button type="button" class="plp-toolbar__btn" id="rgFiltersToggle" aria-expanded="false" aria-controls="rgFiltersPanel">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              Filters
-            </button>
-            <div class="plp-toolbar__select-wrap">
-              <select id="rgFilterView" class="plp-toolbar__select" aria-label="Filter by type">
-                <option value="all">All types</option>
-                <option value="photo">With product photo</option>
-              </select>
-            </div>
-          </div>
-          <div class="plp-toolbar__right">
-            <div class="plp-toolbar__select-wrap">
-              <span class="plp-toolbar__select-label">Sort by:</span>
-              <select id="rgSortSelect" class="plp-toolbar__select" aria-label="Sort products">
-                <option value="name-asc">Name · A → Z</option>
-                <option value="name-desc">Name · Z → A</option>
-                <option value="price-asc">From price · low → high</option>
-                <option value="price-desc">From price · high → low</option>
-              </select>
-            </div>
-            <div class="plp-toolbar__view-toggle" role="group" aria-label="Grid or list view">
-              <button type="button" class="plp-toolbar__view-btn is-active" data-plp-view="grid" aria-pressed="true" aria-label="Grid view">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
-              </button>
-              <button type="button" class="plp-toolbar__view-btn" data-plp-view="list" aria-pressed="false" aria-label="List view">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-              </button>
-            </div>
-          </div>
-        </div>
-        <div class="plp-filters-panel cg-filter-panel cg-filter-panel--light" id="rgFiltersPanel" hidden aria-label="Advanced filters">
-          <div class="cg-filter-panel__inner">
-            <div class="category-toolbar__group cg-filter-panel__group--range">
-              <div class="cg-dual-range" id="rgPriceDualWrap">
-                <span class="cg-dual-range__label">Price range (₹)</span>
-                <div class="cg-dual-range__slider">
-                  <div class="cg-dual-range__track" aria-hidden="true"></div>
-                  <input type="range" class="cg-dual-range__lo" id="rgPriceRangeLo" aria-label="Minimum from-price" />
-                  <input type="range" class="cg-dual-range__hi" id="rgPriceRangeHi" aria-label="Maximum from-price" />
-                </div>
-                <span class="cg-dual-range__value" id="rgPriceRangeLabel">Any price</span>
-              </div>
-              <input type="hidden" id="rgPriceMin" value="" />
-              <input type="hidden" id="rgPriceMax" value="" />
-            </div>
-            <button type="button" class="category-toolbar__clear" id="rgFilterClear">Clear filters</button>
-          </div>
-        </div>
-        <div class="plp-grid featured-collections-grid" id="rgGrid"></div>
+        <div class="plp-grid product-grid" id="rgGrid"></div>
         </div>
         </div>
       </div>

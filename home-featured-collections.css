@@ -416,8 +416,7 @@ body.page-home .band-shop-inner--home {
   overflow-x: clip;
 }
 
-.rm-cat-hub,
-#rgGrid.featured-collections-grid {
+.rm-cat-hub {
   min-width: 0;
   max-width: 100%;
   overflow-x: clip;

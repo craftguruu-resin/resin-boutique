@@ -306,8 +306,7 @@ body:not(.vendor-saas) {
 /* ── Product grid ── */
 .plp-grid,
 .plp-grid.product-grid,
-.plp-grid.rm-grid-cards,
-.plp-grid.featured-collections-grid {
+.plp-grid.rm-grid-cards {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1.15rem;
