@@ -20,6 +20,8 @@
 
   var removeDelegationDone = false;
   var formBound = false;
+  var checkoutPhase = "shipping"; /* shipping | payment */
+  var googlePlacesReady = false;
 
   var els = {
     lines: document.getElementById("checkoutLines"),
@@ -34,11 +36,7 @@
     orderId: document.getElementById("orderIdDisplay"),
     guestName: document.getElementById("guestName"),
     snipsGrid: document.getElementById("checkoutSnipsGrid"),
-    stepReview: document.getElementById("checkoutStepReview"),
     stepFill: document.getElementById("checkoutStepFill"),
-    goDetails: document.getElementById("checkoutGoDetails"),
-    backReview: document.getElementById("checkoutBackReview"),
-    stepLabel: document.getElementById("checkoutStepLabel"),
     payModal: document.getElementById("checkoutPayModal"),
     payModalBackdrop: document.getElementById("checkoutPayModalBackdrop"),
     payModalClose: document.getElementById("checkoutPayModalClose"),
@@ -55,7 +53,14 @@
     paymentMethodRadios: document.querySelectorAll('input[name="checkoutPaymentMethod"]'),
     paymentCancelBtn: document.getElementById("checkoutPaymentCancelBtn"),
     guestPhone: document.getElementById("guestPhone"),
-    guestName: document.getElementById("guestName"),
+    summaryCta: document.getElementById("checkoutSummaryCtaText"),
+    summaryHint: document.getElementById("checkoutSummaryHint"),
+    savingsBanner: document.getElementById("checkoutSavingsBanner"),
+    subtotalLabel: document.getElementById("valSubtotalLabel"),
+    sectionPayment: document.getElementById("ckSectionPayment"),
+    addrFormFields: document.getElementById("checkoutAddrFormFields"),
+    addNewAddrBox: document.getElementById("checkoutAddNewAddrBox"),
+    savedAddrCards: document.getElementById("checkoutSavedAddrCards"),
   };
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
@@ -142,6 +147,348 @@
     });
   }
 
+  function addrTypeLabel(addr) {
+    var at = String((addr && addr.addressType) || "home").toLowerCase();
+    if (at === "work") return "Work";
+    return "Home";
+  }
+
+  function formatAddrCardBody(addr) {
+    return [addr.addrLine1, addr.addrLine2, addr.city, addr.state, addr.zip].filter(Boolean).join(", ");
+  }
+
+  function getSavedAddressesList() {
+    var fsEl = document.getElementById("checkoutSavedAddrFieldset");
+    var raw = fsEl && fsEl.dataset.addressesJson;
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) || [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  function renderSavedAddressCards(addresses) {
+    var container = els.savedAddrCards;
+    if (!container) return;
+    var list = addresses || [];
+    container.innerHTML = "";
+    if (!list.length) {
+      container.hidden = true;
+      return;
+    }
+    container.hidden = false;
+    list.forEach(function (a, i) {
+      var label = document.createElement("label");
+      label.className = "ck-addr-card";
+      var tag = addrTypeLabel(a);
+      label.innerHTML =
+        '<input type="radio" name="checkoutSavedAddrPick" value="' +
+        i +
+        '" />' +
+        '<span class="ck-addr-card__tag">' +
+        (tag === "Work" ? "💼" : "🏠") +
+        " " +
+        escapeHtml(tag) +
+        "</span>" +
+        '<div class="ck-addr-card__body">' +
+        escapeHtml(formatAddrCardBody(a)) +
+        "</div>" +
+        '<button type="button" class="ck-addr-card__edit" data-addr-edit="' +
+        i +
+        '">Edit</button>';
+      container.appendChild(label);
+    });
+    var first = container.querySelector('input[name="checkoutSavedAddrPick"]');
+    if (first) first.checked = true;
+    syncAddrPickUi();
+  }
+
+  function syncAddrPickUi() {
+    var useNew = !document.querySelector('input[name="checkoutSavedAddrPick"]:checked');
+    var modeNew = document.getElementById("checkoutAddrModeNew");
+    var modeSaved = document.getElementById("checkoutAddrModeSaved");
+    if (modeNew) modeNew.checked = useNew;
+    if (modeSaved) modeSaved.checked = !useNew;
+    if (els.addNewAddrBox) {
+      els.addNewAddrBox.classList.toggle("is-selected", useNew);
+    }
+    if (els.addrFormFields) {
+      if (useNew) {
+        els.addrFormFields.removeAttribute("hidden");
+      } else {
+        els.addrFormFields.setAttribute("hidden", "hidden");
+        var picked = document.querySelector('input[name="checkoutSavedAddrPick"]:checked');
+        if (picked) {
+          var list = getSavedAddressesList();
+          var idx = parseInt(picked.value, 10);
+          if (list[idx]) applySavedAddress(list[idx]);
+        }
+      }
+    }
+    document.querySelectorAll(".ck-addr-card").forEach(function (card) {
+      var inp = card.querySelector('input[name="checkoutSavedAddrPick"]');
+      card.classList.toggle("is-selected", !!(inp && inp.checked));
+    });
+  }
+
+  function selectNewAddressMode() {
+    document.querySelectorAll('input[name="checkoutSavedAddrPick"]').forEach(function (inp) {
+      inp.checked = false;
+    });
+    syncAddrPickUi();
+  }
+
+  function updateCheckoutStepper() {
+    var stepper = document.getElementById("checkoutStepper");
+    if (!stepper) return;
+    var steps = stepper.querySelectorAll(".ck-step[data-step]");
+    steps.forEach(function (step) {
+      var key = step.getAttribute("data-step");
+      step.classList.remove("is-active", "is-done");
+      if (checkoutPhase === "shipping") {
+        if (key === "cart") step.classList.add("is-done");
+        if (key === "shipping") step.classList.add("is-active");
+      } else if (checkoutPhase === "payment") {
+        if (key === "cart" || key === "shipping") step.classList.add("is-done");
+        if (key === "payment") step.classList.add("is-active");
+      }
+    });
+    var linePay = document.getElementById("ckStepLinePayment");
+    var lineReview = document.getElementById("ckStepLineReview");
+    if (linePay) linePay.classList.toggle("is-done", checkoutPhase === "payment");
+    if (lineReview) lineReview.classList.toggle("is-done", false);
+  }
+
+  function unlockPaymentSection() {
+    checkoutPhase = "payment";
+    if (els.sectionPayment) {
+      els.sectionPayment.removeAttribute("hidden");
+      els.sectionPayment.classList.remove("is-locked");
+    }
+    document.querySelectorAll('#checkoutInlinePayment input[name="checkoutPaymentMethod"]').forEach(function (inp) {
+      inp.disabled = false;
+    });
+    if (els.summaryCta) els.summaryCta.textContent = "Pay now";
+    if (els.summaryHint) {
+      els.summaryHint.textContent = "Choose Razorpay or Cash on Delivery above, then pay securely.";
+    }
+    updateCheckoutStepper();
+    refreshCheckout();
+    try {
+      els.sectionPayment && els.sectionPayment.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (_) {}
+  }
+
+  function validateShippingStep() {
+    if (!els.form) return false;
+    var useSaved = document.getElementById("checkoutAddrModeSaved") && document.getElementById("checkoutAddrModeSaved").checked;
+    if (useSaved) {
+      var list = getSavedAddressesList();
+      var picked = document.querySelector('input[name="checkoutSavedAddrPick"]:checked');
+      var idx = picked ? parseInt(picked.value, 10) : -1;
+      if (!list.length || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
+        window.alert("Choose a saved address or add a new one.");
+        return false;
+      }
+      applySavedAddress(list[idx]);
+    }
+    if (!els.form.checkValidity()) {
+      try {
+        els.form.reportValidity();
+      } catch (_) {}
+      return false;
+    }
+    if (!buildBillItemsForApi().length) {
+      window.alert("Your cart is empty.");
+      return false;
+    }
+    return true;
+  }
+
+  function continueToPayment() {
+    if (checkoutPhase !== "shipping") {
+      openPayModal();
+      return;
+    }
+    if (!validateShippingStep()) return;
+    var cta = els.openUpiModal;
+    if (cta) cta.disabled = true;
+    postSaveGuestAddress()
+      .then(function () {
+        unlockPaymentSection();
+      })
+      .catch(function (err) {
+        var msg = String((err && err.message) || "Could not save address.");
+        if (err && err.code === "SIGN_IN_REQUIRED") {
+          window.alert(msg || "Your sign-in session expired. Sign in again.");
+          return;
+        }
+        if (err && err.code === "EMAIL_MISMATCH") {
+          window.alert(msg || "Use the same email as your sign-in.");
+          return;
+        }
+        if (err && err.code === "USE_LOGIN") {
+          window.alert("This phone or email is linked to another account. Sign in with your email code.");
+          return;
+        }
+        window.alert(msg);
+      })
+      .then(function () {
+        if (cta) cta.disabled = false;
+      });
+  }
+
+  function loadGoogleMapsScript(apiKey) {
+    return new Promise(function (resolve, reject) {
+      if (window.google && window.google.maps && window.google.maps.places) {
+        resolve();
+        return;
+      }
+      var existing = document.getElementById("craftguruGoogleMaps");
+      if (existing) {
+        existing.addEventListener("load", function () {
+          resolve();
+        });
+        existing.addEventListener("error", reject);
+        return;
+      }
+      var s = document.createElement("script");
+      s.id = "craftguruGoogleMaps";
+      s.async = true;
+      s.defer = true;
+      s.src =
+        "https://maps.googleapis.com/maps/api/js?key=" +
+        encodeURIComponent(apiKey) +
+        "&libraries=places&loading=async&callback=__craftguruMapsReady";
+      window.__craftguruMapsReady = function () {
+        resolve();
+      };
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  function parseGooglePlace(place) {
+    var out = { line1: "", line2: "", city: "", state: "", zip: "", country: "IN" };
+    var comps = (place && place.address_components) || [];
+    var route = "";
+    var streetNum = "";
+    var sublocality = "";
+    comps.forEach(function (c) {
+      var t = c.types || [];
+      if (t.indexOf("street_number") >= 0) streetNum = c.long_name;
+      if (t.indexOf("route") >= 0) route = c.long_name;
+      if (t.indexOf("sublocality_level_1") >= 0 || t.indexOf("sublocality") >= 0) sublocality = c.long_name;
+      if (t.indexOf("locality") >= 0) out.city = c.long_name;
+      if (!out.city && t.indexOf("administrative_area_level_2") >= 0) out.city = c.long_name;
+      if (t.indexOf("administrative_area_level_1") >= 0) out.state = c.long_name;
+      if (t.indexOf("postal_code") >= 0) out.zip = c.long_name;
+      if (t.indexOf("country") >= 0) out.country = (c.short_name || "IN").toUpperCase();
+    });
+    out.line1 = [streetNum, route].filter(Boolean).join(" ").trim();
+    if (!out.line1 && sublocality) out.line1 = sublocality;
+    if (!out.line1 && place && place.formatted_address) {
+      out.line1 = String(place.formatted_address).split(",")[0] || "";
+    }
+    if (sublocality && out.line1.indexOf(sublocality) === -1) {
+      out.line2 = sublocality;
+    }
+    return out;
+  }
+
+  function applyParsedAddress(parsed) {
+    function set(id, v) {
+      var el = document.getElementById(id);
+      if (el && v != null && String(v).length) el.value = String(v);
+    }
+    set("addrLine1", parsed.line1);
+    if (parsed.line2) set("addrLine2", parsed.line2);
+    set("city", parsed.city);
+    set("state", parsed.state);
+    set("zip", parsed.zip);
+    set("country", parsed.country || "IN");
+  }
+
+  function initGooglePlacesAutocomplete() {
+    if (googlePlacesReady) return;
+    var line1 = document.getElementById("addrLine1");
+    if (!line1) return;
+    var base = billApiBase();
+    if (!base) return;
+    fetch(base + "/api/maps-config", { cache: "no-store" })
+      .then(function (res) {
+        return res.json();
+      })
+      .then(function (cfg) {
+        if (!cfg || !cfg.configured || !cfg.apiKey) return;
+        return loadGoogleMapsScript(cfg.apiKey).then(function () {
+          if (!window.google || !google.maps || !google.maps.places) return;
+          var ac = new google.maps.places.Autocomplete(line1, {
+            componentRestrictions: { country: ["in"] },
+            fields: ["address_components", "formatted_address"],
+            types: ["address"],
+          });
+          ac.addListener("place_changed", function () {
+            var place = ac.getPlace();
+            if (!place || !place.address_components) return;
+            applyParsedAddress(parseGooglePlace(place));
+            selectNewAddressMode();
+          });
+          googlePlacesReady = true;
+        });
+      })
+      .catch(function () {});
+  }
+
+  function bindSavedAddressCards() {
+    if (els.savedAddrCards) {
+      els.savedAddrCards.addEventListener("change", function (e) {
+        if (e.target && e.target.name === "checkoutSavedAddrPick") syncAddrPickUi();
+      });
+      els.savedAddrCards.addEventListener("click", function (e) {
+        var editBtn = e.target && e.target.closest ? e.target.closest("[data-addr-edit]") : null;
+        if (!editBtn) return;
+        e.preventDefault();
+        var idx = parseInt(editBtn.getAttribute("data-addr-edit"), 10);
+        var list = getSavedAddressesList();
+        if (list[idx]) {
+          applySavedAddress(list[idx]);
+          selectNewAddressMode();
+        }
+      });
+    }
+    if (els.addNewAddrBox) {
+      els.addNewAddrBox.addEventListener("click", function () {
+        selectNewAddressMode();
+        var a1 = document.getElementById("addrLine1");
+        if (a1) {
+          try {
+            a1.focus();
+          } catch (_) {}
+        }
+      });
+    }
+    var addLink = document.getElementById("checkoutAddNewAddrLink");
+    if (addLink) {
+      addLink.addEventListener("click", function () {
+        selectNewAddressMode();
+      });
+    }
+    var signInLink = document.getElementById("checkoutSignInLink");
+    if (signInLink) {
+      signInLink.addEventListener("click", function () {
+        var det = document.getElementById("checkoutAuthOptional");
+        if (det) {
+          try {
+            det.open = true;
+          } catch (_) {}
+          det && det.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      });
+    }
+  }
+
   function refreshGuestCheckoutUi() {
     var bar = document.getElementById("checkoutGuestSessionBar");
     var txt = document.getElementById("checkoutGuestSessionText");
@@ -177,8 +524,14 @@
           fs.hidden = false;
           fillSavedAddrSelect(me.addresses);
           fs.dataset.addressesJson = JSON.stringify(me.addresses);
+          renderSavedAddressCards(me.addresses);
+          var addLink = document.getElementById("checkoutAddNewAddrLink");
+          if (addLink) addLink.hidden = false;
         } else if (fs) {
           fs.hidden = true;
+          renderSavedAddressCards([]);
+          var addLink2 = document.getElementById("checkoutAddNewAddrLink");
+          if (addLink2) addLink2.hidden = true;
         }
       } else {
         if (bar) {
@@ -192,6 +545,7 @@
         }
         if (fs) {
           fs.hidden = true;
+          renderSavedAddressCards([]);
         }
       }
     });
@@ -811,7 +1165,8 @@
   }
 
   function getCheckoutPaymentMethod() {
-    var r = document.querySelector('input[name="checkoutPaymentMethod"]:checked');
+    var r = document.querySelector('#checkoutInlinePayment input[name="checkoutPaymentMethod"]:checked') ||
+      document.querySelector('input[name="checkoutPaymentMethod"]:checked');
     return r && String(r.value).toLowerCase() === "cod" ? "cod" : "razorpay";
   }
 
@@ -865,11 +1220,11 @@
       modalTitle.textContent = method === "cod" ? "Cash on delivery" : "Pay with Razorpay";
     }
     var hint = document.querySelector(".checkout-summary-pay-hint");
-    if (hint) {
+    if (hint && checkoutPhase === "payment") {
       hint.textContent =
         method === "cod"
           ? "Place your COD order after you fill shipping above. Pay when your parcel arrives."
-          : "Choose payment method in Pay now. 5% instant discount on Razorpay only.";
+          : "Open Pay now to complete Razorpay checkout — 5% instant discount applied.";
     }
   }
 
@@ -1003,19 +1358,10 @@
   }
 
   function setStepFillVisible(on) {
-    if (!els.stepFill || !els.stepReview) return;
-    if (on) {
-      els.stepReview.classList.add("checkout-hidden");
-      els.stepReview.setAttribute("hidden", "hidden");
+    /* Legacy no-op — single-page checkout always shows fill step */
+    if (on && els.stepFill) {
       els.stepFill.classList.remove("checkout-hidden");
       els.stepFill.removeAttribute("hidden");
-      if (els.stepLabel) els.stepLabel.textContent = "Step 2 of 2";
-    } else {
-      els.stepFill.classList.add("checkout-hidden");
-      els.stepFill.setAttribute("hidden", "hidden");
-      els.stepReview.classList.remove("checkout-hidden");
-      els.stepReview.removeAttribute("hidden");
-      if (els.stepLabel) els.stepLabel.textContent = "Step 1 of 2";
     }
   }
 
@@ -1024,7 +1370,7 @@
     if (window.RESIN_SHELL && window.RESIN_SHELL.closeDrawer) {
       window.RESIN_SHELL.closeDrawer();
     }
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    updateCheckoutStepper();
     loadGuestSession().then(function (me) {
       if (me && me.email) {
         var ge = document.getElementById("guestEmail");
@@ -1042,11 +1388,22 @@
         }, 320);
       }
     });
+    initGooglePlacesAutocomplete();
   }
 
   function goToReviewStep() {
-    setStepFillVisible(false);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    checkoutPhase = "shipping";
+    if (els.sectionPayment) {
+      els.sectionPayment.setAttribute("hidden", "hidden");
+      els.sectionPayment.classList.add("is-locked");
+    }
+    document.querySelectorAll('#checkoutInlinePayment input[name="checkoutPaymentMethod"]').forEach(function (inp) {
+      inp.disabled = true;
+    });
+    if (els.summaryCta) els.summaryCta.textContent = "Continue to Payment";
+    if (els.summaryHint) els.summaryHint.textContent = "Complete contact & shipping, then choose how to pay.";
+    updateCheckoutStepper();
+    refreshCheckout();
   }
 
   function renderSnips(lines) {
@@ -1203,7 +1560,11 @@
     }
 
     var subtotalVal = CART.subtotal();
-    var paymentMethod = getCheckoutPaymentMethod();
+    var itemCount = lines.reduce(function (n, line) {
+      return n + Math.max(1, Math.floor(Number(line.qty) || 1));
+    }, 0);
+    var paymentMethod =
+      checkoutPhase === "payment" ? getCheckoutPaymentMethod() : "razorpay";
     var totals = computeCheckoutTotals(subtotalVal, paymentMethod);
 
     var sEl = gfSort();
@@ -1214,9 +1575,20 @@
     applyCheckoutLineFilter();
 
     if (els.sub) els.sub.textContent = fmt(totals.productValue);
+    if (els.subtotalLabel) {
+      els.subtotalLabel.textContent = "Items Total (" + itemCount + ")";
+    }
     var discRow = document.querySelector(".checkout-total-row--discount");
     if (discRow) discRow.hidden = totals.prepaidDiscount <= 0;
     if (els.valDiscount) els.valDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
+    if (els.savingsBanner) {
+      if (totals.prepaidDiscount > 0 && checkoutPhase === "payment" && paymentMethod === "razorpay") {
+        els.savingsBanner.textContent = "Yay! You saved " + fmt(totals.prepaidDiscount) + " on this order.";
+        els.savingsBanner.removeAttribute("hidden");
+      } else {
+        els.savingsBanner.setAttribute("hidden", "hidden");
+      }
+    }
     if (els.taxable) els.taxable.textContent = fmt(totals.taxable);
     if (els.ship) els.ship.textContent = totals.shipping === 0 ? "Free" : fmt(totals.shipping);
     if (els.tax) els.tax.textContent = fmt(totals.gst);
@@ -1272,6 +1644,11 @@
   }
 
   function openPayModal() {
+    if (checkoutPhase !== "payment") {
+      continueToPayment();
+      return;
+    }
+    if (!validateShippingStep()) return;
     if (!els.payModal) return;
     refreshCheckout();
     els.payModal.removeAttribute("hidden");
@@ -1343,24 +1720,17 @@
     }
 
     bindRemoveDelegation();
+    bindSavedAddressCards();
 
     goToDetailsStep();
 
-    if (els.goDetails) {
-      els.goDetails.addEventListener("click", function () {
-        goToDetailsStep();
-      });
-    }
-
-    if (els.backReview) {
-      els.backReview.addEventListener("click", function () {
-        goToReviewStep();
-      });
-    }
-
     if (els.openUpiModal) {
       els.openUpiModal.addEventListener("click", function () {
-        openPayModal();
+        if (checkoutPhase === "shipping") {
+          continueToPayment();
+        } else {
+          openPayModal();
+        }
       });
     }
     if (els.payModalBackdrop) {
@@ -1477,10 +1847,10 @@
           });
       });
     }
-    document.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(function (inp) {
+    document.querySelectorAll('#checkoutInlinePayment input[name="checkoutPaymentMethod"]').forEach(function (inp) {
       inp.addEventListener("change", function () {
         refreshCheckout();
-        setPaymentUi("ready");
+        if (checkoutPhase === "payment") setPaymentUi("ready");
       });
     });
     if (els.paymentCancelBtn) {
@@ -1521,78 +1891,9 @@
 
     if (els.form && !formBound) {
       formBound = true;
-      var addrMsg = document.getElementById("checkoutAddressMsg");
-      var addBtn = document.getElementById("checkoutAddAddressBtn");
       els.form.addEventListener("submit", function (e) {
         e.preventDefault();
-        if (!els.form.checkValidity()) {
-          els.form.reportValidity();
-          return;
-        }
-        if (!buildBillItemsForApi().length) {
-          window.alert("Your cart is empty.");
-          return;
-        }
-        var modeSaved = document.getElementById("checkoutAddrModeSaved") && document.getElementById("checkoutAddrModeSaved").checked;
-        if (modeSaved) {
-          var fsEl = document.getElementById("checkoutSavedAddrFieldset");
-          var raw = fsEl && fsEl.dataset.addressesJson;
-          var list = [];
-          try {
-            list = raw ? JSON.parse(raw) : [];
-          } catch (_) {
-            list = [];
-          }
-          var sel = document.getElementById("checkoutSavedAddrSelect");
-          var idx = sel ? parseInt(sel.value, 10) : 0;
-          if (!list.length || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
-            window.alert("Choose a saved address or switch to entering a new address.");
-            return;
-          }
-          applySavedAddress(list[idx]);
-        }
-        if (addBtn) addBtn.disabled = true;
-        if (addrMsg) {
-          addrMsg.setAttribute("hidden", "hidden");
-          addrMsg.textContent = "";
-        }
-        postSaveGuestAddress()
-          .then(function (j) {
-            if (addrMsg) {
-              var gid = j.guestId != null ? "Guest id " + j.guestId + ". " : j.fileMode ? "File mode (no DB). " : "";
-              addrMsg.textContent =
-                "Shipping address saved. " + gid + "Open Pay with Razorpay and use Pay securely now to complete your order.";
-              addrMsg.removeAttribute("hidden");
-            }
-            window.scrollTo({ top: addrMsg ? addrMsg.offsetTop : 0, behavior: "smooth" });
-          })
-          .catch(function (err) {
-            var msg = String((err && err.message) || "Could not save address.");
-            if (err && err.code === "SIGN_IN_REQUIRED") {
-              window.alert(
-                msg ||
-                  "Your sign-in session expired. Open “Optional: sign in…” and verify your email again, or sign out and save as guest."
-              );
-              return;
-            }
-            if (err && err.code === "EMAIL_MISMATCH") {
-              window.alert(msg || "Use the same email in the form as the one you signed in with.");
-              return;
-            }
-            if (err && err.code === "USE_LOGIN") {
-              window.alert(
-                "This phone or email is already linked to another account. Use Sign in with email code above, or use the exact same phone and email you used before."
-              );
-              return;
-            }
-            window.alert(
-              msg +
-                " Run npm start in server/. If the page is not served from that same host/port, set data-bill-api-port on <html> to your API port."
-            );
-          })
-          .then(function () {
-            if (addBtn) addBtn.disabled = false;
-          });
+        continueToPayment();
       });
     }
 
@@ -1650,41 +1951,8 @@
         refreshCheckout();
       });
     }
-    var modeNew = document.getElementById("checkoutAddrModeNew");
-    var modeSaved = document.getElementById("checkoutAddrModeSaved");
-    var picker = document.getElementById("checkoutSavedAddrPicker");
-    var selSaved = document.getElementById("checkoutSavedAddrSelect");
-    function syncAddrModeUi() {
-      var useSaved = modeSaved && modeSaved.checked;
-      if (picker) {
-        picker.hidden = !useSaved;
-      }
-      if (useSaved && selSaved) {
-        var fsEl = document.getElementById("checkoutSavedAddrFieldset");
-        var raw = fsEl && fsEl.dataset.addressesJson;
-        var list = [];
-        try {
-          list = raw ? JSON.parse(raw) : [];
-        } catch (_) {
-          list = [];
-        }
-        var idx = parseInt(selSaved.value, 10) || 0;
-        if (list[idx]) {
-          applySavedAddress(list[idx]);
-        }
-      }
-    }
-    if (modeNew) {
-      modeNew.addEventListener("change", syncAddrModeUi);
-    }
-    if (modeSaved) {
-      modeSaved.addEventListener("change", syncAddrModeUi);
-    }
-    if (selSaved) {
-      selSaved.addEventListener("change", syncAddrModeUi);
-    }
-
     refreshGuestCheckoutUi();
+    initGooglePlacesAutocomplete();
 
     var exit = document.getElementById("checkoutPageExit");
     if (exit) {

@@ -1411,6 +1411,13 @@ app.get("/api/guest-auth/google/status", function (_req, res) {
   res.json({ ok: true, enabled: guestGoogleAuth.googleSignInConfigured() });
 });
 
+/** Public: Google Maps/Places API key for checkout address autocomplete (domain-restricted key). */
+app.get("/api/maps-config", function (_req, res) {
+  var key = String(process.env.GOOGLE_MAPS_API_KEY || "").trim();
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ ok: true, configured: key.length > 0, apiKey: key });
+});
+
 /**
  * Public: Sign in with Google (GIS credential JWT). Verifies with Google, then issues the same guest Bearer as email OTP.
  * Configure GOOGLE_CLIENT_ID in server/.env and data-google-client-id on storefront HTML (same Web client id).

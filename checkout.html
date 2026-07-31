@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
+  <link rel="stylesheet" href="checkout.css" />
 </head>
 <body class="subpage page-checkout page-checkout--store">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -58,224 +59,260 @@
   <main class="sub-main">
     <div id="checkoutMain">
       <div class="checkout-page">
+        <div class="ck-topbar">
+          <nav class="ck-stepper" id="checkoutStepper" aria-label="Checkout progress">
+            <a href="index.html" class="ck-step is-done" data-step="cart">
+              <span class="ck-step__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 6h15l-1.5 9h-12L4 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
+              </span>
+              Cart
+            </a>
+            <span class="ck-step__line is-done" aria-hidden="true"></span>
+            <span class="ck-step is-active" data-step="shipping" aria-current="step">
+              <span class="ck-step__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M1 8h15v8H1z"/><path d="M16 10h4l2 3v3h-6V10z"/><circle cx="5.5" cy="18" r="1.75"/><circle cx="18.5" cy="18" r="1.75"/></svg>
+              </span>
+              Shipping
+            </span>
+            <span class="ck-step__line" id="ckStepLinePayment" aria-hidden="true"></span>
+            <span class="ck-step" data-step="payment">
+              <span class="ck-step__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+              </span>
+              Payment
+            </span>
+            <span class="ck-step__line" id="ckStepLineReview" aria-hidden="true"></span>
+            <span class="ck-step" data-step="review">
+              <span class="ck-step__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+              </span>
+              Review
+            </span>
+          </nav>
+          <div class="ck-secure-badge">
+            <span class="ck-secure-badge__icon" aria-hidden="true">🔒</span>
+            <div class="ck-secure-badge__text">
+              <strong>100% Secure Checkout</strong>
+              <span>Your data is safe with us</span>
+            </div>
+          </div>
+        </div>
+
         <div class="checkout-page__head">
           <h1>Checkout</h1>
-          <p class="checkout-page__lead">
-            Review your order, add contact and shipping, then pay the <strong>exact total</strong> with <strong>Razorpay</strong>. Signing in first is optional: the email and phone you enter here are stored with your order so you can use <strong>Log in</strong> (email code) later on My orders. If you do sign in above, your email is pre-filled.
-          </p>
+          <p class="checkout-page__lead">Almost there! Review your details and place your order.</p>
         </div>
 
         <div class="checkout-layout checkout-layout--reflow">
           <div class="checkout-layout__main">
-          <div class="checkout-panel checkout-intro" id="checkoutStepReview" aria-labelledby="checkoutIntroTitle">
-            <span class="checkout-step-badge" id="checkoutStepLabel">Step 1 of 2</span>
-            <h2 id="checkoutIntroTitle">Review your order</h2>
-            <p>
-              Your cart and totals stay in the <strong>order summary</strong> column — they stay in <strong>this browser</strong> until you complete checkout. You can enter contact and shipping without signing in first; we store your email and phone so you can sign back in later with the same email and a one-time code.
-            </p>
-            <button type="button" class="checkout-submit" id="checkoutGoDetails">Continue to fill details →</button>
-          </div>
-
-          <div class="checkout-panel checkout-hidden checkout-panel--shipping" id="checkoutStepFill" hidden>
-            <nav class="checkout-breadcrumb" aria-label="Checkout steps">
-              <a href="index.html">Cart</a>
-              <span class="checkout-breadcrumb__sep" aria-hidden="true">›</span>
-              <span class="checkout-breadcrumb__current">Shipping</span>
-            </nav>
-            <button type="button" class="checkout-back-link" id="checkoutBackReview">← Back to order review</button>
-            <form id="checkoutForm" class="checkout-form-grid" novalidate>
-              <div class="checkout-address-panel">
-                <div class="checkout-address-panel__head">
-                  <span class="checkout-address-panel__pill">Step 1</span>
-                  <h3 class="checkout-address-panel__title">Guest &amp; shipping</h3>
-                  <p class="checkout-address-panel__lead">
-                    Fill contact and address here first — no sign-in required to save or pay. Use the same email later with a 6-digit code to see orders and pick a saved address. One email is tied to one Indian mobile on file. The page must reach your Node bill API (set <code>data-bill-api-port</code> on <code>&lt;html&gt;</code> if needed).
-                  </p>
-                </div>
-
-              <fieldset class="checkout-fieldset">
-                <legend>Guest contact</legend>
-                <div class="checkout-row2">
-                  <div>
-                    <label class="checkout-label" for="guestName">Full name</label>
-                    <input class="checkout-input" type="text" id="guestName" name="guestName" required autocomplete="name" placeholder="Priya Sharma" />
+            <div class="checkout-panel checkout-panel--shipping" id="checkoutStepFill">
+              <form id="checkoutForm" class="checkout-form-grid" novalidate autocomplete="on">
+                <section class="ck-section" id="ckSectionContact" aria-labelledby="ckContactTitle">
+                  <div class="ck-section__head">
+                    <h2 id="ckContactTitle"><span class="ck-section__num">1</span> Contact Details</h2>
+                    <button type="button" class="ck-section__link" id="checkoutSignInLink">Sign in</button>
                   </div>
-                  <div>
-                    <label class="checkout-label" for="guestEmail">Email</label>
-                    <input class="checkout-input" type="email" id="guestEmail" name="guestEmail" required autocomplete="email" placeholder="you@email.com" />
-                  </div>
-                </div>
-                <div>
-                  <label class="checkout-label" for="guestPhone">Phone</label>
-                  <input
-                    class="checkout-input"
-                    type="tel"
-                    id="guestPhone"
-                    name="guestPhone"
-                    required
-                    autocomplete="tel"
-                    placeholder="+91 98765 43210"
-                  />
-                </div>
-              </fieldset>
-
-              <div class="checkout-note" id="checkoutGuestSessionBar" hidden style="margin-bottom: 1rem">
-                <span id="checkoutGuestSessionText"></span>
-                <button type="button" class="checkout-back-link" id="checkoutGuestSignOutBtn" style="margin-left: 0.75rem">Sign out</button>
-                <a href="account.html" class="checkout-back-link" style="margin-left: 0.75rem">My orders</a>
-              </div>
-
-              <fieldset class="checkout-fieldset" id="checkoutSavedAddrFieldset" hidden>
-                <legend>Saved addresses</legend>
-                <label class="checkout-label" style="display: flex; gap: 0.5rem; align-items: center; font-weight: 500">
-                  <input type="radio" name="checkoutAddrMode" value="new" id="checkoutAddrModeNew" checked /> Enter a new address below
-                </label>
-                <label class="checkout-label" style="display: flex; gap: 0.5rem; align-items: center; font-weight: 500; margin-top: 0.35rem">
-                  <input type="radio" name="checkoutAddrMode" value="saved" id="checkoutAddrModeSaved" /> Use a saved address
-                </label>
-                <div id="checkoutSavedAddrPicker" hidden style="margin-top: 0.75rem">
-                  <label class="checkout-label" for="checkoutSavedAddrSelect">Choose</label>
-                  <select class="checkout-select" id="checkoutSavedAddrSelect"></select>
-                </div>
-              </fieldset>
-
-              <fieldset class="checkout-fieldset">
-                <legend>Shipping address</legend>
-                <div>
-                  <label class="checkout-label" for="addrLine1">Street address</label>
-                  <input class="checkout-input" type="text" id="addrLine1" name="addrLine1" required autocomplete="address-line1" placeholder="123 Glass Lane" />
-                </div>
-                <div>
-                  <label class="checkout-label" for="addrLine2">Apt / suite (optional)</label>
-                  <input class="checkout-input" type="text" id="addrLine2" name="addrLine2" autocomplete="address-line2" />
-                </div>
-                <div class="checkout-row2">
-                  <div>
-                    <label class="checkout-label" for="city">City</label>
-                    <input class="checkout-input" type="text" id="city" name="city" required autocomplete="address-level2" />
-                  </div>
-                  <div>
-                    <label class="checkout-label" for="state">State / region</label>
-                    <input class="checkout-input" type="text" id="state" name="state" required autocomplete="address-level1" />
-                  </div>
-                </div>
-                <div class="checkout-row2">
-                  <div>
-                    <label class="checkout-label" for="zip">Postal code</label>
-                    <input class="checkout-input" type="text" id="zip" name="zip" required autocomplete="postal-code" />
-                  </div>
-                  <div>
-                    <label class="checkout-label" for="country">Country</label>
-                    <select class="checkout-select" id="country" name="country" required autocomplete="country-name">
-                      <option value="">Select…</option>
-                      <option value="IN" selected>India</option>
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="AU">Australia</option>
-                    </select>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset class="checkout-fieldset">
-                <legend>Address type</legend>
-                <div class="checkout-addr-type" role="radiogroup" aria-label="Address type">
-                  <label class="checkout-addr-type__opt">
-                    <input type="radio" name="addrType" value="home" checked />
-                    <span>Home</span>
-                  </label>
-                  <label class="checkout-addr-type__opt">
-                    <input type="radio" name="addrType" value="work" />
-                    <span>Work</span>
-                  </label>
-                  <label class="checkout-addr-type__opt">
-                    <input type="radio" name="addrType" value="other" />
-                    <span>Other</span>
-                  </label>
-                </div>
-              </fieldset>
-
-              <details class="checkout-auth-details" id="checkoutAuthOptional">
-                <summary class="checkout-auth-details__summary">Optional: sign in with email code (saved addresses &amp; order history)</summary>
-                <div class="checkout-auth-details__body">
-                  <div id="checkoutAuthCard" class="auth-modal__sheet checkout-auth-sheet" aria-labelledby="checkoutAuthHeading">
-                    <div class="auth-modal__head checkout-auth-sheet__head">
-                      <h2 id="checkoutAuthHeading" style="margin: 0; font-size: 1.15rem">Email sign-in (optional)</h2>
-                    </div>
-                    <p class="checkout-note" style="margin: 0 0 0.75rem">
-                      6-digit code by email, valid for 5 minutes. Already checked out with this email? Use <strong>Log in</strong>. New account from the home page? Use <strong>Sign up</strong>.
-                    </p>
-                    <div class="auth-tabs">
-                      <button type="button" class="auth-tab is-active" id="checkoutAuthTabLo">Log in</button>
-                      <button type="button" class="auth-tab" id="checkoutAuthTabSu">Sign up</button>
-                    </div>
-                    <div id="checkoutAuthPanelLo">
-                      <div class="auth-field">
-                        <label for="checkoutAuthEmailLo">Email</label>
-                        <input id="checkoutAuthEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
-                      </div>
-                      <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpLo">Send OTP</button>
-                      <div class="auth-field">
-                        <label for="checkoutAuthOtpLo">Enter OTP</label>
-                        <input id="checkoutAuthOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
-                      </div>
-                      <p class="auth-msg" id="checkoutAuthMsgLo" style="display: none"></p>
-                      <button type="button" class="auth-submit" id="checkoutAuthVerifyLo">Verify &amp; load account</button>
-                    </div>
-                    <div id="checkoutAuthPanelSu" class="is-hidden">
-                      <div class="auth-field">
-                        <label for="checkoutAuthNameSu">Name (optional)</label>
-                        <input id="checkoutAuthNameSu" type="text" autocomplete="name" placeholder="Your name" />
-                      </div>
-                      <div class="auth-field">
-                        <label for="checkoutAuthEmailSu">Email</label>
-                        <input id="checkoutAuthEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
-                      </div>
-                      <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpSu">Send OTP</button>
-                      <div class="auth-field">
-                        <label for="checkoutAuthOtpSu">Enter OTP</label>
-                        <input id="checkoutAuthOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
-                      </div>
-                      <p class="auth-msg" id="checkoutAuthMsgSu" style="display: none"></p>
-                      <button type="button" class="auth-submit" id="checkoutAuthVerifySu">Verify &amp; load account</button>
+                  <div class="ck-field">
+                    <label class="checkout-label visually-hidden" for="guestName">Full name</label>
+                    <div class="ck-input-wrap">
+                      <span class="ck-input-wrap__icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-7 8-7s8 3 8 7"/></svg>
+                      </span>
+                      <input class="checkout-input" type="text" id="guestName" name="guestName" required autocomplete="name" placeholder="Full Name" />
                     </div>
                   </div>
-                </div>
-              </details>
+                  <div class="ck-field-row ck-field-row--2">
+                    <div class="ck-field">
+                      <label class="checkout-label visually-hidden" for="guestEmail">Email</label>
+                      <div class="ck-input-wrap">
+                        <span class="ck-input-wrap__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                        </span>
+                        <input class="checkout-input" type="email" id="guestEmail" name="guestEmail" required autocomplete="email" placeholder="Email Address" />
+                      </div>
+                    </div>
+                    <div class="ck-field">
+                      <label class="checkout-label visually-hidden" for="guestPhone">Phone</label>
+                      <div class="ck-input-wrap ck-input-wrap--phone">
+                        <span class="ck-input-wrap__icon" aria-hidden="true">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.8 19.8 0 01-8.63-3.07 19.5 19.5 0 01-6-6A19.8 19.8 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+                        </span>
+                        <span class="ck-phone-prefix" aria-hidden="true">+91</span>
+                        <input class="checkout-input" type="tel" id="guestPhone" name="guestPhone" required autocomplete="tel" inputmode="tel" placeholder="Phone Number" />
+                      </div>
+                    </div>
+                  </div>
+                  <div class="checkout-note" id="checkoutGuestSessionBar" hidden>
+                    <span id="checkoutGuestSessionText"></span>
+                    <button type="button" class="checkout-back-link" id="checkoutGuestSignOutBtn">Sign out</button>
+                    <a href="account.html" class="checkout-back-link">My orders</a>
+                  </div>
+                </section>
 
-              <div class="checkout-actions-row" id="checkoutActionsRow">
-                <button type="submit" class="checkout-submit checkout-actions-row__primary" id="checkoutAddAddressBtn">
-                  Save shipping address
-                </button>
-              </div>
-              <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
-              <p class="checkout-note">
-                Save shipping saves your address only — your order is created after Razorpay payment succeeds. Pay now opens secure checkout. Questions on WhatsApp
-                <strong>+91-8824350056</strong>.
-              </p>
-              </div>
-            </form>
-          </div>
+                <section class="ck-section" id="ckSectionShipping" aria-labelledby="ckShippingTitle">
+                  <div class="ck-section__head">
+                    <h2 id="ckShippingTitle"><span class="ck-section__num">2</span> Shipping Address</h2>
+                    <button type="button" class="ck-section__link" id="checkoutAddNewAddrLink" hidden>+ Add New Address</button>
+                  </div>
+
+                  <div class="ck-saved-addrs" id="checkoutSavedAddrCards" hidden></div>
+
+                  <button type="button" class="ck-add-addr-dash is-selected" id="checkoutAddNewAddrBox">
+                    <span class="ck-add-addr-dash__title">+ Add New Address</span>
+                    <span class="ck-add-addr-dash__sub">Enter address manually</span>
+                  </button>
+
+                  <div class="ck-addr-form" id="checkoutAddrFormFields">
+                    <div class="ck-field">
+                      <label class="checkout-label" for="addrLine1">Street address</label>
+                      <input class="checkout-input" type="text" id="addrLine1" name="addrLine1" required autocomplete="address-line1" placeholder="House no., street, area" />
+                    </div>
+                    <div class="ck-field">
+                      <label class="checkout-label" for="addrLine2">Apt / suite (optional)</label>
+                      <input class="checkout-input" type="text" id="addrLine2" name="addrLine2" autocomplete="address-line2" />
+                    </div>
+                    <div class="ck-field-row ck-field-row--2">
+                      <div class="ck-field">
+                        <label class="checkout-label" for="city">City</label>
+                        <input class="checkout-input" type="text" id="city" name="city" required autocomplete="address-level2" />
+                      </div>
+                      <div class="ck-field">
+                        <label class="checkout-label" for="state">State</label>
+                        <input class="checkout-input" type="text" id="state" name="state" required autocomplete="address-level1" />
+                      </div>
+                    </div>
+                    <div class="ck-field-row ck-field-row--2">
+                      <div class="ck-field">
+                        <label class="checkout-label" for="zip">Pincode</label>
+                        <input class="checkout-input" type="text" id="zip" name="zip" required autocomplete="postal-code" inputmode="numeric" maxlength="6" />
+                      </div>
+                      <div class="ck-field">
+                        <label class="checkout-label" for="country">Country</label>
+                        <select class="checkout-select" id="country" name="country" required autocomplete="country-name">
+                          <option value="">Select…</option>
+                          <option value="IN" selected>India</option>
+                          <option value="US">United States</option>
+                          <option value="CA">Canada</option>
+                          <option value="GB">United Kingdom</option>
+                          <option value="AU">Australia</option>
+                        </select>
+                      </div>
+                    </div>
+                    <fieldset class="checkout-fieldset" style="border:0;padding:0;margin:0.5rem 0 0">
+                      <legend class="checkout-label">Address type</legend>
+                      <div class="checkout-addr-type" role="radiogroup" aria-label="Address type">
+                        <label class="checkout-addr-type__opt">
+                          <input type="radio" name="addrType" value="home" checked />
+                          <span>Home</span>
+                        </label>
+                        <label class="checkout-addr-type__opt">
+                          <input type="radio" name="addrType" value="work" />
+                          <span>Work</span>
+                        </label>
+                      </div>
+                    </fieldset>
+                  </div>
+
+                  <div class="ck-security-banner">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    <span>We never save your card details. All payments are secured by Razorpay.</span>
+                  </div>
+                </section>
+
+                <section class="ck-section ck-section--payment is-locked" id="ckSectionPayment" hidden aria-labelledby="ckPaymentTitle">
+                  <div class="ck-section__head">
+                    <h2 id="ckPaymentTitle"><span class="ck-section__num">3</span> Payment Method</h2>
+                    <span class="ck-secure-inline" aria-hidden="true">🔒 100% Secure Payments</span>
+                  </div>
+                  <div class="ck-pay-methods" id="checkoutInlinePayment">
+                    <label class="ck-pay-card">
+                      <input type="radio" name="checkoutPaymentMethod" value="razorpay" checked disabled />
+                      <div class="ck-pay-card__title">Razorpay</div>
+                      <div class="ck-pay-card__sub">Cards, UPI, NetBanking · 5% prepaid discount</div>
+                    </label>
+                    <label class="ck-pay-card">
+                      <input type="radio" name="checkoutPaymentMethod" value="cod" disabled />
+                      <div class="ck-pay-card__title">Cash on Delivery</div>
+                      <div class="ck-pay-card__sub">Pay when you receive</div>
+                    </label>
+                  </div>
+                </section>
+
+                <fieldset class="checkout-fieldset" id="checkoutSavedAddrFieldset" hidden aria-hidden="true">
+                  <select id="checkoutSavedAddrSelect" tabindex="-1" aria-hidden="true"></select>
+                  <input type="radio" name="checkoutAddrMode" value="new" id="checkoutAddrModeNew" checked hidden />
+                  <input type="radio" name="checkoutAddrMode" value="saved" id="checkoutAddrModeSaved" hidden />
+                </fieldset>
+
+                <details class="checkout-auth-details" id="checkoutAuthOptional">
+                  <summary class="checkout-auth-details__summary">Sign in with email code (saved addresses &amp; order history)</summary>
+                  <div class="checkout-auth-details__body">
+                    <div id="checkoutAuthCard" class="auth-modal__sheet checkout-auth-sheet" aria-labelledby="checkoutAuthHeading">
+                      <div class="auth-modal__head checkout-auth-sheet__head">
+                        <h2 id="checkoutAuthHeading" style="margin: 0; font-size: 1.15rem">Email sign-in</h2>
+                      </div>
+                      <div class="auth-tabs">
+                        <button type="button" class="auth-tab is-active" id="checkoutAuthTabLo">Log in</button>
+                        <button type="button" class="auth-tab" id="checkoutAuthTabSu">Sign up</button>
+                      </div>
+                      <div id="checkoutAuthPanelLo">
+                        <div class="auth-field">
+                          <label for="checkoutAuthEmailLo">Email</label>
+                          <input id="checkoutAuthEmailLo" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+                        </div>
+                        <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpLo">Send OTP</button>
+                        <div class="auth-field">
+                          <label for="checkoutAuthOtpLo">Enter OTP</label>
+                          <input id="checkoutAuthOtpLo" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+                        </div>
+                        <p class="auth-msg" id="checkoutAuthMsgLo" style="display: none"></p>
+                        <button type="button" class="auth-submit" id="checkoutAuthVerifyLo">Verify &amp; load account</button>
+                        <div id="checkoutGoogleSignIn" style="margin-top: 0.75rem"></div>
+                      </div>
+                      <div id="checkoutAuthPanelSu" class="is-hidden">
+                        <div class="auth-field">
+                          <label for="checkoutAuthNameSu">Name (optional)</label>
+                          <input id="checkoutAuthNameSu" type="text" autocomplete="name" placeholder="Your name" />
+                        </div>
+                        <div class="auth-field">
+                          <label for="checkoutAuthEmailSu">Email</label>
+                          <input id="checkoutAuthEmailSu" type="email" autocomplete="email" placeholder="you@example.com" maxlength="200" />
+                        </div>
+                        <button type="button" class="checkout-pay-secondary" id="checkoutAuthSendOtpSu">Send OTP</button>
+                        <div class="auth-field">
+                          <label for="checkoutAuthOtpSu">Enter OTP</label>
+                          <input id="checkoutAuthOtpSu" type="text" inputmode="numeric" maxlength="6" placeholder="6-digit code" />
+                        </div>
+                        <p class="auth-msg" id="checkoutAuthMsgSu" style="display: none"></p>
+                        <button type="button" class="auth-submit" id="checkoutAuthVerifySu">Verify &amp; load account</button>
+                      </div>
+                    </div>
+                  </div>
+                </details>
+
+                <button type="submit" class="visually-hidden" id="checkoutAddAddressBtn" tabindex="-1" aria-hidden="true">Save address</button>
+                <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
+              </form>
+            </div>
           </div>
 
           <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary checkout-summary-rail" aria-labelledby="summary-heading">
-            <h2 id="summary-heading">Order summary</h2>
-            <div class="checkout-snips" aria-label="Selected items preview">
+            <h2 id="summary-heading">Order Summary</h2>
+            <div class="checkout-snips" aria-hidden="true">
               <div class="checkout-snips__grid" id="checkoutSnipsGrid"></div>
             </div>
             <ul class="checkout-lines" id="checkoutLines"></ul>
             <div class="checkout-totals">
               <div class="checkout-total-row">
-                <span>Items total (incl. 18% GST)</span>
+                <span id="valSubtotalLabel">Items Total</span>
                 <span id="valSubtotal">₹0</span>
               </div>
               <div class="checkout-total-row checkout-total-row--discount" hidden>
-                <span>Prepaid discount (5% · online only)</span>
+                <span>Prepaid Discount (5%)</span>
                 <span id="valDiscount">− ₹0</span>
               </div>
               <div class="checkout-total-row">
-                <span>Taxable value (excl. GST)</span>
+                <span>Taxable Value</span>
                 <span id="valTaxable">₹0</span>
               </div>
               <div class="checkout-total-row">
@@ -287,16 +324,63 @@
                 <span id="valShipping">₹0</span>
               </div>
               <p class="checkout-shipping-hint" id="checkoutShippingHint" role="status" hidden></p>
+              <div class="ck-savings-banner" id="checkoutSavingsBanner" hidden>Yay! You saved ₹0 on this order.</div>
               <div class="checkout-total-row checkout-total-row--grand">
-                <span>Total due</span>
+                <span>Total Amount</span>
                 <span id="valTotal">₹0</span>
               </div>
             </div>
             <button type="button" class="checkout-summary-pay js-checkout-open-pay" id="checkoutOpenUpiModal">
-              Pay now
+              <span id="checkoutSummaryCtaText">Continue to Payment</span>
+              <span aria-hidden="true">→</span>
             </button>
-            <p class="checkout-summary-pay-hint">Choose payment method in Pay now. 5% instant discount on Razorpay only.</p>
+            <p class="checkout-summary-pay-hint" id="checkoutSummaryHint">Complete contact &amp; shipping, then choose how to pay.</p>
+            <div class="ck-trust-icons" aria-label="Order benefits">
+              <div class="ck-trust-icon">
+                <span class="ck-trust-icon__glyph" aria-hidden="true">🚚</span>
+                <span class="ck-trust-icon__label">Free Shipping</span>
+                <span class="ck-trust-icon__sub">On prepaid orders</span>
+              </div>
+              <div class="ck-trust-icon">
+                <span class="ck-trust-icon__glyph" aria-hidden="true">📦</span>
+                <span class="ck-trust-icon__label">Secure Packaging</span>
+                <span class="ck-trust-icon__sub">Safe &amp; damage-proof</span>
+              </div>
+              <div class="ck-trust-icon">
+                <span class="ck-trust-icon__glyph" aria-hidden="true">↩</span>
+                <span class="ck-trust-icon__label">Easy Returns</span>
+                <span class="ck-trust-icon__sub">7 days policy</span>
+              </div>
+              <div class="ck-trust-icon">
+                <span class="ck-trust-icon__glyph" aria-hidden="true">💬</span>
+                <span class="ck-trust-icon__label">Support</span>
+                <span class="ck-trust-icon__sub">WhatsApp chat</span>
+              </div>
+            </div>
           </aside>
+        </div>
+
+        <div class="ck-trust-bar" aria-label="Why Craftguru">
+          <div class="ck-trust-bar__item">
+            <span class="ck-trust-bar__icon" aria-hidden="true">❤️</span>
+            <span class="ck-trust-bar__title">Handmade with Love</span>
+            <span class="ck-trust-bar__sub">Crafted by skilled artisans</span>
+          </div>
+          <div class="ck-trust-bar__item">
+            <span class="ck-trust-bar__icon" aria-hidden="true">✨</span>
+            <span class="ck-trust-bar__title">Premium Quality</span>
+            <span class="ck-trust-bar__sub">Finest materials &amp; finish</span>
+          </div>
+          <div class="ck-trust-bar__item">
+            <span class="ck-trust-bar__icon" aria-hidden="true">🛡️</span>
+            <span class="ck-trust-bar__title">Made to Last</span>
+            <span class="ck-trust-bar__sub">Durable &amp; long-lasting</span>
+          </div>
+          <div class="ck-trust-bar__item">
+            <span class="ck-trust-bar__icon" aria-hidden="true">🎁</span>
+            <span class="ck-trust-bar__title">Perfect for Gifting</span>
+            <span class="ck-trust-bar__sub">Beautiful &amp; meaningful</span>
+          </div>
         </div>
       </div>
     </div>
@@ -353,17 +437,6 @@
             <li><span>Shipping</span><span id="checkoutModalShip">₹0</span></li>
             <li class="checkout-pay-modal__lines--grand"><span>Total due</span><span id="checkoutModalGrand">₹0</span></li>
           </ul>
-          <fieldset class="checkout-payment-method" aria-label="Payment method">
-            <legend class="checkout-payment-method__legend">Payment method</legend>
-            <label class="checkout-payment-method__opt">
-              <input type="radio" name="checkoutPaymentMethod" value="razorpay" checked />
-              <span>Razorpay (online) · 5% instant discount</span>
-            </label>
-            <label class="checkout-payment-method__opt">
-              <input type="radio" name="checkoutPaymentMethod" value="cod" />
-              <span>Cash on delivery</span>
-            </label>
-          </fieldset>
           <div class="checkout-payment-status" id="checkoutPaymentStatus" data-state="idle">
             <p class="checkout-payment-status__label" id="checkoutPaymentStatusLabel">Status</p>
             <p class="checkout-payment-status__msg" id="checkoutPaymentStatusMsg">
