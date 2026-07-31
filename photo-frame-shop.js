@@ -477,7 +477,7 @@
     var mats = materials || [];
     var cats = doc.categories;
     var hubN = normalizeHubFilter(hubFilter);
-    hub.className = "featured-collections-grid";
+    hub.className = "cg-category-grid";
     hub.innerHTML = "";
     var catsToShow = cats.slice();
     if (hubN && hubN.base) {
@@ -525,7 +525,7 @@
       var imgRel = preview.image || "";
       var imgFit = preview.fit || "";
       var countLabel = String(count) + (count === 1 ? " product" : " products");
-      var card = window.CraftguruPremiumCards.buildCategoryCard({
+      var card = window.CraftguruCategoryCard.buildCategoryCard({
         href: href,
         title: c.name,
         subtitle: countLabel,

@@ -97,9 +97,9 @@
         return;
       }
       img.removeEventListener("error", onPreviewImgError);
-      var media = img.closest(".featured-collection-card__media, .featured-cat-card__media");
+      var media = img.closest(".cg-category-card__media, .featured-cat-card__media");
       if (media) {
-        media.classList.add("featured-collection-card__media-empty", "featured-cat-card__media--empty");
+        media.classList.add("cg-category-card__media-empty", "featured-cat-card__media--empty");
         img.remove();
       }
     });
@@ -580,7 +580,7 @@
       });
     }
     if (els.productGrid) {
-      var cards = els.productGrid.querySelectorAll(".featured-collection-card");
+      var cards = els.productGrid.querySelectorAll(".cg-category-card");
       var n = 0;
       var total = cards.length;
       cards.forEach(function (card) {
@@ -646,7 +646,7 @@
   function renderFeatured() {
     if (!els.productGrid) return;
     wireHomeFiltersOnce();
-    els.productGrid.className = "featured-collections-grid";
+    els.productGrid.className = "cg-category-grid";
     els.productGrid.innerHTML = "";
     if (els.filterLabel && !els.filterLabel.textContent.trim()) {
       els.filterLabel.textContent =
@@ -674,7 +674,7 @@
         bits.push(String(minFrom));
         if (CART.formatMoney) bits.push(CART.formatMoney(minFrom).toLowerCase().replace(/\s/g, ""));
       }
-      var card = window.CraftguruPremiumCards.buildCategoryCard({
+      var card = window.CraftguruCategoryCard.buildCategoryCard({
         href: catHref,
         title: cat.label,
         subtitle: countLabel,
@@ -1131,11 +1131,11 @@
 
   function patchFeaturedCardPrices() {
     if (!els.productGrid) return;
-    var cards = els.productGrid.querySelectorAll(".featured-collection-card[data-min-price]");
+    var cards = els.productGrid.querySelectorAll(".cg-category-card[data-min-price]");
     if (!cards.length) return false;
     cards.forEach(function (card) {
       var catId = "";
-      var link = card.querySelector(".featured-collection-card__hit");
+      var link = card.querySelector(".cg-category-card__link");
       if (link && link.getAttribute("href")) {
         try {
           var u = new URL(link.href, window.location.href);

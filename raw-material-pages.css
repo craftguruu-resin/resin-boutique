@@ -1459,7 +1459,7 @@ a.rm-nav-tree__title-link:focus-visible {
   white-space: nowrap;
 }
 
-/* Legacy hub card overrides removed — glass theme in home-featured-collections.css */
+/* Legacy hub card overrides removed — glass theme in cg-category-card.css */
 
 @media (max-width: 900px) {
   .rm-shop-layout {
@@ -2223,27 +2223,27 @@ body.rm-theme--photo-frame .category-toolbar__btn--ghost {
   border: 1px solid rgba(44, 95, 120, 0.2);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub__head .featured-collections-sub {
+body.rm-theme--photo-frame .rm-cat-hub__head .cg-category-section__sub {
   color: var(--pf-ink-muted);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__name {
+body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__title {
   color: var(--pf-ink);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__count {
+body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__count {
   color: var(--pf-ink-muted);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card__cta {
+body.rm-theme--photo-frame .rm-cat-hub .cg-category-card__cta {
   color: var(--pf-teal-deep);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .featured-collection-card:hover .featured-collection-card__cta {
+body.rm-theme--photo-frame .rm-cat-hub .cg-category-card:hover .cg-category-card__cta {
   color: var(--pf-teal);
 }
 
-body.rm-theme--photo-frame .rm-cat-hub .featured-collections-title {
+body.rm-theme--photo-frame .rm-cat-hub .cg-category-section__title {
   color: var(--pf-teal-deep);
 }
 
