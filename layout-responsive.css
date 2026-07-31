@@ -732,7 +732,8 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
 
 /* ── Guest main + category pages ── */
 @media (max-width: 899px) {
-  body.guest-site:not(.page-home) main.sub-main,
+  body.guest-site:not(.page-home) main.sub-main:has(.guest-page-category-rail),
+  body.guest-site:not(.page-home) main.sub-main:has(.guest-main-with-rail-inner),
   body.guest-site .guest-main-with-rail-inner {
     flex-direction: column;
     min-width: 0;
@@ -790,9 +791,17 @@ body.guest-site {
 }
 
 body.guest-site .mesh-gradient,
-body.guest-site .animated-backdrop,
-body.guest-site .grid-lines {
+body.guest-site .animated-backdrop {
   max-width: 100vw;
+}
+
+/* Normalize vertical rhythm on guest subpages (preserve home hero + footer spacing) */
+body.guest-site:not(.page-home):not(.page-checkout) .sub-main {
+  min-height: 0;
+}
+
+body.guest-site:not(.page-home) .band-shop:not(.band-shop--home) {
+  padding-bottom: clamp(2rem, 4vw, 3rem);
 }
 
 /* ── Social float stack — mobile safe area ── */

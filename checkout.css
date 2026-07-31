@@ -18,29 +18,31 @@ body.page-checkout .mesh-gradient,
 body.page-checkout .tone-shift,
 body.page-checkout .animated-backdrop,
 body.page-checkout .grid-lines {
-  opacity: 0.35;
+  display: none;
 }
 
 body.page-checkout .sub-main {
   padding-top: 0.5rem;
+  min-height: 0;
+  padding-bottom: 0;
 }
 
-/* Guest layout uses flex row on sub-main for category rails; checkout has no rail */
-body.guest-site.page-checkout main.sub-main {
-  display: block;
-  width: 100%;
-}
-
-body.guest-site.page-checkout #checkoutMain {
+body.page-checkout #checkoutMain {
   width: 100%;
   max-width: 100%;
 }
 
-body.guest-site.page-checkout .checkout-page {
+body.page-checkout .checkout-page {
   width: 100%;
   max-width: min(1480px, 96vw);
   margin-inline: auto;
   box-sizing: border-box;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+  padding-bottom: 1.25rem;
+}
+
+body.page-checkout .site-footer--craftguru {
+  margin-top: 1.25rem;
 }
 
 /* Top bar: stepper + secure badge */
@@ -639,7 +641,7 @@ body.page-checkout .checkout-summary-pay:disabled {
 /* Footer trust bar */
 .ck-trust-bar {
   max-width: min(1480px, 96vw);
-  margin: 2.5rem auto 0;
+  margin: 1.25rem auto 0;
   padding: 1.25rem clamp(1rem, 3vw, 2rem);
   display: grid;
   grid-template-columns: repeat(2, 1fr);

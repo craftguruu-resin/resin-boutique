@@ -199,13 +199,20 @@ body.guest-site:not(.page-home) {
   padding-left: 0;
 }
 
-body.guest-site:not(.page-home) main.sub-main {
+/* Flex split only when a category rail is present (checkout/account have no rail). */
+body.guest-site:not(.page-home) main.sub-main:has(.guest-page-category-rail),
+body.guest-site:not(.page-home) main.sub-main:has(.guest-main-with-rail-inner) {
   display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 1rem;
   max-width: 100%;
   box-sizing: border-box;
+}
+
+/* Remove faint grid overlay on guest storefront pages */
+body.guest-site .grid-lines {
+  display: none;
 }
 
 /* Category rail: hug pills — avoid stretch blank below nav (home split styles) */
@@ -308,7 +315,8 @@ body.guest-site .global-find {
 }
 
 @media (max-width: 900px) {
-  body.guest-site:not(.page-home) main.sub-main {
+  body.guest-site:not(.page-home) main.sub-main:has(.guest-page-category-rail),
+  body.guest-site:not(.page-home) main.sub-main:has(.guest-main-with-rail-inner) {
     flex-direction: column;
   }
 
