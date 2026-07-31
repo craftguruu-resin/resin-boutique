@@ -2104,11 +2104,12 @@ body.product-page--oos .btn-add-lg {
 }
 
 /* Sitemap footer — same glass / mist theme as the rest of the site */
-.site-footer--craftguru {
+.site-footer.site-footer--craftguru {
   margin-top: 2.5rem;
   max-width: none;
   text-align: left;
-  padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 1.25rem;
+  /* Beat .site-footer { padding: 0 … } later in this file; top pad clears the darker footer band */
+  padding: clamp(2.75rem, 4.5vw, 3.25rem) clamp(1rem, 4vw, 2.5rem) 1.25rem;
   background: transparent;
   color: var(--ink);
   border-top: 1px solid rgba(255, 255, 255, 0.35);
