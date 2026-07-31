@@ -655,29 +655,34 @@
       return;
     }
 
-    var thumbs = "";
-    for (var ti = 0; ti < entries.length; ti++) {
-      var ent = entries[ti];
-      var u = ent.url || "";
-      if (!String(u).trim()) continue;
-      var syncAttr = "";
-      if (ent.kind === "color" && ent.cid) {
-        syncAttr = ' data-gallery-sync="color" data-gallery-cid="' + escAttr(ent.cid) + '"';
-      } else if (ent.kind === "size" && ent.sid) {
-        syncAttr = ' data-gallery-sync="size" data-gallery-sid="' + escAttr(ent.sid) + '"';
-      } else if (ent.kind === "qty" && ent.qid) {
-        syncAttr = ' data-gallery-sync="qty" data-gallery-qid="' + escAttr(ent.qid) + '"';
+    var P = window.CraftguruPremiumPdp;
+    var thumbs = P && P.buildThumbButtons
+      ? P.buildThumbButtons(entries, idx, imgSrc)
+      : "";
+    if (!thumbs) {
+      for (var ti = 0; ti < entries.length; ti++) {
+        var ent = entries[ti];
+        var u = ent.url || "";
+        if (!String(u).trim()) continue;
+        var syncAttr = "";
+        if (ent.kind === "color" && ent.cid) {
+          syncAttr = ' data-gallery-sync="color" data-gallery-cid="' + escAttr(ent.cid) + '"';
+        } else if (ent.kind === "size" && ent.sid) {
+          syncAttr = ' data-gallery-sync="size" data-gallery-sid="' + escAttr(ent.sid) + '"';
+        } else if (ent.kind === "qty" && ent.qid) {
+          syncAttr = ' data-gallery-sync="qty" data-gallery-qid="' + escAttr(ent.qid) + '"';
+        }
+        thumbs +=
+          '<button type="button" class="rm-pdp__thumb cg-pdp__thumb' +
+          (ti === idx ? " is-active" : "") +
+          '" data-img-idx="' +
+          ti +
+          '"' +
+          syncAttr +
+          '><img src="' +
+          escAttr(imgSrc(u)) +
+          '" alt="" width="72" height="72" loading="lazy" /></button>';
       }
-      thumbs +=
-        '<button type="button" class="rm-pdp__thumb' +
-        (ti === idx ? " is-active" : "") +
-        '" data-img-idx="' +
-        ti +
-        '"' +
-        syncAttr +
-        '><img src="' +
-        escAttr(imgSrc(u)) +
-        '" alt="" width="72" height="72" loading="lazy" /></button>';
     }
 
     var sizeHtml = "";
@@ -771,28 +776,31 @@
     }
 
     var brandKicker = String(opt.brandLine || "").trim() || (D.getCategoryLabel ? D.getCategoryLabel(p.category) : "Resin");
-    var ratingNum = String(opt.ratingScore || "4.8").trim() || "4.8";
-    var revN =
-      opt.reviewCount != null && Number.isFinite(Number(opt.reviewCount))
-        ? Math.round(Number(opt.reviewCount))
-        : 214;
-    var trust = (opt.trustBullets || [])
-      .map(function (t) {
-        return "<span>✓ " + esc(t) + "</span>";
-      })
-      .join("");
+    var catLabel = D.getCategoryLabel ? D.getCategoryLabel(p.category) : brandKicker;
+    var featureHtml = P && P.featurePillsHtml ? P.featurePillsHtml() : "";
+    var fsBtn = P && P.fullscreenBtnHtml ? P.fullscreenBtnHtml() : "";
+    var catTag = P && P.categoryTagHtml ? P.categoryTagHtml(catLabel) : "<p class=\"rm-pdp__brand\">" + esc(brandKicker) + "</p>";
+    var titleRow =
+      P && P.titleRowHtml
+        ? P.titleRowHtml({ title: m.name, shareHostId: "resinPdpShare", wishId: "resinPdpWishLink" })
+        : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>";
+    var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
+    var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
+    var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
+    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "resinPdpBuyNow", waBuyId: "resinPdpWaBuy" }) : "";
+    var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml(p.category) : "";
 
     var html =
       '<div class="resin-pdp-padded">' +
-      '<nav class="crumb product-crumb" aria-label="Breadcrumb" style="margin-bottom:0.75rem"><a href="index.html">Home</a> <span class="crumb-sep">/</span> ' +
+      '<nav class="crumb product-crumb cg-pdp__crumb" aria-label="Breadcrumb" style="margin-bottom:0.75rem"><a href="index.html">Home</a> <span class="crumb-sep">›</span> ' +
       '<a href="category.html?cat=' +
       escAttr(encodeURIComponent(p.category)) +
       '">' +
-      esc(D.getCategoryLabel(p.category)) +
-      "</a> <span class=\"crumb-sep\">/</span> <span class=\"crumb-current\">" +
+      esc(catLabel) +
+      "</a> <span class=\"crumb-sep\">›</span> <span class=\"crumb-current\">" +
       esc(p.name) +
       "</span></nav>" +
-      '<div class="rm-pdp rm-pdp--modern" data-resin-pdp="1" data-resin-material-id="' +
+      '<div class="rm-pdp rm-pdp--modern cg-pdp-shell" data-resin-pdp="1" data-resin-material-id="' +
       escAttr(m.id) +
       '">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
@@ -804,6 +812,7 @@
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--down" aria-label="Scroll thumbnails down">▼</button>' +
       "</div>" +
       '<div class="rm-pdp__hero-wrap">' +
+      fsBtn +
       (gcount > 1
         ? '<button type="button" class="rm-pdp__nav rm-pdp__nav--prev" data-rm-gallery-nav="-1" aria-label="Previous image">‹</button>' +
           '<button type="button" class="rm-pdp__nav rm-pdp__nav--next" data-rm-gallery-nav="1" aria-label="Next image">›</button>'
@@ -818,17 +827,11 @@
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div>" +
-      '<div class="rm-pdp__feature-bar" aria-label="Product highlights">' +
-      "<span>Handmade With Love</span><span>Premium Quality</span><span>Made To Last</span><span>Perfect For Gifting</span>" +
-      "</div></div>" +
+      featureHtml +
+      "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
-      "<p class=\"rm-pdp__brand\">" +
-      esc(brandKicker) +
-      "</p>" +
-      "<h1 class=\"rm-pdp__title\">" +
-      esc(m.name) +
-      "</h1>" +
-      '<div class="product-share-bar product-share-bar--rm-pdp" id="resinPdpShare" aria-label="Share"></div>' +
+      catTag +
+      titleRow +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
       CART.formatMoney(eff) +
@@ -840,6 +843,8 @@
         ? '<span class="rm-pdp__save" id="resinPdpSave">' + pct + "% off</span>"
         : "") +
       "</div>" +
+      taxNote +
+      discBanner +
       (m.description
         ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose"><p>' +
           esc(String(m.description).trim()).replace(/\n/g, "<br />") +
@@ -856,19 +861,18 @@
       state.lineQty +
       "</span>" +
       '<button type="button" data-rm-line-qty="1">+</button></div>' +
-      '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to cart</button>' +
+      '<button type="button" class="rm-pdp__add" id="resinPdpAdd">Add to Cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="resinPdpWish" aria-label="Save to wishlist">♡</button></div>' +
-      '<button type="button" class="rm-pdp__buy-now" id="resinPdpBuyNow">Buy now</button>' +
+      buyRow +
       '<div class="rm-pdp__bulk-row">' +
       '<button type="button" class="rm-pdp__bulk bulk-buy-btn bulk-buy-btn--pdp" id="resinPdpBulk" title="Contact us for bulk orders and wholesale pricing." aria-label="Bulk Buy. Contact us for bulk orders and wholesale pricing.">' +
       ((window.CRAFTGURU_WA && window.CRAFTGURU_WA.ICON_SVG) || "") +
       '<span class="bulk-buy-btn__label">Bulk Buy</span></button></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
-      (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
-      '<div class="rm-pdp__trust-bar" aria-label="Shopping assurances">' +
-      "<span>100% Secure Payment</span><span>Easy 7 Day Returns</span><span>Pan India Delivery</span>" +
+      trustHtml +
       "</div>" +
-      "</div></div></div>";
+      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
+      "</div></div>";
 
     root.innerHTML = html;
     var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
@@ -876,7 +880,27 @@
     updateResinThumbNavVisibility(root);
     if (window.RESIN_WISHLIST && state.product) {
       var wishBtn = document.getElementById("resinPdpWish");
+      var wishLink = document.getElementById("resinPdpWishLink");
       if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.product.id, "catalog");
+      if (wishLink) {
+        window.RESIN_WISHLIST.syncButton(wishLink, state.product.id, "catalog");
+        wishLink.classList.toggle("is-on", wishBtn && wishBtn.classList.contains("is-on"));
+      }
+    }
+    if (P) {
+      P.wireFullscreen(root);
+      P.wireMoreViews(root);
+      P.wireWhatsAppBuy(document.getElementById("resinPdpWaBuy"), function () {
+        var slot = variantSlot(state.sel);
+        return {
+          productName: m.name,
+          productId: m.id,
+          productUrl: "product.html?id=" + encodeURIComponent(state.product.id),
+          qty: state.lineQty,
+          variantLabel: variantLabelFrom(m, state.sel),
+          price: CART.formatMoney(effectivePriceInr(m, state.sel)),
+        };
+      });
     }
     if (window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       var sh = document.getElementById("resinPdpShare");
@@ -1011,12 +1035,18 @@
         if (lqv) lqv.textContent = String(state.lineQty);
         return;
       }
-      if (t.closest("#resinPdpWish")) {
-        var wishEl = t.closest("#resinPdpWish");
+      if (t.closest("#resinPdpWish") || t.closest("#resinPdpWishLink")) {
+        var wishEl = t.closest("#resinPdpWish") || t.closest("#resinPdpWishLink");
         if (window.RESIN_WISHLIST && state.product && wishEl) {
           wishEl.setAttribute("aria-busy", "true");
           window.RESIN_WISHLIST.toggle(state.product.id, "catalog", function () {
-            window.RESIN_WISHLIST.syncButton(wishEl, state.product.id, "catalog");
+            var hb = root.querySelector("#resinPdpWish");
+            var hl = root.querySelector("#resinPdpWishLink");
+            if (hb) window.RESIN_WISHLIST.syncButton(hb, state.product.id, "catalog");
+            if (hl) {
+              window.RESIN_WISHLIST.syncButton(hl, state.product.id, "catalog");
+              hl.classList.toggle("is-on", hb && hb.classList.contains("is-on"));
+            }
           });
         }
         return;

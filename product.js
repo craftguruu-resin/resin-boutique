@@ -1055,7 +1055,64 @@
     }
 
     bindProductImageZoom();
+    mountClassicPdpEnhancements();
     if (els.root) els.root.setAttribute("data-pdp-ready", "1");
+  }
+
+  function mountClassicPdpEnhancements() {
+    if (!product || !els.root) return;
+    var P = window.CraftguruPremiumPdp;
+    if (!P) return;
+
+    P.wireFullscreen(els.root);
+
+    var waBtn = document.getElementById("productWaBuy");
+    if (waBtn && !waBtn.dataset.cgWaWired) {
+      P.wireWhatsAppBuy(waBtn, function () {
+        var optCart = vendorPdpOptions(product);
+        var unit = product.prices && product.prices[selected] != null ? product.prices[selected] : 0;
+        if (vendorUsesCustomSizePills(optCart) && selectedVendorSid) {
+          for (var ci = 0; ci < optCart.sizes.length; ci++) {
+            if (String(optCart.sizes[ci].id) === String(selectedVendorSid)) {
+              unit =
+                optCart.sizes[ci].priceInr != null && Number.isFinite(Number(optCart.sizes[ci].priceInr))
+                  ? Number(optCart.sizes[ci].priceInr)
+                  : unit;
+              break;
+            }
+          }
+        }
+        return {
+          productName: product.name,
+          productId: product.id,
+          productUrl: "product.html?id=" + encodeURIComponent(product.id),
+          qty: selectedQty,
+          variantLabel: cartVariantLabelFull(),
+          price: fmt(unit),
+        };
+      });
+      if (window.CRAFTGURU_WA && window.CRAFTGURU_WA.ICON_SVG && !waBtn.querySelector(".bulk-buy-btn__icon")) {
+        waBtn.insertAdjacentHTML("afterbegin", window.CRAFTGURU_WA.ICON_SVG);
+      }
+    }
+
+    var bottom = document.getElementById("productPdpBottom");
+    if (bottom && !bottom.querySelector(".cg-pdp__service-banner")) {
+      bottom.innerHTML = P.bottomSectionsHtml(product.category);
+    }
+
+    if (window.RESIN_WISHLIST && els.catBadge) {
+      var wishLink = document.getElementById("productWishLink");
+      if (wishLink && !wishLink.dataset.cgWishWired) {
+        wishLink.dataset.cgWishWired = "1";
+        window.RESIN_WISHLIST.syncButton(wishLink, product.id, "catalog");
+        wishLink.addEventListener("click", function () {
+          window.RESIN_WISHLIST.toggle(product.id, "catalog", function () {
+            window.RESIN_WISHLIST.syncButton(wishLink, product.id, "catalog");
+          });
+        });
+      }
+    }
   }
 
   function productPagePrefersReducedMotion() {

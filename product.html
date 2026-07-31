@@ -10,13 +10,14 @@
   <title>Product — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
   <link rel="stylesheet" href="raw-material-pdp-modern.css" />
+  <link rel="stylesheet" href="premium-product-pdp.css" />
   <link rel="stylesheet" href="pdp-ethereal.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <link rel="stylesheet" href="layout-responsive.css" />
@@ -124,6 +125,10 @@
             <div class="product-catalog-gallery__hero">
               <div class="product-hero-img product-hero-img--fx product-hero-img--zoomhost" id="productZoomHost">
                 <div class="product-hero-img__glow" aria-hidden="true"></div>
+                <button type="button" class="cg-pdp__fullscreen" data-cg-pdp-fullscreen aria-label="View fullscreen">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 4H4v4M16 4h4v4M8 20H4v-4M16 20h4v-4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/></svg>
+                  <span>Fullscreen</span>
+                </button>
                 <img id="productImage" src="" alt="" width="800" height="900" />
                 <p class="product-hero-img__zoom-hint" id="productZoomHint" hidden></p>
               </div>
@@ -134,11 +139,11 @@
               <button type="button" class="product-catalog-gallery__nav product-catalog-gallery__nav--down" id="productGalleryDown" aria-label="Scroll thumbnails down">▼</button>
             </div>
           </div>
-          <div class="pdp-feature-bar" aria-label="Product highlights">
-            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">♡</span>Handmade With Love</div>
-            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">✦</span>Premium Quality</div>
-            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">◎</span>Made To Last</div>
-            <div class="pdp-feature-bar__item"><span class="pdp-feature-bar__icon" aria-hidden="true">❀</span>Perfect For Gifting</div>
+          <div class="pdp-feature-bar cg-pdp__feature-pills" aria-label="Product highlights">
+            <div class="pdp-feature-bar__item cg-pdp__feature-pill">Handmade With Love</div>
+            <div class="pdp-feature-bar__item cg-pdp__feature-pill">Premium Quality</div>
+            <div class="pdp-feature-bar__item cg-pdp__feature-pill">Made To Last</div>
+            <div class="pdp-feature-bar__item cg-pdp__feature-pill">Perfect For Gifting</div>
           </div>
           <section class="product-overview product-overview--under-visual glass-panel" aria-labelledby="overview-h">
             <h2 class="product-overview__h" id="overview-h">About this piece</h2>
@@ -152,19 +157,26 @@
         </div>
 
         <div class="product-detail product-detail--purchase product-detail--buy-column">
-          <h1 class="product-title product-title--fx" id="productTitle">Loading…</h1>
-          <div class="product-meta-share-row">
-            <p class="product-meta-line"><span id="productCategoryBadge">—</span></p>
-            <div class="product-share-bar" id="productShareHost" aria-label="Share this piece"></div>
+          <span class="cg-pdp__cat-tag" id="productCategoryBadge">—</span>
+          <div class="cg-pdp__title-row">
+            <h1 class="product-title product-title--fx cg-pdp__title" id="productTitle">Loading…</h1>
+            <div class="cg-pdp__title-actions">
+              <div class="product-share-bar cg-pdp__share-host" id="productShareHost" aria-label="Share this piece"></div>
+              <button type="button" class="cg-pdp__wishlist-link" id="productWishLink" aria-label="Save to wishlist"><span aria-hidden="true">♡</span> Wishlist</button>
+            </div>
           </div>
 
           <div class="pd-buy-rail">
             <div class="pd-buy-rail__price-row">
               <p class="product-price-hero pd-buy-rail__price">
                 <strong id="productPrice">₹0</strong>
-                <span class="currency-tag">MRP</span>
               </p>
+              <p class="cg-pdp__tax-note">Inclusive of all taxes</p>
               <p class="pd-stock-hint" id="productStockHint" hidden></p>
+            </div>
+            <div class="cg-pdp__discount-banner" role="note">
+              <span class="cg-pdp__discount-icon" aria-hidden="true">🎁</span>
+              <span>Flat <strong>5% OFF</strong> on prepaid orders · Pay online at checkout</span>
             </div>
             <p class="pd-buy-rail__breakdown" id="priceBreakdown"></p>
             <p class="pd-buy-rail__size-line" id="priceSizeLabel"></p>
@@ -201,10 +213,21 @@
             </div>
 
             <button type="button" class="pd-buy-rail__cta btn-add-lg btn-add-lg--fx" id="addToCartBtn">
-              <span class="btn-add-premium__text">Add to cart</span>
+              <span class="btn-add-premium__text">Add to Cart</span>
             </button>
-            <button type="button" class="rm-pdp__buy-now" id="buyNowBtn">Buy now</button>
+            <div class="cg-pdp__buy-row">
+              <button type="button" class="cg-pdp__buy-now rm-pdp__buy-now" id="buyNowBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>
+                <span>Buy Now</span>
+              </button>
+              <button type="button" class="cg-pdp__wa-buy" id="productWaBuy"><span>Buy on WhatsApp</span></button>
+            </div>
             <div class="pd-buy-rail__bulk" id="bulkBuyWrap"></div>
+            <div class="cg-pdp__trust-row" aria-label="Product assurances">
+              <span class="cg-pdp__trust-item"><span class="cg-pdp__trust-icon" aria-hidden="true">✦</span>Hand-finished in Jaipur</span>
+              <span class="cg-pdp__trust-item"><span class="cg-pdp__trust-icon" aria-hidden="true">◎</span>MRP includes GST</span>
+              <span class="cg-pdp__trust-item"><span class="cg-pdp__trust-icon" aria-hidden="true">✓</span>Secure Checkout</span>
+            </div>
             <p class="product-note">Each pour is unique; your piece may vary slightly from photos.</p>
           </div>
 
@@ -218,11 +241,7 @@
           </p>
         </div>
       </div>
-      <div class="pdp-trust-bar" aria-label="Shopping assurances">
-        <span>100% Secure Payment</span>
-        <span>Easy 7 Day Returns</span>
-        <span>Pan India Delivery</span>
-      </div>
+      <div class="cg-pdp__bottom" id="productPdpBottom"></div>
     </div>
   </main>
 
@@ -334,6 +353,7 @@
   <script src="auth-home.js"></script>
   <script src="craftguru-share.js"></script>
   <script src="craftguru-whatsapp.js"></script>
+  <script src="premium-product-pdp.js"></script>
   <script src="pdp-loading-ui.js"></script>
   <script src="resin-product-pdp.js"></script>
   <script src="shell.js"></script>

@@ -429,12 +429,15 @@
         return;
       }
 
-      var wish = t.closest("#rmPdpWish");
+      var wish = t.closest("#rmPdpWish") || t.closest("#rmPdpWishLink");
       if (wish) {
         if (window.RESIN_WISHLIST && state.material) {
           wish.setAttribute("aria-busy", "true");
           window.RESIN_WISHLIST.toggle(state.material.id, "raw_material", function () {
-            window.RESIN_WISHLIST.syncButton(wish, state.material.id, "raw_material");
+            var hb = root.querySelector("#rmPdpWish");
+            var hl = root.querySelector("#rmPdpWishLink");
+            if (hb) window.RESIN_WISHLIST.syncButton(hb, state.material.id, "raw_material");
+            if (hl) window.RESIN_WISHLIST.syncButton(hl, state.material.id, "raw_material");
           });
         }
         return;
@@ -677,28 +680,33 @@
     var pct = discountPctFor(m, state.sel);
 
     var thumbs = "";
-    for (var ti = 0; ti < entries.length; ti++) {
-      var ent = entries[ti];
-      var u = ent.url || "";
-      if (!String(u).trim()) continue;
-      var syncAttr = "";
-      if (ent.kind === "color" && ent.cid) {
-        syncAttr = " data-gallery-sync=\"color\" data-gallery-cid=\"" + escAttr(ent.cid) + "\"";
-      } else if (ent.kind === "size" && ent.sid) {
-        syncAttr = " data-gallery-sync=\"size\" data-gallery-sid=\"" + escAttr(ent.sid) + "\"";
-      } else if (ent.kind === "qty" && ent.qid) {
-        syncAttr = " data-gallery-sync=\"qty\" data-gallery-qid=\"" + escAttr(ent.qid) + "\"";
+    var P = window.CraftguruPremiumPdp;
+    if (P && P.buildThumbButtons) {
+      thumbs = P.buildThumbButtons(entries, idx, imgSrc);
+    } else {
+      for (var ti = 0; ti < entries.length; ti++) {
+        var ent = entries[ti];
+        var u = ent.url || "";
+        if (!String(u).trim()) continue;
+        var syncAttr = "";
+        if (ent.kind === "color" && ent.cid) {
+          syncAttr = " data-gallery-sync=\"color\" data-gallery-cid=\"" + escAttr(ent.cid) + "\"";
+        } else if (ent.kind === "size" && ent.sid) {
+          syncAttr = " data-gallery-sync=\"size\" data-gallery-sid=\"" + escAttr(ent.sid) + "\"";
+        } else if (ent.kind === "qty" && ent.qid) {
+          syncAttr = " data-gallery-sync=\"qty\" data-gallery-qid=\"" + escAttr(ent.qid) + "\"";
+        }
+        thumbs +=
+          "<button type=\"button\" class=\"rm-pdp__thumb cg-pdp__thumb" +
+          (ti === idx ? " is-active" : "") +
+          "\" data-img-idx=\"" +
+          ti +
+          "\"" +
+          syncAttr +
+          "><img src=\"" +
+          escAttr(imgSrc(u)) +
+          "\" alt=\"\" width=\"72\" height=\"72\" loading=\"lazy\" /></button>";
       }
-      thumbs +=
-        "<button type=\"button\" class=\"rm-pdp__thumb" +
-        (ti === idx ? " is-active" : "") +
-        "\" data-img-idx=\"" +
-        ti +
-        "\"" +
-        syncAttr +
-        "><img src=\"" +
-        escAttr(imgSrc(u)) +
-        "\" alt=\"\" width=\"72\" height=\"72\" loading=\"lazy\" /></button>";
     }
     var galleryUrlCount = galleryUrlCountFrom(entries);
 
@@ -770,23 +778,24 @@
         "</div></div>";
     }
 
-    var trust = (opt.trustBullets || [])
-      .map(function (t) {
-        return "<span>✓ " + esc(t) + "</span>";
-      })
-      .join("");
-
     var brandKicker = String(opt.brandLine || "").trim();
-    if (!brandKicker) brandKicker = "Craft Guru · Raw material";
-    var ratingNum = String(opt.ratingScore || "4.8").trim() || "4.8";
-    var revN =
-      opt.reviewCount != null && Number.isFinite(Number(opt.reviewCount))
-        ? Math.round(Number(opt.reviewCount))
-        : 214;
+    if (!brandKicker) brandKicker = "Raw Materials";
     var detailText = String(opt.detailBody || "").trim() || String(m.description || "").trim();
+    var featureHtml = P && P.featurePillsHtml ? P.featurePillsHtml() : "";
+    var fsBtn = P && P.fullscreenBtnHtml ? P.fullscreenBtnHtml() : "";
+    var catTag = P && P.categoryTagHtml ? P.categoryTagHtml(brandKicker) : '<p class="rm-pdp__brand">' + esc(brandKicker) + "</p>";
+    var titleRow =
+      P && P.titleRowHtml
+        ? P.titleRowHtml({ title: m.name, shareHostId: "rmPdpShareHost", wishId: "rmPdpWishLink" })
+        : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>";
+    var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
+    var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
+    var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
+    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
+    var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml("raw-material") : "";
 
     var html =
-      '<div class="rm-pdp rm-pdp--modern" data-rm-material-id="' +
+      '<div class="rm-pdp rm-pdp--modern cg-pdp-shell" data-rm-material-id="' +
       escAttr(String(m.id)) +
       '">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
@@ -798,6 +807,7 @@
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--down" aria-label="Scroll thumbnails down">▼</button>' +
       "</div>" +
       '<div class="rm-pdp__hero-wrap">' +
+      fsBtn +
       (opt.badge ? '<span class="rm-pdp__badge">' + esc(opt.badge) + "</span>" : "") +
       (galleryUrlCount > 1
         ? '<button type="button" class="rm-pdp__nav rm-pdp__nav--prev" id="rmPdpPrev" aria-label="Previous image">‹</button>' +
@@ -814,17 +824,11 @@
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div>" +
-      '<div class="rm-pdp__feature-bar" aria-label="Product highlights">' +
-      "<span>Handmade With Love</span><span>Premium Quality</span><span>Made To Last</span><span>Perfect For Gifting</span>" +
-      "</div></div>" +
+      featureHtml +
+      "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
-      '<p class="rm-pdp__brand">' +
-      esc(brandKicker) +
-      "</p>" +
-      "<h1 class=\"rm-pdp__title\">" +
-      esc(m.name) +
-      "</h1>" +
-      '<div class="product-share-bar product-share-bar--rm-pdp" id="rmPdpShareHost" aria-label="Share this material"></div>' +
+      catTag +
+      titleRow +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="rmPdpPrice">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +
@@ -836,6 +840,8 @@
         ? '<span class="rm-pdp__save" id="rmPdpSave">' + pct + "% off</span>"
         : '<span class="rm-pdp__save" id="rmPdpSave" hidden></span>') +
       "</div>" +
+      taxNote +
+      discBanner +
       (m.description
         ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose">' +
           formatDescParagraphs(m.description) +
@@ -852,16 +858,13 @@
       "</span>" +
       '<button type="button" id="rmLineQtyPlus">+</button>' +
       "</div>" +
-      '<button type="button" class="rm-pdp__add" id="rmAddCart">Add to cart</button>' +
+      '<button type="button" class="rm-pdp__add" id="rmAddCart">Add to Cart</button>' +
       '<button type="button" class="rm-pdp__wish" id="rmPdpWish" aria-label="Save to wishlist">♡</button>' +
       "</div>" +
-      '<button type="button" class="rm-pdp__buy-now" id="rmBuyNow">Buy now</button>' +
+      buyRow +
       '<div class="rm-pdp__bulk-row" id="rmBulkBuyWrap"></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
-      (trust ? '<div class="rm-trust rm-trust--modern">' + trust + "</div>" : "") +
-      '<div class="rm-pdp__trust-bar" aria-label="Shopping assurances">' +
-      "<span>100% Secure Payment</span><span>Easy 7 Day Returns</span><span>Pan India Delivery</span>" +
-      "</div>" +
+      trustHtml +
       (detailText
         ? '<div class="rm-pdp-accordion rm-pdp-accordion--modern">' +
           '<button type="button" class="rm-pdp-acc-head" id="rmPdpAccBtn" aria-expanded="true">' +
@@ -872,7 +875,9 @@
           esc(detailText) +
           "</div></div>"
         : "") +
-      "</div></div>";
+      "</div>" +
+      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
+      "</div>";
 
     if (shellNeedsRebuild(root, m, entries, galleryUrlCount)) {
       applyPdpHtml(root, html);
@@ -883,6 +888,26 @@
     mountRmPdpShare(root);
     mountRmBulkBuy(root);
     fadeHeroImageIn(root);
+    if (P) {
+      P.wireFullscreen(root);
+      P.wireMoreViews(root);
+      P.wireWhatsAppBuy(document.getElementById("rmWaBuy"), function () {
+        return {
+          productName: m.name,
+          productId: m.id,
+          productUrl: window.location.href,
+          qty: state.lineQty,
+          variantLabel: variantLabelFrom(m, state.sel),
+          price: CART ? CART.formatMoney(effectivePriceInr(m, state.sel)) : effectivePriceInr(m, state.sel),
+        };
+      });
+    }
+    var wishBtn = root.querySelector("#rmPdpWish");
+    var wishLink = root.querySelector("#rmPdpWishLink");
+    if (window.RESIN_WISHLIST && state.material) {
+      if (wishBtn) window.RESIN_WISHLIST.syncButton(wishBtn, state.material.id, "raw_material");
+      if (wishLink) window.RESIN_WISHLIST.syncButton(wishLink, state.material.id, "raw_material");
+    }
     root.setAttribute("data-pdp-ready", "1");
   }
 
