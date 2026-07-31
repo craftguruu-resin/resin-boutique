@@ -94,4 +94,7 @@
     esc: esc,
     escAttr: escAttr,
   };
+
+  // Back-compat for cached pages that still call CraftguruCategoryCard.
+  window.CraftguruCategoryCard = window.CraftguruPremiumCards;
 })();

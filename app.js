@@ -778,6 +778,8 @@
       }
     }
     applyHomeCatalogFilter();
+    var shop = document.getElementById("shop");
+    if (shop) shop.classList.add("is-inview");
   }
 
   function productDisplayImageSafe(p) {
