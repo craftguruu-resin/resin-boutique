@@ -3,6 +3,17 @@
  * Cover image, white overlapping panel, title, count/subtitle, explore CTA. No icon badges.
  */
 
+/* Anchor offset for hero CTAs and deep links (fixed header). */
+body.page-home #shop {
+  scroll-margin-top: 5.75rem;
+}
+
+@media (max-width: 640px) {
+  body.page-home #shop {
+    scroll-margin-top: 4.75rem;
+  }
+}
+
 /* ── Section header (homepage only) ── */
 body.page-home .section-head--collections {
   align-items: start;
