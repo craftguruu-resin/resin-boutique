@@ -44,6 +44,51 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  function hubCategoryPreview(c) {
+    if (D && D.getCategoryCardPreview && c && c.id) {
+      var resin = D.getCategoryCardPreview(c.id);
+      if (resin && resin.image) {
+        return { image: resin.image, fit: String(resin.fit || "").trim().toLowerCase() };
+      }
+    }
+    return {
+      image: (c && c.image) || "",
+      fit: String((c && c.imageFit) || "").trim().toLowerCase(),
+    };
+  }
+
+  function applyListingImageFit(imgEl, row) {
+    if (!imgEl || !row) return;
+    var fit = "";
+    if (D && D.getProductCoverImageFit) {
+      fit = D.getProductCoverImageFit(row);
+    } else if (window.CraftguruImageFit) {
+      fit = window.CraftguruImageFit.getProductCoverImageFit(row);
+    }
+    if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
+      window.CraftguruImageFit.applyImageFit(imgEl, fit);
+    } else if (fit === "contain" || fit === "cover") {
+      imgEl.setAttribute("data-image-fit", fit);
+    }
+  }
+
+  function refetchTaxonomyAndHub() {
+    var taxP = Promise.resolve(rmShopTaxDoc);
+    if (window.PfShopNav && window.PfShopNav.fetchTaxonomy) {
+      taxP = window.PfShopNav.fetchTaxonomy().catch(function () {
+        return rmShopTaxDoc;
+      });
+    }
+    taxP.then(function (doc) {
+      if (!doc) return;
+      rmShopTaxDoc = doc;
+      fillFilterSelectsFromTaxonomy(doc);
+      if (isRawMaterialShopHome()) {
+        renderRmCategoryHub(doc, allMaterials, rmShopHubFilter);
+      }
+    });
+  }
+
   function fmtPrice(n) {
     try {
       if (window.RESIN_CART && typeof window.RESIN_CART.formatMoney === "function") {
@@ -396,8 +441,9 @@
       var card = document.createElement("article");
       card.className = "featured-cat-card reveal-tile is-inview";
       card.style.setProperty("--stagger", String(idx % 10));
-      var imgRel = c.image || "";
-      var imgFit = String((c && c.imageFit) || "").trim().toLowerCase();
+      var preview = hubCategoryPreview(c);
+      var imgRel = preview.image || "";
+      var imgFit = preview.fit || "";
       var imgBlock = imgRel
         ? '<a class="featured-cat-card__media-hit" href="' +
           escAttr(href) +
@@ -597,6 +643,8 @@
           );
         })();
       g.appendChild(card);
+      var listImg = card.querySelector(".rm-card-shop__img img");
+      applyListingImageFit(listImg, m);
     });
   }
 
@@ -752,4 +800,7 @@
   } else {
     load();
   }
+
+  window.addEventListener("craftguruShopTaxonomyRefresh", refetchTaxonomyAndHub);
+  window.addEventListener("craftguruCatalogCategoriesMerged", refetchTaxonomyAndHub);
 })();

@@ -270,6 +270,15 @@
         "</div>";
       if (minP > 0) card.setAttribute("data-min-price", String(minP));
       grid.appendChild(card);
+      var cardImg = card.querySelector(".product-card__media img, .product-card-image img");
+      if (cardImg) {
+        var cardFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
+        if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
+          window.CraftguruImageFit.applyImageFit(cardImg, cardFit);
+        } else if (cardFit === "contain") {
+          cardImg.setAttribute("data-image-fit", "contain");
+        }
+      }
     });
     syncReturnGiftsUrl();
   }

@@ -344,6 +344,10 @@
     for (i = 0; i < n; i++) {
       imgs[i].src = imgUrl(pool[i].image);
       imgs[i].alt = "";
+      applyImageFitToImg(
+        imgs[i],
+        D.getCategoryPreviewImageFit ? D.getCategoryPreviewImageFit(pool[i].category, pool[i].image) : ""
+      );
     }
     root.querySelectorAll(".hero-float-polar").forEach(function (fig, idx) {
       fig.hidden = idx >= n;
@@ -364,12 +368,17 @@
       var href = "product.html?id=" + encodeURIComponent(p.id);
       var nm = String(p.name || "Piece").trim();
       var short = nm.length > 44 ? nm.slice(0, 44) + "…" : nm;
+      var fit = D.getCategoryPreviewImageFit ? D.getCategoryPreviewImageFit(p.category, p.image) : "";
+      var fitAttr =
+        fit === "contain" || fit === "cover" ? ' data-image-fit="' + escapeAttr(fit) + '"' : "";
       return (
         '<a class="hero-spot-card reveal-tile" href="' +
         href +
         '"><span class="hero-spot-card__glow" aria-hidden="true"></span><span class="hero-spot-card__media"><img src="' +
         escapeAttr(imgUrl(p.image)) +
-        '" alt="" loading="lazy" width="240" height="240" /></span><span class="hero-spot-card__meta"><span class="hero-spot-card__name">' +
+        '" alt="" loading="lazy" width="240" height="240"' +
+        fitAttr +
+        ' /></span><span class="hero-spot-card__meta"><span class="hero-spot-card__name">' +
         escapeHtml(short) +
         '</span><span class="hero-spot-card__hint">Open piece →</span></span></a>'
       );

@@ -476,6 +476,15 @@ a.rm-empty-link:hover {
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.rm-card-shop__img img[data-image-fit="contain"] {
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
+.rm-card-shop__img:has(> img[data-image-fit="contain"]) {
+  background: #ffffff;
+}
+
 .rm-card-shop:hover .rm-card-shop__img img {
   transform: scale(1.05);
 }

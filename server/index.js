@@ -406,6 +406,13 @@ function normalizeSubcategoryEntry(x) {
   if (img) {
     out.image = img.slice(0, 500);
   }
+  var fit =
+    (x.imageFit != null && String(x.imageFit).trim()) ||
+    (x.image_fit != null && String(x.image_fit).trim()) ||
+    "";
+  if (fit) {
+    out.imageFit = fit.slice(0, 20);
+  }
   return out;
 }
 
@@ -437,6 +444,9 @@ function mergeSubcategoryListsUnion(dbSubs, catalogSubs) {
             if (s.image && !out[i].image) {
               out[i].image = String(s.image).trim().slice(0, 500);
             }
+            if (s.imageFit && !out[i].imageFit) {
+              out[i].imageFit = String(s.imageFit).trim().slice(0, 20);
+            }
             if (out[i].label === out[i].id && s.label && s.label !== s.id) {
               out[i].label = String(s.label).slice(0, 200);
             }
@@ -448,6 +458,9 @@ function mergeSubcategoryListsUnion(dbSubs, catalogSubs) {
       var o = { id: id, label: String(s.label || id).slice(0, 200) };
       if (s.image) {
         o.image = String(s.image).trim().slice(0, 500);
+      }
+      if (s.imageFit) {
+        o.imageFit = String(s.imageFit).trim().slice(0, 20);
       }
       out.push(o);
     });

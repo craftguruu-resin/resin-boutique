@@ -671,6 +671,18 @@ var SIZE_DEFAULT = {
     return "";
   }
 
+  /** Category card preview: nav cover + fit, else product fallback. */
+  function getCategoryCardPreview(catId) {
+    var pair = getCategoryPreviewImagePair(catId);
+    var image = (pair && pair.primary) || (pair && pair.fallback) || "";
+    var fit = image ? getCategoryPreviewImageFit(catId, image) : "";
+    return {
+      image: image,
+      fit: fit,
+      fallback: (pair && pair.fallback) || "",
+    };
+  }
+
   /** Merge server-saved prices and optional per-size stock (see /api/catalog/price-overrides). Mutates catalog in memory. */
   function applyPriceOverrides(map) {
     if (!map || typeof map !== "object") return 0;
@@ -993,6 +1005,13 @@ var SIZE_DEFAULT = {
                 if (im) {
                   o.image = im.slice(0, 500);
                 }
+                var subFit =
+                  (s.imageFit != null && String(s.imageFit).trim()) ||
+                  (s.image_fit != null && String(s.image_fit).trim()) ||
+                  "";
+                if (subFit) {
+                  o.imageFit = subFit.slice(0, 20);
+                }
                 return o;
               })
               .filter(Boolean)
@@ -1069,5 +1088,6 @@ var SIZE_DEFAULT = {
     normalizeOptionsOverride: normalizeOptionsOverride,
     getProductCoverImageFit: getProductCoverImageFit,
     getCategoryPreviewImageFit: getCategoryPreviewImageFit,
+    getCategoryCardPreview: getCategoryCardPreview,
   };
 })(typeof window !== 'undefined' ? window : this);

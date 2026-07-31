@@ -639,6 +639,26 @@
     });
   }
 
+  function patchProductGridImageFit() {
+    if (!els.productGrid) return;
+    els.productGrid.querySelectorAll(".product-card[data-product-id]").forEach(function (card) {
+      var id = card.getAttribute("data-product-id");
+      if (!id || !D.getProduct) return;
+      var p = D.getProduct(id);
+      if (!p) return;
+      var cardImg = card.querySelector(".product-card__media img, .product-card-image img");
+      if (!cardImg) return;
+      var cardFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
+      if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
+        window.CraftguruImageFit.applyImageFit(cardImg, cardFit);
+      } else if (cardFit === "contain") {
+        cardImg.setAttribute("data-image-fit", "contain");
+      } else {
+        cardImg.removeAttribute("data-image-fit");
+      }
+    });
+  }
+
   function onCatalogDataMerged() {
     labelForList = D.getCategoryLabel(cat);
     if (els.heading) els.heading.textContent = labelForList;
@@ -647,6 +667,7 @@
     if (els.productGrid && els.productGrid.querySelectorAll(".product-card[data-product-id]").length) {
       patchProductGridPrices();
       patchProductGridNames();
+      patchProductGridImageFit();
       applyCatalogFilters(false);
     } else {
       applyCatalogFilters(false);

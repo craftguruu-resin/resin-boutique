@@ -128,10 +128,14 @@
     if (dataApi && typeof dataApi.getCategoryNavImageFit === "function") {
       navFit = normalizeImageFit(dataApi.getCategoryNavImageFit(catId));
     }
-    if (nav && navFit) {
-      var key = stripUrlCache(imageUrl).toLowerCase();
-      var navKey = stripUrlCache(nav).toLowerCase();
-      if (key === navKey) return navFit;
+    var key = stripUrlCache(imageUrl).toLowerCase();
+    var navKey = stripUrlCache(nav).toLowerCase();
+    if (nav && navKey && key === navKey) {
+      if (navFit) return navFit;
+      if (catId && CATEGORY_PREVIEW_FIT_FALLBACK[catId]) {
+        return normalizeImageFit(CATEGORY_PREVIEW_FIT_FALLBACK[catId]);
+      }
+      return "";
     }
     var fit = "";
     if (dataApi && typeof dataApi.listProductsAll === "function") {

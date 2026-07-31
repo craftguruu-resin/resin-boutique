@@ -1012,6 +1012,22 @@ body.page-home .featured-cat-card__media img {
   object-position: center;
 }
 
+/* Fit-image contain — centered in 3:2 well (overrides full-bleed cover above) */
+body.page-home .featured-cat-card__media:has(> img[data-image-fit="contain"]) {
+  background: #ffffff;
+  padding: 0;
+}
+
+body.page-home .featured-cat-card__media img[data-image-fit="contain"] {
+  flex: none !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center !important;
+}
+
 body.page-home .quote-card {
   border-radius: 22px;
   background: rgba(255, 255, 255, 0.9);

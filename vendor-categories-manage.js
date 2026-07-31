@@ -201,6 +201,7 @@
       if (window.PfShopNav && typeof window.PfShopNav.refresh === "function") {
         window.PfShopNav.refresh();
       }
+      window.dispatchEvent(new CustomEvent("craftguruShopTaxonomyRefresh"));
     } catch (_) {}
   }
 
