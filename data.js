@@ -621,6 +621,14 @@ var SIZE_DEFAULT = {
   function catalogOptionsHasPayload(opt) {
     opt = normalizeOptionsOverride(opt);
     if (!opt) return false;
+    if (
+      typeof window !== "undefined" &&
+      window.CraftguruImageFit &&
+      typeof window.CraftguruImageFit.optionsHasImageFit === "function" &&
+      window.CraftguruImageFit.optionsHasImageFit(opt)
+    ) {
+      return true;
+    }
     return !!(
       opt.useSize ||
       opt.useColor ||
@@ -633,6 +641,22 @@ var SIZE_DEFAULT = {
       String(opt.badge || "").trim() ||
       (Array.isArray(opt.trustBullets) && opt.trustBullets.length)
     );
+  }
+
+  function getProductCoverImageFit(p) {
+    if (typeof window !== "undefined" && window.CraftguruImageFit) {
+      return window.CraftguruImageFit.getProductCoverImageFit(p);
+    }
+    return "";
+  }
+
+  function getCategoryPreviewImageFit(catId, imageUrl) {
+    if (typeof window !== "undefined" && window.CraftguruImageFit) {
+      return window.CraftguruImageFit.getCategoryPreviewImageFit(catId, imageUrl, {
+        listProductsAll: listProductsAll,
+      });
+    }
+    return "";
   }
 
   /** Merge server-saved prices and optional per-size stock (see /api/catalog/price-overrides). Mutates catalog in memory. */
@@ -1023,5 +1047,7 @@ var SIZE_DEFAULT = {
     searchCatalogPartial: searchCatalogPartial,
     catalogOptionsHasPayload: catalogOptionsHasPayload,
     normalizeOptionsOverride: normalizeOptionsOverride,
+    getProductCoverImageFit: getProductCoverImageFit,
+    getCategoryPreviewImageFit: getCategoryPreviewImageFit,
   };
 })(typeof window !== 'undefined' ? window : this);

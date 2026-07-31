@@ -932,6 +932,42 @@
   color: #64748b;
 }
 
+.vpm-media__cover-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.vpm-media__cover-preview[data-image-fit="contain"],
+.vpm-media__gallery-item img[data-image-fit="contain"] {
+  object-fit: contain;
+  background: #f8fafc;
+}
+
+.vpm-img-fit-btn {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.vpm-img-fit-btn--on {
+  border-color: rgba(37, 99, 235, 0.35);
+  background: rgba(37, 99, 235, 0.08);
+  color: #1d4ed8;
+}
+
+.vpm-opt-url-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.vpm-opt-url-row .vpm-opt-url {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .vpm-media__cover-fields {
   flex: 1 1 220px;
   min-width: 0;

@@ -227,6 +227,81 @@
     renderMediaManager();
   }
 
+  function getImageFitApi() {
+    return window.CraftguruImageFit || null;
+  }
+
+  function currentEditingOptions() {
+    if (!editingProductOptions || typeof editingProductOptions !== "object") {
+      editingProductOptions = {};
+    }
+    return editingProductOptions;
+  }
+
+  function getHeroImageFitValue() {
+    var IF = getImageFitApi();
+    var opt = currentEditingOptions();
+    return IF && IF.getHeroImageFit ? IF.getHeroImageFit(opt) : "";
+  }
+
+  function getGalleryImageFitValue(url) {
+    var IF = getImageFitApi();
+    var opt = currentEditingOptions();
+    return IF && IF.getGalleryImageFit ? IF.getGalleryImageFit(opt, url) : "";
+  }
+
+  function setHeroImageFitValue(fit) {
+    var IF = getImageFitApi();
+    var opt = currentEditingOptions();
+    if (IF && IF.setHeroImageFit) IF.setHeroImageFit(opt, fit);
+    if (IF && IF.syncCoverColorImageFit) IF.syncCoverColorImageFit(opt);
+  }
+
+  function setGalleryImageFitValue(url, fit) {
+    var IF = getImageFitApi();
+    var opt = currentEditingOptions();
+    if (IF && IF.setGalleryImageFit) IF.setGalleryImageFit(opt, url, fit);
+  }
+
+  function applyCoverPreviewFit() {
+    var preview = document.getElementById("vpmCoverPreview");
+    var IF = getImageFitApi();
+    if (preview && IF && IF.applyImageFit) IF.applyImageFit(preview, getHeroImageFitValue());
+    var fitBtn = document.getElementById("vpmCoverFitBtn");
+    if (fitBtn && IF && IF.fitButtonLabel) {
+      fitBtn.textContent = IF.fitButtonLabel(getHeroImageFitValue());
+      fitBtn.classList.toggle("vpm-img-fit-btn--on", getHeroImageFitValue() === "contain");
+    }
+  }
+
+  function saveImageFitQuick() {
+    if (!editingId) return Promise.resolve();
+    var ps = Number(document.getElementById("vpmPriceS").value);
+    var pm = Number(document.getElementById("vpmPriceM").value);
+    var pl = Number(document.getElementById("vpmPriceL").value);
+    var returnGift = !!(document.getElementById("vpmReturnGiftYes") && document.getElementById("vpmReturnGiftYes").checked);
+    var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
+    var coverUrl = getCoverUrlInput() || editingCoverFallback;
+    var migrated = buildMigratedOptionsForSave(coverUrl);
+    migrated.detailBody = descTxt;
+    var IF = getImageFitApi();
+    if (IF && IF.syncCoverColorImageFit) IF.syncCoverColorImageFit(migrated);
+    var nameVal = String((document.getElementById("vpmName") && document.getElementById("vpmName").value) || "").trim();
+    return putCatalogPrices(editingId, {
+      name: nameVal || undefined,
+      priceS: Number.isFinite(ps) ? ps : 0,
+      priceM: Number.isFinite(pm) ? pm : 0,
+      priceL: Number.isFinite(pl) ? pl : 0,
+      returnGift: returnGift,
+      description: descTxt,
+      options: migrated,
+    }).then(function () {
+      editingProductOptions = Object.assign({}, migrated);
+      refreshGuestCatalogMerge();
+      showMsg("Image fit saved — guest storefront updated.", false);
+    });
+  }
+
   function renderMediaManager() {
     var cover = getCoverUrlInput() || stripMediaCacheBust(editingCoverFallback);
     var preview = document.getElementById("vpmCoverPreview");
@@ -241,6 +316,7 @@
       }
     }
     if (empty) empty.hidden = !!cover;
+    applyCoverPreviewFit();
 
     var list = document.getElementById("vpmGalleryList");
     if (!list) return;
@@ -251,19 +327,31 @@
     }
     list.innerHTML = urls
       .map(function (u, idx) {
+        var galFit = getGalleryImageFitValue(u);
+        var IF = getImageFitApi();
+        var fitLabel = IF && IF.fitButtonLabel ? IF.fitButtonLabel(galFit) : galFit === "contain" ? "Fit: contain ✓" : "Fit image";
         return (
           '<li class="vpm-media__gallery-item" data-idx="' +
           idx +
           '">' +
           '<img src="' +
           esc(imgSrc(u)) +
-          '" alt="" width="56" height="56" />' +
+          '" alt="" width="56" height="56"' +
+          (galFit ? ' data-image-fit="' + esc(galFit) + '"' : "") +
+          " />" +
           '<span class="vpm-media__gallery-url" title="' +
           esc(u) +
           '">' +
           esc(u.length > 48 ? u.slice(0, 45) + "…" : u) +
           "</span>" +
           '<span class="vpm-media__gallery-actions">' +
+          '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn vpm-img-fit-btn' +
+          (galFit === "contain" ? " vpm-img-fit-btn--on" : "") +
+          '" data-act="fit" data-idx="' +
+          idx +
+          '" title="Show full image (contain) when cropped">' +
+          esc(fitLabel) +
+          "</button>" +
           '<button type="button" class="vs-btn vs-btn--ghost vpm-media__btn" data-act="up" data-idx="' +
           idx +
           '" title="Move up"' +
@@ -301,6 +389,17 @@
         if (act === "del") {
           urls.splice(idx, 1);
           setGalleryUrls(urls);
+          return;
+        }
+        if (act === "fit") {
+          var IF = getImageFitApi();
+          var curGalFit = getGalleryImageFitValue(urls[idx]);
+          var nextGalFit = IF && IF.toggleImageFit ? IF.toggleImageFit(curGalFit) : curGalFit === "contain" ? "" : "contain";
+          setGalleryImageFitValue(urls[idx], nextGalFit);
+          renderMediaManager();
+          saveImageFitQuick().catch(function (e) {
+            showMsg(String((e && e.message) || e), true);
+          });
           return;
         }
         if (act === "cover") {
@@ -360,6 +459,23 @@
     if (file) {
       file.addEventListener("change", function () {
         renderMediaManager();
+      });
+    }
+    var coverFitBtn = document.getElementById("vpmCoverFitBtn");
+    if (coverFitBtn) {
+      coverFitBtn.addEventListener("click", function () {
+        if (!getCoverUrlInput() && !editingCoverFallback) {
+          showMsg("Add a cover image first.", true);
+          return;
+        }
+        var IF = getImageFitApi();
+        var cur = getHeroImageFitValue();
+        var next = IF && IF.toggleImageFit ? IF.toggleImageFit(cur) : cur === "contain" ? "" : "contain";
+        setHeroImageFitValue(next);
+        applyCoverPreviewFit();
+        saveImageFitQuick().catch(function (e) {
+          showMsg(String((e && e.message) || e), true);
+        });
       });
     }
   }
@@ -441,7 +557,20 @@
       opt = window.VendorCatalogPdpOptions.ensureCoverColorVariant(opt, opt.heroImage || cover, {
         label: coverLabel,
         hex: coverHex,
+        imageFit: getHeroImageFitValue(),
       });
+    }
+
+    var IF = getImageFitApi();
+    if (IF) {
+      if (getHeroImageFitValue()) opt.heroImageFit = getHeroImageFitValue();
+      else delete opt.heroImageFit;
+      if (editingProductOptions && editingProductOptions.galleryImageFits) {
+        opt.galleryImageFits = Object.assign({}, editingProductOptions.galleryImageFits);
+      } else {
+        delete opt.galleryImageFits;
+      }
+      if (IF.syncCoverColorImageFit) IF.syncCoverColorImageFit(opt);
     }
 
     var uC = document.getElementById("vpmUseColor");

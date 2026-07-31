@@ -41,13 +41,22 @@
     );
   }
 
-  function rowUrl(label, val) {
+  function rowUrl(label, val, fit) {
+    var IF = window.CraftguruImageFit;
+    var fitVal = IF && IF.normalizeImageFit ? IF.normalizeImageFit(fit) : "";
+    var fitBtn =
+      '<button type="button" class="vs-btn vs-btn--ghost vpm-img-fit-btn"' +
+      (fitVal ? ' data-image-fit="' + esc(fitVal) + '"' : "") +
+      ' title="Toggle contain fit when image looks cropped">Fit image</button>';
     return (
       "<label class=\"vs-field\" style=\"margin:0;grid-column:1/-1\"><span class=\"vs-muted\" style=\"font-size:0.78rem\">" +
       esc(label) +
-      '</span><input type="url" class="vs-input vpm-opt-url" value="' +
+      '</span><div class="vpm-opt-url-row">' +
+      '<input type="url" class="vs-input vpm-opt-url" value="' +
       esc(val) +
-      '" placeholder="https://…" maxlength="2000" /></label>'
+      '" placeholder="https://…" maxlength="2000" />' +
+      fitBtn +
+      "</div></label>"
     );
   }
 
@@ -73,8 +82,27 @@
     d.querySelector(".vpm-rm-row").addEventListener("click", function () {
       d.remove();
     });
+    var fitBtn = d.querySelector(".vpm-img-fit-btn");
+    if (fitBtn) {
+      syncRowFitButton(fitBtn);
+      fitBtn.addEventListener("click", function () {
+        var IF = window.CraftguruImageFit;
+        var cur = fitBtn.getAttribute("data-image-fit") || "";
+        var next = IF && IF.toggleImageFit ? IF.toggleImageFit(cur) : cur === "contain" ? "" : "contain";
+        if (next) fitBtn.setAttribute("data-image-fit", next);
+        else fitBtn.removeAttribute("data-image-fit");
+        syncRowFitButton(fitBtn);
+      });
+    }
     return d;
   }
+
+  function syncRowFitButton(btn) {
+    if (!btn) return;
+    var IF = window.CraftguruImageFit;
+    var fit = btn.getAttribute("data-image-fit") || "";
+    btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(fit) : fit === "contain" ? "Fit: contain ✓" : "Fit image";
+    btn.classList.toggle("vpm-img-fit-btn--on", fit === "contain");
 
   function addSizeRow(o) {
     var host = document.getElementById("vpmSizeRows");
@@ -90,7 +118,7 @@
           rowMoney("MRP (optional)", o && o.mrpInr, "vpm-sz-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
-          rowUrl("Image URL (optional)", (o && o.image) || "") +
+          rowUrl("Image URL (optional)", (o && o.image) || "", o && o.imageFit) +
           "</div>"
       )
     );
@@ -110,7 +138,7 @@
           rowMoney("MRP add-on (optional)", o && o.mrpInr, "vpm-qty-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
-          rowUrl("Image URL (optional)", (o && o.image) || "") +
+          rowUrl("Image URL (optional)", (o && o.image) || "", o && o.imageFit) +
           "</div>"
       )
     );
@@ -132,7 +160,7 @@
       '" aria-label="Swatch colour" />' +
       '<code class="vrm-color-readout vpm-color-readout"></code></div></div>' +
       '<div style="grid-column:1/-1">' +
-      rowUrl("Image URL (optional)", (o && o.image) || "") +
+      rowUrl("Image URL (optional)", (o && o.image) || "", o && o.imageFit) +
       "</div>" +
       '<div style="grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">' +
       rowMoney("Colour cost (INR)", o && o.costInr, "vpm-cl-cost") +
@@ -212,6 +240,7 @@
       label: label.slice(0, 120),
       hex: hex,
       image: cover,
+      imageFit: meta.imageFit || src.heroImageFit || undefined,
     });
 
     opt.useColor = true;
@@ -230,20 +259,25 @@
         var labInp = row.querySelector("input.vpm-opt-inp");
         var pick = row.querySelector("input.vpm-color-pick");
         var urlInp = row.querySelector("input.vpm-opt-url");
+        var fitBtn = row.querySelector(".vpm-img-fit-btn");
         var coInp = row.querySelector(".vpm-cl-cost");
         var lab = labInp && labInp.value.trim();
         if (!lab) return;
         var co = coInp && coInp.value.trim() !== "" ? Number(coInp.value) : null;
-        out.push({
+        var rowOut = {
           id: String(row.getAttribute("data-color-id") || ("c" + (out.length + 1))).slice(0, 40),
           label: lab.slice(0, 120),
           hex: normalizeHexVendor((pick && pick.value) || "#888888"),
           image: urlInp ? urlInp.value.trim() : "",
           costInr: Number.isFinite(co) && co >= 0 ? co : null,
-        });
+        };
+        var fitVal = fitBtn && fitBtn.getAttribute("data-image-fit");
+        if (fitVal === "contain" || fitVal === "cover") rowOut.imageFit = fitVal;
+        out.push(rowOut);
       } else if (kind === "size") {
         var labS = row.querySelector("input.vpm-opt-inp");
         var urlS = row.querySelector("input.vpm-opt-url");
+        var fitBtnS = row.querySelector(".vpm-img-fit-btn");
         var prS = row.querySelector(".vpm-sz-price");
         var coS = row.querySelector(".vpm-sz-cost");
         var mrS = row.querySelector(".vpm-sz-mrp");
@@ -252,17 +286,21 @@
         var pr = prS && prS.value.trim() !== "" ? Number(prS.value) : null;
         var co = coS && coS.value.trim() !== "" ? Number(coS.value) : null;
         var mr = mrS && mrS.value.trim() !== "" ? Number(mrS.value) : null;
-        out.push({
+        var szOut = {
           id: "s" + (out.length + 1),
           label: lab.slice(0, 120),
           image: urlS ? urlS.value.trim() : "",
           priceInr: Number.isFinite(pr) && pr >= 0 ? pr : null,
           costInr: Number.isFinite(co) && co >= 0 ? co : null,
           mrpInr: Number.isFinite(mr) && mr >= 0 ? mr : null,
-        });
+        };
+        var fitSz = fitBtnS && fitBtnS.getAttribute("data-image-fit");
+        if (fitSz === "contain" || fitSz === "cover") szOut.imageFit = fitSz;
+        out.push(szOut);
       } else if (kind === "qty") {
         var labQ = row.querySelector("input.vpm-opt-inp");
         var urlQ = row.querySelector("input.vpm-opt-url");
+        var fitBtnQ = row.querySelector(".vpm-img-fit-btn");
         var prQ = row.querySelector(".vpm-qty-price");
         var coQ = row.querySelector(".vpm-qty-cost");
         var mrQ = row.querySelector(".vpm-qty-mrp");
@@ -271,14 +309,17 @@
         var prq = prQ && prQ.value.trim() !== "" ? Number(prQ.value) : null;
         var coq = coQ && coQ.value.trim() !== "" ? Number(coQ.value) : null;
         var mrq = mrQ && mrQ.value.trim() !== "" ? Number(mrQ.value) : null;
-        out.push({
+        var qtOut = {
           id: "q" + (out.length + 1),
           label: labq.slice(0, 120),
           image: urlQ ? urlQ.value.trim() : "",
           priceInr: Number.isFinite(prq) && prq >= 0 ? prq : null,
           costInr: Number.isFinite(coq) && coq >= 0 ? coq : null,
           mrpInr: Number.isFinite(mrq) && mrq >= 0 ? mrq : null,
-        });
+        };
+        var fitQt = fitBtnQ && fitBtnQ.getAttribute("data-image-fit");
+        if (fitQt === "contain" || fitQt === "cover") qtOut.imageFit = fitQt;
+        out.push(qtOut);
       }
     });
     return out;

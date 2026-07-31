@@ -520,7 +520,19 @@
       hi.style.transform = "scale(" + (state.heroZoom || 1) + ")";
       state._lastHeroResolvedSrc = resolved;
       if (wrap) wrap.style.cursor = state.heroZoom > 1 ? "grab" : "zoom-in";
+      if (window.CraftguruImageFit && m.options) {
+        window.CraftguruImageFit.applyImageFit(hi, window.CraftguruImageFit.getFitForUrl(m.options, mainImg));
+      }
     }
+    root.querySelectorAll(".rm-pdp__thumb img").forEach(function (thumbImg) {
+      var btn = thumbImg.closest(".rm-pdp__thumb");
+      if (!btn || !window.CraftguruImageFit || !m.options) return;
+      var ti = Number(btn.getAttribute("data-img-idx"));
+      var ent = entries[ti];
+      if (ent && ent.url) {
+        window.CraftguruImageFit.applyImageFit(thumbImg, window.CraftguruImageFit.getFitForUrl(m.options, ent.url));
+      }
+    });
     var pr = root.querySelector("#resinPdpPrice");
     if (pr) pr.textContent = CART.formatMoney(eff);
     var mrpEl = root.querySelector("#resinPdpMrp");

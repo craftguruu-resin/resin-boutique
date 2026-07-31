@@ -123,6 +123,18 @@ function catalogOptionsHasPayload(opt) {
     }
   }
   if (typeof opt !== "object" || Array.isArray(opt)) return false;
+  if (String(opt.heroImageFit || "").trim()) return true;
+  if (opt.galleryImageFits && typeof opt.galleryImageFits === "object" && Object.keys(opt.galleryImageFits).length) {
+    return true;
+  }
+  var fitLists = ["colors", "sizes", "qtyOptions"];
+  for (var fi = 0; fi < fitLists.length; fi++) {
+    var fl = opt[fitLists[fi]];
+    if (!Array.isArray(fl)) continue;
+    for (var fj = 0; fj < fl.length; fj++) {
+      if (fl[fj] && String(fl[fj].imageFit || "").trim()) return true;
+    }
+  }
   return !!(
     opt.useSize ||
     opt.useColor ||

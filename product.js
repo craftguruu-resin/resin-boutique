@@ -360,7 +360,13 @@
       });
     }
     var hero = document.getElementById("productImage");
-    if (hero && galleryState.urls[idx]) hero.src = galleryState.urls[idx];
+    if (hero && galleryState.urls[idx]) {
+      hero.src = galleryState.urls[idx];
+      var opt = vendorPdpOptions(product);
+      if (window.CraftguruImageFit && opt) {
+        window.CraftguruImageFit.applyImageFit(hero, window.CraftguruImageFit.getFitForUrl(opt, galleryState.urls[idx]));
+      }
+    }
   }
 
   function updateGalleryNavVisibility() {
@@ -624,13 +630,16 @@
     col.hidden = !multi;
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
     img.src = urls[0] || "";
+    var opt = vendorPdpOptions(product);
+    if (window.CraftguruImageFit && opt && urls[0]) {
+      window.CraftguruImageFit.applyImageFit(img, window.CraftguruImageFit.getFitForUrl(opt, urls[0]));
+    }
     if (!multi) {
       track.innerHTML = "";
       if (up) up.hidden = true;
       if (dn) dn.hidden = true;
       return;
     }
-    var opt = vendorPdpOptions(product);
     var cidForUrl = Object.create(null);
     if (opt && opt.colors) {
       opt.colors.forEach(function (c) {

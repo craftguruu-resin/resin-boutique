@@ -7615,6 +7615,22 @@ a.home-category-rail__title-link:focus-visible {
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.featured-cat-card__media img[data-image-fit="contain"],
+.product-card__media img[data-image-fit="contain"],
+.product-card-image img[data-image-fit="contain"],
+.rm-pdp__hero-zoom img[data-image-fit="contain"],
+.rm-pdp__thumb img[data-image-fit="contain"],
+.product-catalog-gallery__hero img[data-image-fit="contain"],
+.product-catalog-gallery__thumb img[data-image-fit="contain"] {
+  object-fit: contain !important;
+}
+
+.featured-cat-card__media img[data-image-fit="cover"],
+.product-card__media img[data-image-fit="cover"],
+.product-card-image img[data-image-fit="cover"] {
+  object-fit: cover !important;
+}
+
 .featured-cat-card:hover .featured-cat-card__media img {
   transform: scale(1.045);
 }

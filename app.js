@@ -66,6 +66,25 @@
     return { primary: img, fallback: "" };
   }
 
+  function applyImageFitToImg(img, fit) {
+    if (!img) return;
+    if (window.CraftguruImageFit && typeof window.CraftguruImageFit.applyImageFit === "function") {
+      window.CraftguruImageFit.applyImageFit(img, fit);
+    } else if (fit === "contain") {
+      img.setAttribute("data-image-fit", "contain");
+    } else {
+      img.removeAttribute("data-image-fit");
+    }
+  }
+
+  function categoryPreviewFit(catId, imgRel) {
+    if (D.getCategoryPreviewImageFit) return D.getCategoryPreviewImageFit(catId, imgRel);
+    if (window.CraftguruImageFit) {
+      return window.CraftguruImageFit.getCategoryPreviewImageFit(catId, imgRel, D);
+    }
+    return "";
+  }
+
   function wireCategoryPreviewImgOnerror(img, fallbackRel) {
     if (!img || !fallbackRel) return;
     var fb = imgUrl(fallbackRel);
@@ -704,6 +723,10 @@
         var previewImg = card.querySelector(".featured-cat-card__media img");
         wireCategoryPreviewImgOnerror(previewImg, imgFallback);
       }
+      var previewImgFit = card.querySelector(".featured-cat-card__media img");
+      if (previewImgFit) {
+        applyImageFitToImg(previewImgFit, categoryPreviewFit(cat.id, imgRel || imgFallback));
+      }
       els.productGrid.appendChild(card);
     });
     if (!cats.length && D.listAllListedProducts) {
@@ -746,6 +769,11 @@
             pHref +
             '">View piece →</a>' +
             "</div></div>";
+          var poolPreviewImg = pCard.querySelector(".featured-cat-card__media img");
+          if (poolPreviewImg) {
+            var poolFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
+            applyImageFitToImg(poolPreviewImg, poolFit);
+          }
           els.productGrid.appendChild(pCard);
         });
       }
