@@ -6,6 +6,7 @@ var vendorProductsDb = require("./vendor-products-db.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var rawMaterialsDb = require("./raw-materials-db.js");
 var photoFramesDb = require("./photo-frames-db.js");
+var variantInventory = require("./variant-inventory.js");
 
 var CAT_RAW_MATERIALS = "__raw_materials__";
 var CAT_PHOTO_FRAMES = "__photo_frames__";
@@ -73,6 +74,21 @@ function qtyOnHandFromMaterial(m) {
   return Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
 }
 
+function productOptionsFromSources(m, ov) {
+  var opt = (m && m.options && typeof m.options === "object" ? m.options : null) || (ov && ov.options) || {};
+  return JSON.parse(JSON.stringify(opt || {}));
+}
+
+function attachOptionFlags(item, opt) {
+  var flags = variantInventory.optionFlags(opt);
+  item.useColor = flags.useColor;
+  item.useQty = flags.useQty;
+  item.useSize = flags.useSize;
+  item.hasVariants = flags.hasVariants;
+  item.hasExtendedOptions = flags.hasExtendedOptions;
+  return item;
+}
+
 function mapMaterialToCatalogItem(m, kind, omap) {
   var ov = (omap && omap[m.id]) || {};
   var catId = kind === "raw_material" ? CAT_RAW_MATERIALS : CAT_PHOTO_FRAMES;
@@ -104,23 +120,26 @@ function mapMaterialToCatalogItem(m, kind, omap) {
     ov.s != null ||
     ov.m != null ||
     ov.l != null;
-  return {
-    id: m.id,
-    name: m.name,
-    category: catId,
-    categoryLabel: catLabel,
-    subcategory: m.subcategorySlug || m.baseCategorySlug || "",
-    image: m.image || "",
-    basePrices: { s: eff.s, m: eff.m, l: eff.l },
-    effectivePrices: eff,
-    effectiveCosts: effCost,
-    effectiveStock: st,
-    hasOverride: !!hasPriceOverride,
-    hasStockOverride: !!(qty != null || ovHasStock),
-    productKind: kind,
-    sku: m.sku || "",
-    isActive: m.isActive !== false,
-  };
+  return attachOptionFlags(
+    {
+      id: m.id,
+      name: m.name,
+      category: catId,
+      categoryLabel: catLabel,
+      subcategory: m.subcategorySlug || m.baseCategorySlug || "",
+      image: m.image || "",
+      basePrices: { s: eff.s, m: eff.m, l: eff.l },
+      effectivePrices: eff,
+      effectiveCosts: effCost,
+      effectiveStock: st,
+      hasOverride: !!hasPriceOverride,
+      hasStockOverride: !!(qty != null || ovHasStock),
+      productKind: kind,
+      sku: m.sku || "",
+      isActive: m.isActive !== false,
+    },
+    productOptionsFromSources(m, ov)
+  );
 }
 
 function mapResinCatalogItem(p, omap, aggMap, skuMap) {
@@ -148,24 +167,27 @@ function mapResinCatalogItem(p, omap, aggMap, skuMap) {
       : { s: null, m: null, l: null };
   var hasAggStock = !!(agg && (agg.s != null || agg.m != null || agg.l != null));
   var isCorp = !!(ov && ov.returnGift);
-  return {
-    id: p.id,
-    name: p.name,
-    category: p.category,
-    categoryLabel: isCorp ? "Corporate Gifting" : "",
-    subcategory: p.subcategory,
-    image: p.image,
-    basePrices: p.prices,
-    effectivePrices: eff,
-    effectiveCosts: effCost,
-    effectiveStock: st,
-    hasOverride: !!(ov && (ov.s != null || ov.m != null || ov.l != null || ov.listed === false)),
-    hasStockOverride: !!(ovHasStock || hasAggStock),
-    productKind: "catalog",
-    returnGift: isCorp,
-    sku: (skuMap && skuMap[p.id]) || "",
-    isActive: ov.listed !== false,
-  };
+  return attachOptionFlags(
+    {
+      id: p.id,
+      name: p.name,
+      category: p.category,
+      categoryLabel: isCorp ? "Corporate Gifting" : "",
+      subcategory: p.subcategory,
+      image: p.image,
+      basePrices: p.prices,
+      effectivePrices: eff,
+      effectiveCosts: effCost,
+      effectiveStock: st,
+      hasOverride: !!(ov && (ov.s != null || ov.m != null || ov.l != null || ov.listed === false)),
+      hasStockOverride: !!(ovHasStock || hasAggStock),
+      productKind: "catalog",
+      returnGift: isCorp,
+      sku: (skuMap && skuMap[p.id]) || "",
+      isActive: ov.listed !== false,
+    },
+    ov.options || {}
+  );
 }
 
 function catalogProductHay(p) {
@@ -522,6 +544,215 @@ function saveStorefrontCatalogPrices(productId, body, cb) {
   );
 }
 
+function saveMaterialCatalogVariants(kind, productId, body, cb) {
+  var db = kind === "raw_material" ? rawMaterialsDb : photoFramesDb;
+  db.getByIdForVendor(productId, function (e0, m) {
+    if (e0) return cb(e0);
+    if (!m) return cb(new Error("Unknown product id"));
+
+    var opt = variantInventory.ensureVendorInventory(JSON.parse(JSON.stringify(m.options || {})));
+    var vi = opt.vendorInventory;
+    if (body && body.variants && typeof body.variants === "object") {
+      vi.variants = variantInventory.mergeVariantPatch(vi.variants, body.variants);
+    }
+    if (body && Array.isArray(body.sizes)) {
+      opt.sizes = variantInventory.mergeOptionPriceRows(opt.sizes, body.sizes);
+    }
+    if (body && Array.isArray(body.qtyOptions)) {
+      opt.qtyOptions = variantInventory.mergeOptionPriceRows(opt.qtyOptions, body.qtyOptions);
+    }
+    if (body && Array.isArray(body.colors)) {
+      opt.colors = variantInventory.mergeOptionPriceRows(opt.colors, body.colors);
+    }
+
+    var payload = {
+      name: m.name,
+      description: m.description || "",
+      note: m.note || "",
+      sku: m.sku,
+      priceInr: Number(m.priceInr) || 0,
+      mrpInr: m.mrpInr,
+      options: opt,
+      baseCategorySlug: m.baseCategorySlug || "",
+      subcategorySlug: m.subcategorySlug || "",
+    };
+    if (m.image && (m.image.indexOf("http") === 0 || m.image.indexOf("//") === 0)) {
+      payload.imageUrl = m.image;
+    }
+
+    db.updateRow(productId, payload, function (e1, row) {
+      if (e1) return cb(e1);
+      cb(null, { productId: productId, productKind: kind, material: row, options: opt });
+    });
+  });
+}
+
+/**
+ * @param {string} productId
+ * @param {{ variants?: object, sizes?: object[], qtyOptions?: object[], colors?: object[] }} body
+ * @param {(err: Error|null, row?: object) => void} cb
+ */
+function saveStorefrontCatalogVariants(productId, body, cb) {
+  var kind = detectProductKind(productId);
+  if (kind === "raw_material" || kind === "photo_frame") {
+    return saveMaterialCatalogVariants(kind, productId, body, cb);
+  }
+
+  vendorCatalogDb.listOverridesMap(function (e0, omap) {
+    if (e0) return cb(e0);
+    omap = omap || {};
+    var ov = omap[productId] || {};
+    var curOpt = ov.options && typeof ov.options === "object" ? JSON.parse(JSON.stringify(ov.options)) : {};
+    var opt = variantInventory.ensureVendorInventory(curOpt);
+    var vi = opt.vendorInventory;
+    if (body && body.variants && typeof body.variants === "object") {
+      vi.variants = variantInventory.mergeVariantPatch(vi.variants, body.variants);
+    }
+    if (body && Array.isArray(body.sizes)) {
+      opt.sizes = variantInventory.mergeOptionPriceRows(opt.sizes, body.sizes);
+      opt.useSize = true;
+    }
+    if (body && Array.isArray(body.qtyOptions)) {
+      opt.qtyOptions = variantInventory.mergeOptionPriceRows(opt.qtyOptions, body.qtyOptions);
+      opt.useQty = true;
+    }
+    if (body && Array.isArray(body.colors)) {
+      opt.colors = variantInventory.mergeOptionPriceRows(opt.colors, body.colors);
+      opt.useColor = true;
+    }
+
+    vendorCatalogDb.upsertOverride(productId, { options: opt }, function (e1, row) {
+      if (e1) return cb(e1);
+      cb(null, { productId: productId, productKind: "catalog", row: row, options: opt });
+    });
+  });
+}
+
+function buildDefaultOptionsFromTiers(p, ov, opt) {
+  opt = opt && typeof opt === "object" ? Object.assign({}, opt) : {};
+  var eff = {
+    s: ov.s != null ? Number(ov.s) : p.prices.s,
+    m: ov.m != null ? Number(ov.m) : p.prices.m,
+    l: ov.l != null ? Number(ov.l) : p.prices.l,
+  };
+  var sl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
+  opt.useSize = true;
+  opt.sizes = [
+    { id: "sz-s", label: (sl.s && sl.s.name) || "Compact", priceInr: eff.s },
+    { id: "sz-m", label: (sl.m && sl.m.name) || "Classic", priceInr: eff.m },
+    { id: "sz-l", label: (sl.l && sl.l.name) || "Grand", priceInr: eff.l },
+  ];
+  return variantInventory.ensureVendorInventory(opt);
+}
+
+function findResinProductSummary(productId, cb) {
+  var id = String(productId || "").trim();
+  try {
+    var list = catalogFromData.getProductsSummary();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].id === id) {
+        return process.nextTick(function () {
+          cb(null, list[i]);
+        });
+      }
+    }
+  } catch (e0) {
+    return process.nextTick(function () {
+      cb(e0);
+    });
+  }
+  vendorProductsDb.listExtraProductsForStorefront(function (e1, extras) {
+    if (e1) return cb(e1);
+    var hit = (extras || []).filter(function (p) {
+      return p.id === id;
+    })[0];
+    cb(null, hit || null);
+  });
+}
+
+/**
+ * @param {string} productId
+ * @param {(err: Error|null, product?: object) => void} cb
+ */
+function getStorefrontCatalogProduct(productId, cb) {
+  var kind = detectProductKind(productId);
+  if (kind === "raw_material" || kind === "photo_frame") {
+    var db = kind === "raw_material" ? rawMaterialsDb : photoFramesDb;
+    return db.getByIdForVendor(productId, function (e0, m) {
+      if (e0) return cb(e0);
+      if (!m) return cb(new Error("Unknown product id"));
+      vendorCatalogDb.listOverridesMap(function (e1, omap) {
+        if (e1) return cb(e1);
+        var item = mapMaterialToCatalogItem(m, kind, omap || {});
+        var opt = productOptionsFromSources(m, (omap && omap[productId]) || {});
+        cb(null, {
+          id: m.id,
+          name: m.name,
+          image: m.image || "",
+          category: item.category,
+          categoryLabel: item.categoryLabel,
+          subcategory: item.subcategory,
+          productKind: kind,
+          sku: m.sku || "",
+          options: variantInventory.ensureVendorInventory(opt),
+          effectivePrices: item.effectivePrices,
+          effectiveCosts: item.effectiveCosts,
+          effectiveStock: item.effectiveStock,
+          useColor: item.useColor,
+          useQty: item.useQty,
+          useSize: item.useSize,
+          hasVariants: item.hasVariants,
+          hasExtendedOptions: item.hasExtendedOptions,
+        });
+      });
+    });
+  }
+
+  vendorCatalogDb.listOverridesMap(function (e0, omap) {
+    if (e0) return cb(e0);
+    omap = omap || {};
+    var ov = omap[productId] || {};
+    findResinProductSummary(productId, function (e1, p) {
+      if (e1) return cb(e1);
+      if (!p) return cb(new Error("Unknown product id"));
+
+      vendorExtrasDb.aggregateSellableStockByProductIds([productId], function (e2, aggMap) {
+        if (e2) return cb(e2);
+        vendorExtrasDb.getSkuMapForProductIds([productId], function (e3, skuMap) {
+          if (e3) return cb(e3);
+          var item = mapResinCatalogItem(p, omap, aggMap || {}, skuMap || {});
+          var opt = ov.options && typeof ov.options === "object" ? JSON.parse(JSON.stringify(ov.options)) : {};
+          if (!opt.useSize && !opt.useColor && !opt.useQty && !(opt.sizes && opt.sizes.length)) {
+            opt = buildDefaultOptionsFromTiers(p, ov, opt);
+          } else {
+            opt = variantInventory.ensureVendorInventory(opt);
+          }
+          cb(null, {
+            id: p.id,
+            name: (ov.name && String(ov.name).trim()) || p.name,
+            image: p.image || "",
+            category: p.category,
+            categoryLabel: item.categoryLabel || "",
+            subcategory: p.subcategory,
+            productKind: "catalog",
+            sku: (skuMap && skuMap[productId]) || "",
+            returnGift: item.returnGift,
+            options: opt,
+            effectivePrices: item.effectivePrices,
+            effectiveCosts: item.effectiveCosts,
+            effectiveStock: item.effectiveStock,
+            useColor: item.useColor || !!opt.useColor,
+            useQty: item.useQty || !!opt.useQty,
+            useSize: item.useSize || !!opt.useSize,
+            hasVariants: variantInventory.hasVariantInventory(opt),
+            hasExtendedOptions: !!(opt.useColor || opt.useQty || variantInventory.hasVariantInventory(opt)),
+          });
+        });
+      });
+    });
+  });
+}
+
 module.exports = {
   CAT_RAW_MATERIALS: CAT_RAW_MATERIALS,
   CAT_PHOTO_FRAMES: CAT_PHOTO_FRAMES,
@@ -529,4 +760,6 @@ module.exports = {
   detectProductKind: detectProductKind,
   listStorefrontCatalog: listStorefrontCatalog,
   saveStorefrontCatalogPrices: saveStorefrontCatalogPrices,
+  getStorefrontCatalogProduct: getStorefrontCatalogProduct,
+  saveStorefrontCatalogVariants: saveStorefrontCatalogVariants,
 };

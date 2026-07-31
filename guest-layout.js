@@ -565,16 +565,71 @@
       if (backdrop) backdrop.hidden = true;
       document.querySelectorAll(".cg-rail-drawer-panel.is-open").forEach(function (panel) {
         panel.classList.remove("is-open");
+        restorePanelFromBody(panel);
       });
       document.querySelectorAll(".cg-rail-toggle[aria-expanded='true']").forEach(function (btn) {
         btn.setAttribute("aria-expanded", "false");
       });
     }
 
+    /** Move drawer panel to body so it stacks above the backdrop (main is z-index: 1). */
+    function portalPanelToBody(sidebar) {
+      if (!sidebar || !mq.matches) return;
+      if (!sidebar._cgRailAnchor && sidebar.parentElement && sidebar.parentElement !== document.body) {
+        sidebar._cgRailAnchor = {
+          parent: sidebar.parentElement,
+          next: sidebar.nextSibling,
+        };
+      }
+      if (sidebar.parentElement !== document.body) {
+        var bd = ensureBackdrop();
+        if (bd && bd.parentElement === document.body) {
+          document.body.insertBefore(sidebar, bd.nextSibling);
+        } else {
+          document.body.appendChild(sidebar);
+        }
+      }
+      sidebar.dataset.cgRailPortaled = "1";
+    }
+
+    function restorePanelFromBody(sidebar) {
+      if (!sidebar || sidebar.dataset.cgRailPortaled !== "1") return;
+      var anchor = sidebar._cgRailAnchor;
+      if (anchor && anchor.parent && anchor.parent.isConnected !== false) {
+        if (anchor.next && anchor.next.parentNode === anchor.parent) {
+          anchor.parent.insertBefore(sidebar, anchor.next);
+        } else {
+          anchor.parent.appendChild(sidebar);
+        }
+      }
+      sidebar.dataset.cgRailPortaled = "0";
+      delete sidebar._cgRailAnchor;
+    }
+
+    /** Home keeps an inline horizontal category strip on mobile — not a slide-out drawer. */
+    function releaseHomeCategoryRailDrawer() {
+      if (!document.body.classList.contains("page-home")) return;
+      var home = document.getElementById("categories");
+      if (!home) return;
+      restorePanelFromBody(home);
+      home.classList.remove("cg-rail-drawer-panel");
+      delete home.dataset.cgRailDrawer;
+      var layout = home.closest(".home-landing-layout");
+      if (layout) {
+        layout.querySelectorAll(".cg-rail-toggle").forEach(function (btn) {
+          if (btn.getAttribute("aria-controls") === home.id) btn.remove();
+        });
+      }
+    }
+
     function collectSidebars() {
       var items = [];
       var home = document.getElementById("categories");
-      if (home && home.classList.contains("home-category-rail")) {
+      if (
+        home &&
+        home.classList.contains("home-category-rail") &&
+        !document.body.classList.contains("page-home")
+      ) {
         items.push({
           el: home,
           label: "Categories",
@@ -634,6 +689,7 @@
           return;
         }
         closeAllDrawers();
+        portalPanelToBody(sidebar);
         sidebar.classList.add("is-open");
         btn.setAttribute("aria-expanded", "true");
         document.body.classList.add("cg-rail-open");
@@ -657,8 +713,10 @@
       document.body.classList.toggle("cg-rail-drawer-enabled", mq.matches);
       if (!mq.matches) {
         closeAllDrawers();
+        document.querySelectorAll(".cg-rail-drawer-panel").forEach(restorePanelFromBody);
         return;
       }
+      releaseHomeCategoryRailDrawer();
       ensureBackdrop();
       removeOrphanToggles();
       collectSidebars().forEach(wireSidebar);

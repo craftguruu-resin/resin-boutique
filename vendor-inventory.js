@@ -15,6 +15,7 @@
   var studioProductFilter = "";
   var studioSearchQ = "";
   var catalogCategoryFilter = "";
+  var catalogListView = "size";
   var viCategoriesCache = [];
   var viStorefrontCategories = [
     { id: "__raw_materials__", label: "Raw Materials" },
@@ -778,6 +779,142 @@
     );
   }
 
+  function catalogStockSummary(it) {
+    var st = it.effectiveStock || {};
+    var parts = [];
+    if (st.s != null && Number.isFinite(Number(st.s))) parts.push("S " + stockCellVal(st.s));
+    if (st.m != null && Number.isFinite(Number(st.m))) parts.push("M " + stockCellVal(st.m));
+    if (st.l != null && Number.isFinite(Number(st.l))) parts.push("L " + stockCellVal(st.l));
+    return parts.length ? parts.join(" · ") : "—";
+  }
+
+  function catalogVariantSummary(it) {
+    if (!it.hasExtendedOptions) return "";
+    var bits = [];
+    if (it.useColor) bits.push("colour");
+    if (it.useQty) bits.push("pack");
+    if (it.hasVariants) bits.push("variants");
+    return bits.length ? bits.join(", ") : "options";
+  }
+
+  function catalogMoreOptionsBtn(pid, it) {
+    if (!it.hasExtendedOptions && !it.useColor && !it.useQty && !it.hasVariants) return "";
+    var href =
+      "vendor-inventory-options.html?productId=" + encodeURIComponent(pid) + "&view=" + encodeURIComponent(catalogListView);
+    return (
+      " <a class='vs-btn vs-btn--ghost vi-cat-more' href='" +
+      esc(href) +
+      "' style='margin-top:0.35rem;display:inline-block'>More options</a>"
+    );
+  }
+
+  function setCatalogListView(view) {
+    catalogListView = view === "color" ? "color" : "size";
+    document.querySelectorAll(".vi-opt-view-btn").forEach(function (btn) {
+      var on = btn.getAttribute("data-vi-view") === catalogListView;
+      btn.classList.toggle("vs-btn--primary", on);
+      btn.classList.toggle("vs-btn--ghost", !on);
+    });
+  }
+
+  function renderCatalogRows(rows, tb, reset) {
+    if (reset) tb.innerHTML = "";
+    if (reset && !rows.length) {
+      tb.innerHTML = "<tr><td colspan='10' class='vs-muted'>No matches.</td></tr>";
+      return;
+    }
+    if (reset && tb.querySelector(".vs-muted")) tb.innerHTML = "";
+    if (catalogListView === "color") {
+      var ext = rows.filter(function (it) {
+        return it.hasExtendedOptions || it.useColor || it.useQty || it.hasVariants;
+      });
+      var plain = rows.filter(function (it) {
+        return !(it.hasExtendedOptions || it.useColor || it.useQty || it.hasVariants);
+      });
+      ext.forEach(function (it) {
+        tb.innerHTML +=
+          "<tr class='vi-cat-group-row'><td colspan='10'><strong>" +
+          esc(it.name) +
+          "</strong> <span class='vs-muted'>· " +
+          esc(categoryLabelForItem(it)) +
+          " · " +
+          esc(catalogVariantSummary(it)) +
+          "</span>" +
+          catalogMoreOptionsBtn(it.id, it) +
+          "</td></tr>";
+      });
+      plain.forEach(function (it) {
+        tb.innerHTML += renderCatalogDataRow(it);
+      });
+      return;
+    }
+    tb.innerHTML += rows.map(renderCatalogDataRow).join("");
+  }
+
+  function renderCatalogDataRow(it) {
+    var e = it.effectivePrices || {};
+    var cst = it.effectiveCosts || {};
+    var st = it.effectiveStock || {};
+    var bid = esc(it.id);
+    var imgUrl = resolveMediaUrl(it.image || "");
+    var imgTag = imgUrl
+      ? "<img class=\"vi-cat-row-thumb\" src=\"" +
+        esc(imgUrl) +
+        "\" alt=\"\" width=\"40\" height=\"40\" loading=\"lazy\" />"
+      : "<span class=\"vi-cat-row-thumb vi-cat-row-thumb--empty\" aria-hidden=\"true\"></span>";
+    var kindBadge =
+      it.productKind === "raw_material" || it.productKind === "photo_frame"
+        ? " <span class='vs-badge vs-badge--paid' title='Storefront product type'>" +
+          esc(it.productKind === "raw_material" ? "RM" : "PF") +
+          "</span>"
+        : it.returnGift
+          ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
+          : "";
+    var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
+    var optLine = catalogVariantSummary(it)
+      ? "<br/><span class='vs-muted'>" + esc(catalogVariantSummary(it)) + "</span>"
+      : "";
+    var moreBtn = catalogMoreOptionsBtn(it.id, it);
+    return (
+      "<tr data-pid='" +
+      bid +
+      "'><td><div class=\"vi-cat-product-cell\">" +
+      imgTag +
+      "<div class=\"vi-cat-product-cell__txt\"><strong>" +
+      esc(it.name) +
+      "</strong><br/><span class='vs-muted'>" +
+      bid +
+      "</span>" +
+      skuLine +
+      optLine +
+      (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
+      kindBadge +
+      "</div></div></td><td>" +
+      esc(categoryLabelForItem(it)) +
+      "</td>" +
+      catalogTierCell(bid, "s", e.s, cst.s) +
+      catalogTierCell(bid, "m", e.m, cst.m) +
+      catalogTierCell(bid, "l", e.l, cst.l) +
+      "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
+      bid +
+      "' type='number' min='0' step='0.01' value='" +
+      esc(catalogStockFieldValue(st.s)) +
+      "' style='width:4.5rem'/></td><td><input class='vi-cat-stock' data-k='m' data-pid='" +
+      bid +
+      "' type='number' min='0' step='0.01' value='" +
+      esc(catalogStockFieldValue(st.m)) +
+      "' style='width:4.5rem'/></td><td><input class='vi-cat-stock' data-k='l' data-pid='" +
+      bid +
+      "' type='number' min='0' step='0.01' value='" +
+      esc(catalogStockFieldValue(st.l)) +
+      "' style='width:4.5rem'/></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
+      bid +
+      "'>Save</button>" +
+      moreBtn +
+      "</div></td></tr>"
+    );
+  }
+
   function loadCatalogPage(reset) {
     if (reset) catalogOffset = 0;
     var base = V.apiBase();
@@ -819,72 +956,7 @@
         var tb = document.getElementById("viCatalogTbody");
         if (!tb) return;
         var rows = j.items || [];
-        if (reset) {
-          tb.innerHTML = "";
-        }
-        if (reset && !rows.length) {
-          tb.innerHTML = "<tr><td colspan='10' class='vs-muted'>No matches.</td></tr>";
-        } else if (rows.length) {
-          if (reset && tb.querySelector(".vs-muted")) tb.innerHTML = "";
-          tb.innerHTML += rows
-            .map(function (it) {
-              var e = it.effectivePrices || {};
-              var cst = it.effectiveCosts || {};
-              var st = it.effectiveStock || {};
-              var bid = esc(it.id);
-              var imgUrl = resolveMediaUrl(it.image || "");
-              var imgTag = imgUrl
-                ? "<img class=\"vi-cat-row-thumb\" src=\"" +
-                  esc(imgUrl) +
-                  "\" alt=\"\" width=\"40\" height=\"40\" loading=\"lazy\" />"
-                : "<span class=\"vi-cat-row-thumb vi-cat-row-thumb--empty\" aria-hidden=\"true\"></span>";
-              var kindBadge =
-                it.productKind === "raw_material" || it.productKind === "photo_frame"
-                  ? " <span class='vs-badge vs-badge--paid' title='Storefront product type'>" +
-                    esc(it.productKind === "raw_material" ? "RM" : "PF") +
-                    "</span>"
-                  : it.returnGift
-                    ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
-                    : "";
-              var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
-              return (
-                "<tr data-pid='" +
-                bid +
-                "'><td><div class=\"vi-cat-product-cell\">" +
-                imgTag +
-                "<div class=\"vi-cat-product-cell__txt\"><strong>" +
-                esc(it.name) +
-                "</strong><br/><span class='vs-muted'>" +
-                bid +
-                "</span>" +
-                skuLine +
-                (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
-                kindBadge +
-                "</div></div></td><td>" +
-                esc(categoryLabelForItem(it)) +
-                "</td>" +
-                catalogTierCell(bid, "s", e.s, cst.s) +
-                catalogTierCell(bid, "m", e.m, cst.m) +
-                catalogTierCell(bid, "l", e.l, cst.l) +
-                "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
-                bid +
-                "' type='number' min='0' step='0.01' value='" +
-                esc(catalogStockFieldValue(st.s)) +
-                "' style='width:4.5rem'/></td><td><input class='vi-cat-stock' data-k='m' data-pid='" +
-                bid +
-                "' type='number' min='0' step='0.01' value='" +
-                esc(catalogStockFieldValue(st.m)) +
-                "' style='width:4.5rem'/></td><td><input class='vi-cat-stock' data-k='l' data-pid='" +
-                bid +
-                "' type='number' min='0' step='0.01' value='" +
-                esc(catalogStockFieldValue(st.l)) +
-                "' style='width:4.5rem'/></td><td><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
-                bid +
-                "'>Save</button></td></tr>"
-              );
-            })
-            .join("");
-        }
+        renderCatalogRows(rows, tb, reset);
         catalogOffset += rows.length;
         var pg = document.getElementById("viCatalogPaging");
         if (pg) {
@@ -902,7 +974,9 @@
 
   function boot() {
     showDesk(true);
-    var startTab = window.location.hash === "#add-product" ? "addproduct" : "studio";
+    var startTab = "studio";
+    if (window.location.hash === "#add-product") startTab = "addproduct";
+    else if (window.location.hash === "#catalog") startTab = "catalog";
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
@@ -1141,6 +1215,14 @@
   }
 
   /* Add-product create flow lives in vendor-storefront-add-product.js */
+
+  document.querySelectorAll(".vi-opt-view-btn").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      setCatalogListView(btn.getAttribute("data-vi-view") || "size");
+      if (activeTab === "catalog") loadCatalogPage(true);
+    });
+  });
+  setCatalogListView("size");
 
   document.querySelectorAll(".vi-tab").forEach(function (b) {
     b.addEventListener("click", function () {

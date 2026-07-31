@@ -514,6 +514,10 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
     padding-top: calc(env(safe-area-inset-top, 0px) + 0.85rem);
     padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 1rem);
     box-shadow: 8px 0 40px rgba(26, 43, 72, 0.18);
+    pointer-events: auto;
+    background: #fff;
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
   }
 
   body.cg-rail-drawer-enabled .cg-rail-drawer-panel.is-open {
@@ -539,6 +543,23 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
 
   body.cg-rail-drawer-enabled .rm-shop-layout {
     grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Home: keep inline horizontal category strip (Hero → Categories → Products). */
+  body.page-home .home-category-rail#categories {
+    position: relative !important;
+    transform: none !important;
+    width: 100%;
+    max-width: 100%;
+    max-height: none;
+    margin: 0;
+    box-shadow: var(--home-shadow, 0 18px 48px rgba(26, 43, 72, 0.12));
+    overflow: visible;
+    pointer-events: auto;
+  }
+
+  body.page-home .home-landing-layout > .cg-rail-toggle {
+    display: none !important;
   }
 }
 

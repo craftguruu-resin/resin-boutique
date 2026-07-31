@@ -202,6 +202,58 @@
   white-space: nowrap;
 }
 
+.vi-cat-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+.vi-cat-group-row td {
+  background: rgba(99, 102, 241, 0.06);
+  font-size: 0.88rem;
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+
+.vio-color-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.vio-color-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.vio-color-card__img {
+  width: 72px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.vio-color-card__swatch {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  flex-shrink: 0;
+}
+
+.vio-size-card {
+  margin-bottom: 1rem;
+  padding: 1rem;
+}
+
+.vio-variant-table input.vs-input {
+  width: 100%;
+  min-width: 4.5rem;
+}
+
 .vs-app {
   display: flex;
   min-height: 100vh;

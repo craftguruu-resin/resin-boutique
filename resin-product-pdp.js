@@ -421,6 +421,16 @@
     if (state.namePlateText) o.namePlateText = state.namePlateText;
     if (state.keychainAlpha) o.keychainAlphabet = state.keychainAlpha;
     if (state.keychainName) o.keychainName = state.keychainName;
+    if (state.sel) {
+      if (state.sel.sid) {
+        o.sizeId = state.sel.sid;
+        o.vendorSid = state.sel.sid;
+      }
+      if (state.sel.cid) o.colorId = state.sel.cid;
+      if (state.sel.qid) o.qtyOptionId = state.sel.qid;
+      var slot = stockSlotFromSel(state.sel, state.product || state.material);
+      if (slot) o.stockSlot = slot;
+    }
     return Object.keys(o).length ? o : null;
   }
 

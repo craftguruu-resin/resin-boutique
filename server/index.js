@@ -3582,6 +3582,65 @@ app.get("/api/vendor/catalog-products", function (req, res) {
   });
 });
 
+/** Vendor: single storefront product with full options + variant inventory. */
+app.get("/api/vendor/catalog-products/:productId", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var pid = String((req.params && req.params.productId) || "").trim();
+    vendorStorefrontCatalogDb.getStorefrontCatalogProduct(pid, function (e2, product) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("Unknown product") >= 0 ? 404 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, product: product });
+    });
+  });
+});
+
+/** Vendor: patch per-variant stock/prices in options_json.vendorInventory.variants. */
+app.patch("/api/vendor/catalog-products/:productId/variants", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var pid = String((req.params && req.params.productId) || "").trim();
+    var b = req.body || {};
+    var patch = {
+      variants: b.variants && typeof b.variants === "object" ? b.variants : undefined,
+      sizes: Array.isArray(b.sizes) ? b.sizes : undefined,
+      qtyOptions: Array.isArray(b.qtyOptions) ? b.qtyOptions : undefined,
+      colors: Array.isArray(b.colors) ? b.colors : undefined,
+    };
+    vendorStorefrontCatalogDb.saveStorefrontCatalogVariants(pid, patch, function (e2, row) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code =
+          msg.indexOf("Unknown product") >= 0
+            ? 404
+            : msg.indexOf("required") >= 0 || msg.indexOf("Invalid") >= 0
+              ? 400
+              : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      try {
+        catalogFromData.invalidateCache();
+      } catch (_) {}
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, row: row });
+    });
+  });
+});
+
 app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
     if (err) {

@@ -161,6 +161,10 @@
                   <label for="viCatalogSearch">Search</label>
                   <input type="search" id="viCatalogSearch" placeholder="Name, product id, or SKU…" />
                 </div>
+                <div class="vi-opt-view-toggle vs-row-actions" role="group" aria-label="Catalog list view" style="gap: 0.35rem">
+                  <button type="button" class="vs-btn vs-btn--primary vi-opt-view-btn" data-vi-view="size">Size wise</button>
+                  <button type="button" class="vs-btn vs-btn--ghost vi-opt-view-btn" data-vi-view="color">Colour wise</button>
+                </div>
                 <button type="button" class="vs-btn vs-btn--primary" id="viCatalogSearchBtn">Search</button>
               </div>
             </div>
@@ -176,7 +180,7 @@
                     <th title="From studio-linked inventory">S stock</th>
                     <th title="From studio-linked inventory">M stock</th>
                     <th title="From studio-linked inventory">L stock</th>
-                    <th></th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody id="viCatalogTbody"></tbody>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en" data-bill-api-base="http://127.0.0.1:3847" data-bill-api-port="3847" data-bill-api-secret="">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
+  <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
+  <title>Variant inventory — Craftguru vendor</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="vendor-saas.css" />
+  <link rel="stylesheet" href="craftguru-theme.css" />
+</head>
+<body class="vendor-saas" data-vendor-nav="inventory">
+  <div class="vs-app">
+    <div id="vsSidebarMount"></div>
+    <div class="vs-main">
+      <header class="vs-topbar">
+        <div>
+          <h1 class="vs-topbar__title">Variant inventory</h1>
+          <p class="vs-topbar__sub">
+            <a href="vendor-inventory.html#catalog">← Back to storefront catalog</a>
+            <span id="vioProductMeta" class="vs-muted"></span>
+          </p>
+        </div>
+        <div class="vs-topbar__actions">
+          <button type="button" class="vs-btn" id="vioRefreshBtn">Refresh</button>
+          <button type="button" class="vs-btn vs-btn--primary" id="vioSaveBtn">Save changes</button>
+        </div>
+      </header>
+
+      <div class="vs-content">
+        <p id="vioErr" class="vs-muted" style="color:#b45309" hidden></p>
+        <p id="vioOk" class="vs-muted" style="color:#15803d" hidden></p>
+
+        <div class="vs-card" style="margin-bottom: 1rem">
+          <div class="vs-row-actions" style="flex-wrap: wrap; align-items: center; gap: 0.65rem">
+            <div class="vi-opt-view-toggle vs-row-actions" role="group" aria-label="Editor layout" style="gap: 0.35rem">
+              <button type="button" class="vs-btn vs-btn--primary vio-view-btn" data-vio-view="color">Colour wise</button>
+              <button type="button" class="vs-btn vs-btn--ghost vio-view-btn" data-vio-view="size">Size wise</button>
+            </div>
+            <p class="vs-muted" style="margin: 0">Set sell price, unit cost, and stock per size / colour / pack combination.</p>
+          </div>
+        </div>
+
+        <div id="vioLoading" class="vs-muted">Loading product…</div>
+        <div id="vioEditor" hidden></div>
+        <div id="vioPackSection" hidden></div>
+      </div>
+    </div>
+  </div>
+  <script src="vendor-shell.js"></script>
+  <script src="vendor-inventory-options.js"></script>
+</body>
+</html>
