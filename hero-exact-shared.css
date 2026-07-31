@@ -1,5 +1,5 @@
 /**
- * Shared exact-panel heroes (Home, Raw Materials, Photo Frames).
+ * Shared exact-panel heroes (Home, Raw Materials, Photo Frames, Corporate Gifting).
  * 1) Frame sizes to the artwork — never crop / zoom the panel image.
  * 2) Transparent CTA hits over baked buttons + micro-animations.
  */
@@ -8,7 +8,8 @@
 .home-landing-hero--exact,
 .hero-atelier__shell--exact-ref.home-landing-hero--exact,
 .rm-landing-hero--exact,
-.pf-landing-hero--exact {
+.pf-landing-hero--exact,
+.cg-landing-hero--exact {
   box-sizing: border-box;
   height: auto !important;
   min-height: 0 !important;
@@ -23,7 +24,8 @@
 .hero-atelier__exact-art.home-landing-hero__exact-art,
 .hero-atelier__shell--exact-ref .hero-atelier__exact-art,
 .rm-landing-hero__exact-art,
-.pf-landing-hero__exact-art {
+.pf-landing-hero__exact-art,
+.cg-landing-hero__exact-art {
   position: relative !important;
   z-index: 1;
   display: block !important;
@@ -62,7 +64,8 @@
 /* Hits stay locked to the static art frame (no float desync / crop) */
 .home-landing-hero__hits,
 .rm-landing-hero__hits,
-.pf-landing-hero__hits {
+.pf-landing-hero__hits,
+.cg-landing-hero__hits {
   animation: none !important;
   transform: none !important;
 }
@@ -71,7 +74,8 @@
   .home-landing-hero__exact-art,
   .hero-atelier__exact-art.home-landing-hero__exact-art,
   .rm-landing-hero__exact-art,
-  .pf-landing-hero__exact-art {
+  .pf-landing-hero__exact-art,
+  .cg-landing-hero__exact-art {
     animation: none !important;
   }
 }
@@ -400,10 +404,14 @@
 @media (max-width: 640px) {
   .hero-shop-now-btn {
     left: clamp(0.65rem, 3.5%, 1rem);
-    bottom: clamp(0.55rem, 5.5%, 1.25rem);
+    bottom: clamp(0.45rem, 4.5%, 1rem);
     min-height: 2.45rem;
     padding: 0.62rem 1.15rem;
-    font-size: 0.68rem;
+    font-size: clamp(0.62rem, 2.8vw, 0.72rem);
+    max-width: calc(100% - 1.3rem);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
   }
 }
 

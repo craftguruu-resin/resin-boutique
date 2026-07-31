@@ -824,18 +824,7 @@
       "<h1 class=\"rm-pdp__title\">" +
       esc(m.name) +
       "</h1>" +
-      '<div class="rm-pdp__meta-rating-row">' +
-      '<div class="rm-pdp__stars-wrap">' +
-      '<div class="rm-pdp__stars" aria-label="Customer rating">' +
-      "★★★★★ " +
-      '<span class="rm-pdp__rating-num">' +
-      esc(ratingNum) +
-      "</span>" +
-      ' <span class="rm-pdp__reviews">(' +
-      esc(String(revN)) +
-      " reviews)</span></div></div>" +
       '<div class="product-share-bar product-share-bar--rm-pdp" id="rmPdpShareHost" aria-label="Share this material"></div>' +
-      "</div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="rmPdpPrice">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +

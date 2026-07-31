@@ -457,6 +457,15 @@ function updateOrderFulfillment(orderId, status, cb) {
   ordersStore.updateOrderFulfillment(orderId, status, cb);
 }
 
+function markOrderPaymentReceived(orderId, cb) {
+  if (poolMod.isEnabled()) {
+    return ordersDb.markOrderPaymentReceived(orderId, cb);
+  }
+  process.nextTick(function () {
+    cb(new Error("Database not configured"));
+  });
+}
+
 function listOrdersByGuestId(guestId, cb) {
   if (poolMod.isEnabled()) {
     return ordersDb.listOrdersByGuestId(guestId, cb);
@@ -513,6 +522,7 @@ module.exports = {
   getVendorOrderInsights,
   getVendorSalesProfit,
   updateOrderFulfillment,
+  markOrderPaymentReceived,
   listOrdersByGuestId,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,

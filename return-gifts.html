@@ -7,7 +7,7 @@
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
   <link rel="apple-touch-icon" href="media/brand-craftguru.png?v=20260730" />
-  <title>Return gifts — Craft guru</title>
+  <title>Corporate Gifting — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
@@ -17,9 +17,13 @@
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="category-ethereal.css" />
+  <link rel="stylesheet" href="raw-material-pages.css" />
+  <link rel="stylesheet" href="hero-exact-shared.css" />
+  <link rel="stylesheet" href="corporate-gifting-hero-exact.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
+  <link rel="stylesheet" href="layout-responsive.css" />
 </head>
-<body class="subpage page-category">
+<body class="subpage page-category rm-page-wide rm-theme--corporate-gifting">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -44,7 +48,7 @@
       <a href="index.html" class="nav-dock-link">Home</a>
       <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
       <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
-      <a href="return-gifts.html" class="nav-dock-link is-active">Return gifts</a>
+      <a href="return-gifts.html" class="nav-dock-link is-active">Corporate Gifting</a>
       <a href="about.html" class="nav-dock-link">About</a>
     </nav>
     <div class="site-top-end">
@@ -102,21 +106,49 @@
     <section class="band-shop band-shop--flush">
       <div class="band-shop-inner">
         <p class="crumb crumb--fx">
-          <a href="index.html">Home</a> <span aria-hidden="true">/</span> Return gifts
+          <a href="index.html">Home</a> <span aria-hidden="true">/</span> Corporate Gifting
         </p>
-        <div class="section-head section-head--solo">
-          <div>
-            <h1 class="band-title band-title--fx">Return gifts</h1>
-            <p class="band-sub">Pieces flagged as return gifts in the vendor catalog — open any card for sizes and MRP.</p>
+        <div class="rm-hero rm-hero--premium cg-landing-hero cg-landing-hero--exact" id="cg-hero" aria-labelledby="cgHomeHeroHeading">
+          <img
+            class="cg-landing-hero__exact-art"
+            src="media/corporate-gifting/corporate-gifting-hero.png?v=20260731"
+            width="1024"
+            height="576"
+            alt="Corporate Gifting — thoughtful resin keepsakes for teams and clients — Craft Guru"
+            decoding="async"
+            fetchpriority="high"
+          />
+          <div class="rm-hero__inner cg-landing-hero__copy">
+            <p class="rm-hero__kicker">
+              <span class="rm-hero__kicker-dot" aria-hidden="true"></span>
+              Craft Guru · Bulk &amp; bespoke
+            </p>
+            <h1 id="cgHomeHeroHeading" class="rm-hero__title-stack">
+              <span class="rm-hero__title-line1">Corporate Gifting</span>
+              <span class="rm-hero__title-line2">Hand-poured resin · Memorable keepsakes · Bulk orders welcome</span>
+            </h1>
+            <p class="rm-hero__sub">
+              Curated pieces flagged for corporate gifting in our vendor catalog — coasters, frames, clocks, and custom pours for teams, clients, and events.
+            </p>
+            <div class="rm-hero__actions" aria-hidden="true">
+              <a class="rm-hero__cta cg-landing-hero__cta" href="#rg-shop" tabindex="-1">Shop now</a>
+            </div>
+          </div>
+          <div class="cg-landing-hero__hits">
+            <a class="hero-exact-hit hero-exact-hit--shop cg-landing-hero__hit cg-landing-hero__hit--shop" href="#rg-shop" aria-label="Shop now"></a>
+          </div>
+          <div class="hero-shop-now-layer">
+            <a class="hero-shop-now-btn" href="#rg-shop">Shop Now</a>
           </div>
         </div>
-        <div class="cg-filter-panel cg-filter-panel--light" id="rgToolbar" aria-label="Filter and sort return gifts">
+        <div id="rg-shop">
+        <div class="cg-filter-panel cg-filter-panel--light" id="rgToolbar" aria-label="Filter and sort corporate gifting">
           <div class="cg-filter-panel__glow" aria-hidden="true"></div>
           <div class="cg-filter-panel__inner">
             <div class="category-toolbar__group">
               <label class="category-toolbar__label" for="rgFilterView">Filter</label>
               <select id="rgFilterView" class="category-toolbar__select">
-                <option value="all">All return gifts</option>
+                <option value="all">All corporate gifting</option>
                 <option value="photo">With product photo</option>
               </select>
             </div>
@@ -146,6 +178,7 @@
           </div>
         </div>
         <div class="product-grid" id="rgGrid"></div>
+        </div>
       </div>
     </section>
   </main>

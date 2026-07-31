@@ -3693,6 +3693,78 @@ body.product-page--oos .btn-add-lg {
   margin-bottom: 0;
 }
 
+.about-founder__layout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.35rem;
+}
+
+@media (min-width: 640px) {
+  .about-founder__layout {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 1.75rem;
+  }
+}
+
+.about-founder__portrait {
+  flex-shrink: 0;
+  margin: 0;
+  width: min(220px, 68vw);
+}
+
+.about-founder__portrait img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 12px 36px rgba(15, 35, 55, 0.12),
+    0 0 0 1px rgba(38, 166, 154, 0.12);
+}
+
+@media (min-width: 640px) {
+  .about-founder__portrait {
+    width: 200px;
+  }
+}
+
+.about-founder__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.about-founder__name {
+  margin: 0 0 0.2rem;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.about-founder__title {
+  margin: 0 0 0.85rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(38, 166, 154, 0.85);
+}
+
+.about-founder__commitments {
+  margin-bottom: 0.75rem;
+}
+
+.about-founder__sign {
+  margin-top: 0.25rem;
+  font-style: italic;
+  color: rgba(26, 32, 44, 0.62);
+}
+
 .about-connect-grid {
   display: grid;
   gap: 0.75rem;
@@ -5568,6 +5640,52 @@ body.product-page--oos .btn-add-lg {
 
 .checkout-razor-panel__ghost:hover {
   color: #e2e8f0;
+}
+
+.checkout-payment-method {
+  margin: 1rem 0 0;
+  padding: 0.85rem 0.95rem;
+  border: 1px solid rgba(26, 32, 44, 0.1);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.checkout-payment-method__legend {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(26, 32, 44, 0.55);
+  margin-bottom: 0.55rem;
+}
+
+.checkout-payment-method__opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  margin: 0.35rem 0;
+  font-size: 0.86rem;
+  line-height: 1.35;
+  cursor: pointer;
+}
+
+.checkout-total-row--discount span:last-child {
+  color: #0d9488;
+}
+
+.checkout-razor-panel--cod .checkout-razor-panel__cta--cod {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+}
+
+@media (max-width: 720px) {
+  .checkout-pay-modal__body {
+    flex-direction: column;
+  }
+
+  .checkout-pay-modal__col--razor,
+  .checkout-pay-modal__col--cod {
+    width: 100%;
+  }
 }
 
 .checkout-pay-modal__fine--razor {

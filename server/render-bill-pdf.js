@@ -233,9 +233,21 @@ function renderOrderBillPdf(p) {
       doc.fillColor(MUTED).text("GST 18%", margin, ty);
       doc.fillColor(INK).text(fmtInr(p.tax), margin, ty, { width: contentW, align: "right" });
       ty += 22;
+      if (Number(p.prepaidDiscount) > 0) {
+        doc.fillColor(MUTED).text("Prepaid discount (5%)", margin, ty);
+        doc.fillColor(INK).text("− " + fmtInr(p.prepaidDiscount), margin, ty, { width: contentW, align: "right" });
+        ty += 22;
+      }
       doc.fillColor(MUTED).text("Shipping", margin, ty);
       doc.fillColor(INK).text(p.shipping === 0 ? "Free" : fmtInr(p.shipping), margin, ty, { width: contentW, align: "right" });
       ty += 24;
+
+      if (Number(p.gatewayFee) > 0) {
+        doc.font("Helvetica").fontSize(11).fillColor(MUTED);
+        doc.text("Gateway fee", margin, ty);
+        doc.fillColor(INK).text(fmtInr(p.gatewayFee), margin, ty, { width: contentW, align: "right" });
+        ty += 22;
+      }
 
       doc.save();
       doc.moveTo(margin, ty).lineTo(margin + contentW, ty);

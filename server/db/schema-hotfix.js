@@ -55,6 +55,10 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_s NUMERIC(14, 2)",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_m NUMERIC(14, 2)",
     "ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS cost_l NUMERIC(14, 2)",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS product_value NUMERIC(12, 2) NOT NULL DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS prepaid_discount NUMERIC(12, 2) NOT NULL DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_fee NUMERIC(12, 2) NOT NULL DEFAULT 0",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ",
     "CREATE TABLE IF NOT EXISTS storefront_hero_slides (" +
       "id SERIAL PRIMARY KEY," +
       "image_path TEXT NOT NULL," +

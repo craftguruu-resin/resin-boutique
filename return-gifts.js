@@ -231,7 +231,7 @@
     grid.innerHTML = "";
     if (!items.length) {
       grid.innerHTML =
-        '<p class="band-empty" style="grid-column:1/-1">No return-gift pieces match these filters. Try clearing filters or changing the price range.</p>';
+        '<p class="band-empty" style="grid-column:1/-1">No corporate gifting pieces match these filters. Try clearing filters or changing the price range.</p>';
       syncReturnGiftsUrl();
       return;
     }

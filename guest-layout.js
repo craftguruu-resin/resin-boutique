@@ -1,6 +1,46 @@
 (function () {
   "use strict";
 
+  window.CraftguruCategoryScroll = window.CraftguruCategoryScroll || {};
+  var reduce = false;
+  try {
+    reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  } catch (_) {}
+
+  window.CraftguruCategoryScroll.scrollActivePill = function (container) {
+    if (!container) return;
+    var active = container.querySelector(".category-pill.is-active, .category-pill--rail.is-active");
+    if (!active) return;
+    requestAnimationFrame(function () {
+      try {
+        active.scrollIntoView({
+          behavior: reduce ? "auto" : "smooth",
+          inline: "center",
+          block: "nearest",
+        });
+      } catch (_) {}
+    });
+  };
+
+  window.CraftguruCategoryScroll.scrollActiveNavLink = function (container) {
+    if (!container) return;
+    var active = container.querySelector(".rm-nav-tree__link.is-active");
+    if (!active) return;
+    requestAnimationFrame(function () {
+      try {
+        active.scrollIntoView({
+          behavior: reduce ? "auto" : "smooth",
+          inline: "nearest",
+          block: "nearest",
+        });
+      } catch (_) {}
+    });
+  };
+})();
+
+(function () {
+  "use strict";
+
   function escapeHtml(s) {
     var d = document.createElement("div");
     d.textContent = s;
@@ -130,6 +170,7 @@
       if (!c) return;
       var a = document.createElement("a");
       a.className = "category-pill category-pill--rail";
+      a.setAttribute("data-cat-id", String(c.id));
       a.href = "category.html?cat=" + encodeURIComponent(c.id);
       if (railApi && railApi.fillRailLink) {
         railApi.fillRailLink(a, { id: c.id, label: c.label || c.id });
@@ -149,7 +190,7 @@
       ["raw-material-shop.html", "Resin raw material"],
       ["photo-frame-shop.html", "Photo frames shop"],
       ["photo-frames.html", "Photo frames"],
-      ["return-gifts.html", "Return gifts"],
+      ["return-gifts.html", "Corporate Gifting"],
     ].forEach(function (pair) {
       var a2 = document.createElement("a");
       a2.className = "category-pill category-pill--rail guest-page-category-rail__extra-pill";
@@ -167,6 +208,33 @@
     aside.appendChild(grid);
     main.appendChild(aside);
     main.appendChild(wrap);
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActivePill) {
+      window.CraftguruCategoryScroll.scrollActivePill(grid);
+    }
+  }
+
+  /** Update rail labels/icons in place — avoids mobile layout flash on catalog merge. */
+  function patchCategoryRailFromData() {
+    var grid = document.querySelector("#guestPageCategoryRail .category-grid--rail");
+    var D = window.RESIN_DATA;
+    if (!grid || !D || !D.categories) {
+      injectCategoryRail();
+      return;
+    }
+    var railApi = window.CRAFT_RAIL_ICONS;
+    D.categories.forEach(function (c) {
+      if (!c) return;
+      var a = grid.querySelector('[data-cat-id="' + String(c.id).replace(/"/g, "") + '"]');
+      if (!a) return;
+      if (railApi && railApi.fillRailLink) {
+        railApi.fillRailLink(a, { id: c.id, label: c.label || c.id });
+      } else {
+        a.textContent = c.label || c.id;
+      }
+    });
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActivePill) {
+      window.CraftguruCategoryScroll.scrollActivePill(grid);
+    }
   }
 
   function injectHeaderSearch() {
@@ -659,8 +727,7 @@
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
     try {
       ensureRailIconsLoaded(function () {
-        /* Rebuild rail so renamed category labels from /api/catalog/categories apply. */
-        injectCategoryRail();
+        patchCategoryRailFromData();
         wireMobileSidebarDrawers();
       });
       injectFooterMainMenu();

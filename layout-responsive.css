@@ -55,8 +55,13 @@ body.guest-site {
   }
 
   body.guest-site .brand__logo-img {
-    max-width: min(42vw, 11.5rem);
+    max-width: min(38vw, 9.5rem);
     height: auto;
+    max-height: 2.75rem;
+    width: auto;
+    object-fit: contain;
+    object-position: left center;
+    border-radius: 50%;
   }
 
   body.guest-site .nav-dock {
@@ -573,7 +578,7 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
   }
 }
 
-/* ── Category / return gifts band headers ── */
+/* ── Category / corporate gifting band headers ── */
 @media (max-width: 720px) {
   body.guest-site .category-band-head,
   body.guest-site .band-head,

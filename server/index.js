@@ -80,6 +80,7 @@ var guestDb = require("./guest-db.js");
 var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
 var httpHardening = require("./http-hardening.js");
+var orderPricing = require("./order-pricing.js");
 
 /** Cloud Run sets PORT=8080; local default 8080 (use PORT=3847 in server/.env for legacy local). */
 var PORT = Number(process.env.PORT) || 8080;
@@ -171,27 +172,91 @@ function normalizeIndia10(raw) {
 }
 
 /** Line MRP / unit prices are GST-inclusive (18%). Shipping is added without extra GST in this model. */
-function computeTotals(items) {
-  var GST = 0.18;
-  var sub = 0;
-  items.forEach(function (x) {
-    var q = Math.max(1, Math.min(999, Math.floor(Number(x.qty) || 1)));
-    var u = Math.max(0, Math.min(999999, Number(x.unitPrice) || 0));
-    sub += u * q;
+function computeTotals(items, opts) {
+  return orderPricing.computeTotals(items, opts);
+}
+
+function makeTagRef() {
+  return (
+    "CG-" +
+    Date.now().toString(36).toUpperCase() +
+    "-" +
+    crypto.randomBytes(3).toString("hex").toUpperCase()
+  );
+}
+
+function finishCheckoutOrder(req, res, opts) {
+  opts = opts || {};
+  var guest = opts.guest;
+  var items = opts.items;
+  var totals = opts.totals;
+  var paymentStatus = opts.paymentStatus || "paid";
+  var paymentMethod = opts.paymentMethod || "razorpay";
+  var orderType = opts.orderType || "Checkout";
+  var tagRef = opts.tagRef || makeTagRef();
+  var extraJson = opts.extraJson || {};
+
+  ordersRepo.createCheckoutParcelOrder(
+    {
+      guest: guest,
+      items: items,
+      totals: totals,
+      orderType: orderType,
+      tagRef: tagRef,
+      paymentStatus: paymentStatus,
+      paymentMethod: paymentMethod,
+    },
+    function (err, orderRecord) {
+      if (err) {
+        return res.status(500).json({
+          ok: false,
+          error: String((err && err.message) || err || "Could not create order"),
+        });
+      }
+      var payload = Object.assign(
+        {
+          ok: true,
+          orderCreated: true,
+          orderId: orderRecord.orderId,
+          tagRef: orderRecord.tagRef,
+          paymentStatus: orderRecord.paymentStatus,
+          paymentMethod: orderRecord.paymentMethod,
+          totals: orderRecord.totals,
+        },
+        extraJson
+      );
+      jsonWithOptionalGuestSession(res, payload, orderRecord.guestId);
+    }
+  );
+}
+
+function runCheckoutWithOptionalSession(req, res, guest, runCreate) {
+  var tokenRv = readGuestBearer(req);
+  if (!tokenRv) {
+    return runCreate();
+  }
+  return guestSessions.verifyGuestToken(tokenRv, function (vErr, row) {
+    if (vErr) {
+      return res.status(500).json({ ok: false, error: String(vErr.message || vErr) });
+    }
+    if (!row) {
+      return runCreate();
+    }
+    var emGuest = String(guest.email || "")
+      .trim()
+      .toLowerCase();
+    var emSess = String(row.email || "")
+      .trim()
+      .toLowerCase();
+    if (!emGuest || emGuest !== emSess) {
+      return res.status(403).json({
+        ok: false,
+        code: "EMAIL_MISMATCH",
+        error: "Checkout email must match the account you signed in with.",
+      });
+    }
+    runCreate();
   });
-  var subIncl = Math.round(sub * 100) / 100;
-  var ship = subIncl >= 150 ? 0 : 10;
-  var taxable = Math.round((subIncl / (1 + GST)) * 100) / 100;
-  var gst = Math.round((subIncl - taxable) * 100) / 100;
-  var grand = Math.round((subIncl + ship) * 100) / 100;
-  return {
-    subtotal: subIncl,
-    taxableValue: taxable,
-    gstAmount: gst,
-    shipping: ship,
-    tax: gst,
-    total: grand,
-  };
 }
 
 function validateItems(items) {
@@ -847,7 +912,7 @@ app.post("/api/razorpay-order", function (req, res) {
 
   var items = body.items.map(sanitizeBillItem);
 
-  var totals = computeTotals(items);
+  var totals = computeTotals(items, { paymentMethod: "razorpay" });
   var amountPaise = Math.round(totals.total * 100);
   if (!Number.isFinite(amountPaise) || amountPaise < 100) {
     return res.status(400).json({ ok: false, error: "Order total must be at least ₹1 after fees." });
@@ -864,6 +929,7 @@ app.post("/api/razorpay-order", function (req, res) {
         orderId: order.id,
         amount: order.amount,
         currency: order.currency,
+        totals: totals,
       });
     })
     .catch(function (err) {
@@ -910,75 +976,64 @@ app.post("/api/razorpay-verify", function (req, res) {
       return res.status(400).json({ ok: false, error: itemsErr0 });
     }
     var items0 = rawItems.map(sanitizeBillItem);
-    var totals0 = computeTotals(items0);
+    var totals0 = computeTotals(items0, { paymentMethod: "razorpay" });
     var g0 = normalizeGuestParcel(guest);
-    var tagRef0 =
-      "CG-" +
-      Date.now().toString(36).toUpperCase() +
-      "-" +
-      crypto.randomBytes(3).toString("hex").toUpperCase();
 
-    function createPaidRazorpayOrder() {
-      ordersRepo.createCheckoutParcelOrder(
-        {
-          guest: g0,
-          items: items0,
-          totals: totals0,
-          orderType: "Checkout · Razorpay",
-          tagRef: tagRef0,
-          paymentStatus: "paid",
-          paymentMethod: "razorpay",
-        },
-        function (err, orderRecord) {
-          if (err) {
-            return res.status(500).json({
-              ok: false,
-              error: String((err && err.message) || err || "Could not create order"),
-            });
-          }
-          var payload = {
-            ok: true,
-            orderCreated: true,
-            orderId: orderRecord.orderId,
-            tagRef: orderRecord.tagRef,
-            paymentStatus: orderRecord.paymentStatus,
-            paymentMethod: orderRecord.paymentMethod,
-            razorpayPaymentId: String(payId || ""),
-          };
-          jsonWithOptionalGuestSession(res, payload, orderRecord.guestId);
-        }
-      );
-    }
-
-    var tokenRv = readGuestBearer(req);
-    if (!tokenRv) {
-      return createPaidRazorpayOrder();
-    }
-    return guestSessions.verifyGuestToken(tokenRv, function (vErr, row) {
-      if (vErr) {
-        return res.status(500).json({ ok: false, error: String(vErr.message || vErr) });
-      }
-      if (!row) {
-        return createPaidRazorpayOrder();
-      }
-      var emGuest = String(g0.email || "")
-        .trim()
-        .toLowerCase();
-      var emSess = String(row.email || "")
-        .trim()
-        .toLowerCase();
-      if (!emGuest || emGuest !== emSess) {
-        return res.status(403).json({
-          ok: false,
-          code: "EMAIL_MISMATCH",
-          error: "Checkout email must match the account you signed in with.",
-        });
-      }
-      createPaidRazorpayOrder();
+    runCheckoutWithOptionalSession(req, res, g0, function () {
+      finishCheckoutOrder(req, res, {
+        guest: g0,
+        items: items0,
+        totals: totals0,
+        orderType: "Checkout · Razorpay",
+        tagRef: makeTagRef(),
+        paymentStatus: "paid",
+        paymentMethod: "razorpay",
+        extraJson: { razorpayPaymentId: String(payId || "") },
+      });
     });
+    return;
   }
 
   res.json({ ok: true, orderCreated: false });
+});
+
+/** Cash on delivery — creates pending order, decrements stock, no sales until admin marks paid. */
+app.post("/api/checkout-cod", function (req, res) {
+  var ip = req.ip || req.connection.remoteAddress || "unknown";
+  if (!rateOk(ip)) {
+    return res.status(429).json({ ok: false, error: "Too many requests." });
+  }
+  if (!billSecretOk(req)) return rejectBillApiSecret(res);
+
+  var b = req.body || {};
+  var guest = b.guest;
+  var rawItems = b.items;
+  if (!guest || !Array.isArray(rawItems) || !rawItems.length) {
+    return res.status(400).json({ ok: false, error: "Guest and items required for COD checkout." });
+  }
+  var gErr0 = validateGuestParcel(guest);
+  if (gErr0) {
+    return res.status(400).json({ ok: false, error: gErr0 });
+  }
+  var itemsErr0 = validateItems(rawItems);
+  if (itemsErr0) {
+    return res.status(400).json({ ok: false, error: itemsErr0 });
+  }
+  var items0 = rawItems.map(sanitizeBillItem);
+  var totals0 = computeTotals(items0, { paymentMethod: "cod" });
+  var g0 = normalizeGuestParcel(guest);
+
+  runCheckoutWithOptionalSession(req, res, g0, function () {
+    finishCheckoutOrder(req, res, {
+      guest: g0,
+      items: items0,
+      totals: totals0,
+      orderType: "Checkout · COD",
+      tagRef: makeTagRef(),
+      paymentStatus: "pending_payment",
+      paymentMethod: "cod",
+    });
+  });
 });
 
 /** Guest + shipping address only (no order). Persists when DATABASE_URL is set. With Bearer: email must match session. Without Bearer: saves from form (creates/links guest by phone+email for later OTP login). */
@@ -1484,11 +1539,13 @@ app.get("/api/guest/order/:orderId/bill-pdf", function (req, res) {
         if (skuErr) {
           return res.status(500).type("text/plain").send(String(skuErr.message || skuErr));
         }
-        var totals = computeTotals(itemsWithSku);
+        var totals = order.totals && typeof order.totals === "object" ? order.totals : computeTotals(itemsWithSku);
         renderOrderBillPdf({
           items: itemsWithSku,
-          subtotal: totals.subtotal,
-          taxableValue: totals.taxableValue,
+          subtotal: totals.productValue != null ? totals.productValue : totals.subtotal,
+          prepaidDiscount: totals.prepaidDiscount || 0,
+          gatewayFee: totals.gatewayFee || 0,
+          taxableValue: totals.taxableValue != null ? totals.taxableValue : totals.subtotal / 1.18,
           shipping: totals.shipping,
           tax: totals.tax,
           total: totals.total,
@@ -1737,6 +1794,41 @@ app.patch("/api/vendor/order/:orderId/fulfillment", function (req, res) {
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, orderId: out.orderId, fulfillmentStatus: out.fulfillmentStatus });
+    });
+  });
+});
+
+/** Mark COD (pending) order as paid — updates sales/profit analytics; does not re-decrement stock. */
+app.patch("/api/vendor/order/:orderId/payment-received", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    ordersRepo.markOrderPaymentReceived(req.params.orderId, function (e2, out) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code =
+          msg.indexOf("not configured") >= 0
+            ? 503
+            : msg.indexOf("not found") >= 0
+              ? 404
+              : msg.indexOf("Only pending") >= 0
+                ? 400
+                : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      res.setHeader("Cache-Control", "no-store");
+      res.json({
+        ok: true,
+        orderId: out.orderId,
+        paymentStatus: out.paymentStatus,
+        paymentMethod: out.paymentMethod,
+        paidAt: out.paidAt ? new Date(out.paidAt).toISOString() : null,
+        alreadyPaid: !!out.alreadyPaid,
+      });
     });
   });
 });

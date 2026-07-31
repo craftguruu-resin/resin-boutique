@@ -259,6 +259,7 @@
       .map(function (r) {
         var profitCls = Number(r.profit) < 0 ? " vsp-cell--neg" : "";
         var tag = r.tagRef || r.orderId || "—";
+        var pay = r.paymentMethod === "cod" ? "COD" : r.paymentMethod === "razorpay" ? "Razorpay" : r.paymentMethod || "—";
         return (
           "<tr>" +
           "<td>" +
@@ -269,28 +270,28 @@
           "</span></td>" +
           "<td>" +
           esc(r.name || r.productId || "—") +
-          "</td>" +
-          "<td>" +
-          esc(r.sizeLabel || "—") +
-          "</td>" +
-          "<td>" +
-          esc(String(r.qty || 0)) +
-          "</td>" +
-          "<td>" +
-          esc(moneyPrecise(r.unitPrice)) +
-          " × " +
-          esc(String(r.qty || 0)) +
           "<br /><span class='vs-muted'>" +
-          esc(money(r.revenue)) +
+          esc(r.sizeLabel || "") +
+          " · qty " +
+          esc(String(r.qty || 0)) +
           "</span></td>" +
           "<td>" +
-          esc(moneyPrecise(r.razorpayFee)) +
+          esc(pay) +
+          "<br /><span class='vs-muted'>" +
+          esc(r.paymentStatus || "paid") +
+          "</span></td>" +
+          "<td>" +
+          esc(moneyPrecise(r.productValue != null ? r.productValue : r.revenue)) +
           "</td>" +
           "<td>" +
-          esc(moneyPrecise(r.totalCost)) +
-          "<br /><span class='vs-muted'>" +
-          esc(moneyPrecise(r.unitCost)) +
-          "/unit</span></td>" +
+          esc(moneyPrecise(r.prepaidDiscount || 0)) +
+          "</td>" +
+          "<td>" +
+          esc(moneyPrecise(r.gatewayFee != null ? r.gatewayFee : r.razorpayFee || 0)) +
+          "</td>" +
+          "<td>" +
+          esc(moneyPrecise(r.netRevenue != null ? r.netRevenue : r.revenue)) +
+          "</td>" +
           "<td class='vsp-cell--profit" +
           profitCls +
           "'>" +

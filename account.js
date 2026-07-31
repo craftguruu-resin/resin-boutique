@@ -362,7 +362,7 @@
       '<div class="account-order-card__cell"><span class="account-order-card__cell-label">Payment</span><span class="account-order-card__cell-value">' +
       escapeHtml(paymentLabel(o.paymentStatus)) +
       (o.paymentMethod && String(o.paymentMethod).trim()
-        ? '<span class="account-order-card__pay-sub">' + escapeHtml(String(o.paymentMethod).trim()) + "</span>"
+        ? '<span class="account-order-card__pay-sub">' + escapeHtml(paymentMethodLabel(o.paymentMethod)) + "</span>"
         : "") +
       "</span></div>" +
       "</div>" +
@@ -371,9 +371,11 @@
       linesHtml +
       "</div>" +
       '<div class="account-order-bill__totals">' +
-      totalRow("Subtotal", T.subtotal) +
+      totalRow("Items total", T.productValue != null ? T.productValue : T.subtotal) +
+      (Number(T.prepaidDiscount) > 0 ? totalRow("Prepaid discount (5%)", "− " + fmtMoney(T.prepaidDiscount)) : "") +
       totalRow("Shipping", T.shipping) +
       totalRow("Tax (GST)", T.tax) +
+      (Number(T.gatewayFee) > 0 ? totalRow("Gateway fee", T.gatewayFee) : "") +
       '<div class="account-order-bill__totalrow account-order-bill__totalrow--grand"><span>' +
       escapeHtml("Total") +
       "</span><span>" +
@@ -426,13 +428,15 @@
       });
   }
 
-  /** Read ?paid=1&orderId=&tag= from checkout redirect; show banner and return order id to highlight. */
+  /** Read ?paid=1 or ?cod=1&orderId=&tag= from checkout redirect; show banner and return order id to highlight. */
   function consumePaidQueryBanner() {
     var ban = document.getElementById("accountPaidBanner");
     var highlight = "";
     try {
       var u = new URL(window.location.href);
-      if (u.searchParams.get("paid") !== "1") {
+      var isPaid = u.searchParams.get("paid") === "1";
+      var isCod = u.searchParams.get("cod") === "1";
+      if (!isPaid && !isCod) {
         return "";
       }
       highlight = String(u.searchParams.get("orderId") || "").trim();
@@ -440,13 +444,18 @@
       if (ban) {
         ban.hidden = false;
         var oid = highlight || "—";
-        ban.textContent =
-          "Payment confirmed — order #" +
-          oid +
-          (tag ? " · Tag " + tag : "") +
-          ". Status below updates when the studio marks packed, out for delivery, shipped, or delivered.";
+        ban.textContent = isCod
+          ? "COD order placed — order #" +
+            oid +
+            (tag ? " · Tag " + tag : "") +
+            ". Pay cash on delivery. Payment status stays pending until our team confirms receipt."
+          : "Payment confirmed — order #" +
+            oid +
+            (tag ? " · Tag " + tag : "") +
+            ". Status below updates when the studio marks packed, out for delivery, shipped, or delivered.";
       }
       u.searchParams.delete("paid");
+      u.searchParams.delete("cod");
       u.searchParams.delete("orderId");
       u.searchParams.delete("tag");
       window.history.replaceState({}, "", u.pathname + (u.search || "") + u.hash);
@@ -488,8 +497,19 @@
   function paymentLabel(ps) {
     var s = String(ps || "").toLowerCase();
     if (s === "paid") return "Paid";
-    if (s === "pending_payment") return "Unpaid";
+    if (s === "pending_payment") return "Pending";
+    if (s === "failed") return "Failed";
+    if (s === "refunded") return "Refunded";
     return ps || "—";
+  }
+
+  function paymentMethodLabel(m) {
+    var s = String(m || "")
+      .trim()
+      .toLowerCase();
+    if (s === "cod" || s === "cash_on_delivery") return "Cash on delivery";
+    if (s === "razorpay") return "Razorpay";
+    return m || "—";
   }
 
   function orderMatchesTab(tab, o) {

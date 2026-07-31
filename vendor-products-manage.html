@@ -111,7 +111,7 @@
                 <textarea id="viApTrust" rows="3" maxlength="800" placeholder="Safe &amp; non-toxic&#10;Lab tested"></textarea>
               </div>
               <div class="vs-field" style="grid-column: 1 / -1">
-                <label><input type="checkbox" id="viApReturnGift" /> Mark as return gift collection</label>
+                <label><input type="checkbox" id="viApReturnGift" /> Mark as corporate gifting collection</label>
               </div>
               <div class="vs-field">
                 <label for="viApPriceS">Price tier 1 (S) ₹</label>
@@ -188,7 +188,7 @@
                 <option value="all">All</option>
                 <option value="active">Active</option>
                 <option value="disc">Discontinued</option>
-                <option value="return_gift">Return gift listings</option>
+                <option value="return_gift">Corporate gifting listings</option>
               </select>
             </div>
             <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem; max-width: 28rem">
@@ -208,7 +208,7 @@
                   <th>Image</th>
                   <th>Name</th>
                   <th>SKU</th>
-                  <th>Return gift</th>
+                  <th>Corporate Gifting</th>
                   <th>Actions</th>
                 </tr>
               </thead>
@@ -383,15 +383,15 @@
           </details>
 
           <div class="vpm-return-gift-block vpm-return-gift-block--toolbar" style="margin-top: 0.75rem">
-            <p class="vpm-return-gift-block__title">Return gift (guest)</p>
-            <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Return gifts listing">
+            <p class="vpm-return-gift-block__title">Corporate Gifting (guest)</p>
+            <div class="vpm-return-gift-row vpm-return-gift-row--toolbar" role="radiogroup" aria-label="Corporate gifting listing">
               <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
                 <input type="radio" name="vpmReturnGift" id="vpmReturnGiftNo" value="0" checked />
                 <span>Shop only</span>
               </label>
               <label class="vpm-return-gift-row__opt vpm-return-gift-row__opt--toolbar">
                 <input type="radio" name="vpmReturnGift" id="vpmReturnGiftYes" value="1" />
-                <span>Return gift</span>
+                <span>Corporate Gifting</span>
               </label>
             </div>
           </div>

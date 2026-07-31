@@ -806,15 +806,7 @@
       "<h1 class=\"rm-pdp__title\">" +
       esc(m.name) +
       "</h1>" +
-      '<div class="rm-pdp__meta-rating-row">' +
-      '<div class="rm-pdp__stars-wrap">' +
-      '<div class="rm-pdp__stars" aria-label="Customer rating">★★★★★ <span class="rm-pdp__rating-num">' +
-      esc(String(ratingNum)) +
-      '</span> <span class="rm-pdp__reviews">(' +
-      esc(String(revN)) +
-      " reviews)</span></div></div>" +
       '<div class="product-share-bar product-share-bar--rm-pdp" id="resinPdpShare" aria-label="Share"></div>' +
-      "</div>" +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
       CART.formatMoney(eff) +

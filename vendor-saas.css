@@ -1328,7 +1328,7 @@ a.vd-kpi-card--link:focus-visible {
   color: var(--vs-sidebar-muted);
 }
 
-/* Products manage: return gift radios + OOS label */
+/* Products manage: corporate gifting radios + OOS label */
 .vendor-saas .vpm-return-gift-block {
   margin-top: 0.85rem;
   padding: 0.65rem 0.85rem;

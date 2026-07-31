@@ -80,8 +80,49 @@
   }
 
   function payBadge(st) {
-    if (st === "paid") return "<span class='vs-badge vs-badge--paid'>Paid</span>";
+    var s = String(st || "").toLowerCase();
+    if (s === "paid") return "<span class='vs-badge vs-badge--paid'>Paid</span>";
+    if (s === "pending_payment") return "<span class='vs-badge vs-badge--pending'>Pending</span>";
+    if (s === "failed") return "<span class='vs-badge vs-badge--err'>Failed</span>";
+    if (s === "refunded") return "<span class='vs-badge'>Refunded</span>";
     return "<span class='vs-badge vs-badge--pending'>" + esc(st || "—") + "</span>";
+  }
+
+  function payMethodLabel(m) {
+    var s = String(m || "")
+      .trim()
+      .toLowerCase();
+    if (s === "cod") return "COD";
+    if (s === "razorpay") return "Razorpay";
+    return m || "—";
+  }
+
+  function patchPaymentReceived(orderId) {
+    vf(V.vendorApiUrl("/api/vendor/order/" + encodeURIComponent(orderId) + "/payment-received"), {
+      method: "PATCH",
+      headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+      body: "{}",
+    })
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Update failed");
+          return x.json;
+        });
+      })
+      .then(function (j) {
+        allOrders.forEach(function (o) {
+          if (String(o.orderId) === String(orderId)) o.paymentStatus = j.paymentStatus || "paid";
+        });
+        if (lastOrder && String(lastOrder.orderId) === String(orderId)) {
+          lastOrder.paymentStatus = j.paymentStatus || "paid";
+        }
+        renderTable();
+        if (lastOrder) openDetail(orderId);
+      })
+      .catch(function (e) {
+        window.alert(String((e && e.message) || e));
+        loadOrders();
+      });
   }
 
   function filtered() {
@@ -183,7 +224,9 @@
           esc(money(o.total != null ? o.total : o.totals && o.totals.total)) +
           "</td><td>" +
           payBadge(o.paymentStatus) +
-          "</td><td>" +
+          "<br/><span class='vs-muted'>" +
+          esc(payMethodLabel(o.paymentMethod)) +
+          "</span></td><td>" +
           renderFulEditor(o) +
           "</td><td><button type='button' class='vs-btn vs-btn--primary vt-open' data-oid='" +
           esc(String(o.orderId)) +
@@ -287,11 +330,31 @@
             esc(order.tagRef || "") +
             " · " +
             esc(order.paymentStatus || "") +
+            " · " +
+            esc(payMethodLabel(order.paymentMethod)) +
             " · <strong>" +
             esc(B.money(order.totals && order.totals.total)) +
             "</strong>";
         }
-        body.innerHTML = B.buildInlineTagBillHtml(order);
+        var markHtml = "";
+        if (
+          String(order.paymentMethod || "")
+            .trim()
+            .toLowerCase() === "cod" &&
+          String(order.paymentStatus || "").toLowerCase() === "pending_payment"
+        ) {
+          markHtml =
+            '<p style="margin:0 0 0.75rem"><button type="button" class="vs-btn vs-btn--primary" id="vtMarkPaidBtn" data-oid="' +
+            esc(String(order.orderId)) +
+            '">Mark payment received</button></p>';
+        }
+        body.innerHTML = markHtml + B.buildInlineTagBillHtml(order);
+        var markBtn = document.getElementById("vtMarkPaidBtn");
+        if (markBtn) {
+          markBtn.addEventListener("click", function () {
+            patchPaymentReceived(markBtn.getAttribute("data-oid"));
+          });
+        }
       })
       .catch(function (e) {
         body.innerHTML = "<p class='vs-err'>" + esc(String((e && e.message) || e)) + "</p>";

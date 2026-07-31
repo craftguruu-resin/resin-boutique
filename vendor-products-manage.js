@@ -106,7 +106,7 @@
           : "—";
         var skuCell = p.sku ? esc(p.sku) : "<span class=\"vs-muted\">—</span>";
         var rgCell =
-          "<div class=\"vpm-rg-inline\" role=\"radiogroup\" aria-label=\"Return gift listing\" title=\"" +
+          "<div class=\"vpm-rg-inline\" role=\"radiogroup\" aria-label=\"Corporate gifting listing\" title=\"" +
           esc(src === "catalog" ? "Catalog row — edit to change" : "Vendor row — edit to change") +
           "\">" +
           "<label class=\"vpm-rg-inline__lab" +
@@ -122,7 +122,7 @@
           esc(rgNm) +
           "\" value=\"1\"" +
           (rg ? " checked" : "") +
-          " /><span>Return gift</span></label>" +
+          " /><span>Corporate Gifting</span></label>" +
           "</div>";
         var actions =
           "<div class=\"vpm-actions vpm-actions--inline\"><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-edit\" data-id=\"" +
@@ -1010,7 +1010,7 @@
         if (src === "catalog") {
           if (
             !window.confirm(
-              "Remove all saved database settings for this catalog product (custom prices, size labels, return-gift flag, discontinued state)? The product stays in the bundled site catalog with its default prices and listing."
+              "Remove all saved database settings for this catalog product (custom prices, size labels, corporate gifting flag, discontinued state)? The product stays in the bundled site catalog with its default prices and listing."
             )
           ) {
             return;

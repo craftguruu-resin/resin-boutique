@@ -9,6 +9,7 @@
   var GST_INCLUSIVE_RATE = 0.18;
   var SHIP_FLAT = 10;
   var FREE_SHIP_MIN = 150;
+  var PREPAID_DISCOUNT_RATE = 0.05;
 
   function splitGstFromInclusive(inclTotal) {
     var t = Math.round(Number(inclTotal) * 100) / 100;
@@ -48,6 +49,10 @@
     modalTax: document.getElementById("checkoutModalTax"),
     modalGrand: document.getElementById("checkoutModalGrand"),
     btnRazorpayCheckout: document.getElementById("btnRazorpayCheckout"),
+    btnCodCheckout: document.getElementById("btnCodCheckout"),
+    valDiscount: document.getElementById("valDiscount"),
+    modalDiscount: document.getElementById("checkoutModalDiscount"),
+    paymentMethodRadios: document.querySelectorAll('input[name="checkoutPaymentMethod"]'),
     paymentCancelBtn: document.getElementById("checkoutPaymentCancelBtn"),
     guestPhone: document.getElementById("guestPhone"),
     guestName: document.getElementById("guestName"),
@@ -756,8 +761,9 @@
     pop.removeAttribute("hidden");
   }
 
-  /** After successful Razorpay verify: persist guest session from server, clear cart, open My orders. */
-  function afterPaidCheckoutNavigate(j) {
+  /** After successful checkout: persist guest session from server, clear cart, open My orders. */
+  function afterPaidCheckoutNavigate(j, opts) {
+    opts = opts || {};
     var ge = document.getElementById("guestEmail");
     var emailNorm = normalizeCheckoutEmail(ge && ge.value);
     try {
@@ -788,8 +794,9 @@
     closeResultPopup();
     var oid = j && j.orderId != null ? String(j.orderId) : "";
     var tag = j && j.tagRef ? String(j.tagRef) : "";
-    var q =
-      "?paid=1" + (oid ? "&orderId=" + encodeURIComponent(oid) : "") + (tag ? "&tag=" + encodeURIComponent(tag) : "");
+    var q = opts.cod ? "?cod=1" : "?paid=1";
+    q += oid ? "&orderId=" + encodeURIComponent(oid) : "";
+    q += tag ? "&tag=" + encodeURIComponent(tag) : "";
     window.location.href = "account.html" + q;
   }
 
@@ -801,6 +808,67 @@
 
   function escapeAttr(s) {
     return String(s).replace(/"/g, "&quot;");
+  }
+
+  function getCheckoutPaymentMethod() {
+    var r = document.querySelector('input[name="checkoutPaymentMethod"]:checked');
+    return r && String(r.value).toLowerCase() === "cod" ? "cod" : "razorpay";
+  }
+
+  function computeCheckoutTotals(subtotalVal, paymentMethod) {
+    var productValue = Math.round(Number(subtotalVal) * 100) / 100;
+    var shipping = productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
+    var prepaidDiscount =
+      paymentMethod === "razorpay" ? Math.round(productValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
+    var afterDiscount = Math.round(Math.max(0, productValue - prepaidDiscount) * 100) / 100;
+    var split = splitGstFromInclusive(afterDiscount);
+    var grand = Math.round((afterDiscount + shipping) * 100) / 100;
+    return {
+      productValue: productValue,
+      prepaidDiscount: prepaidDiscount,
+      afterDiscount: afterDiscount,
+      shipping: shipping,
+      taxable: split.taxable,
+      gst: split.gst,
+      grand: grand,
+    };
+  }
+
+  function postCheckoutCod(guest, items) {
+    var base = billApiBase();
+    if (!base) return Promise.reject(new Error("missing bill API base"));
+    return fetch(base + "/api/checkout-cod", {
+      method: "POST",
+      headers: guestAuthHeaders(),
+      body: JSON.stringify({ guest: guest, items: items }),
+    }).then(function (res) {
+      return parseApiJson(res).then(function (x) {
+        var j = x.json;
+        if (!x.okHttp || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "Could not place COD order");
+        }
+        return j;
+      });
+    });
+  }
+
+  function updatePaymentPanelVisibility() {
+    var method = getCheckoutPaymentMethod();
+    var razorCol = document.querySelector(".checkout-pay-modal__col--razor");
+    var codPanel = document.getElementById("checkoutCodPanel");
+    var modalTitle = document.getElementById("checkoutPayModalTitle");
+    if (razorCol) razorCol.hidden = method === "cod";
+    if (codPanel) codPanel.hidden = method !== "cod";
+    if (modalTitle) {
+      modalTitle.textContent = method === "cod" ? "Cash on delivery" : "Pay with Razorpay";
+    }
+    var hint = document.querySelector(".checkout-summary-pay-hint");
+    if (hint) {
+      hint.textContent =
+        method === "cod"
+          ? "Place your COD order after you fill shipping above. Pay when your parcel arrives."
+          : "Opens secure Razorpay after you fill shipping above. 5% instant discount applied.";
+    }
   }
 
   function fmt(n) {
@@ -1133,9 +1201,8 @@
     }
 
     var subtotalVal = CART.subtotal();
-    var split = splitGstFromInclusive(subtotalVal);
-    var shipping = subtotalVal >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
-    var grand = Math.round((subtotalVal + shipping) * 100) / 100;
+    var paymentMethod = getCheckoutPaymentMethod();
+    var totals = computeCheckoutTotals(subtotalVal, paymentMethod);
 
     var sEl = gfSort();
     var sortKey = (sEl && sEl.value) || "default";
@@ -1144,16 +1211,26 @@
     renderSnips(displayLines);
     applyCheckoutLineFilter();
 
-    if (els.sub) els.sub.textContent = fmt(subtotalVal);
-    if (els.taxable) els.taxable.textContent = fmt(split.taxable);
-    if (els.ship) els.ship.textContent = shipping === 0 ? "Free" : fmt(shipping);
-    if (els.tax) els.tax.textContent = fmt(split.gst);
-    if (els.total) els.total.textContent = fmt(grand);
-    if (els.modalSub) els.modalSub.textContent = fmt(subtotalVal);
-    if (els.modalTaxable) els.modalTaxable.textContent = fmt(split.taxable);
-    if (els.modalShip) els.modalShip.textContent = shipping === 0 ? "Free" : fmt(shipping);
-    if (els.modalTax) els.modalTax.textContent = fmt(split.gst);
-    if (els.modalGrand) els.modalGrand.textContent = fmt(grand);
+    if (els.sub) els.sub.textContent = fmt(totals.productValue);
+    var discRow = document.querySelector(".checkout-total-row--discount");
+    if (discRow) discRow.hidden = totals.prepaidDiscount <= 0;
+    if (els.valDiscount) els.valDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
+    if (els.taxable) els.taxable.textContent = fmt(totals.taxable);
+    if (els.ship) els.ship.textContent = totals.shipping === 0 ? "Free" : fmt(totals.shipping);
+    if (els.tax) els.tax.textContent = fmt(totals.gst);
+    if (els.total) els.total.textContent = fmt(totals.grand);
+    if (els.modalSub) els.modalSub.textContent = fmt(totals.productValue);
+    if (els.modalDiscount && els.modalDiscount.closest("li")) {
+      els.modalDiscount.closest("li").hidden = totals.prepaidDiscount <= 0;
+    }
+    if (els.modalDiscount) {
+      els.modalDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
+    }
+    if (els.modalTaxable) els.modalTaxable.textContent = fmt(totals.taxable);
+    if (els.modalShip) els.modalShip.textContent = totals.shipping === 0 ? "Free" : fmt(totals.shipping);
+    if (els.modalTax) els.modalTax.textContent = fmt(totals.gst);
+    if (els.modalGrand) els.modalGrand.textContent = fmt(totals.grand);
+    updatePaymentPanelVisibility();
     if (CART.syncShippingNotice) CART.syncShippingNotice();
   }
 
@@ -1167,14 +1244,21 @@
       st.setAttribute("data-state", "idle");
       label.textContent = "Ready";
       msg.textContent =
-        "Tap Pay now to see your total here, then use Pay securely now — checkout is completed only through Razorpay.";
+        getCheckoutPaymentMethod() === "cod"
+          ? "Tap Pay now, choose Cash on delivery, then place your order. Payment is collected when your parcel arrives."
+          : "Tap Pay now to see your total here, then use Pay securely now — 5% instant discount on online payment.";
       return;
     }
     if (mode === "ready") {
       st.setAttribute("data-state", "scan");
       label.textContent = "Checkout";
-      msg.innerHTML =
-        "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server.";
+      if (getCheckoutPaymentMethod() === "cod") {
+        msg.innerHTML =
+          "Review the amount on the left, then tap <strong>Place COD order</strong>. Pay cash when your parcel is delivered.";
+      } else {
+        msg.innerHTML =
+          "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 5% prepaid discount).";
+      }
       return;
     }
     if (mode === "fail") {
@@ -1359,8 +1443,51 @@
           });
       });
     }
+    if (els.btnCodCheckout) {
+      els.btnCodCheckout.addEventListener("click", function () {
+        if (!els.form || !els.form.checkValidity()) {
+          window.alert("Please fill guest name, email, phone, and full shipping address before placing your order.");
+          try {
+            els.form.reportValidity();
+          } catch (_) {}
+          return;
+        }
+        var items = buildBillItemsForApi();
+        if (!items.length) {
+          window.alert("Your cart is empty.");
+          return;
+        }
+        var guest = buildGuestPayloadFromForm();
+        els.btnCodCheckout.disabled = true;
+        postCheckoutCod(guest, items)
+          .then(function (j) {
+            if (!j || !j.orderCreated) {
+              throw new Error("Order was not saved. Check DATABASE_URL on the server.");
+            }
+            afterPaidCheckoutNavigate(j, { cod: true });
+          })
+          .catch(function (err) {
+            window.alert(String((err && err.message) || "Could not place COD order."));
+          })
+          .then(function () {
+            els.btnCodCheckout.disabled = false;
+          });
+      });
+    }
+    document.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(function (inp) {
+      inp.addEventListener("change", function () {
+        refreshCheckout();
+        setPaymentUi("ready");
+      });
+    });
     if (els.paymentCancelBtn) {
       els.paymentCancelBtn.addEventListener("click", function () {
+        closePayModal();
+      });
+    }
+    var codCancel = document.getElementById("checkoutPaymentCancelBtnCod");
+    if (codCancel) {
+      codCancel.addEventListener("click", function () {
         closePayModal();
       });
     }

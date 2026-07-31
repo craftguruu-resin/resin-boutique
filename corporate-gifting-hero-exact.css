@@ -1,0 +1,143 @@
+/**
+ * Corporate Gifting landing — exact panel hero.
+ * Source of truth: media/corporate-gifting/corporate-gifting-hero.png
+ * Scoped to body.rm-theme--corporate-gifting.
+ */
+
+body.rm-theme--corporate-gifting {
+  --cg-gift-ink: var(--cg-navy, #1a2b48);
+  --cg-gift-ink-muted: rgba(26, 43, 72, 0.62);
+  --cg-gift-teal: var(--cg-teal, #26a69a);
+  --cg-gift-teal-deep: var(--cg-teal-deep, #1e8e84);
+  --cg-gift-hero-radius: clamp(1.75rem, 4.5vw, 2.75rem);
+  background:
+    radial-gradient(ellipse 80% 45% at 12% -5%, rgba(125, 211, 199, 0.14), transparent 55%),
+    radial-gradient(ellipse 60% 40% at 95% 20%, rgba(26, 43, 72, 0.06), transparent 50%),
+    #ffffff;
+  color: var(--cg-gift-ink);
+}
+
+body.rm-theme--corporate-gifting .nav-dock {
+  background: var(--cg-grad-nav, linear-gradient(105deg, #1a2b48 0%, #243656 55%, #1a2b48 100%));
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 10px 32px rgba(26, 43, 72, 0.28),
+    0 1px 0 rgba(255, 255, 255, 0.12) inset;
+}
+
+body.rm-theme--corporate-gifting .nav-dock-link {
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+body.rm-theme--corporate-gifting .nav-dock-link:hover,
+body.rm-theme--corporate-gifting .nav-dock-link:focus-visible {
+  background: rgba(125, 211, 199, 0.18);
+  color: #fff;
+}
+
+body.rm-theme--corporate-gifting .nav-dock-link.is-active,
+body.rm-theme--corporate-gifting .nav-dock-link.nav-dock-link--active {
+  background: var(--cg-grad-active, linear-gradient(135deg, #7dd3c7 0%, #26a69a 55%, #1e8e84 100%));
+  color: #ffffff;
+  box-shadow:
+    0 4px 16px rgba(38, 166, 154, 0.45),
+    0 1px 0 rgba(255, 255, 255, 0.35) inset;
+}
+
+body.rm-theme--corporate-gifting .crumb,
+body.rm-theme--corporate-gifting .crumb a {
+  color: rgba(26, 43, 72, 0.5);
+}
+
+body.rm-theme--corporate-gifting .crumb a:hover {
+  color: var(--cg-gift-teal-deep);
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero--exact.rm-hero,
+body.rm-theme--corporate-gifting .cg-landing-hero--exact {
+  position: relative;
+  display: block;
+  grid-template-columns: none;
+  gap: 0;
+  padding: 0;
+  margin-bottom: 2.25rem;
+  min-height: 0 !important;
+  height: auto !important;
+  max-height: none !important;
+  border-radius: var(--cg-gift-hero-radius);
+  overflow: hidden;
+  isolation: isolate;
+  line-height: 0;
+  background: #e8f5f3 !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.85) inset,
+    0 28px 64px rgba(26, 43, 72, 0.14),
+    0 0 40px rgba(38, 166, 154, 0.12);
+  animation: cgGiftExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes cgGiftExactHeroIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero__exact-art {
+  border-radius: inherit;
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero--exact .cg-landing-hero__copy {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  clip-path: inset(50%) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero__hits {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero__hit {
+  pointer-events: auto;
+}
+
+/* Calibrated to corporate-gifting-hero.png (1024×576) — Shop now */
+body.rm-theme--corporate-gifting .cg-landing-hero__hit--shop {
+  left: 3.5%;
+  top: 72%;
+  width: 16%;
+  height: 12%;
+}
+
+body.rm-theme--corporate-gifting .cg-landing-hero__hit:focus-visible {
+  outline: 2px solid var(--cg-gift-teal-deep);
+  outline-offset: 3px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.rm-theme--corporate-gifting .cg-landing-hero--exact.rm-hero,
+  body.rm-theme--corporate-gifting .cg-landing-hero--exact {
+    animation: none !important;
+  }
+}

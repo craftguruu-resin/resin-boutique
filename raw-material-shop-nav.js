@@ -139,6 +139,9 @@
         a.classList.add("is-active");
       }
     });
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActiveNavLink) {
+      window.CraftguruCategoryScroll.scrollActiveNavLink(el);
+    }
   }
 
   function setBranchOpen(el, baseId, open) {

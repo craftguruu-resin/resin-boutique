@@ -606,6 +606,10 @@
     var result = buildPageResult(fs.items, fs.sort);
     updateCatalogHint(result, urlQ);
     renderProductList(result, activeSubId, labelForList, multiSub ? subLabelForList : "");
+    var rail = document.querySelector("#guestPageCategoryRail .category-grid--rail");
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActivePill) {
+      window.CraftguruCategoryScroll.scrollActivePill(rail);
+    }
   }
 
   function patchProductGridPrices() {

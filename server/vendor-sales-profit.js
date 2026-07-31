@@ -119,12 +119,21 @@ function chartQueries() {
 function buildLineMetrics(row, ovMap) {
   var qty = Number(row.qty) || 0;
   var unitPrice = Number(row.unit_price) || 0;
-  var revenue = Math.round(unitPrice * qty * 100) / 100;
-  var razorpayFee = Math.round(revenue * RAZORPAY_FEE_RATE * 100) / 100;
+  var productValue = Math.round(unitPrice * qty * 100) / 100;
+  var orderProductValue = Number(row.order_product_value);
+  if (!Number.isFinite(orderProductValue) || orderProductValue <= 0) {
+    orderProductValue = productValue;
+  }
+  var share = orderProductValue > 0 ? productValue / orderProductValue : 1;
+  var orderPrepaid = Number(row.order_prepaid_discount) || 0;
+  var orderGateway = Number(row.order_gateway_fee) || 0;
+  var prepaidDiscount = Math.round(orderPrepaid * share * 100) / 100;
+  var gatewayFee = Math.round(orderGateway * share * 100) / 100;
+  var netRevenue = Math.round((productValue - prepaidDiscount - gatewayFee) * 100) / 100;
   var le = parseLineExtra(row.line_extra);
   var unitCost = resolveUnitCost(row.product_id, row.size_key, row.size_label, le, ovMap[row.product_id]);
   var totalCost = Math.round(unitCost * qty * 100) / 100;
-  var profit = Math.round((revenue - razorpayFee - totalCost) * 100) / 100;
+  var profit = Math.round((netRevenue - totalCost) * 100) / 100;
   return {
     orderId: row.order_id,
     tagRef: row.tag_ref,
@@ -134,11 +143,17 @@ function buildLineMetrics(row, ovMap) {
     sizeLabel: row.size_label || "",
     qty: qty,
     unitPrice: unitPrice,
-    revenue: revenue,
-    razorpayFee: razorpayFee,
+    productValue: productValue,
+    revenue: productValue,
+    prepaidDiscount: prepaidDiscount,
+    gatewayFee: gatewayFee,
+    razorpayFee: gatewayFee,
+    netRevenue: netRevenue,
     unitCost: unitCost,
     totalCost: totalCost,
     profit: profit,
+    paymentMethod: row.payment_method != null ? String(row.payment_method) : "",
+    paymentStatus: row.payment_status != null ? String(row.payment_status) : "paid",
   };
 }
 
@@ -159,7 +174,8 @@ function getSalesProfitInsights(period, cb) {
   var where = periodSqlFilter(p);
   var qLines =
     "SELECT oi.product_id, oi.name, oi.size_key, oi.size_label, oi.qty, oi.unit_price, oi.line_extra, " +
-    "o.id AS order_id, o.tag_ref, o.created_at " +
+    "o.id AS order_id, o.tag_ref, o.created_at, o.payment_method, o.payment_status, " +
+    "o.product_value AS order_product_value, o.prepaid_discount AS order_prepaid_discount, o.gateway_fee AS order_gateway_fee " +
     "FROM order_items oi JOIN orders o ON o.id = oi.order_id " +
     "WHERE o.payment_status = 'paid' AND " +
     where +
@@ -179,17 +195,21 @@ function getSalesProfitInsights(period, cb) {
 
         var totals = metrics.reduce(
           function (acc, m) {
-            acc.revenue += m.revenue;
-            acc.razorpayFee += m.razorpayFee;
+            acc.revenue += m.productValue;
+            acc.prepaidDiscount += m.prepaidDiscount;
+            acc.razorpayFee += m.gatewayFee;
+            acc.netRevenue += m.netRevenue;
             acc.totalCost += m.totalCost;
             acc.profit += m.profit;
             acc.qty += m.qty;
             return acc;
           },
-          { revenue: 0, razorpayFee: 0, totalCost: 0, profit: 0, qty: 0 }
+          { revenue: 0, prepaidDiscount: 0, razorpayFee: 0, netRevenue: 0, totalCost: 0, profit: 0, qty: 0 }
         );
         totals.revenue = Math.round(totals.revenue * 100) / 100;
+        totals.prepaidDiscount = Math.round(totals.prepaidDiscount * 100) / 100;
         totals.razorpayFee = Math.round(totals.razorpayFee * 100) / 100;
+        totals.netRevenue = Math.round(totals.netRevenue * 100) / 100;
         totals.totalCost = Math.round(totals.totalCost * 100) / 100;
         totals.profit = Math.round(totals.profit * 100) / 100;
 
@@ -202,15 +222,19 @@ function getSalesProfitInsights(period, cb) {
               name: m.name,
               qty: 0,
               revenue: 0,
+              prepaidDiscount: 0,
               razorpayFee: 0,
+              netRevenue: 0,
               totalCost: 0,
               profit: 0,
             };
           }
           var bp = byProduct[key];
           bp.qty += m.qty;
-          bp.revenue += m.revenue;
-          bp.razorpayFee += m.razorpayFee;
+          bp.revenue += m.productValue;
+          bp.prepaidDiscount += m.prepaidDiscount;
+          bp.razorpayFee += m.gatewayFee;
+          bp.netRevenue += m.netRevenue;
           bp.totalCost += m.totalCost;
           bp.profit += m.profit;
         });
@@ -218,7 +242,9 @@ function getSalesProfitInsights(period, cb) {
           .map(function (k) {
             var r = byProduct[k];
             r.revenue = Math.round(r.revenue * 100) / 100;
+            r.prepaidDiscount = Math.round(r.prepaidDiscount * 100) / 100;
             r.razorpayFee = Math.round(r.razorpayFee * 100) / 100;
+            r.netRevenue = Math.round(r.netRevenue * 100) / 100;
             r.totalCost = Math.round(r.totalCost * 100) / 100;
             r.profit = Math.round(r.profit * 100) / 100;
             return r;
@@ -246,8 +272,9 @@ function getSalesProfitInsights(period, cb) {
               p === "daily"
                 ? d.toISOString().slice(0, 10)
                 : String(d.getDate());
-            if (!bucket[key]) bucket[key] = { revenue: 0, profit: 0 };
-            bucket[key].revenue += m.revenue;
+            if (!bucket[key]) bucket[key] = { revenue: 0, profit: 0, netRevenue: 0 };
+            bucket[key].revenue += m.productValue;
+            bucket[key].netRevenue += m.netRevenue;
             bucket[key].profit += m.profit;
           });
           chartProfit = chartLabels.map(function (lbl, idx) {

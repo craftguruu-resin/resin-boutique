@@ -2,6 +2,7 @@
 
 var poolMod = require("./db/pool.js");
 var guestDb = require("./guest-db.js");
+var inventoryDecrement = require("./inventory-decrement.js");
 
 function parseGuestSnapshot(raw) {
   var g = raw;
@@ -18,64 +19,19 @@ function parseGuestSnapshot(raw) {
 }
 
 function normalizeSizeKey(it) {
-  var st = it && it.stockSlot != null ? String(it.stockSlot).trim().toLowerCase().slice(0, 1) : "";
-  if (st === "s" || st === "m" || st === "l") return st;
-  var raw = it.sizeKey != null ? String(it.sizeKey) : "";
-  raw = raw.trim().toLowerCase();
-  if (raw === "s" || raw === "m" || raw === "l") return raw;
-  var lab = String(it.sizeLabel || "")
-    .trim()
-    .toLowerCase();
-  if (lab.indexOf("compact") === 0) return "s";
-  if (lab.indexOf("classic") === 0) return "m";
-  if (lab.indexOf("grand") === 0) return "l";
-  return "";
+  return inventoryDecrement.normalizeSizeKey(it);
 }
 
-/**
- * Paid orders only: decrement catalog_price_overrides stock when tracked (non-null).
- * @param {import('pg').PoolClient} client
- * @param {object[]} items — each may have productId, sizeKey, sizeLabel, qty, name
- */
-function decrementCatalogStocks(client, items) {
-  var seq = Promise.resolve();
-  (items || []).forEach(function (it) {
-    seq = seq.then(function () {
-      var pid = String((it && it.productId) || "").trim().slice(0, 220);
-      var sk = normalizeSizeKey(it || {});
-      if (!pid || (sk !== "s" && sk !== "m" && sk !== "l")) return Promise.resolve();
-      var col = sk === "s" ? "stock_s" : sk === "m" ? "stock_m" : "stock_l";
-      var qty = Math.max(1, Math.min(999, Math.floor(Number(it.qty) || 1)));
-      return client
-        .query(
-          "SELECT stock_s, stock_m, stock_l FROM catalog_price_overrides WHERE product_id = $1",
-          [pid]
-        )
-        .then(function (r) {
-          if (!r.rows.length) return;
-          var v = r.rows[0][col];
-          if (v == null) return;
-          var num = Number(v);
-          if (!Number.isFinite(num)) return;
-          if (num < qty) {
-            throw new Error(
-              "Insufficient stock for " + String((it && it.name) || pid) + " (" + sk.toUpperCase() + "). Available: " + num + ", ordered: " + qty
-            );
-          }
-          return client.query(
-            "UPDATE catalog_price_overrides SET " +
-              col +
-              " = " +
-              col +
-              " - $2, updated_at = now() WHERE product_id = $1 AND " +
-              col +
-              " IS NOT NULL",
-            [pid, qty]
-          );
-        });
-    });
-  });
-  return seq;
+function mapOrderTotalsRow(o) {
+  return {
+    productValue: Number(o.product_value != null ? o.product_value : o.subtotal),
+    subtotal: Number(o.subtotal),
+    prepaidDiscount: Number(o.prepaid_discount != null ? o.prepaid_discount : 0),
+    shipping: Number(o.shipping),
+    tax: Number(o.tax),
+    total: Number(o.total),
+    gatewayFee: Number(o.gateway_fee != null ? o.gateway_fee : 0),
+  };
 }
 
 function guestSnapshotObj(guest) {
@@ -186,24 +142,29 @@ function createCheckoutParcelOrder(opts, cb) {
       return resolveSkuMapWithClient(client, items).then(function (skuMap) {
         return client
           .query(
-            "INSERT INTO orders (tag_ref, guest_id, order_type, subtotal, shipping, tax, total, guest_snapshot, payment_status, payment_method) " +
-              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9, $10) RETURNING id, created_at",
+            "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at) " +
+              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14) RETURNING id, created_at",
             [
               tagRef,
               guestId,
               orderType,
+              totals.productValue != null ? totals.productValue : totals.subtotal,
               totals.subtotal,
+              totals.prepaidDiscount != null ? totals.prepaidDiscount : 0,
               totals.shipping,
               totals.tax,
               totals.total,
+              totals.gatewayFee != null ? totals.gatewayFee : 0,
               JSON.stringify(snap),
               paymentStatus,
               paymentMethod,
+              paymentStatus === "paid" ? new Date().toISOString() : null,
             ]
           )
           .then(function (ins) {
             var orderId = ins.rows[0].id;
             var createdAt = ins.rows[0].created_at;
+            var metaBase = { orderId: orderId, createdAt: createdAt, guestId: guestId };
             var lineQs = [];
             for (var i = 0; i < items.length; i++) {
               var it = items[i];
@@ -234,13 +195,9 @@ function createCheckoutParcelOrder(opts, cb) {
               );
             }
             return Promise.all(lineQs).then(function () {
-              var metaBase = { orderId: orderId, createdAt: createdAt, guestId: guestId };
-              if (paymentStatus === "paid") {
-                return decrementCatalogStocks(client, items).then(function () {
-                  return metaBase;
-                });
-              }
-              return metaBase;
+              return inventoryDecrement.decrementOrderItems(client, items).then(function () {
+                return metaBase;
+              });
             });
           });
       });
@@ -391,6 +348,7 @@ function getOrderById(orderId, cb) {
             orderId: o.id,
             tagRef: o.tag_ref,
             createdAt: new Date(o.created_at).toISOString(),
+            paidAt: o.paid_at ? new Date(o.paid_at).toISOString() : null,
             orderType: o.order_type,
             paymentStatus: o.payment_status != null ? o.payment_status : "pending_payment",
             paymentMethod: o.payment_method != null ? o.payment_method : "",
@@ -407,14 +365,53 @@ function getOrderById(orderId, cb) {
               country: guest.country,
             },
             items: items,
-            totals: {
-              subtotal: Number(o.subtotal),
-              shipping: Number(o.shipping),
-              tax: Number(o.tax),
-              total: Number(o.total),
-            },
+            totals: mapOrderTotalsRow(o),
           });
         });
+    })
+    .catch(cb);
+}
+
+/** Mark COD (or other pending) order as paid — does not re-decrement stock. */
+function markOrderPaymentReceived(orderId, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  var id = Number(orderId);
+  if (!Number.isFinite(id)) {
+    return process.nextTick(function () {
+      cb(new Error("Invalid order id"));
+    });
+  }
+  pool
+    .query("SELECT id, payment_status, payment_method FROM orders WHERE id = $1", [id])
+    .then(function (r) {
+      if (!r.rows.length) throw new Error("Order not found");
+      var row = r.rows[0];
+      if (String(row.payment_status) === "paid") {
+        return { orderId: id, paymentStatus: "paid", alreadyPaid: true };
+      }
+      if (String(row.payment_status) !== "pending_payment") {
+        throw new Error("Only pending orders can be marked paid");
+      }
+      return pool.query(
+        "UPDATE orders SET payment_status = 'paid', paid_at = COALESCE(paid_at, now()), gateway_fee = 0 WHERE id = $1 RETURNING id, payment_status, payment_method, paid_at",
+        [id]
+      ).then(function (u) {
+        return {
+          orderId: u.rows[0].id,
+          paymentStatus: u.rows[0].payment_status,
+          paymentMethod: u.rows[0].payment_method,
+          paidAt: u.rows[0].paid_at,
+          alreadyPaid: false,
+        };
+      });
+    })
+    .then(function (out) {
+      cb(null, out);
     })
     .catch(cb);
 }
@@ -429,7 +426,7 @@ function getOrdersRecent(limit, cb) {
   }
   var lim = Math.max(1, Math.min(200, Math.floor(Number(limit) || 40)));
   var sql =
-    "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.subtotal, o.shipping, o.tax, o.total, o.guest_snapshot, " +
+    "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, o.guest_snapshot, " +
     "o.payment_status, o.payment_method, o.fulfillment_status " +
     "FROM orders o ORDER BY o.created_at DESC LIMIT $1";
   pool
@@ -446,12 +443,8 @@ function getOrdersRecent(limit, cb) {
           paymentMethod: row.payment_method,
           fulfillmentStatus: row.fulfillment_status != null ? row.fulfillment_status : "new",
           guest: { name: g.name, phone: g.phone, email: g.email },
-          totals: {
-            subtotal: Number(row.subtotal),
-            shipping: Number(row.shipping),
-            tax: Number(row.tax),
-            total: Number(row.total),
-          },
+          totals: mapOrderTotalsRow(row),
+          total: Number(row.total),
         };
       });
       cb(null, list);
@@ -657,8 +650,9 @@ function listOrdersByGuestId(guestId, cb) {
   }
   pool
     .query(
-      "SELECT o.id AS \"orderId\", o.tag_ref AS \"tagRef\", o.created_at AS \"createdAt\", o.order_type AS \"orderType\", " +
-        "o.subtotal, o.shipping, o.tax, o.total, o.payment_status AS \"paymentStatus\", o.payment_method AS \"paymentMethod\", " +
+      "SELECT o.id AS \"orderId\", o.tag_ref AS \"tagRef\", o.created_at AS \"createdAt\", o.paid_at AS \"paidAt\", o.order_type AS \"orderType\", " +
+        "o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, " +
+        "o.payment_status AS \"paymentStatus\", o.payment_method AS \"paymentMethod\", " +
         "o.fulfillment_status AS \"fulfillmentStatus\", o.guest_snapshot, " +
         "COALESCE(" +
         "json_agg(" +
@@ -702,6 +696,7 @@ function listOrdersByGuestId(guestId, cb) {
           orderId: row.orderId,
           tagRef: row.tagRef,
           createdAt: new Date(row.createdAt).toISOString(),
+          paidAt: row.paidAt ? new Date(row.paidAt).toISOString() : null,
           orderType: row.orderType != null ? String(row.orderType) : "",
           paymentStatus: row.paymentStatus,
           paymentMethod: row.paymentMethod != null ? String(row.paymentMethod) : "",
@@ -717,12 +712,7 @@ function listOrdersByGuestId(guestId, cb) {
             zip: guest.zip,
             country: guest.country,
           },
-          totals: {
-            subtotal: Number(row.subtotal),
-            shipping: Number(row.shipping),
-            tax: Number(row.tax),
-            total: Number(row.total),
-          },
+          totals: mapOrderTotalsRow(row),
           items: items,
         };
       });
@@ -800,6 +790,7 @@ module.exports = {
   getVendorMonthlySummary,
   getVendorDashboardSummary,
   updateOrderFulfillment,
+  markOrderPaymentReceived,
   listOrdersByGuestId,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,

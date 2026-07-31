@@ -76,6 +76,63 @@
     );
   }
 
+  function paymentMethodLabel(m) {
+    var s = String(m || "")
+      .trim()
+      .toLowerCase();
+    if (s === "cod" || s === "cash_on_delivery") return "Cash on delivery";
+    if (s === "razorpay") return "Razorpay (online)";
+    return m || "—";
+  }
+
+  function paymentStatusLabel(st) {
+    var s = String(st || "").trim().toLowerCase();
+    if (s === "paid") return "Paid";
+    if (s === "pending_payment") return "Pending";
+    if (s === "failed") return "Failed";
+    if (s === "refunded") return "Refunded";
+    return st || "—";
+  }
+
+  function buildPaymentSummaryHtml(order) {
+    var totals = order.totals || {};
+    var rows = [
+      ["Payment method", paymentMethodLabel(order.paymentMethod)],
+      ["Payment status", paymentStatusLabel(order.paymentStatus)],
+      ["Product value", money(totals.productValue != null ? totals.productValue : totals.subtotal)],
+    ];
+    if (Number(totals.prepaidDiscount) > 0) {
+      rows.push(["Prepaid discount (5%)", "− " + money(totals.prepaidDiscount)]);
+    }
+    if (Number(totals.gatewayFee) > 0) {
+      rows.push(["Gateway fee", money(totals.gatewayFee)]);
+    }
+    rows.push(["Shipping", money(totals.shipping)]);
+    rows.push(["GST", money(totals.tax)]);
+    rows.push(["Total due", money(totals.total)]);
+    var net =
+      Number(totals.productValue != null ? totals.productValue : totals.subtotal) -
+      (Number(totals.prepaidDiscount) || 0) -
+      (Number(totals.gatewayFee) || 0);
+    rows.push(["Net revenue", money(Math.round(net * 100) / 100)]);
+    return (
+      "<div class='vendor-inline-bill vendor-inline-bill--pay'>" +
+      "<h3>Payment</h3>" +
+      rows
+        .map(function (pair) {
+          return (
+            "<div class='vendor-inline-bill__pay-row'><span>" +
+            esc(pair[0]) +
+            "</span><strong>" +
+            esc(pair[1]) +
+            "</strong></div>"
+          );
+        })
+        .join("") +
+      "</div>"
+    );
+  }
+
   function buildInlineTagBillHtml(order) {
     var g = order.guest || {};
     var items = order.items || [];
@@ -125,18 +182,23 @@
       rows +
       "</tbody></table>" +
       "<div class='vendor-inline-bill__sum'>" +
-      "<div>Subtotal " +
-      money(totals.subtotal) +
+      "<div>Items total " +
+      money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
+      (Number(totals.prepaidDiscount) > 0
+        ? "<div>Prepaid discount − " + money(totals.prepaidDiscount) + "</div>"
+        : "") +
       "<div>Shipping " +
       money(totals.shipping) +
       "</div>" +
-      "<div>Tax (8%) " +
+      "<div>Tax (GST) " +
       money(totals.tax) +
       "</div>" +
+      (Number(totals.gatewayFee) > 0 ? "<div>Gateway fee " + money(totals.gatewayFee) + "</div>" : "") +
       "<div><strong>Total " +
       money(totals.total) +
       "</strong></div></div></div>" +
+      buildPaymentSummaryHtml(order) +
       buildPersonalisationBlockHtml(order)
     );
   }
