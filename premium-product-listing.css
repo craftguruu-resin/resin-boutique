@@ -191,9 +191,10 @@ body:not(.vendor-saas) {
 
 @media (min-width: 900px) {
   .plp-grid:not(.plp-grid--list),
-  .plp-grid.product-grid:not(.plp-grid--list) {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.35rem;
+  .plp-grid.product-grid:not(.plp-grid--list),
+  .plp-grid.rm-grid-cards:not(.plp-grid--list) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.1rem;
   }
 }
 
@@ -449,6 +450,87 @@ body:not(.vendor-saas) {
 
 .plp-card__actions .bulk-buy-btn--plp-icon:hover {
   background: rgba(0, 121, 107, 0.06);
+}
+
+/* ── Desktop 4-col: tighter card proportions ── */
+@media (min-width: 900px) {
+  .plp-card {
+    --plp-card-radius: 14px;
+  }
+
+  .plp-card__media {
+    padding: clamp(0.25rem, 1.2vw, 0.45rem);
+  }
+
+  .plp-card__media img {
+    border-radius: 8px;
+  }
+
+  .plp-card__badge {
+    top: 0.5rem;
+    left: 0.5rem;
+    padding: 0.18rem 0.45rem;
+    font-size: 0.58rem;
+  }
+
+  .plp-card__wish {
+    top: 0.45rem;
+    right: 0.45rem;
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.88rem;
+  }
+
+  .plp-card__body {
+    padding: 0.7rem 0.8rem 0.3rem;
+  }
+
+  .plp-card__name {
+    font-size: 0.95rem;
+  }
+
+  .plp-card__spark {
+    font-size: 0.68rem;
+  }
+
+  .plp-card__rating {
+    margin-top: 0.32rem;
+  }
+
+  .plp-card__stars {
+    font-size: 0.66rem;
+  }
+
+  .plp-card__review-count {
+    font-size: 0.66rem;
+  }
+
+  .plp-card__price {
+    margin-top: 0.35rem;
+    font-size: 0.88rem;
+  }
+
+  .plp-card__actions {
+    padding: 0.55rem 0.8rem 0.85rem;
+    gap: 0.4rem;
+  }
+
+  .plp-card__cta {
+    min-height: 2.25rem;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.66rem;
+  }
+
+  .plp-card__actions .bulk-buy-btn--plp-icon {
+    width: 2.25rem;
+    height: 2.25rem;
+    min-width: 2.25rem;
+  }
+
+  .plp-card__actions .bulk-buy-btn--plp-icon .bulk-buy-btn__icon {
+    width: 1rem;
+    height: 1rem;
+  }
 }
 
 /* ── Bulk gifting banner ── */

@@ -1520,19 +1520,19 @@ body.rm-page-wide .rm-hero__media img {
   max-height: min(78vh, 680px);
 }
 
-body.rm-page-wide .rm-grid-cards {
+body.rm-page-wide .rm-grid-cards:not(.plp-grid) {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem 1.05rem;
 }
 
 @media (min-width: 720px) {
-  body.rm-page-wide .rm-grid-cards {
+  body.rm-page-wide .rm-grid-cards:not(.plp-grid) {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
 @media (min-width: 1180px) {
-  body.rm-page-wide .rm-grid-cards {
+  body.rm-page-wide .rm-grid-cards:not(.plp-grid) {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
