@@ -6309,6 +6309,8 @@ a.home-auth-btn {
   margin-inline: auto;
   padding: 0;
   box-sizing: border-box;
+  border-radius: clamp(1.5rem, 4vw, 2.75rem);
+  overflow: hidden;
 }
 
 .hero-atelier--promo .hero-atelier__builtin-wrap {
@@ -6324,14 +6326,17 @@ a.home-auth-btn {
   position: relative;
   width: 100%;
   box-sizing: border-box;
+  isolation: isolate;
   /* Locked max height + width; image uses object-fit: contain so uploads are never cropped */
   height: min(72vh, 640px);
   min-height: min(72vh, 640px);
   max-height: min(72vh, 640px);
   border-radius: clamp(1.5rem, 4vw, 2.75rem);
   overflow: hidden;
-  background: #0f1218;
+  background: #f4f9f7;
+  border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
     0 24px 80px rgba(15, 20, 35, 0.08),
     0 0 0 1px rgba(255, 255, 255, 0.65) inset;
 }
@@ -7184,7 +7189,7 @@ a.home-category-rail__title-link:focus-visible {
 .page-home .hero-atelier__shell {
   min-height: min(58vh, 560px);
   border-radius: clamp(1.75rem, 4.5vw, 3rem);
-  overflow: visible;
+  overflow: hidden;
   box-shadow:
     0 40px 100px rgba(15, 23, 42, 0.07),
     0 0 0 1px rgba(255, 255, 255, 0.9) inset;

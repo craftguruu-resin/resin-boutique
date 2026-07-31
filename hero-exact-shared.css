@@ -16,7 +16,14 @@
   max-height: none !important;
   flex: 0 0 auto !important;
   line-height: 0;
-  /* Clip only for border-radius; art must not translate outside */
+  isolation: isolate;
+  /* border-radius + overflow on same element — prevents square corner bleed */
+  overflow: hidden;
+}
+
+/* Promo carousel — same clip language as exact-panel heroes */
+.hero-promo-carousel__frame {
+  isolation: isolate;
   overflow: hidden;
 }
 

@@ -13,9 +13,19 @@ body:not(.vendor-saas) {
   --plp-card-radius: 16px;
 }
 
-/* ── Category header ── */
+/* ── Category header (glass card panel) ── */
 .plp-header {
   margin: 0 0 1.35rem;
+  padding: clamp(1.15rem, 2.5vw, 1.65rem) clamp(1.25rem, 3vw, 1.75rem);
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 18px;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.95) inset,
+    0 8px 32px rgba(26, 43, 72, 0.08);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .plp-breadcrumb {
@@ -523,6 +533,11 @@ body.page-category .plp-shell .band-sub {
 }
 
 @media (max-width: 639px) {
+  .plp-header {
+    border-radius: 16px;
+    padding: 1rem 1.1rem;
+  }
+
   .plp-bulk-banner {
     padding: 1rem;
   }

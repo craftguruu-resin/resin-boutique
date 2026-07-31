@@ -295,7 +295,7 @@ body.page-home .home-landing-hero--exact {
   grid-template-columns: none !important;
   overflow: hidden !important;
   border-radius: clamp(1.75rem, 4.5vw, 2.75rem);
-  background: #e8e4ef;
+  background: #f4f9f7;
   border: 1px solid rgba(255, 255, 255, 0.85);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.9) inset,
@@ -308,6 +308,14 @@ body.page-home .home-landing-hero--exact {
   margin-bottom: 0;
   line-height: 0;
   animation: homeExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Promo carousel — match exact-ref panel clip + cream backdrop (no dark corner bleed) */
+body.page-home .hero-atelier--promo .hero-promo-carousel,
+body.page-home .hero-atelier--promo .hero-promo-carousel__frame {
+  border-radius: clamp(1.75rem, 4.5vw, 2.75rem);
+  overflow: hidden;
+  background: #f4f9f7;
 }
 
 /* Defeat styles.css flex min-heights that stretch/crop the exact panel */

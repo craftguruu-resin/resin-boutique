@@ -71,8 +71,18 @@ body.page-category .guest-main-with-rail-inner {
 
 body.page-category .band-shop,
 body.page-category .band-shop-inner {
-  background: transparent;
-  box-shadow: none;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+body.page-category .plp-header {
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  border-radius: clamp(16px, 2.2vw, 20px);
+  box-shadow: var(--cat-e-shadow);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 body.page-category .section-head .band-title,
