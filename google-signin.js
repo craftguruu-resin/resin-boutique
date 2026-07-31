@@ -125,3 +125,10 @@
     },
   };
 })(typeof window !== "undefined" ? window : this);
+
+try {
+  document.documentElement.classList.toggle(
+    "auth-google-ui-off",
+    !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
+  );
+} catch (_) {}

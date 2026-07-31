@@ -81,6 +81,7 @@ var guestDb = require("./guest-db.js");
 var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
 var httpHardening = require("./http-hardening.js");
+var apiResponseCache = require("./api-response-cache.js");
 var orderPricing = require("./order-pricing.js");
 var shipmentSync = require("./shipment/shipment-sync.js");
 var shipmentDb = require("./shipment/shipment-db.js");
@@ -2559,6 +2560,9 @@ app.patch("/api/vendor/returns/:id", function (req, res) {
   });
 });
 
+/** In-memory + CDN-friendly cache for public catalog GET JSON (60s TTL). */
+app.use("/api/catalog", apiResponseCache.cachePublicJson());
+
 /** Public: merged storefront prices (no auth). Cached briefly at CDN/browser. */
 app.get("/api/catalog/price-overrides", function (req, res) {
   vendorCatalogDb.listOverridesMap(function (e, map) {
@@ -3981,6 +3985,7 @@ app.get("/vendororder", function (_req, res) {
 });
 var staticSiteOpts = httpHardening.makeExpressStaticOptions("site-root");
 var staticUploadOpts = httpHardening.makeExpressStaticOptions("mutable-upload");
+var versionedStaticCache = httpHardening.markVersionedStaticCache;
 
 /** Legacy shop URL — single Photo Frames page is photo-frames.html (hero + shop). */
 app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
@@ -3995,14 +4000,15 @@ app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
   res.redirect(302, "/photo-frames.html" + q);
 });
 
-app.use("/media/catalog", express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
-app.use("/media/hero", express.static(catalogMediaPath.heroMediaFsRoot(), staticUploadOpts));
-app.use("/media/raw-materials", express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticUploadOpts));
+app.use("/media/catalog", versionedStaticCache, express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
+app.use("/media/hero", versionedStaticCache, express.static(catalogMediaPath.heroMediaFsRoot(), staticUploadOpts));
+app.use("/media/raw-materials", versionedStaticCache, express.static(catalogMediaPath.rawMaterialsMediaFsRoot(), staticUploadOpts));
 app.use(
   "/media/photo-frame-products",
+  versionedStaticCache,
   express.static(catalogMediaPath.photoFrameProductsMediaFsRoot(), staticUploadOpts)
 );
-app.use(express.static(siteRoot, staticSiteOpts));
+app.use(versionedStaticCache, express.static(siteRoot, staticSiteOpts));
 
 function onServerListen() {
   console.log("Craftguru server listening on http://" + HOST + ":" + PORT);

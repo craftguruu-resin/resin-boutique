@@ -53,6 +53,9 @@ function getProductsSummary() {
 
 function invalidateCache() {
   cache = null;
+  try {
+    require("./api-response-cache.js").invalidatePrefix("GET /api/catalog");
+  } catch (_) {}
 }
 
 /** @returns {{ id: string, label: string, folder: string, subcategories: object[] }[]} */

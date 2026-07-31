@@ -5,6 +5,10 @@
 (function () {
   "use strict";
 
+  try {
+    window.CRAFT_AUTH = window.CRAFT_AUTH || {};
+  } catch (_) {}
+
   var SESSION_KEY = "cg_session_email";
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
 

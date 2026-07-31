@@ -84,12 +84,29 @@ var BUNDLED_MEDIA_MARKERS = [
 /** Browser cache: images load fast; HTML stays fresh to avoid stale-page flashes. */
 var CACHE = {
   html: "no-cache, must-revalidate",
-  scriptStyle: "public, max-age=300, must-revalidate",
-  font: "public, max-age=604800, must-revalidate",
+  scriptStyle: "public, max-age=86400, must-revalidate",
+  scriptStyleVersioned: "public, max-age=31536000, immutable",
+  font: "public, max-age=31536000, immutable",
   mutableUploadImage: "public, max-age=86400, must-revalidate",
   bundledImage: "public, max-age=2592000, stale-while-revalidate=86400",
+  bundledImageVersioned: "public, max-age=31536000, immutable",
   defaultImage: "public, max-age=604800, stale-while-revalidate=86400",
+  defaultImageVersioned: "public, max-age=31536000, immutable",
 };
+
+var STATIC_ASSET_EXT_RE = /\.(js|css|png|jpe?g|webp|gif|svg|ico|woff2?|ttf|otf|eot)$/i;
+
+function isVersionedRequest(req) {
+  if (!req) return false;
+  var q = req.query || {};
+  if (q.v != null && String(q.v).trim()) return true;
+  if (q.ver != null && String(q.ver).trim()) return true;
+  if (q.hash != null && String(q.hash).trim()) return true;
+  var raw = String((req.originalUrl || req.url) || "");
+  var qIdx = raw.indexOf("?");
+  if (qIdx < 0) return false;
+  return /[?&](v|ver|hash)=/.test(raw.slice(qIdx));
+}
 
 function normalizeStaticFilePath(filePath) {
   var p = String(filePath || "").replace(/\\/g, "/").toLowerCase();
@@ -106,12 +123,14 @@ function normalizeStaticFilePath(filePath) {
  */
 function setStaticFileCacheHeaders(res, filePath, profile) {
   var p = normalizeStaticFilePath(filePath);
+  var versioned = Boolean(res.locals && res.locals.staticCacheVersioned);
+
   if (/\.html$/.test(p)) {
     res.setHeader("Cache-Control", CACHE.html);
     return;
   }
   if (STYLE_SCRIPT_EXT_RE.test(p)) {
-    res.setHeader("Cache-Control", CACHE.scriptStyle);
+    res.setHeader("Cache-Control", versioned ? CACHE.scriptStyleVersioned : CACHE.scriptStyle);
     return;
   }
   if (FONT_EXT_RE.test(p)) {
@@ -127,12 +146,12 @@ function setStaticFileCacheHeaders(res, filePath, profile) {
 
   for (var i = 0; i < BUNDLED_MEDIA_MARKERS.length; i++) {
     if (p.indexOf(BUNDLED_MEDIA_MARKERS[i]) >= 0) {
-      res.setHeader("Cache-Control", CACHE.bundledImage);
+      res.setHeader("Cache-Control", versioned ? CACHE.bundledImageVersioned : CACHE.bundledImage);
       return;
     }
   }
 
-  res.setHeader("Cache-Control", CACHE.defaultImage);
+  res.setHeader("Cache-Control", versioned ? CACHE.defaultImageVersioned : CACHE.defaultImage);
 }
 
 /**
@@ -141,31 +160,50 @@ function setStaticFileCacheHeaders(res, filePath, profile) {
  * @param {import("express").Response} res
  * @param {() => void} next
  */
-function staticCacheHeaders(req, res, next) {
+function markVersionedStaticCache(req, res, next) {
   var p = String((req && req.path) || "").toLowerCase();
-  if (/\.html$/.test(p)) {
-    res.setHeader("Cache-Control", CACHE.html);
-  } else if (IMAGE_EXT_RE.test(p)) {
-    if (
-      p.indexOf("/media/catalog/") === 0 ||
-      p.indexOf("/media/hero/") === 0 ||
-      p.indexOf("/media/raw-materials/") === 0 ||
-      p.indexOf("/media/photo-frame-products/") === 0
-    ) {
-      res.setHeader("Cache-Control", CACHE.mutableUploadImage);
-    } else if (
-      p.indexOf("/media/home-showcase/") === 0 ||
-      p.indexOf("/media/photo-frames-showcase/") === 0 ||
-      p.indexOf("/media/raw-material-showcase/") === 0
-    ) {
-      res.setHeader("Cache-Control", CACHE.bundledImage);
-    } else {
-      res.setHeader("Cache-Control", CACHE.defaultImage);
-    }
-  } else {
-    res.setHeader("Cache-Control", CACHE.scriptStyle);
+  if (STATIC_ASSET_EXT_RE.test(p) && isVersionedRequest(req)) {
+    res.locals.staticCacheVersioned = true;
   }
   next();
+}
+
+function staticCacheHeaders(req, res, next) {
+  markVersionedStaticCache(req, res, function () {
+    var p = String((req && req.path) || "").toLowerCase();
+    var versioned = Boolean(res.locals && res.locals.staticCacheVersioned);
+
+    if (/\.html$/.test(p)) {
+      res.setHeader("Cache-Control", CACHE.html);
+    } else if (IMAGE_EXT_RE.test(p)) {
+      if (
+        p.indexOf("/media/catalog/") === 0 ||
+        p.indexOf("/media/hero/") === 0 ||
+        p.indexOf("/media/raw-materials/") === 0 ||
+        p.indexOf("/media/photo-frame-products/") === 0
+      ) {
+        res.setHeader("Cache-Control", CACHE.mutableUploadImage);
+      } else if (
+        p.indexOf("/media/home-showcase/") === 0 ||
+        p.indexOf("/media/photo-frames-showcase/") === 0 ||
+        p.indexOf("/media/raw-material-showcase/") === 0
+      ) {
+        res.setHeader(
+          "Cache-Control",
+          versioned ? CACHE.bundledImageVersioned : CACHE.bundledImage
+        );
+      } else {
+        res.setHeader("Cache-Control", versioned ? CACHE.defaultImageVersioned : CACHE.defaultImage);
+      }
+    } else if (STYLE_SCRIPT_EXT_RE.test(p) || FONT_EXT_RE.test(p)) {
+      if (STYLE_SCRIPT_EXT_RE.test(p)) {
+        res.setHeader("Cache-Control", versioned ? CACHE.scriptStyleVersioned : CACHE.scriptStyle);
+      } else {
+        res.setHeader("Cache-Control", CACHE.font);
+      }
+    }
+    next();
+  });
 }
 
 /**
@@ -243,6 +281,7 @@ module.exports = {
   applyHttpHardening: applyHttpHardening,
   setStaticFileCacheHeaders: setStaticFileCacheHeaders,
   makeExpressStaticOptions: makeExpressStaticOptions,
+  markVersionedStaticCache: markVersionedStaticCache,
   staticCacheHeaders: staticCacheHeaders,
   htmlCacheHeaders: htmlCacheHeaders,
   wireGracefulShutdown: wireGracefulShutdown,

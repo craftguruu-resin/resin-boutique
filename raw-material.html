@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="preload" href="styles.css" as="style" />
+  <link rel="preload" href="guest-layout.css" as="style" />
   <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
@@ -207,28 +209,16 @@
   </aside>
   <div class="cart-backdrop" id="cartBackdrop" hidden></div>
 
-  <script src="data.js"></script>
-  <script src="catalog-merge.js"></script>
-  <script src="cart.js"></script>
-  <script src="guest-layout.js"></script>
-  <script src="auth-db.js"></script>
-  <script>
-    window.CRAFT_AUTH = window.CRAFT_AUTH || {};
-  </script>
-  <script src="google-signin.js"></script>
-  <script>
-    document.documentElement.classList.toggle(
-      "auth-google-ui-off",
-      !window.CRAFT_GOOGLE_SIGNIN || !window.CRAFT_GOOGLE_SIGNIN.isConfigured()
-    );
-  </script>
-  <script src="auth-home.js"></script>
-  <script src="craftguru-share.js"></script>
-  <script src="shell.js"></script>
-  <script src="header.js"></script>
-  <script src="global-find.js"></script>
-  <script>
-    document.getElementById("year").textContent = new Date().getFullYear();
-  </script>
-</body>
+  <script defer src="data.js"></script>
+  <script defer src="catalog-merge.js"></script>
+  <script defer src="cart.js"></script>
+  <script defer src="guest-layout.js"></script>
+  <script defer src="auth-db.js"></script>
+    <script defer src="google-signin.js"></script>
+    <script defer src="auth-home.js"></script>
+  <script defer src="craftguru-share.js"></script>
+  <script defer src="shell.js"></script>
+  <script defer src="header.js"></script>
+  <script defer src="global-find.js"></script>
+  </body>
 </html>
