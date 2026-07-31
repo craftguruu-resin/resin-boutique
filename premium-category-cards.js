@@ -1,9 +1,6 @@
 (function () {
   "use strict";
 
-  /* Wave shape lives in CSS mask only — no DOM overlay (avoids hard image cut). */
-  var WAVE_SVG = "";
-
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s == null ? "" : String(s);
@@ -15,7 +12,22 @@
   }
 
   /**
-   * Glass-theme category card — cover image, frosted panel with wavy top edge, title, count, CTA.
+   * Glass-theme category card — contain image, frosted panel with wavy top edge, title, count, CTA.
+   * @param {Object} opts
+   * @param {string} opts.href
+   * @param {string} opts.title
+   * @param {string} [opts.subtitle]
+   * @param {string} [opts.ctaText]
+   * @param {string} [opts.imgSrc]
+   * @param {string} [opts.imgFit] - "contain" (default) or "cover"
+   * @param {string} [opts.imgFallback]
+   * @param {Function} [opts.onImgError]
+   * @param {string} [opts.searchText]
+   * @param {string} [opts.minPrice]
+   * @param {boolean} [opts.hasPreview]
+   * @param {number} [opts.stagger]
+   * @param {string} [opts.ariaLabel]
+   * @param {string} [opts.extraClass]
    */
   function buildCategoryCard(opts) {
     opts = opts || {};
@@ -36,13 +48,14 @@
     var subtitle = opts.subtitle || "";
     var ctaText = opts.ctaText || "EXPLORE COLLECTION →";
     var ariaLabel = opts.ariaLabel || "Explore " + title + " collection";
+    var imgFit = opts.imgFit || "contain";
 
     var mediaInner;
     if (opts.imgSrc) {
       var fitAttr =
-        opts.imgFit === "contain" || opts.imgFit === "cover"
-          ? ' data-image-fit="' + escAttr(opts.imgFit) + '"'
-          : "";
+        imgFit === "contain" || imgFit === "cover"
+          ? ' data-image-fit="' + escAttr(imgFit) + '"'
+          : ' data-image-fit="contain"';
       mediaInner =
         '<img src="' +
         escAttr(opts.imgSrc) +
@@ -82,12 +95,12 @@
       if (previewImg) opts.onImgError(previewImg, opts.imgFallback);
     }
 
-    if (opts.imgFit && opts.imgSrc) {
+    if (opts.imgSrc) {
       var fitImg = card.querySelector(".featured-collection-card__media img");
       if (fitImg && window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
-        window.CraftguruImageFit.applyImageFit(fitImg, opts.imgFit);
-      } else if (fitImg && (opts.imgFit === "contain" || opts.imgFit === "cover")) {
-        fitImg.setAttribute("data-image-fit", opts.imgFit);
+        window.CraftguruImageFit.applyImageFit(fitImg, imgFit);
+      } else if (fitImg) {
+        fitImg.setAttribute("data-image-fit", imgFit === "cover" ? "cover" : "contain");
       }
     }
 
@@ -96,7 +109,6 @@
 
   window.CraftguruPremiumCards = {
     buildCategoryCard: buildCategoryCard,
-    WAVE_SVG: WAVE_SVG,
     esc: esc,
     escAttr: escAttr,
   };

@@ -674,60 +674,21 @@
         bits.push(String(minFrom));
         if (CART.formatMoney) bits.push(CART.formatMoney(minFrom).toLowerCase().replace(/\s/g, ""));
       }
-      var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
-      var card;
-      if (buildCard) {
-        card = buildCard({
-          href: catHref,
-          title: cat.label,
-          subtitle: countLabel,
-          ctaText: "EXPLORE COLLECTION →",
-          imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
-          imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback),
-          imgFallback: imgFallback,
-          onImgError: wireCategoryPreviewImgOnerror,
-          searchText: bits.join(" "),
-          minPrice: minFrom != null ? String(minFrom) : "",
-          hasPreview: hasPreview,
-          stagger: i,
-          ariaLabel: "Explore " + cat.label + " collection",
-        });
-      } else {
-        card = document.createElement("article");
-        card.className = "featured-collection-card is-inview";
-        card.style.setProperty("--stagger", String(i));
-        card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
-        card.setAttribute("data-search-text", bits.join(" "));
-        card.setAttribute("data-has-preview", hasPreview ? "1" : "0");
-        card.innerHTML =
-          '<a class="featured-collection-card__hit" href="' +
-          catHref +
-          '" aria-label="Explore ' +
-          escapeAttr(cat.label) +
-          ' collection">' +
-          '<div class="featured-collection-card__visual">' +
-          '<div class="featured-collection-card__media">' +
-          (imgRel || imgFallback
-            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" loading="lazy" decoding="async" />'
-            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
-          "</div>" +
-          '<div class="featured-collection-card__panel">' +
-          '<svg class="featured-collection-card__wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 96" preserveAspectRatio="none" aria-hidden="true"><path d="M0,68 C180,68 320,22 520,38 C720,54 900,14 1100,30 C1260,42 1360,26 1440,34 L1440,96 L0,96 Z" fill="currentColor"/></svg>' +
-          '<div class="featured-collection-card__panel-body">' +
-          '<h3 class="featured-collection-card__name">' +
-          escapeHtml(cat.label) +
-          "</h3>" +
-          '<p class="featured-collection-card__count">' +
-          countLabel +
-          "</p>" +
-          '<span class="featured-collection-card__cta">EXPLORE COLLECTION →</span>' +
-          "</div></div></div></a>";
-        if (imgRel && imgFallback) {
-          wireCategoryPreviewImgOnerror(card.querySelector(".featured-collection-card__media img"), imgFallback);
-        }
-        var previewImgFit = card.querySelector(".featured-collection-card__media img");
-        if (previewImgFit) applyImageFitToImg(previewImgFit, categoryPreviewFit(cat.id, imgRel || imgFallback));
-      }
+      var card = window.CraftguruPremiumCards.buildCategoryCard({
+        href: catHref,
+        title: cat.label,
+        subtitle: countLabel,
+        ctaText: "EXPLORE COLLECTION →",
+        imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
+        imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback) || "contain",
+        imgFallback: imgFallback,
+        onImgError: wireCategoryPreviewImgOnerror,
+        searchText: bits.join(" "),
+        minPrice: minFrom != null ? String(minFrom) : "",
+        hasPreview: hasPreview,
+        stagger: i,
+        ariaLabel: "Explore " + cat.label + " collection",
+      });
       els.productGrid.appendChild(card);
     });
     if (!cats.length && D.listAllListedProducts) {

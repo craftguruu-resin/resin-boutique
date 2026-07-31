@@ -1459,10 +1459,6 @@ a.rm-nav-tree__title-link:focus-visible {
   white-space: nowrap;
 }
 
-.rm-cat-hub .featured-collection-card__visual {
-  min-height: clamp(14rem, 34vw, 18rem);
-}
-
 /* Legacy hub card overrides removed — glass theme in home-featured-collections.css */
 
 @media (max-width: 900px) {
