@@ -9,11 +9,6 @@ body.page-checkout {
   background: #f4f6f8;
 }
 
-body.page-checkout .brand--fx {
-  visibility: hidden;
-  pointer-events: none;
-}
-
 body.page-checkout .mesh-gradient,
 body.page-checkout .tone-shift,
 body.page-checkout .animated-backdrop,

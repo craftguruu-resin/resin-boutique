@@ -59,6 +59,17 @@
         l.classList.add("is-active");
       }
     });
+    links.forEach(function (l) {
+      l.addEventListener("click", function () {
+        var href = l.getAttribute("href") || "";
+        if (!href || href.charAt(0) === "#") return;
+        var dest = navHrefFile(href);
+        if (!dest || dest === path) return;
+        try {
+          sessionStorage.setItem("craftguruNavScrollTop", "1");
+        } catch (_) {}
+      });
+    });
   }
 
   var cartToggle = document.getElementById("cartToggle");

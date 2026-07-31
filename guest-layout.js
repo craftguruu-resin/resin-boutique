@@ -7,34 +7,55 @@
     reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   } catch (_) {}
 
+  /** Scroll active pill/link inside its rail only — never scroll the document. */
+  function scrollActiveWithinRail(container, active, mode) {
+    if (!container || !active) return;
+    requestAnimationFrame(function () {
+      try {
+        var behavior = reduce ? "auto" : "smooth";
+        if (mode !== "vertical" && container.scrollWidth > container.clientWidth + 2) {
+          var cx = active.offsetLeft + active.offsetWidth / 2;
+          container.scrollTo({
+            left: Math.max(0, cx - container.clientWidth / 2),
+            behavior: behavior,
+          });
+          return;
+        }
+        if (mode !== "horizontal" && container.scrollHeight > container.clientHeight + 2) {
+          var cy = active.offsetTop + active.offsetHeight / 2;
+          container.scrollTo({
+            top: Math.max(0, cy - container.clientHeight / 2),
+            behavior: behavior,
+          });
+        }
+      } catch (_) {}
+    });
+  }
+
   window.CraftguruCategoryScroll.scrollActivePill = function (container) {
     if (!container) return;
     var active = container.querySelector(".category-pill.is-active, .category-pill--rail.is-active");
     if (!active) return;
-    requestAnimationFrame(function () {
-      try {
-        active.scrollIntoView({
-          behavior: reduce ? "auto" : "smooth",
-          inline: "center",
-          block: "nearest",
-        });
-      } catch (_) {}
-    });
+    scrollActiveWithinRail(container, active, "horizontal");
   };
 
   window.CraftguruCategoryScroll.scrollActiveNavLink = function (container) {
     if (!container) return;
     var active = container.querySelector(".rm-nav-tree__link.is-active");
     if (!active) return;
-    requestAnimationFrame(function () {
-      try {
-        active.scrollIntoView({
-          behavior: reduce ? "auto" : "smooth",
-          inline: "nearest",
-          block: "nearest",
-        });
-      } catch (_) {}
-    });
+    scrollActiveWithinRail(container, active, "vertical");
+  };
+
+  window.CraftguruCategoryScroll.resetPageScroll = function () {
+    try {
+      if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    } catch (_) {}
+    try {
+      if (sessionStorage.getItem("craftguruNavScrollTop") === "1") {
+        sessionStorage.removeItem("craftguruNavScrollTop");
+      }
+    } catch (_) {}
+    window.scrollTo(0, 0);
   };
 })();
 
@@ -849,11 +870,19 @@
 
   function boot() {
     document.body.classList.add("guest-site");
+    if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {
+      window.CraftguruCategoryScroll.resetPageScroll();
+    }
     ensureLayoutResponsiveStyles();
     ensureIconRailStyles();
     ensureRailIconsLoaded(function () {
       injectCategoryRail();
       wireMobileSidebarDrawers();
+      if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {
+        requestAnimationFrame(function () {
+          window.CraftguruCategoryScroll.resetPageScroll();
+        });
+      }
     });
     wireMobileSidebarDrawers();
     injectHeaderSearch();
