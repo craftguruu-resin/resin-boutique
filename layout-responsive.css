@@ -129,6 +129,21 @@ body.guest-site:not(.page-home) {
   }
 }
 
+/* ── Header → split layout spacing (match Home .hero.hero--landing) ── */
+body.guest-site .band-shop.band-shop--flush {
+  margin-top: 0;
+  padding-top: 0;
+  padding-inline: clamp(1rem, 3vw, 2rem);
+}
+
+body.guest-site .rm-shop-layout:not(.rm-shop-layout--pdp) {
+  margin-top: 0;
+}
+
+body.guest-site .rm-landing {
+  margin-top: 0;
+}
+
 /* ── Main content padding ── */
 @media (max-width: 640px) {
   body.guest-site .sub-main {

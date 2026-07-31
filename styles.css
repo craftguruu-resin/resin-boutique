@@ -2322,6 +2322,8 @@ body.product-page--oos .btn-add-lg {
 .band-shop--flush {
   margin-top: 0;
   border-radius: 0;
+  /* Header → content gap comes from .sub-main / .hero.hero--landing only */
+  padding-top: 0;
 }
 
 .crumb {

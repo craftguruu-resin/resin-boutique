@@ -28,7 +28,7 @@ body.rm-page-wide {
   grid-template-columns: minmax(200px, 240px) 1fr;
   gap: clamp(1rem, 3vw, 2.5rem);
   align-items: start;
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
 @media (max-width: 900px) {
@@ -1097,7 +1097,7 @@ a.rm-empty-link:hover {
   grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
   gap: clamp(1rem, 3vw, 2.5rem);
   align-items: start;
-  margin-top: 1.25rem;
+  margin-top: 0;
 }
 
 .rm-shop-layout--pdp {
