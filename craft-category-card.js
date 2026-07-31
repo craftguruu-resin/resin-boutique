@@ -49,11 +49,14 @@
     var ariaLabel = opts.ariaLabel || "Explore " + title + " collection";
 
     var mediaInner;
+    var imgFit = opts.imgFit != null ? String(opts.imgFit).trim() : "";
     if (opts.imgSrc) {
       mediaInner =
         '<img src="' +
         escAttr(opts.imgSrc) +
-        '" alt="" loading="lazy" decoding="async" data-image-fit="contain" />';
+        '" alt="" loading="lazy" decoding="async"' +
+        (imgFit ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
+        " />";
     } else {
       mediaInner = '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
     }
@@ -102,9 +105,12 @@
 
     var fitImg = card.querySelector(".craft-cat-card__media img");
     if (fitImg) {
-      fitImg.setAttribute("data-image-fit", "contain");
       if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
-        window.CraftguruImageFit.applyImageFit(fitImg, "contain");
+        window.CraftguruImageFit.applyImageFit(fitImg, imgFit);
+      } else if (imgFit === "contain" || imgFit === "cover") {
+        fitImg.setAttribute("data-image-fit", imgFit);
+      } else {
+        fitImg.removeAttribute("data-image-fit");
       }
     }
 

@@ -3,6 +3,7 @@
 var path = require("path");
 var fs = require("fs");
 var poolMod = require("./db/pool.js");
+var mediaCacheBust = require("./media-cache-bust.js");
 
 var RM_TAXONOMY_KEY = "raw_material_taxonomy";
 var PHOTO_FRAME_NAV_KEY = "photo_frame_nav";
@@ -13,6 +14,14 @@ function taxonomyFilePath() {
 
 function photoFrameNavFilePath() {
   return path.join(__dirname, "..", "photo-frame-nav-default.json");
+}
+
+function invalidateTaxonomyApiCache() {
+  try {
+    var apiResponseCache = require("./api-response-cache.js");
+    apiResponseCache.invalidatePrefix("GET /api/catalog/raw-material-taxonomy");
+    apiResponseCache.invalidatePrefix("GET /api/catalog/photo-frame-nav");
+  } catch (_) {}
 }
 
 function readDefaultRawMaterialTaxonomySync() {
@@ -36,12 +45,12 @@ function getRawMaterialTaxonomyMerged(cb) {
   }
   poolMod
     .getPool()
-    .query("SELECT doc FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [RM_TAXONOMY_KEY])
+    .query("SELECT doc, updated_at FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [RM_TAXONOMY_KEY])
     .then(function (r) {
       var row = r.rows[0];
       var d = row && row.doc;
       if (d && typeof d === "object" && Array.isArray(d.categories) && d.categories.length) {
-        return cb(null, d);
+        return cb(null, mediaCacheBust.bustTaxonomyDocImages(d, row.updated_at));
       }
       cb(null, def);
     })
@@ -73,6 +82,7 @@ function saveRawMaterialTaxonomy(doc, cb) {
       [RM_TAXONOMY_KEY, JSON.stringify(doc)]
     )
     .then(function () {
+      invalidateTaxonomyApiCache();
       cb();
     })
     .catch(cb);
@@ -99,12 +109,12 @@ function getPhotoFrameNavMerged(cb) {
   }
   poolMod
     .getPool()
-    .query("SELECT doc FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [PHOTO_FRAME_NAV_KEY])
+    .query("SELECT doc, updated_at FROM vendor_site_docs WHERE doc_key = $1 LIMIT 1", [PHOTO_FRAME_NAV_KEY])
     .then(function (r) {
       var row = r.rows[0];
       var d = row && row.doc;
       if (d && typeof d === "object" && Array.isArray(d.categories) && d.categories.length) {
-        return cb(null, d);
+        return cb(null, mediaCacheBust.bustTaxonomyDocImages(d, row.updated_at));
       }
       cb(null, def);
     })
@@ -136,6 +146,7 @@ function savePhotoFrameNav(doc, cb) {
       [PHOTO_FRAME_NAV_KEY, JSON.stringify(doc)]
     )
     .then(function () {
+      invalidateTaxonomyApiCache();
       cb();
     })
     .catch(cb);

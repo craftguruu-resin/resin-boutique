@@ -24,6 +24,7 @@ var rawMaterialsDb = require("./raw-materials-db.js");
 var photoFramesDb = require("./photo-frames-db.js");
 var vendorSiteDocsDb = require("./vendor-site-docs-db.js");
 var vendorCategoriesDb = require("./vendor-categories-db.js");
+var mediaCacheBust = require("./media-cache-bust.js");
 var hiddenResinCatalog = require("./hidden-resin-catalog.js");
 var resinClocksTaxonomy = require("./resin-clocks-taxonomy.js");
 var resinGurujiProductsTaxonomy = require("./resin-guruji-products-taxonomy.js");
@@ -472,10 +473,12 @@ function mergeSubcategoryListsUnion(dbSubs, catalogSubs) {
 }
 
 function mergeCategoriesDbWithCatalog(dbRows) {
+  var updatedAtById = Object.create(null);
   var map = Object.create(null);
   (dbRows || []).forEach(function (row) {
     var id = String((row && row.id) || "").trim().slice(0, 80);
     if (!id) return;
+    if (row.updated_at) updatedAtById[id] = row.updated_at;
     map[id] = {
       id: id,
       label: row.label,
@@ -538,7 +541,10 @@ function mergeCategoriesDbWithCatalog(dbRows) {
   });
   var mergedCats = Object.keys(map)
     .map(function (k) {
-      return map[k];
+      var row = map[k];
+      if (!row || !row.id) return row;
+      var ts = updatedAtById[row.id];
+      return ts ? mediaCacheBust.bustCategoryImages(row, ts) : row;
     })
     .filter(function (row) {
       return row && row.id && !hiddenResinCatalog.isHiddenResinCategoryId(row.id);
@@ -2051,7 +2057,7 @@ app.get("/api/vendor/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
     )
     .then(function (r) {
       var dbRowCount = r.rows.length;
@@ -2657,7 +2663,7 @@ app.get("/api/catalog/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
     )
     .then(function (r) {
       var merged = mergeCategoriesDbWithCatalog(r.rows);

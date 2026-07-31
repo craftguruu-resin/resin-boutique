@@ -7,6 +7,7 @@ var poolMod = require("./db/pool.js");
 var sharp = require("sharp");
 var catalogFromData = require("./catalog-from-data.js");
 var mediaPath = require("./media-path.js");
+var mediaCacheBust = require("./media-cache-bust.js");
 
 function sanitizeRmCategorySlug(raw) {
   return String(raw || "")
@@ -276,14 +277,7 @@ function mapRow(row) {
     sku: String(row.sku || "").trim(),
     name: String(row.name || ""),
     description: String(row.description || ""),
-    image: (function () {
-      var img = String(row.image_path || "").trim();
-      if (!img) return "";
-      if (/[?&]v=\d+/i.test(img)) return img;
-      var t = row.updated_at ? (row.updated_at instanceof Date ? row.updated_at.getTime() : Date.parse(String(row.updated_at))) : 0;
-      if (!Number.isFinite(t) || t <= 0) return img;
-      return img + (img.indexOf("?") >= 0 ? "&" : "?") + "v=" + Math.floor(t / 1000);
-    })(),
+    image: mediaCacheBust.appendMediaCacheBust(String(row.image_path || "").trim(), row.updated_at),
     note: String(row.note || ""),
     isActive: row.is_active !== false,
     priceInr: Number.isFinite(price) ? Math.round(price * 100) / 100 : 0,

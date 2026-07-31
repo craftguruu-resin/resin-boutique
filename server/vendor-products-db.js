@@ -133,18 +133,7 @@ function normalizeProductDescription(raw) {
   return String(raw == null ? "" : raw).trim().slice(0, 8000);
 }
 
-/** Bust browser/CDN caches when the same media path or Cloudinary URL is reused after an upload. */
-function appendMediaCacheBust(url, updatedAt) {
-  var u = String(url == null ? "" : url).trim();
-  if (!u) return u;
-  if (/[?&]v=\d+/i.test(u)) return u;
-  var t = 0;
-  if (updatedAt) {
-    t = updatedAt instanceof Date ? updatedAt.getTime() : Date.parse(String(updatedAt));
-  }
-  if (!Number.isFinite(t) || t <= 0) return u;
-  return u + (u.indexOf("?") >= 0 ? "&" : "?") + "v=" + Math.floor(t / 1000);
-}
+var appendMediaCacheBust = require("./media-cache-bust.js").appendMediaCacheBust;
 
 /** Accepts CDN URLs (Cloudinary, R2, etc.). Rejects non-HTTPS and obvious SSRF targets. */
 function normalizeHttpsImageUrl(raw) {
