@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="hero-exact-shared.css" />
   <link rel="stylesheet" href="home-hero-ethereal.css" />
+  <link rel="stylesheet" href="home-featured-collections.css" />
   <link rel="stylesheet" href="connect-section.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <link rel="stylesheet" href="layout-responsive.css" />
@@ -192,13 +193,28 @@
 
     <section class="band-shop band-shop--home reveal" id="shop">
       <div class="band-shop-inner band-shop-inner--home">
-        <header class="section-head section-head--featured">
+        <header class="section-head section-head--featured section-head--collections">
           <div class="section-head__lead">
-            <p class="featured-eyebrow">Curated lines</p>
-            <h2 class="band-title">Featured resin</h2>
-            <p class="band-sub" id="filterLabel">Pick a product line, browse pieces on the next page, then open sizes and MRP.</p>
+            <p class="featured-eyebrow featured-eyebrow--collections">— Curated lines</p>
+            <h2 class="band-title featured-collections-title">
+              Featured <strong class="featured-collections-title__accent">Resin</strong> Collections
+              <span class="featured-collections-title__sparkle" aria-hidden="true">✦</span>
+            </h2>
+            <p class="band-sub featured-collections-sub" id="filterLabel">Explore our most loved handcrafted resin creations, made to add beauty to every moment.</p>
           </div>
-          <p class="band-tagline">Clocks, keychains, coasters &amp; more</p>
+          <a href="#productGrid" class="featured-collections-pill" aria-label="Browse clocks, keychains, coasters and more">
+            <span class="featured-collections-pill__icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="8" width="18" height="13" rx="2"/>
+                <path d="M12 8V5.5a2.5 2.5 0 0 0-5 0V8"/>
+                <path d="M12 8V5.5a2.5 2.5 0 0 1 5 0V8"/>
+                <path d="M12 12v4"/>
+                <path d="M9.5 14h5"/>
+              </svg>
+            </span>
+            <span class="featured-collections-pill__text">Clocks, keychains, coasters &amp; more</span>
+            <span class="featured-collections-pill__arrow" aria-hidden="true">→</span>
+          </a>
         </header>
         <div class="cg-filter-panel cg-filter-panel--light home-featured-toolbar" id="homeFeaturedToolbar" aria-label="Filter and sort featured lines">
           <div class="cg-filter-panel__glow" aria-hidden="true"></div>
@@ -235,7 +251,54 @@
             <button type="button" class="category-toolbar__clear" id="homeFeaturedFilterClear">Clear filters</button>
           </div>
         </div>
-        <div class="product-grid" id="productGrid"></div>
+        <div class="product-grid featured-collections-grid" id="productGrid"></div>
+        <div class="featured-collections-trust" aria-label="Why customers trust Craftguru">
+          <div class="featured-collections-trust__item">
+            <span class="featured-collections-trust__icon featured-collections-trust__icon--quality" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 3v5.5c0 4.2-3 7.8-7 9-4-1.2-7-4.8-7-9V6.5l7-3z"/><path d="M9.2 12.2l1.8 1.8 3.8-3.8"/></svg>
+            </span>
+            <div class="featured-collections-trust__copy">
+              <strong>Premium Quality</strong>
+              <span>Finest materials &amp; long lasting finish</span>
+            </div>
+          </div>
+          <div class="featured-collections-trust__item">
+            <span class="featured-collections-trust__icon featured-collections-trust__icon--love" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20.5s-6.5-4.2-8.5-8.2C1.8 9.2 3.6 5.8 7 5.2c1.8-.3 3.4.5 4.5 2 1.1-1.5 2.7-2.3 4.5-2 3.4.6 5.2 4 3.5 7.1-2 4-8.5 8.2-8.5 8.2z"/></svg>
+            </span>
+            <div class="featured-collections-trust__copy">
+              <strong>Handcrafted with Love</strong>
+              <span>Made with passion &amp; perfection</span>
+            </div>
+          </div>
+          <div class="featured-collections-trust__item">
+            <span class="featured-collections-trust__icon featured-collections-trust__icon--pack" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M12 8V5.5a2.5 2.5 0 0 0-5 0V8"/><path d="M12 8V5.5a2.5 2.5 0 0 1 5 0V8"/></svg>
+            </span>
+            <div class="featured-collections-trust__copy">
+              <strong>Secure Packaging</strong>
+              <span>Safe &amp; damage proof packaging</span>
+            </div>
+          </div>
+          <div class="featured-collections-trust__item">
+            <span class="featured-collections-trust__icon featured-collections-trust__icon--ship" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h11v8H3z"/><path d="M14 10h4l3 3v2h-7"/><circle cx="7" cy="17.5" r="1.8"/><circle cx="17" cy="17.5" r="1.8"/></svg>
+            </span>
+            <div class="featured-collections-trust__copy">
+              <strong>Fast &amp; Reliable Delivery</strong>
+              <span>On-time delivery to your doorstep</span>
+            </div>
+          </div>
+          <div class="featured-collections-trust__item">
+            <span class="featured-collections-trust__icon featured-collections-trust__icon--customers" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8.5" r="4"/><path d="M5.5 20c.6-3.2 3-5.5 6.5-5.5s6 2.3 6.5 5.5"/></svg>
+            </span>
+            <div class="featured-collections-trust__copy">
+              <strong>10000+ Happy Customers</strong>
+              <span>Trusted by thousands across India</span>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
 

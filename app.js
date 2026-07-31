@@ -643,14 +643,24 @@
     "craftguru-details": true,
   };
 
+  function collectionCardIconHtml(catId) {
+    var railApi = window.CRAFT_RAIL_ICONS;
+    if (!railApi || !railApi.iconSvgFor) return "";
+    return (
+      '<span class="featured-collection-card__badge-icon" aria-hidden="true">' +
+      railApi.iconSvgFor(catId) +
+      "</span>"
+    );
+  }
+
   function renderFeatured() {
     if (!els.productGrid) return;
     wireHomeFiltersOnce();
-    els.productGrid.className = "featured-cat-grid";
+    els.productGrid.className = "featured-collections-grid featured-cat-grid";
     els.productGrid.innerHTML = "";
-    if (els.filterLabel) {
+    if (els.filterLabel && !els.filterLabel.textContent.trim()) {
       els.filterLabel.textContent =
-        "Use the toolbar: filter type, sort, and drag the price range. Header search still narrows names. Open a line for full MRP on each product.";
+        "Explore our most loved handcrafted resin creations, made to add beauty to every moment.";
     }
     var cats = D.categories.filter(function (c) {
       if (FEATURED_SKIP_CATEGORIES[c.id]) return false;
@@ -667,7 +677,7 @@
       var count = listedProductsInCategory(cat.id).length;
       var minFrom = minPriceInCategory(cat.id);
       var card = document.createElement("article");
-      card.className = "featured-cat-card is-inview";
+      card.className = "featured-cat-card featured-collection-card is-inview";
       card.style.setProperty("--stagger", String(i));
       card.setAttribute("data-min-price", minFrom != null ? String(minFrom) : "");
       var bits = [(cat.label || "").toLowerCase(), (cat.id || "").toLowerCase(), String(count), "products", "category"];
@@ -679,60 +689,49 @@
       var hasPreview = imgRel || imgFallback;
       card.setAttribute("data-has-preview", hasPreview ? "1" : "0");
       var catHref = "category.html?cat=" + encodeURIComponent(cat.id);
-      var imgBlock;
+      var countLabel = String(count) + (count === 1 ? " product" : " products");
+      var badgeHtml = collectionCardIconHtml(cat.id);
+      var mediaInner;
       if (imgRel) {
-        imgBlock =
-          '<a class="featured-cat-card__media-hit" href="' +
-          catHref +
-          '" aria-label="Browse ' +
-          escapeAttr(cat.label) +
-          ' — photos"><div class="featured-cat-card__media"><img src="' +
+        mediaInner =
+          '<img src="' +
           escapeAttr(imgUrl(imgRel)) +
-          '" alt="" loading="lazy" decoding="async" /></div></a>';
+          '" alt="" loading="lazy" decoding="async" />';
       } else if (imgFallback) {
-        imgBlock =
-          '<a class="featured-cat-card__media-hit" href="' +
-          catHref +
-          '" aria-label="Browse ' +
-          escapeAttr(cat.label) +
-          ' — photos"><div class="featured-cat-card__media"><img src="' +
+        mediaInner =
+          '<img src="' +
           escapeAttr(imgUrl(imgFallback)) +
-          '" alt="" loading="lazy" decoding="async" /></div></a>';
+          '" alt="" loading="lazy" decoding="async" />';
       } else {
-        imgBlock =
-          '<a class="featured-cat-card__media-hit" href="' +
-          catHref +
-          '" aria-label="Browse ' +
-          escapeAttr(cat.label) +
-          '"><div class="featured-cat-card__media featured-cat-card__media--empty" aria-hidden="true"></div></a>';
+        mediaInner = '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>';
       }
       card.innerHTML =
-        '<div class="featured-cat-card__shine" aria-hidden="true"></div>' +
-        imgBlock +
-        '<div class="featured-cat-card__body">' +
-        "<h3><a href=\"" +
+        '<a class="featured-collection-card__hit" href="' +
         catHref +
-        "\">" +
-        escapeHtml(cat.label) +
-        "</a></h3>" +
-        "<p>" +
-        String(count) +
-        (count === 1 ? " product in this category" : " products in this category") +
-        "</p>" +
-        '<div class="featured-cat-card__row">' +
-        '<a class="featured-cat-card__cta" href="' +
-        catHref +
-        '">View collection →</a>' +
-        '<a class="featured-cat-card__quick-add" href="' +
-        catHref +
-        '">Choose product</a>' +
+        '" aria-label="Explore ' +
+        escapeAttr(cat.label) +
+        ' collection">' +
+        '<div class="featured-collection-card__visual">' +
+        '<div class="featured-collection-card__media">' +
+        mediaInner +
         "</div>" +
-        "</div>";
+        (badgeHtml ? '<span class="featured-collection-card__badge">' + badgeHtml + "</span>" : "") +
+        '<div class="featured-collection-card__panel">' +
+        '<h3 class="featured-collection-card__name">' +
+        escapeHtml(cat.label) +
+        "</h3>" +
+        '<p class="featured-collection-card__count">' +
+        countLabel +
+        "</p>" +
+        '<span class="featured-collection-card__cta">Explore collection →</span>' +
+        "</div>" +
+        "</div>" +
+        "</a>";
       if (imgRel && imgFallback) {
-        var previewImg = card.querySelector(".featured-cat-card__media img");
+        var previewImg = card.querySelector(".featured-collection-card__media img");
         wireCategoryPreviewImgOnerror(previewImg, imgFallback);
       }
-      var previewImgFit = card.querySelector(".featured-cat-card__media img");
+      var previewImgFit = card.querySelector(".featured-collection-card__media img");
       if (previewImgFit) {
         applyImageFitToImg(previewImgFit, categoryPreviewFit(cat.id, imgRel || imgFallback));
       }
