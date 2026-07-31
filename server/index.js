@@ -16,6 +16,7 @@ var ordersRepo = require("./orders-repository.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
+var vendorStorefrontCatalogDb = require("./vendor-storefront-catalog-db.js");
 var vendorProductsDb = require("./vendor-products-db.js");
 var catalogMediaPath = require("./media-path.js");
 var storefrontHeroDb = require("./storefront-hero-db.js");
@@ -3421,7 +3422,7 @@ app.delete("/api/vendor/photo-frame-products/:id", function (req, res) {
   });
 });
 
-/** Vendor: searchable catalog + effective prices (data.js + DB overrides). */
+/** Vendor: searchable catalog + effective prices (resin, raw materials, photo frames, corporate gifting). */
 app.get("/api/vendor/catalog-products", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
     if (err) {
@@ -3430,188 +3431,23 @@ app.get("/api/vendor/catalog-products", function (req, res) {
     if (!ok) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
-    var q = String((req.query && req.query.q) || "")
-      .toLowerCase()
-      .trim();
-    var catId = String((req.query && req.query.categoryId) || "").trim();
-    var lim = Math.min(200, Math.max(1, parseInt(String((req.query && req.query.limit) || "80"), 10) || 80));
-    var off = Math.max(0, parseInt(String((req.query && req.query.offset) || "0"), 10) || 0);
-    vendorCatalogDb.listOverridesMap(function (e2, omap) {
-      if (e2) {
-        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+    vendorStorefrontCatalogDb.listStorefrontCatalog(
+      {
+        q: String((req.query && req.query.q) || "")
+          .toLowerCase()
+          .trim(),
+        categoryId: String((req.query && req.query.categoryId) || "").trim(),
+        limit: Math.min(200, Math.max(1, parseInt(String((req.query && req.query.limit) || "80"), 10) || 80)),
+        offset: Math.max(0, parseInt(String((req.query && req.query.offset) || "0"), 10) || 0),
+      },
+      function (e2, payload) {
+        if (e2) {
+          return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json(Object.assign({ ok: true }, payload));
       }
-      vendorCatalogDb.listSuppressedProductIds(function (eSup, suppressed) {
-        if (eSup) {
-          return res.status(500).json({ ok: false, error: String(eSup.message || eSup) });
-        }
-        var supSet = Object.create(null);
-        (suppressed || []).forEach(function (sid) {
-          supSet[sid] = 1;
-        });
-      vendorProductsDb.listExtraProductsForStorefront(function (eV, extras) {
-        if (eV) {
-          return res.status(500).json({ ok: false, error: String(eV.message || eV) });
-        }
-        var list;
-        try {
-          list = catalogFromData.getProductsSummary();
-        } catch (e3) {
-          return res.status(500).json({ ok: false, error: String(e3.message || e3) });
-        }
-        if (extras && extras.length) {
-          extras.forEach(function (p) {
-            list.push({
-              id: p.id,
-              name: p.name,
-              category: p.category,
-              subcategory: p.subcategory,
-              image: p.image,
-              prices: p.prices,
-            });
-          });
-        }
-        if (catId) {
-          list = list.filter(function (p) {
-            return p.category === catId;
-          });
-        }
-        list = list.filter(function (p) {
-          if (supSet[p.id]) return false;
-          var ov = omap[p.id] || {};
-          return ov.listed !== false;
-        });
-        function catalogProductHay(p) {
-          return (p.id + " " + p.name + " " + p.category + " " + p.subcategory).toLowerCase();
-        }
-        function respondCatalogSlice(filtered, skuMap) {
-            skuMap = skuMap || {};
-            var total = filtered.length;
-            var slice = filtered.slice(off, off + lim);
-            vendorExtrasDb.countInventoryRows(function (eMat, matCount) {
-              if (eMat) {
-                return res.status(500).json({ ok: false, error: String(eMat.message || eMat) });
-              }
-              var overrideCount = Object.keys(omap).length;
-              var sliceIds = slice.map(function (p) {
-                return p.id;
-              });
-              vendorExtrasDb.aggregateSellableStockByProductIds(sliceIds, function (eAgg, aggMap) {
-                if (eAgg) {
-                  return res.status(500).json({ ok: false, error: String(eAgg.message || eAgg) });
-                }
-                aggMap = aggMap || {};
-                res.setHeader("Cache-Control", "no-store");
-                res.json({
-                  ok: true,
-                  productCount: list.length,
-                  overrideCount: overrideCount,
-                  materialSkuCount: matCount,
-                  total: total,
-                  offset: off,
-                  limit: lim,
-                  items: slice.map(function (p) {
-                var ov = omap[p.id] || {};
-                var eff = {
-                  s: ov.s != null ? Number(ov.s) : p.prices.s,
-                  m: ov.m != null ? Number(ov.m) : p.prices.m,
-                  l: ov.l != null ? Number(ov.l) : p.prices.l,
-                };
-                var effCost = {
-                  s: ov.costS != null ? Number(ov.costS) : null,
-                  m: ov.costM != null ? Number(ov.costM) : null,
-                  l: ov.costL != null ? Number(ov.costL) : null,
-                };
-                var ovHasStock = ov.stockS != null || ov.stockM != null || ov.stockL != null;
-                var agg = aggMap[p.id];
-                var st = ovHasStock
-                  ? {
-                      s: ov.stockS != null ? Number(ov.stockS) : null,
-                      m: ov.stockM != null ? Number(ov.stockM) : null,
-                      l: ov.stockL != null ? Number(ov.stockL) : null,
-                    }
-                  : agg
-                    ? { s: agg.s, m: agg.m, l: agg.l }
-                    : { s: null, m: null, l: null };
-                var hasAggStock = !!(agg && (agg.s != null || agg.m != null || agg.l != null));
-                return {
-                  id: p.id,
-                  name: p.name,
-                  category: p.category,
-                  subcategory: p.subcategory,
-                  image: p.image,
-                  basePrices: p.prices,
-                  effectivePrices: eff,
-                  effectiveCosts: effCost,
-                  effectiveStock: st,
-                  hasOverride: !!(
-                    ov &&
-                    (ov.s != null ||
-                      ov.m != null ||
-                      ov.l != null ||
-                      ov.listed === false)
-                  ),
-                  hasStockOverride: !!(ovHasStock || hasAggStock),
-                };
-              }),
-                });
-              });
-            });
-        }
-        if (!q) {
-          return vendorExtrasDb.getSkuMapForProductIds(
-            list.map(function (p) {
-              return p.id;
-            }),
-            function (eSku, skuMap) {
-              if (eSku) {
-                return res.status(500).json({ ok: false, error: String(eSku.message || eSku) });
-              }
-              respondCatalogSlice(list, skuMap);
-            }
-          );
-        }
-        var listById = Object.create(null);
-        list.forEach(function (p) {
-          listById[p.id] = p;
-        });
-        var nameHits = list.filter(function (p) {
-          return catalogProductHay(p).indexOf(q) !== -1;
-        });
-        vendorExtrasDb.searchProductIdsBySku(q, function (eSku2, skuIds) {
-          if (eSku2) {
-            return res.status(500).json({ ok: false, error: String(eSku2.message || eSku2) });
-          }
-          var filtered = nameHits.slice();
-          var seen = Object.create(null);
-          nameHits.forEach(function (p) {
-            seen[p.id] = 1;
-          });
-          (skuIds || []).forEach(function (pid) {
-            if (!seen[pid] && listById[pid]) {
-              seen[pid] = 1;
-              filtered.push(listById[pid]);
-            }
-          });
-          vendorExtrasDb.getSkuMapForProductIds(
-            filtered.map(function (p) {
-              return p.id;
-            }),
-            function (eSku, skuMap) {
-              if (eSku) {
-                return res.status(500).json({ ok: false, error: String(eSku.message || eSku) });
-              }
-              var withSku = filtered.filter(function (p) {
-                var sku = skuMap[p.id] || "";
-                var hay = (p.id + " " + p.name + " " + p.category + " " + p.subcategory + " " + sku).toLowerCase();
-                return hay.indexOf(q) !== -1;
-              });
-              respondCatalogSlice(withSku, skuMap);
-            }
-          );
-        });
-      });
-      });
-    });
+    );
   });
 });
 
@@ -3631,34 +3467,32 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
       optionsPatch = optionsPatch || {};
       optionsPatch.detailBody = String(b.description == null ? "" : b.description).trim().slice(0, 8000);
     }
-    vendorCatalogDb.upsertOverride(
-      pid,
-      {
-        name: b.name !== undefined ? b.name : b.nameOverride !== undefined ? b.nameOverride : undefined,
-        s: b.priceS != null ? Number(b.priceS) : b.s != null ? Number(b.s) : undefined,
-        m: b.priceM != null ? Number(b.priceM) : b.m != null ? Number(b.m) : undefined,
-        l: b.priceL != null ? Number(b.priceL) : b.l != null ? Number(b.l) : undefined,
-        costS: b.costS !== undefined ? b.costS : b.cost_s !== undefined ? b.cost_s : undefined,
-        costM: b.costM !== undefined ? b.costM : b.cost_m !== undefined ? b.cost_m : undefined,
-        costL: b.costL !== undefined ? b.costL : b.cost_l !== undefined ? b.cost_l : undefined,
-        stockS: b.stockS !== undefined ? b.stockS : b.stock_s !== undefined ? b.stock_s : undefined,
-        stockM: b.stockM !== undefined ? b.stockM : b.stock_m !== undefined ? b.stock_m : undefined,
-        stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
-        listed: b.listed !== undefined ? !!b.listed : undefined,
-        returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
-        sizeLabelS: b.sizeLabelS !== undefined ? b.sizeLabelS : b.size_label_s !== undefined ? b.size_label_s : undefined,
-        sizeLabelM: b.sizeLabelM !== undefined ? b.sizeLabelM : b.size_label_m !== undefined ? b.size_label_m : undefined,
-        sizeLabelL: b.sizeLabelL !== undefined ? b.sizeLabelL : b.size_label_l !== undefined ? b.size_label_l : undefined,
-        sizeLabels: b.sizeLabels !== undefined ? b.sizeLabels : undefined,
-        options: optionsPatch,
-      },
-      function (e2, row) {
+    var saveBody = {
+      name: b.name !== undefined ? b.name : b.nameOverride !== undefined ? b.nameOverride : undefined,
+      priceS: b.priceS != null ? Number(b.priceS) : b.s != null ? Number(b.s) : undefined,
+      priceM: b.priceM != null ? Number(b.priceM) : b.m != null ? Number(b.m) : undefined,
+      priceL: b.priceL != null ? Number(b.priceL) : b.l != null ? Number(b.l) : undefined,
+      costS: b.costS !== undefined ? b.costS : b.cost_s !== undefined ? b.cost_s : undefined,
+      costM: b.costM !== undefined ? b.costM : b.cost_m !== undefined ? b.cost_m : undefined,
+      costL: b.costL !== undefined ? b.costL : b.cost_l !== undefined ? b.cost_l : undefined,
+      stockS: b.stockS !== undefined ? b.stockS : b.stock_s !== undefined ? b.stock_s : undefined,
+      stockM: b.stockM !== undefined ? b.stockM : b.stock_m !== undefined ? b.stock_m : undefined,
+      stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
+      listed: b.listed !== undefined ? !!b.listed : undefined,
+      returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
+      sizeLabelS: b.sizeLabelS !== undefined ? b.sizeLabelS : b.size_label_s !== undefined ? b.size_label_s : undefined,
+      sizeLabelM: b.sizeLabelM !== undefined ? b.sizeLabelM : b.size_label_m !== undefined ? b.size_label_m : undefined,
+      sizeLabelL: b.sizeLabelL !== undefined ? b.sizeLabelL : b.size_label_l !== undefined ? b.size_label_l : undefined,
+      sizeLabels: b.sizeLabels !== undefined ? b.sizeLabels : undefined,
+      options: optionsPatch,
+    };
+    vendorStorefrontCatalogDb.saveStorefrontCatalogPrices(pid, saveBody, function (e2, row) {
         if (e2) {
           var msg = String((e2 && e2.message) || e2);
           var code =
             msg.indexOf("not configured") >= 0
               ? 503
-              : msg.indexOf("required") >= 0 || msg.indexOf("Product name") >= 0
+              : msg.indexOf("required") >= 0 || msg.indexOf("Product name") >= 0 || msg.indexOf("Unknown product") >= 0
                 ? 400
                 : 500;
           return res.status(code).json({ ok: false, error: msg });

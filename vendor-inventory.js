@@ -16,6 +16,11 @@
   var studioSearchQ = "";
   var catalogCategoryFilter = "";
   var viCategoriesCache = [];
+  var viStorefrontCategories = [
+    { id: "__raw_materials__", label: "Raw Materials" },
+    { id: "__photo_frames__", label: "Photo Frames" },
+    { id: "__corporate_gifting__", label: "Corporate Gifting" },
+  ];
 
   /** API / DB may send subcategories as a JSON string or non-array; string forEach would iterate characters. */
   function coerceSubcategoriesList(raw) {
@@ -66,6 +71,52 @@
         return { id: id, label: label.slice(0, 200) };
       })
       .filter(Boolean);
+  }
+
+  function categoryLabelForItem(it) {
+    if (it && it.categoryLabel) return it.categoryLabel;
+    var cid = String((it && it.category) || "").trim();
+    var hit = viCategoriesCache.find(function (c) {
+      return String(c.id) === cid;
+    });
+    if (hit) return hit.label || cid;
+    var sf = viStorefrontCategories.find(function (c) {
+      return c.id === cid;
+    });
+    return sf ? sf.label : cid || "—";
+  }
+
+  function refillCatalogCategoryFilter() {
+    var sel = document.getElementById("viCatalogCategoryFilter");
+    if (!sel) return;
+    var prev = sel.value;
+    sel.innerHTML = "";
+    var o0 = document.createElement("option");
+    o0.value = "";
+    o0.textContent = "All storefront products";
+    sel.appendChild(o0);
+    viStorefrontCategories.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = c.id;
+      o.textContent = c.label;
+      sel.appendChild(o);
+    });
+    if (viCategoriesCache.length) {
+      var sep = document.createElement("option");
+      sep.disabled = true;
+      sep.textContent = "— Resin categories —";
+      sel.appendChild(sep);
+    }
+    viCategoriesCache.forEach(function (c) {
+      var o = document.createElement("option");
+      o.value = String(c.id != null ? c.id : "");
+      o.textContent = c.label || String(c.id != null ? c.id : "");
+      sel.appendChild(o);
+    });
+    if (prev && Array.prototype.some.call(sel.options, function (op) { return op.value === prev; })) {
+      sel.value = prev;
+    }
+    catalogCategoryFilter = String(sel.value || "").trim();
   }
 
   function normalizeVendorCategories(cats) {
@@ -253,8 +304,8 @@
             sel.value = prev;
           }
         }
-        refill("viCatalogCategoryFilter", "All");
         refill("viCategory", "— Unsorted —");
+        refillCatalogCategoryFilter();
         if (window.CraftguruVendorStorefrontAddProduct) {
           window.CraftguruVendorStorefrontAddProduct.setCategories(viCategoriesCache);
         }
@@ -787,6 +838,15 @@
                   esc(imgUrl) +
                   "\" alt=\"\" width=\"40\" height=\"40\" loading=\"lazy\" />"
                 : "<span class=\"vi-cat-row-thumb vi-cat-row-thumb--empty\" aria-hidden=\"true\"></span>";
+              var kindBadge =
+                it.productKind === "raw_material" || it.productKind === "photo_frame"
+                  ? " <span class='vs-badge vs-badge--paid' title='Storefront product type'>" +
+                    esc(it.productKind === "raw_material" ? "RM" : "PF") +
+                    "</span>"
+                  : it.returnGift
+                    ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
+                    : "";
+              var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
               return (
                 "<tr data-pid='" +
                 bid +
@@ -797,9 +857,11 @@
                 "</strong><br/><span class='vs-muted'>" +
                 bid +
                 "</span>" +
+                skuLine +
                 (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
+                kindBadge +
                 "</div></div></td><td>" +
-                esc(it.category) +
+                esc(categoryLabelForItem(it)) +
                 "</td>" +
                 catalogTierCell(bid, "s", e.s, cst.s) +
                 catalogTierCell(bid, "m", e.m, cst.m) +

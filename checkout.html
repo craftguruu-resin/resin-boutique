@@ -370,58 +370,61 @@
               Open Pay now after your details are filled. Totals here match your cart; complete payment with Razorpay on the right.
             </p>
           </div>
-          <p class="checkout-pay-modal__fine checkout-pay-modal__fine--razor">
+          <p class="checkout-pay-modal__fine checkout-pay-modal__fine--razor" id="checkoutRazorpayFine">
             Payments are processed by Razorpay. This shop does not store your card or UPI PIN.
           </p>
         </div>
-        <div class="checkout-pay-modal__col checkout-pay-modal__col--razor">
-          <div class="checkout-razor-panel">
-            <div class="checkout-razor-panel__glow" aria-hidden="true"></div>
-            <div class="checkout-razor-panel__inner">
-              <div class="checkout-razor-panel__brand">
-                <span class="checkout-razor-panel__mark" aria-hidden="true">
-                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2L20 7v10l-8 5-8-5V7l8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
-                    <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </span>
-                <span class="checkout-razor-panel__brand-name">Razorpay</span>
-                <span class="checkout-razor-panel__badge">PCI DSS</span>
+        <div class="checkout-pay-modal__col checkout-pay-modal__col--action">
+          <div class="checkout-pay-modal__action-slot" id="checkoutRazorPanel">
+            <div class="checkout-razor-panel">
+              <div class="checkout-razor-panel__glow" aria-hidden="true"></div>
+              <div class="checkout-razor-panel__inner">
+                <div class="checkout-razor-panel__brand">
+                  <span class="checkout-razor-panel__mark" aria-hidden="true">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2L20 7v10l-8 5-8-5V7l8-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                      <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span class="checkout-razor-panel__brand-name">Razorpay</span>
+                  <span class="checkout-razor-panel__badge">PCI DSS</span>
+                </div>
+                <p class="checkout-razor-panel__kicker">Encrypted checkout</p>
+                <h3 class="checkout-razor-panel__title">Complete your payment</h3>
+                <p class="checkout-razor-panel__lead">
+                  Your total is locked to this cart on our server. Continue in Razorpay&apos;s window — UPI, cards, netbanking and wallets where available.
+                </p>
+                <ul class="checkout-razor-panel__pills" aria-label="Payment options">
+                  <li>UPI</li>
+                  <li>Cards</li>
+                  <li>Netbanking</li>
+                  <li>Wallets</li>
+                </ul>
+                <button type="button" class="checkout-razor-panel__cta" id="btnRazorpayCheckout">
+                  <span class="checkout-razor-panel__cta-text">Pay securely now</span>
+                  <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
+                </button>
+                <p class="checkout-razor-panel__trust">We never see your UPI PIN or full card number.</p>
+                <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtn">Cancel and close</button>
               </div>
-              <p class="checkout-razor-panel__kicker">Encrypted checkout</p>
-              <h3 class="checkout-razor-panel__title">Complete your payment</h3>
-              <p class="checkout-razor-panel__lead">
-                Your total is locked to this cart on our server. Continue in Razorpay&apos;s window — UPI, cards, netbanking and wallets where available.
-              </p>
-              <ul class="checkout-razor-panel__pills" aria-label="Payment options">
-                <li>UPI</li>
-                <li>Cards</li>
-                <li>Netbanking</li>
-                <li>Wallets</li>
-              </ul>
-              <button type="button" class="checkout-razor-panel__cta" id="btnRazorpayCheckout">
-                <span class="checkout-razor-panel__cta-text">Pay securely now</span>
-                <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
-              </button>
-              <p class="checkout-razor-panel__trust">We never see your UPI PIN or full card number.</p>
-              <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtn">Cancel and close</button>
             </div>
           </div>
-        </div>
-        <div class="checkout-pay-modal__col checkout-pay-modal__col--cod" id="checkoutCodPanel" hidden>
-          <div class="checkout-razor-panel checkout-razor-panel--cod">
-            <div class="checkout-razor-panel__inner">
-              <p class="checkout-razor-panel__kicker">Pay on delivery</p>
-              <h3 class="checkout-razor-panel__title">Cash on delivery</h3>
-              <p class="checkout-razor-panel__lead">
-                Your order is reserved now. Pay the exact total in cash when our courier delivers your parcel. No online discount applies to COD.
-              </p>
-              <button type="button" class="checkout-razor-panel__cta checkout-razor-panel__cta--cod" id="btnCodCheckout">
-                <span class="checkout-razor-panel__cta-text">Place COD order</span>
-                <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
-              </button>
-              <p class="checkout-razor-panel__trust">Payment status stays pending until our team confirms cash received.</p>
-              <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtnCod">Cancel and close</button>
+          <div class="checkout-pay-modal__action-slot" id="checkoutCodPanel" hidden>
+            <div class="checkout-razor-panel checkout-razor-panel--cod">
+              <div class="checkout-razor-panel__glow checkout-razor-panel__glow--cod" aria-hidden="true"></div>
+              <div class="checkout-razor-panel__inner">
+                <p class="checkout-razor-panel__kicker">Pay on delivery</p>
+                <h3 class="checkout-razor-panel__title">Cash on delivery</h3>
+                <p class="checkout-razor-panel__lead">
+                  Your order is reserved now. Pay the exact total in cash when our courier delivers your parcel. No online discount applies to COD.
+                </p>
+                <button type="button" class="checkout-razor-panel__cta checkout-razor-panel__cta--cod" id="btnCodCheckout">
+                  <span class="checkout-razor-panel__cta-text">Place order · Cash on Delivery</span>
+                  <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
+                </button>
+                <p class="checkout-razor-panel__trust">Payment status stays pending until our team confirms cash received.</p>
+                <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtnCod">Cancel and close</button>
+              </div>
             </div>
           </div>
         </div>

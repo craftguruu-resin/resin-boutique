@@ -854,11 +854,13 @@
 
   function updatePaymentPanelVisibility() {
     var method = getCheckoutPaymentMethod();
-    var razorCol = document.querySelector(".checkout-pay-modal__col--razor");
+    var razorPanel = document.getElementById("checkoutRazorPanel");
     var codPanel = document.getElementById("checkoutCodPanel");
     var modalTitle = document.getElementById("checkoutPayModalTitle");
-    if (razorCol) razorCol.hidden = method === "cod";
+    var razorFine = document.getElementById("checkoutRazorpayFine");
+    if (razorPanel) razorPanel.hidden = method === "cod";
     if (codPanel) codPanel.hidden = method !== "cod";
+    if (razorFine) razorFine.hidden = method === "cod";
     if (modalTitle) {
       modalTitle.textContent = method === "cod" ? "Cash on delivery" : "Pay with Razorpay";
     }
@@ -867,7 +869,7 @@
       hint.textContent =
         method === "cod"
           ? "Place your COD order after you fill shipping above. Pay when your parcel arrives."
-          : "Opens secure Razorpay after you fill shipping above. 5% instant discount applied.";
+          : "Choose payment method in Pay now. 5% instant discount on Razorpay only.";
     }
   }
 
@@ -1254,7 +1256,7 @@
       label.textContent = "Checkout";
       if (getCheckoutPaymentMethod() === "cod") {
         msg.innerHTML =
-          "Review the amount on the left, then tap <strong>Place COD order</strong>. Pay cash when your parcel is delivered.";
+          "Review the amount on the left, then tap <strong>Place order · Cash on Delivery</strong>. Pay cash when your parcel is delivered.";
       } else {
         msg.innerHTML =
           "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 5% prepaid discount).";
@@ -1271,6 +1273,7 @@
 
   function openPayModal() {
     if (!els.payModal) return;
+    refreshCheckout();
     els.payModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
     setPaymentUi("ready");

@@ -5413,7 +5413,8 @@ body.product-page--oos .btn-add-lg {
   color: rgba(26, 32, 44, 0.42);
 }
 
-.checkout-pay-modal__col--razor {
+.checkout-pay-modal__col--razor,
+.checkout-pay-modal__col--action {
   position: relative;
   padding: 1.25rem 1.15rem 1.5rem;
   display: flex;
@@ -5425,8 +5426,21 @@ body.product-page--oos .btn-add-lg {
     linear-gradient(180deg, #0f172a 0%, #151b2e 48%, #1a2236 100%);
 }
 
+.checkout-pay-modal__action-slot {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.checkout-pay-modal__action-slot[hidden] {
+  display: none !important;
+}
+
 @media (min-width: 720px) {
-  .checkout-pay-modal__col--razor {
+  .checkout-pay-modal__col--razor,
+  .checkout-pay-modal__col--action {
     border-top: none;
     border-left: 1px solid rgba(255, 255, 255, 0.08);
     padding: 1.5rem 1.35rem 1.65rem;
@@ -5675,6 +5689,19 @@ body.product-page--oos .btn-add-lg {
 
 .checkout-razor-panel--cod .checkout-razor-panel__cta--cod {
   background: linear-gradient(135deg, #64748b 0%, #475569 100%);
+  box-shadow:
+    0 4px 0 rgba(15, 23, 42, 0.35),
+    0 16px 40px rgba(71, 85, 105, 0.35);
+}
+
+.checkout-razor-panel--cod .checkout-razor-panel__cta--cod:hover {
+  box-shadow:
+    0 6px 0 rgba(15, 23, 42, 0.3),
+    0 22px 48px rgba(71, 85, 105, 0.45);
+}
+
+.checkout-razor-panel__glow--cod {
+  background: radial-gradient(circle, rgba(100, 116, 139, 0.4) 0%, transparent 70%);
 }
 
 @media (max-width: 720px) {
@@ -5683,7 +5710,7 @@ body.product-page--oos .btn-add-lg {
   }
 
   .checkout-pay-modal__col--razor,
-  .checkout-pay-modal__col--cod {
+  .checkout-pay-modal__col--action {
     width: 100%;
   }
 }

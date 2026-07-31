@@ -202,6 +202,7 @@ function normalizeOptions(o) {
         if (kind === "sz" || kind === "qt") {
           out.priceInr = parseOptionalMoney(row.priceInr);
           out.mrpInr = parseOptionalMoney(row.mrpInr);
+          out.costInr = parseOptionalMoney(row.costInr);
         }
         return out;
       })
