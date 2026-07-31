@@ -798,22 +798,103 @@ var SIZE_DEFAULT = {
     return true;
   }
 
-  /** Guest search: partial token match across listed catalog products (name, id, category label). */
+  function scoreCatalogMatch(haystack, queryRaw, primaryLabel) {
+    var q = String(queryRaw || "")
+      .toLowerCase()
+      .replace(/\s+/g, " ")
+      .trim();
+    var h = String(haystack || "").toLowerCase();
+    var name = String(primaryLabel || "").toLowerCase();
+    if (!q) return 0;
+    var score = 0;
+    if (name === q) score += 120;
+    else if (name.indexOf(q) === 0) score += 90;
+    else if (name.indexOf(q) >= 0) score += 70;
+    if (h.indexOf(q) >= 0) score += 25;
+    var parts = q.split(" ").filter(Boolean);
+    for (var i = 0; i < parts.length; i++) {
+      var tok = parts[i];
+      if (name.indexOf(tok) === 0) score += 18;
+      else if (name.indexOf(tok) >= 0) score += 10;
+      else if (h.indexOf(tok) >= 0) score += 4;
+    }
+    return score;
+  }
+
+  function productSearchHaystack(p) {
+    var bits = [
+      p.name,
+      p.id,
+      p.category,
+      getCategoryLabel(p.category),
+      getSubcategoryLabel(p.category, p.subcategory),
+      p.subcategory,
+    ];
+    var catObj = getCategoryObject(p.category);
+    if (catObj && catObj.folder) bits.push(catObj.folder);
+    if (p.description) bits.push(String(p.description).slice(0, 600));
+    if (p.returnGift) bits.push("corporate gifting return gift bulk");
+    return bits
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .replace(/\s+/g, " ");
+  }
+
+  /** Guest search: ranked partial token match across listed catalog products. */
   function searchCatalogPartial(queryRaw, limit, opts) {
     var cap = Math.min(40, Math.max(1, limit || 12));
     var q = String(queryRaw || "").trim();
     if (!q) return [];
     var o = opts && typeof opts === "object" ? opts : {};
-    var out = [];
-    for (var i = 0; i < PRODUCTS.length && out.length < cap; i++) {
+    var scored = [];
+    for (var i = 0; i < PRODUCTS.length; i++) {
       var p = PRODUCTS[i];
       if (!isListedProduct(p)) continue;
       var pid = String(p.id || "");
       if (pid.indexOf("raw-mat--") === 0) continue;
       if (o.excludeCategoryIds && o.excludeCategoryIds.indexOf(p.category) >= 0) continue;
-      var hay = (p.name + " " + p.id + " " + getCategoryLabel(p.category)).toLowerCase();
-      if (partialTokenMatchCatalog(hay, q)) out.push(p);
+      var hay = productSearchHaystack(p);
+      if (!partialTokenMatchCatalog(hay, q)) continue;
+      scored.push({ p: p, score: scoreCatalogMatch(hay, q, p.name) });
     }
+    scored.sort(function (a, b) {
+      return (
+        b.score - a.score ||
+        String(a.p.name || "").localeCompare(String(b.p.name || ""), undefined, { sensitivity: "base" })
+      );
+    });
+    var out = [];
+    for (var j = 0; j < scored.length && out.length < cap; j++) out.push(scored[j].p);
+    return out;
+  }
+
+  /** Guest search: match resin category labels, ids, and subcategory names. */
+  function searchCategoriesPartial(queryRaw, limit) {
+    var cap = Math.min(20, Math.max(1, limit || 6));
+    var q = String(queryRaw || "").trim();
+    if (!q) return [];
+    var scored = [];
+    CATEGORIES.forEach(function (c) {
+      if (!c || !c.id || isDroppedResinCategory(c.id)) return;
+      var bits = [c.label, c.id, c.folder || ""];
+      (c.subcategories || []).forEach(function (s) {
+        if (!s) return;
+        if (s.label) bits.push(s.label);
+        if (s.id) bits.push(s.id);
+      });
+      var hay = bits.join(" ").toLowerCase();
+      if (!partialTokenMatchCatalog(hay, q)) return;
+      scored.push({ cat: c, score: scoreCatalogMatch(hay, q, c.label) });
+    });
+    scored.sort(function (a, b) {
+      return (
+        b.score - a.score ||
+        String(a.cat.label || "").localeCompare(String(b.cat.label || ""), undefined, { sensitivity: "base" })
+      );
+    });
+    var out = [];
+    for (var i = 0; i < scored.length && out.length < cap; i++) out.push(scored[i].cat);
     return out;
   }
 
@@ -1084,6 +1165,9 @@ var SIZE_DEFAULT = {
     rebuildCategoryProductIndex: rebuildCategoryProductIndex,
     applyCategoriesMerge: applyCategoriesMerge,
     searchCatalogPartial: searchCatalogPartial,
+    searchCategoriesPartial: searchCategoriesPartial,
+    partialTokenMatch: partialTokenMatchCatalog,
+    productSearchHaystack: productSearchHaystack,
     catalogOptionsHasPayload: catalogOptionsHasPayload,
     normalizeOptionsOverride: normalizeOptionsOverride,
     getProductCoverImageFit: getProductCoverImageFit,

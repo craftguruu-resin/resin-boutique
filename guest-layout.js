@@ -237,6 +237,33 @@
     }
   }
 
+  function syncGuestSearchToPageFilter(q) {
+    var gf = document.getElementById("globalFindQuery");
+    if (!gf) return;
+    var next = String(q || "").trim();
+    if (gf.value === next) return;
+    gf.value = next;
+    try {
+      gf.dispatchEvent(new Event("input", { bubbles: true }));
+    } catch (_) {
+      try {
+        var ev = document.createEvent("Event");
+        ev.initEvent("input", true, true);
+        gf.dispatchEvent(ev);
+      } catch (_2) {}
+    }
+  }
+
+  function bootGuestSearchFromUrl(inp) {
+    if (!inp) return;
+    try {
+      var q = (new URLSearchParams(window.location.search).get("q") || "").trim();
+      if (!q) return;
+      inp.value = q;
+      syncGuestSearchToPageFilter(q);
+    } catch (_) {}
+  }
+
   function injectHeaderSearch() {
     if (document.getElementById("guestHeaderSearch")) return;
     var top = document.querySelector(".site-top");
@@ -274,40 +301,81 @@
     var res = document.getElementById("guestCatalogSearchResults");
     if (!inp || !res) return;
 
-    function renderResinCatalogHits(items, D2) {
-      if (!items.length) {
+    function renderCategoryHits(cats, D2, q) {
+      if (!cats.length) return "";
+      return cats
+        .map(function (c) {
+          var href = "category.html?cat=" + encodeURIComponent(c.id);
+          if (q) href += "&q=" + encodeURIComponent(q);
+          return (
+            '<a class="guest-header-search__hit guest-header-search__hit--category" href="' +
+            escapeAttr(href) +
+            '">' +
+            '<span class="guest-header-search__hit-txt"><strong>' +
+            escapeHtml(D2.getCategoryLabel ? D2.getCategoryLabel(c.id) : c.label || c.id) +
+            '</strong><span class="guest-header-search__hit-sub">Category</span></span></a>'
+          );
+        })
+        .join("");
+    }
+
+    function renderCrossCatalogShortcuts(q) {
+      if (!q || headerSearchUsesRawMaterialsApi()) return "";
+      var enc = encodeURIComponent(q);
+      return (
+        '<div class="guest-header-search__sections" role="group" aria-label="Other catalogs">' +
+        '<a class="guest-header-search__hit guest-header-search__hit--section" href="raw-material-shop.html?q=' +
+        enc +
+        '"><span class="guest-header-search__hit-txt"><strong>Raw materials</strong><span class="guest-header-search__hit-sub">Search supplies</span></span></a>' +
+        '<a class="guest-header-search__hit guest-header-search__hit--section" href="photo-frames.html?q=' +
+        enc +
+        '"><span class="guest-header-search__hit-txt"><strong>Photo frames</strong><span class="guest-header-search__hit-sub">Search frames</span></span></a>' +
+        '<a class="guest-header-search__hit guest-header-search__hit--section" href="return-gifts.html?q=' +
+        enc +
+        '"><span class="guest-header-search__hit-txt"><strong>Corporate gifting</strong><span class="guest-header-search__hit-sub">Bulk &amp; return gifts</span></span></a>' +
+        "</div>"
+      );
+    }
+
+    function renderResinCatalogHits(items, D2, q, cats) {
+      var catHtml = renderCategoryHits(cats || [], D2, q);
+      var sectionHtml = renderCrossCatalogShortcuts(q);
+      if (!items.length && !catHtml && !sectionHtml) {
         res.innerHTML = '<p class="guest-header-search__empty">No matches.</p>';
         res.hidden = false;
         return;
       }
-      res.innerHTML = items
-        .map(function (p) {
-          var href = "product.html?id=" + encodeURIComponent(p.id);
-          var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
-          var from =
-            D2.formatStartingFromPrice && window.RESIN_CART && window.RESIN_CART.formatMoney
-              ? D2.formatStartingFromPrice(p, window.RESIN_CART.formatMoney)
-              : "";
-          return (
-            '<a class="guest-header-search__hit" href="' +
-            escapeAttr(href) +
-            '">' +
-            (img
-              ? '<span class="guest-header-search__hit-img"><img src="' +
-                escapeAttr(img) +
-                '" alt="" width="40" height="40" loading="lazy" /></span>'
-              : "") +
-            '<span class="guest-header-search__hit-txt"><strong>' +
-            escapeHtml(p.name) +
-            "</strong><span class=\"guest-header-search__hit-sub\">" +
-            escapeHtml(
-              (D2.getCategoryLabel ? D2.getCategoryLabel(p.category) : p.category) +
-                (from ? " · " + from : "")
-            ) +
-            "</span></span></a>"
-          );
-        })
-        .join("");
+      var productHtml = items.length
+        ? items
+            .map(function (p) {
+              var href = "product.html?id=" + encodeURIComponent(p.id);
+              var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
+              var from =
+                D2.formatStartingFromPrice && window.RESIN_CART && window.RESIN_CART.formatMoney
+                  ? D2.formatStartingFromPrice(p, window.RESIN_CART.formatMoney)
+                  : "";
+              return (
+                '<a class="guest-header-search__hit" href="' +
+                escapeAttr(href) +
+                '">' +
+                (img
+                  ? '<span class="guest-header-search__hit-img"><img src="' +
+                    escapeAttr(img) +
+                    '" alt="" width="40" height="40" loading="lazy" /></span>'
+                  : "") +
+                '<span class="guest-header-search__hit-txt"><strong>' +
+                escapeHtml(p.name) +
+                "</strong><span class=\"guest-header-search__hit-sub\">" +
+                escapeHtml(
+                  (D2.getCategoryLabel ? D2.getCategoryLabel(p.category) : p.category) +
+                    (from ? " · " + from : "")
+                ) +
+                "</span></span></a>"
+              );
+            })
+            .join("")
+        : "";
+      res.innerHTML = sectionHtml + catHtml + productHtml;
       res.hidden = false;
     }
 
@@ -352,6 +420,7 @@
     function runSearch() {
       var D2 = window.RESIN_DATA;
       var q = String(inp.value || "").trim();
+      syncGuestSearchToPageFilter(q);
       if (!q) {
         res.hidden = true;
         res.innerHTML = "";
@@ -381,14 +450,32 @@
         res.innerHTML = "";
         return;
       }
+      var cats =
+        typeof D2.searchCategoriesPartial === "function" ? D2.searchCategoriesPartial(q, 4) : [];
       var items = D2.searchCatalogPartial(q, 14);
-      renderResinCatalogHits(items, D2);
+      renderResinCatalogHits(items, D2, q, cats);
     }
 
     var t = null;
     inp.addEventListener("input", function () {
       clearTimeout(t);
       t = setTimeout(runSearch, 120);
+    });
+    inp.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter") return;
+      var v = String(inp.value || "").trim();
+      syncGuestSearchToPageFilter(v);
+      var gf = document.getElementById("globalFindQuery");
+      if (!gf) return;
+      try {
+        gf.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
+      } catch (_) {
+        try {
+          var ev = document.createEvent("KeyboardEvent");
+          ev.initKeyboardEvent("keydown", true, true, window, "Enter", 0, "", false, "");
+          gf.dispatchEvent(ev);
+        } catch (_2) {}
+      }
     });
     inp.addEventListener("focus", function () {
       if (String(inp.value || "").trim()) runSearch();
@@ -398,6 +485,8 @@
         res.hidden = true;
       }
     });
+    bootGuestSearchFromUrl(inp);
+    if (String(inp.value || "").trim()) runSearch();
     window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
       runSearch();
     });

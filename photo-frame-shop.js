@@ -309,19 +309,34 @@
     return best === Infinity ? 0 : best;
   }
 
+  function materialSearchHaystack(m) {
+    return [
+      m.name,
+      m.sku,
+      m.id,
+      m.description,
+      m.baseCategorySlug,
+      m.subcategorySlug,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
+
   function materialsMatchFilters(m, base, sub, needle) {
     var b = String(base || "").trim();
     var s = String(sub || "").trim();
-    var n = String(needle || "")
-      .trim()
-      .toLowerCase();
+    var n = String(needle || "").trim();
     if (b && String(m.baseCategorySlug || "").trim() !== b) return false;
     if (s && String(m.subcategorySlug || "").trim() !== s) return false;
     if (n) {
-      var sku = String(m.sku || "").toLowerCase();
-      var name = String(m.name || "").toLowerCase();
-      var idl = String(m.id || "").toLowerCase();
-      if (name.indexOf(n) < 0 && sku.indexOf(n) < 0 && idl.indexOf(n) < 0) return false;
+      var hay = materialSearchHaystack(m);
+      if (D && typeof D.partialTokenMatch === "function") {
+        if (!D.partialTokenMatch(hay, n)) return false;
+      } else {
+        var nl = n.toLowerCase();
+        if (hay.indexOf(nl) < 0) return false;
+      }
     }
     return true;
   }

@@ -222,12 +222,34 @@
     }
   }
 
+  function filterBySearch(items) {
+    var gf = document.getElementById("globalFindQuery");
+    var q = gf ? String(gf.value || "").trim() : "";
+    if (!q || !D || typeof D.partialTokenMatch !== "function") return items;
+    return items.filter(function (p) {
+      var hay = D.productSearchHaystack
+        ? D.productSearchHaystack(p)
+        : ((p.name || "") + " " + (p.id || "")).toLowerCase();
+      return D.partialTokenMatch(hay, q);
+    });
+  }
+
+  function wireReturnGiftsSearchOnce() {
+    var gf = document.getElementById("globalFindQuery");
+    if (!gf || gf.dataset.rgSearchWired === "1") return;
+    gf.dataset.rgSearchWired = "1";
+    gf.addEventListener("input", function () {
+      paint();
+    });
+  }
+
   function paint() {
+    wireReturnGiftsSearchOnce();
     wireControlsOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
     var base = collectReturnGifts();
-    var items = sortItems(filterByPriceAndView(base));
+    var items = sortItems(filterByPriceAndView(filterBySearch(base)));
     grid.innerHTML = "";
     if (!items.length) {
       grid.innerHTML =

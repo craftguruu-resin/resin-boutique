@@ -147,6 +147,30 @@
   color: rgba(15, 23, 42, 0.5);
 }
 
+.guest-header-search__hit--category {
+  background: rgba(38, 166, 154, 0.06);
+}
+
+.guest-header-search__hit--category .guest-header-search__hit-sub {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.62rem;
+}
+
+.guest-header-search__sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.25rem;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.guest-header-search__hit--section .guest-header-search__hit-sub {
+  color: rgba(38, 166, 154, 0.85);
+}
+
 .guest-header-search__hit--oos {
   cursor: default;
   opacity: 0.72;
