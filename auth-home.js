@@ -155,6 +155,7 @@
   }
 
   var els = {};
+  var wired = false;
 
   function bindEls() {
     els.modal = document.getElementById("authModal");
@@ -260,6 +261,9 @@
   function boot() {
     bindEls();
     renderAuthBar();
+
+    if (wired) return;
+    wired = true;
 
     if (els.signupBtn) els.signupBtn.addEventListener("click", function () { openAuth("signup"); });
     if (els.loginBtn) els.loginBtn.addEventListener("click", function () { openAuth("login"); });
@@ -493,8 +497,9 @@
     getApiBase: getApiBase,
   };
 
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", boot);
+  /* Wait for DOMContentLoaded so guest-layout.js can inject #authModal on catalog pages first. */
+  if (document.readyState === "loading" || document.readyState === "interactive") {
+    document.addEventListener("DOMContentLoaded", boot, { once: true });
   } else {
     boot();
   }

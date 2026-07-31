@@ -1,0 +1,415 @@
+/* Let's Connect — Instagram / YouTube / WhatsApp (homepage) */
+
+.connect-premium {
+  position: relative;
+  z-index: 1;
+  padding: clamp(2.5rem, 6vw, 4rem) clamp(1.25rem, 4vw, 2.5rem) clamp(1.5rem, 4vw, 2.5rem);
+  max-width: 1120px;
+  margin: 0 auto;
+}
+
+.connect-premium__inner {
+  text-align: center;
+}
+
+.connect-premium__eyebrow {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #c9a227;
+}
+
+.connect-premium__eyebrow-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+  opacity: 0.85;
+}
+
+.connect-premium__title {
+  margin: 0 auto 0.75rem;
+  max-width: 18ch;
+  font-family: "Cormorant Garamond", var(--font-display, Georgia, serif);
+  font-size: clamp(1.85rem, 4.5vw, 2.65rem);
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.02em;
+  color: var(--home-ink, #1a2040);
+}
+
+.connect-premium__lead {
+  margin: 0 auto 2.25rem;
+  max-width: 46ch;
+  font-size: clamp(0.92rem, 1.8vw, 1rem);
+  line-height: 1.6;
+  color: rgba(26, 32, 64, 0.58);
+}
+
+.connect-premium__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.25rem;
+  text-align: left;
+}
+
+@media (min-width: 720px) {
+  .connect-premium__grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.35rem;
+  }
+}
+
+.connect-premium-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 1.35rem 1.25rem 1.4rem;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 18px 48px rgba(100, 120, 160, 0.1);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+.connect-premium-card--ig {
+  background: linear-gradient(165deg, rgba(255, 240, 245, 0.95) 0%, rgba(255, 255, 255, 0.92) 55%);
+  border-color: rgba(255, 180, 200, 0.35);
+}
+
+.connect-premium-card--yt {
+  border-color: rgba(255, 0, 0, 0.12);
+}
+
+.connect-premium-card--wa {
+  background: linear-gradient(165deg, rgba(232, 252, 240, 0.95) 0%, rgba(255, 255, 255, 0.92) 55%);
+  border-color: rgba(37, 211, 102, 0.22);
+}
+
+.connect-premium-card__head {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 0.5rem;
+}
+
+.connect-premium-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  flex-shrink: 0;
+}
+
+.connect-premium-card__icon svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.connect-premium-card__platform {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.connect-premium-card--ig .connect-premium-card__platform {
+  color: #e1306c;
+}
+
+.connect-premium-card--yt .connect-premium-card__platform {
+  color: #ff0000;
+}
+
+.connect-premium-card--wa .connect-premium-card__platform {
+  color: #128c7e;
+}
+
+.connect-premium-card__desc {
+  margin: 0 0 1.1rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+  color: rgba(26, 32, 64, 0.62);
+}
+
+.connect-premium-card__desc a {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.connect-premium-card__visual {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.15rem;
+  min-height: 9.5rem;
+}
+
+.connect-premium-card__qr {
+  display: block;
+  border-radius: 1.15rem;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 12px 36px rgba(225, 48, 108, 0.14);
+  line-height: 0;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.connect-premium-card__qr:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 42px rgba(225, 48, 108, 0.2);
+}
+
+.connect-premium-card__qr img {
+  display: block;
+  width: min(168px, 72vw);
+  height: auto;
+}
+
+.connect-premium-card__yt {
+  display: block;
+  width: 100%;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #0f0f0f;
+  box-shadow: 0 12px 32px rgba(15, 15, 15, 0.18);
+  text-decoration: none;
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+
+.connect-premium-card__yt:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 40px rgba(15, 15, 15, 0.24);
+}
+
+.connect-premium-card__yt-thumb {
+  position: relative;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+}
+
+.connect-premium-card__yt-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.connect-premium-card__yt-play {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.connect-premium-card__yt-play svg {
+  width: 3rem;
+  height: 3rem;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.35));
+}
+
+.connect-premium-card__yt-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.55rem 0.65rem;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.connect-premium-card__yt-avatar {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.connect-premium-card__yt-copy strong {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--home-ink, #1a2040);
+  line-height: 1.2;
+}
+
+.connect-premium-card__yt-copy span {
+  display: block;
+  font-size: 0.68rem;
+  color: rgba(26, 32, 64, 0.52);
+  line-height: 1.25;
+}
+
+.connect-premium-card__wa-visual {
+  position: relative;
+  width: 100%;
+  min-height: 9rem;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 20% 30%, rgba(37, 211, 102, 0.12), transparent 45%),
+    radial-gradient(circle at 80% 70%, rgba(18, 140, 126, 0.1), transparent 40%),
+    rgba(232, 252, 240, 0.65);
+  overflow: hidden;
+}
+
+.connect-premium-card__wa-visual::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48' viewBox='0 0 24 24'%3E%3Cpath fill='%23128c7e' d='M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.435 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z'/%3E%3C/svg%3E");
+  background-size: 2.5rem 2.5rem;
+}
+
+.connect-premium-card__wa-icon {
+  position: relative;
+  z-index: 1;
+  width: clamp(4rem, 14vw, 5.25rem);
+  height: clamp(4rem, 14vw, 5.25rem);
+  color: #25d366;
+  filter: drop-shadow(0 8px 20px rgba(37, 211, 102, 0.35));
+}
+
+.connect-premium-card__cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: auto;
+  padding: 0.72rem 1rem;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.connect-premium-card__cta:hover {
+  transform: translateY(-1px);
+}
+
+.connect-premium-card__cta--ig {
+  color: #fff;
+  background: linear-gradient(135deg, #f77737, #e1306c 55%, #c13584);
+  box-shadow: 0 10px 24px rgba(225, 48, 108, 0.28);
+}
+
+.connect-premium-card__cta--ig:hover {
+  box-shadow: 0 14px 30px rgba(225, 48, 108, 0.36);
+}
+
+.connect-premium-card__cta--yt {
+  color: #ff0000;
+  background: #fff;
+  border: 1.5px solid rgba(255, 0, 0, 0.35);
+  box-shadow: 0 8px 20px rgba(255, 0, 0, 0.08);
+}
+
+.connect-premium-card__cta--yt:hover {
+  background: rgba(255, 245, 245, 0.98);
+  box-shadow: 0 12px 26px rgba(255, 0, 0, 0.12);
+}
+
+.connect-premium-card__cta--wa {
+  color: #fff;
+  background: linear-gradient(135deg, #25d366, #128c7e);
+  box-shadow: 0 10px 24px rgba(37, 211, 102, 0.28);
+}
+
+.connect-premium-card__cta--wa:hover {
+  box-shadow: 0 14px 30px rgba(37, 211, 102, 0.36);
+}
+
+.connect-premium-trust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem 1.5rem;
+  margin-top: clamp(1.75rem, 4vw, 2.25rem);
+  padding: 1.1rem clamp(1rem, 3vw, 1.75rem);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 12px 36px rgba(100, 120, 160, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@media (max-width: 719px) {
+  .connect-premium-trust {
+    border-radius: 22px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.85rem;
+  }
+}
+
+.connect-premium-trust__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(26, 32, 64, 0.72);
+  white-space: nowrap;
+}
+
+@media (max-width: 719px) {
+  .connect-premium-trust__item {
+    white-space: normal;
+    justify-content: flex-start;
+  }
+}
+
+.connect-premium-trust__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.connect-premium-trust__badge--love {
+  background: rgba(255, 182, 193, 0.45);
+  color: #c2185b;
+}
+
+.connect-premium-trust__badge--quality {
+  background: rgba(178, 235, 205, 0.55);
+  color: #128c7e;
+}
+
+.connect-premium-trust__badge--custom {
+  background: rgba(255, 224, 130, 0.45);
+  color: #b8860b;
+}
+
+.connect-premium-trust__badge--trusted {
+  background: rgba(255, 171, 171, 0.45);
+  color: #c62828;
+}

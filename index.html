@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="hero-exact-shared.css" />
   <link rel="stylesheet" href="home-hero-ethereal.css" />
+  <link rel="stylesheet" href="connect-section.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <link rel="stylesheet" href="layout-responsive.css" />
 </head>
@@ -262,77 +263,166 @@
       </div>
     </section>
 
-    <section class="connect-strip reveal" id="connect" aria-labelledby="connect-title">
-      <div class="connect-strip__inner">
-        <h2 id="connect-title" class="connect-strip__title">Find us on Instagram, YouTube &amp; WhatsApp</h2>
-        <p class="connect-strip__lead">
-          Follow pours and factory updates on Instagram and YouTube, or message us on WhatsApp for orders and custom work.
+    <section class="connect-premium reveal" id="connect" aria-labelledby="connect-title">
+      <div class="connect-premium__inner">
+        <p class="connect-premium__eyebrow">
+          <span>Let's Connect</span>
+          <span class="connect-premium__eyebrow-icon" aria-hidden="true">♥</span>
         </p>
-        <div class="connect-grid">
-          <div class="connect-card">
-            <h3>Instagram</h3>
-            <p class="connect-card__sub">
+        <h2 id="connect-title" class="connect-premium__title">Find us on Instagram, YouTube &amp; WhatsApp</h2>
+        <p class="connect-premium__lead">
+          Follow us for the latest updates, behind-the-scenes, tutorials, and message us for orders and custom work.
+        </p>
+        <div class="connect-premium__grid">
+          <article class="connect-premium-card connect-premium-card--ig">
+            <div class="connect-premium-card__head">
+              <span class="connect-premium-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="2" y="2" width="20" height="20" rx="5" stroke="#E1306C" stroke-width="1.8"/>
+                  <circle cx="12" cy="12" r="4.2" stroke="#E1306C" stroke-width="1.8"/>
+                  <circle cx="17.4" cy="6.6" r="1.1" fill="#E1306C"/>
+                </svg>
+              </span>
+              <h3 class="connect-premium-card__platform">Instagram</h3>
+            </div>
+            <p class="connect-premium-card__desc">
               Scan the QR code to open
               <a href="https://www.instagram.com/craftguruindia/" target="_blank" rel="noopener noreferrer">@craftguruindia</a>
               in the Instagram app or browser.
             </p>
+            <div class="connect-premium-card__visual">
+              <a
+                class="connect-premium-card__qr"
+                href="https://www.instagram.com/craftguruindia/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open Craftguru India on Instagram"
+              >
+                <img
+                  src="media/instagram-qr-craftguru.png"
+                  alt="Instagram QR code — @craftguruindia"
+                  width="320"
+                  height="400"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </a>
+            </div>
             <a
-              class="connect-qr-wrap"
+              class="connect-premium-card__cta connect-premium-card__cta--ig"
               href="https://www.instagram.com/craftguruindia/"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Open Craftguru India on Instagram"
             >
-              <img
-                src="media/instagram-qr-craftguru.png"
-                alt="Instagram QR code — @craftguruindia"
-                width="320"
-                height="400"
-                loading="lazy"
-                decoding="async"
-              />
+              <span aria-hidden="true">📱</span> Scan to Follow
             </a>
-          </div>
-          <div class="connect-card">
-            <h3>YouTube</h3>
-            <p class="connect-card__sub">
-              Watch pours, tutorials, and behind-the-scenes on
+          </article>
+          <article class="connect-premium-card connect-premium-card--yt">
+            <div class="connect-premium-card__head">
+              <span class="connect-premium-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#FF0000" d="M21.8 8.001s-.195-1.377-.795-1.984c-.76-.796-1.61-.8-2.001-.847-2.799-.203-6.998-.203-6.998-.203h-.01s-4.2 0-6.998.202c-.39.046-1.24.05-2 .847-.6.607-.795 1.984-.795 1.984S1 9.62 1 11.24v1.517c0 1.618.202 3.237.202 3.237s.195 1.377.795 1.983c.76.797 1.76.771 2.205.855 1.6.153 6.798.2 6.798.2s4.203-.006 7.002-.209c.39-.047 1.24-.051 2-.847.6-.607.795-1.984.795-1.984S23 14.376 23 12.758v-1.517c0-1.618-.2-3.237-.2-3.237zM9.75 15.02V8.988L15.5 12 9.75 15.019z"/>
+                </svg>
+              </span>
+              <h3 class="connect-premium-card__platform">YouTube</h3>
+            </div>
+            <p class="connect-premium-card__desc">
+              Watch pours, tutorials, and behind-the-scenes videos on
               <a href="https://www.youtube.com/@Craftguru_india" target="_blank" rel="noopener noreferrer">@Craftguru_india</a>.
             </p>
+            <div class="connect-premium-card__visual">
+              <a
+                class="connect-premium-card__yt"
+                href="https://www.youtube.com/@Craftguru_india"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Craftguru India on YouTube"
+              >
+                <div class="connect-premium-card__yt-thumb">
+                  <img
+                    src="media/home-showcase/home-ethereal-hero-clock1.png"
+                    alt="Craftguru resin wall clocks and trays"
+                    width="640"
+                    height="400"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                  <span class="connect-premium-card__yt-play" aria-hidden="true">
+                    <svg viewBox="0 0 68 48" xmlns="http://www.w3.org/2000/svg">
+                      <path fill="#f00" d="M66.52 7.74a8.2 8.2 0 0 0-5.78-5.82C55.79 1 34 1 34 1S12.21 1 7.26 1.92A8.2 8.2 0 0 0 1.48 7.74 86.6 86.6 0 0 0 0 24a86.6 86.6 0 0 0 1.48 16.26 8.2 8.2 0 0 0 5.78 5.82C12.21 47 34 47 34 47s21.79 0 26.74-.92a8.2 8.2 0 0 0 5.78-5.82A86.6 86.6 0 0 0 68 24a86.6 86.6 0 0 0-1.48-16.26z"/>
+                      <path fill="#fff" d="M45 24 27 14v20z"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="connect-premium-card__yt-meta">
+                  <img
+                    class="connect-premium-card__yt-avatar"
+                    src="media/brand-craftguru.png"
+                    alt=""
+                    width="28"
+                    height="28"
+                    loading="lazy"
+                  />
+                  <div class="connect-premium-card__yt-copy">
+                    <strong>Craftguru India</strong>
+                    <span>Handcrafted with Love</span>
+                  </div>
+                </div>
+              </a>
+            </div>
             <a
-              class="connect-brand-hit connect-brand-hit--yt"
+              class="connect-premium-card__cta connect-premium-card__cta--yt"
               href="https://www.youtube.com/@Craftguru_india"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Craftguru India on YouTube"
             >
-              <svg class="connect-brand-hit__svg" viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M21.8 8.001s-.195-1.377-.795-1.984c-.76-.796-1.61-.8-2.001-.847-2.799-.203-6.998-.203-6.998-.203h-.01s-4.2 0-6.998.202c-.39.046-1.24.05-2 .847-.6.607-.795 1.984-.795 1.984S1 9.62 1 11.24v1.517c0 1.618.202 3.237.202 3.237s.195 1.377.795 1.983c.76.797 1.76.771 2.205.855 1.6.153 6.798.2 6.798.2s4.203-.006 7.002-.209c.39-.047 1.24-.051 2-.847.6-.607.795-1.984.795-1.984S23 14.376 23 12.758v-1.517c0-1.618-.2-3.237-.2-3.237zM9.75 15.02V8.988L15.5 12 9.75 15.019z"
-                />
-              </svg>
-              <span class="visually-hidden">YouTube</span>
+              Watch on YouTube →
             </a>
-          </div>
-          <div class="connect-card">
-            <h3>WhatsApp</h3>
-            <p class="connect-card__sub">Tap to start a chat with our studio (orders, sizing, bulk).</p>
+          </article>
+          <article class="connect-premium-card connect-premium-card--wa">
+            <div class="connect-premium-card__head">
+              <span class="connect-premium-card__icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="#25D366" d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.95 0 1 4.95 1 11.06c0 1.95.51 3.85 1.48 5.52L0 24l7.62-2c1.6.87 3.4 1.33 5.25 1.33h.01c6.11 0 11.06-4.95 11.06-11.06 0-2.95-1.15-5.73-3.42-7.79zM12.07 21.4h-.01c-1.65 0-3.27-.44-4.68-1.28l-.34-.2-4.05 1.06 1.08-3.95-.22-.35a9.86 9.86 0 0 1-1.51-5.32c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.9 6.99c0 5.45-4.44 9.89-9.89 9.89zm5.43-7.35c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.47-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.2-.24-.56-.49-.48-.67-.49h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.18-1.42-.08-.12-.27-.2-.57-.35z"/>
+                </svg>
+              </span>
+              <h3 class="connect-premium-card__platform">WhatsApp</h3>
+            </div>
+            <p class="connect-premium-card__desc">Tap to start a chat with our studio (orders, sizing, bulk).</p>
+            <div class="connect-premium-card__visual">
+              <div class="connect-premium-card__wa-visual" aria-hidden="true">
+                <svg class="connect-premium-card__wa-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path fill="currentColor" d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.95 0 1 4.95 1 11.06c0 1.95.51 3.85 1.48 5.52L0 24l7.62-2c1.6.87 3.4 1.33 5.25 1.33h.01c6.11 0 11.06-4.95 11.06-11.06 0-2.95-1.15-5.73-3.42-7.79zM12.07 21.4h-.01c-1.65 0-3.27-.44-4.68-1.28l-.34-.2-4.05 1.06 1.08-3.95-.22-.35a9.86 9.86 0 0 1-1.51-5.32c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.9 6.99c0 5.45-4.44 9.89-9.89 9.89zm5.43-7.35c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.47-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.2-.24-.56-.49-.48-.67-.49h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.18-1.42-.08-.12-.27-.2-.57-.35z"/>
+                </svg>
+              </div>
+            </div>
             <a
-              class="connect-brand-hit connect-brand-hit--wa"
+              class="connect-premium-card__cta connect-premium-card__cta--wa"
               href="https://wa.me/918824350056"
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="WhatsApp chat — +91-8824350056"
             >
-              <svg class="connect-brand-hit__svg" viewBox="0 0 24 24" width="44" height="44" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M20.52 3.48A11.86 11.86 0 0 0 12.06 0C5.95 0 1 4.95 1 11.06c0 1.95.51 3.85 1.48 5.52L0 24l7.62-2c1.6.87 3.4 1.33 5.25 1.33h.01c6.11 0 11.06-4.95 11.06-11.06 0-2.95-1.15-5.73-3.42-7.79zM12.07 21.4h-.01c-1.65 0-3.27-.44-4.68-1.28l-.34-.2-4.05 1.06 1.08-3.95-.22-.35a9.86 9.86 0 0 1-1.51-5.32c0-5.45 4.44-9.89 9.89-9.89 2.64 0 5.12 1.03 6.99 2.9a9.82 9.82 0 0 1 2.9 6.99c0 5.45-4.44 9.89-9.89 9.89zm5.43-7.35c-.3-.15-1.77-.87-2.04-.97-.27-.1-.47-.15-.67.15-.2.3-.77.97-.94 1.17-.17.2-.35.22-.65.07-.3-.15-1.26-.46-2.4-1.47-.89-.79-1.49-1.77-1.66-2.07-.17-.3-.02-.46.13-.61.13-.13.3-.35.45-.52.15-.17.2-.3.3-.5.1-.2.05-.37-.02-.52-.07-.15-.67-1.61-.92-2.2-.24-.56-.49-.48-.67-.49h-.57c-.2 0-.52.07-.79.37-.27.3-1.04 1.02-1.04 2.49 0 1.47 1.07 2.89 1.22 3.09.15.2 2.1 3.2 5.08 4.49.71.31 1.26.49 1.69.63.71.23 1.36.2 1.87.12.57-.09 1.77-.72 2.02-1.42.25-.7.25-1.3.18-1.42-.08-.12-.27-.2-.57-.35z"
-                />
-              </svg>
-              <span class="visually-hidden">WhatsApp +91-8824350056</span>
+              <span aria-hidden="true">💬</span> Chat on WhatsApp
             </a>
+          </article>
+        </div>
+
+        <div class="connect-premium-trust" aria-label="Why customers trust Craftguru">
+          <div class="connect-premium-trust__item">
+            <span class="connect-premium-trust__badge connect-premium-trust__badge--love" aria-hidden="true">🏵</span>
+            Handcrafted with Love
+          </div>
+          <div class="connect-premium-trust__item">
+            <span class="connect-premium-trust__badge connect-premium-trust__badge--quality" aria-hidden="true">🛡</span>
+            Premium Quality Materials
+          </div>
+          <div class="connect-premium-trust__item">
+            <span class="connect-premium-trust__badge connect-premium-trust__badge--custom" aria-hidden="true">🎁</span>
+            Custom Creations for Every Occasion
+          </div>
+          <div class="connect-premium-trust__item">
+            <span class="connect-premium-trust__badge connect-premium-trust__badge--trusted" aria-hidden="true">❤</span>
+            Trusted by 10,000+ Happy Customers
           </div>
         </div>
       </div>

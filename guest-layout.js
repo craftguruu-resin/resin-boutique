@@ -472,6 +472,9 @@
     var modal = wrap.firstElementChild;
     if (modal) document.body.appendChild(modal);
     /* auth-db.js, google-signin.js, auth-home.js must be included in page markup after guest-layout.js (see category.html). */
+    if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.boot === "function") {
+      window.CRAFT_AUTH_HOME.boot();
+    }
   }
 
   function injectScriptOnce(src, defer) {
@@ -527,6 +530,8 @@
   }
 
   function injectSocialFloatWidgets() {
+    var pn = currentPageName();
+    if (pn === "index.html" || pn === "") return;
     ensureSocialFloatStack();
     ensureStylesheet("social-float-stack.css");
     ensureStylesheet("whatsapp-widget.css");
