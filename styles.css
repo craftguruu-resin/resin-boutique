@@ -6931,6 +6931,11 @@ a.home-auth-btn {
   .home-landing-main {
     order: -1;
   }
+
+  .page-home .home-category-rail#categories {
+    order: 0;
+    width: 100%;
+  }
 }
 
 @media (min-width: 960px) {
