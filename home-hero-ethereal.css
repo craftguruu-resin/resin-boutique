@@ -294,13 +294,10 @@ body.page-home .home-landing-hero--exact {
   display: block !important;
   grid-template-columns: none !important;
   overflow: hidden !important;
-  border-radius: clamp(1.75rem, 4.5vw, 2.75rem);
-  background: #f4f9f7;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    var(--home-shadow),
-    0 32px 72px rgba(120, 140, 180, 0.14);
+  border-radius: var(--hero-exact-radius, clamp(1.75rem, 4.5vw, 2.75rem));
+  background: transparent;
+  border: none;
+  box-shadow: none;
   min-height: 0 !important;
   height: auto !important;
   max-height: none !important;
@@ -310,12 +307,14 @@ body.page-home .home-landing-hero--exact {
   animation: homeExactHeroIn 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-/* Promo carousel — match exact-ref panel clip + cream backdrop (no dark corner bleed) */
+/* Promo carousel — match exact-ref panel clip (frameless) */
 body.page-home .hero-atelier--promo .hero-promo-carousel,
 body.page-home .hero-atelier--promo .hero-promo-carousel__frame {
-  border-radius: clamp(1.75rem, 4.5vw, 2.75rem);
+  border-radius: var(--hero-exact-radius, clamp(1.75rem, 4.5vw, 2.75rem));
   overflow: hidden;
-  background: #f4f9f7;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 /* Defeat styles.css flex min-heights that stretch/crop the exact panel */
@@ -898,7 +897,7 @@ body.page-home .hero-atelier__dots span.is-active {
   }
 
   body.page-home .hero-atelier {
-    padding-inline: clamp(0.35rem, 2.5vw, 0.85rem);
+    padding: 0;
     max-width: 100%;
     overflow: hidden;
   }

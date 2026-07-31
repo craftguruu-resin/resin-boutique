@@ -6331,14 +6331,11 @@ a.home-auth-btn {
   height: min(72vh, 640px);
   min-height: min(72vh, 640px);
   max-height: min(72vh, 640px);
-  border-radius: clamp(1.5rem, 4vw, 2.75rem);
+  border-radius: var(--hero-exact-radius, clamp(1.5rem, 4vw, 2.75rem));
   overflow: hidden;
-  background: #f4f9f7;
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 24px 80px rgba(15, 20, 35, 0.08),
-    0 0 0 1px rgba(255, 255, 255, 0.65) inset;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
 @media (min-width: 900px) {
@@ -6956,7 +6953,7 @@ a.home-auth-btn {
   .home-shop-layout {
     display: grid;
     grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
-    align-items: stretch;
+    align-items: start;
     column-gap: clamp(1rem, 2.5vw, 1.85rem);
     row-gap: 0;
   }
@@ -7183,16 +7180,26 @@ a.home-category-rail__title-link:focus-visible {
   max-width: none;
   width: 100%;
   margin-inline: 0;
-  padding-inline: 0;
+  padding: 0;
 }
 
-.page-home .hero-atelier__shell {
+.page-home .hero-atelier__shell:not(.hero-atelier__shell--exact-ref):not(.home-landing-hero--exact) {
   min-height: min(58vh, 560px);
   border-radius: clamp(1.75rem, 4.5vw, 3rem);
   overflow: hidden;
   box-shadow:
     0 40px 100px rgba(15, 23, 42, 0.07),
     0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+}
+
+.page-home .hero-atelier__shell--exact-ref,
+.page-home .hero-atelier__shell.home-landing-hero--exact {
+  min-height: 0;
+  border-radius: var(--hero-exact-radius, clamp(1.75rem, 4.5vw, 2.75rem));
+  overflow: hidden;
+  border: none;
+  box-shadow: none;
+  background: transparent;
 }
 
 @media (max-width: 899px) {
@@ -7210,7 +7217,7 @@ a.home-category-rail__title-link:focus-visible {
   }
 
   .page-home .hero-atelier {
-    padding-inline: clamp(0.35rem, 2.5vw, 0.85rem);
+    padding: 0;
   }
 }
 

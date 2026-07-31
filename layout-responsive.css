@@ -488,7 +488,7 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
 
   body.page-home .hero-atelier,
   body.guest-site .hero-atelier {
-    padding-inline: clamp(0.35rem, 2vw, 0.85rem);
+    padding: 0;
     max-width: 100%;
   }
 

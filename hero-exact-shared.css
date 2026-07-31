@@ -5,7 +5,12 @@
  */
 
 /* ---- Unified panel frame: container follows the image ---- */
+:root {
+  --hero-exact-radius: clamp(1.75rem, 4.5vw, 2.75rem);
+}
+
 .home-landing-hero--exact,
+.hero-atelier__shell--exact-ref,
 .hero-atelier__shell--exact-ref.home-landing-hero--exact,
 .rm-landing-hero--exact,
 .pf-landing-hero--exact,
@@ -17,14 +22,38 @@
   flex: 0 0 auto !important;
   line-height: 0;
   isolation: isolate;
-  /* border-radius + overflow on same element — prevents square corner bleed */
+  /* border-radius + overflow on same element — image clips cleanly at corners */
+  border-radius: var(--hero-exact-radius);
   overflow: hidden;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  background-image: none !important;
 }
 
-/* Promo carousel — same clip language as exact-panel heroes */
+/* Split layout: hero column flush with category rail top edge */
+body.page-home .hero-atelier,
+body.guest-site .hero-atelier {
+  padding: 0 !important;
+  margin: 0;
+  max-width: none;
+}
+
+body.page-home .hero-atelier__builtin-wrap {
+  width: 100%;
+}
+
+/* Promo carousel — same clip language, no decorative outer frame */
+body.page-home .hero-atelier--promo .hero-promo-carousel,
 .hero-promo-carousel__frame {
   isolation: isolate;
   overflow: hidden;
+  border-radius: var(--hero-exact-radius);
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .home-landing-hero__exact-art,
