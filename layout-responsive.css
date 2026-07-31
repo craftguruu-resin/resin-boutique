@@ -27,24 +27,27 @@ body.guest-site .sub-main {
   box-sizing: border-box;
 }
 
-/* Reserve space for stacked social FABs so content is not obscured */
+/* FABs are position:fixed — avoid body padding-bottom (creates blank gap below footer). */
 body.guest-site {
-  padding-bottom: calc(
-    var(--cg-float-edge-y, clamp(1rem, 3.5vw, 1.65rem)) +
-      (var(--cg-float-fab, 3.75rem) * 2) +
-      var(--cg-float-gap, 0.75rem) +
-      0.35rem +
-      env(safe-area-inset-bottom, 0px)
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Keep footer link columns clear of the stacked WA/IG FABs (non-home guest pages). */
+body.guest-site:not(.page-home) .site-footer--craftguru {
+  padding-right: calc(
+    var(--cg-float-edge-x, clamp(1rem, 3.5vw, 1.65rem)) +
+      var(--cg-float-fab, 3.75rem) +
+      0.5rem
   );
 }
 
-@media (max-width: 480px) {
-  body.guest-site {
-    padding-bottom: calc(
-      1rem + (var(--cg-float-fab, 3.5rem) * 2) + var(--cg-float-gap, 0.65rem) + 0.35rem +
-        env(safe-area-inset-bottom, 0px)
-    );
-  }
+body.guest-site:not(.page-home) {
+  scroll-padding-bottom: calc(
+    var(--cg-float-edge-y, clamp(1rem, 3.5vw, 1.65rem)) +
+      (var(--cg-float-fab, 3.75rem) * 2) +
+      var(--cg-float-gap, 0.75rem) +
+      env(safe-area-inset-bottom, 0px)
+  );
 }
 
 /* ── Header & navigation ── */

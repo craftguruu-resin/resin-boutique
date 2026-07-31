@@ -2108,7 +2108,7 @@ body.product-page--oos .btn-add-lg {
   margin-top: 2.5rem;
   max-width: none;
   text-align: left;
-  padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 2.25rem;
+  padding: 2.5rem clamp(1rem, 4vw, 2.5rem) 1.25rem;
   background: transparent;
   color: var(--ink);
   border-top: 1px solid rgba(255, 255, 255, 0.35);
@@ -3515,6 +3515,7 @@ body.product-page--oos .btn-add-lg {
 .about-columns {
   display: grid;
   gap: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 @media (min-width: 640px) {
@@ -3872,7 +3873,7 @@ body.product-page--oos .btn-add-lg {
 
 .site-footer {
   text-align: center;
-  padding: 0 1rem 2.5rem;
+  padding: 0 1rem 1.25rem;
   font-size: 0.78rem;
   color: rgba(26, 32, 44, 0.45);
   position: relative;
