@@ -191,7 +191,10 @@
               </div>
               <div class="vs-field" style="margin-top: 0.5rem">
                 <label for="vpfHero">Hero image URL (HTTPS / Cloudinary)</label>
-                <input type="url" id="vpfHero" placeholder="https://res.cloudinary.com/..." />
+                <div class="vpm-opt-url-row">
+                  <input type="url" id="vpfHero" placeholder="https://res.cloudinary.com/..." maxlength="2000" />
+                  <button type="button" class="vs-btn vs-btn--ghost vpm-img-fit-btn" id="vpfHeroFitBtn" title="Show full image (contain) when the hero looks cropped on the storefront">Fit image</button>
+                </div>
               </div>
               <div class="vs-field" style="margin-top: 0.5rem">
                 <label for="vpfBadge">Badge (optional)</label>
@@ -233,6 +236,7 @@
       </div>
     </div>
   </div>
+  <script src="image-fit.js"></script>
   <script src="vendor-shell.js"></script>
   <script src="vendor-photo-frames.js"></script>
 </body>

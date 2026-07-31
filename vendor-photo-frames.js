@@ -345,14 +345,30 @@
     );
   }
 
-  function rowUrl(label, val) {
+  function rowUrl(label, val, fit) {
+    var IF = window.CraftguruImageFit;
+    var fitVal = IF && IF.normalizeImageFit ? IF.normalizeImageFit(fit) : "";
+    var fitBtn =
+      '<button type="button" class="vs-btn vs-btn--ghost vpm-img-fit-btn"' +
+      (fitVal ? ' data-image-fit="' + esc(fitVal) + '"' : "") +
+      ' title="Toggle contain fit when image looks cropped">Fit image</button>';
     return (
       '<label class="vs-muted" style="display:block;font-size:0.78rem;margin-bottom:0.2rem">' +
       esc(label) +
-      '</label><input type="url" class="vpf-opt-url" value="' +
+      '</label><div class="vpm-opt-url-row"><input type="url" class="vpf-opt-url" value="' +
       esc(val) +
-      '" placeholder="https://…" />'
+      '" placeholder="https://…" maxlength="2000" />' +
+      fitBtn +
+      "</div>"
     );
+  }
+
+  function syncRowFitButton(btn) {
+    if (!btn) return;
+    var IF = window.CraftguruImageFit;
+    var fit = btn.getAttribute("data-image-fit") || "";
+    btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(fit) : fit === "contain" ? "Fit: contain ✓" : "Fit image";
+    btn.classList.toggle("vpm-img-fit-btn--on", fit === "contain");
   }
 
   function rowMoneyNum(label, val, cls) {
@@ -714,6 +730,18 @@
     d.querySelector(".vpf-rm-row").addEventListener("click", function () {
       d.remove();
     });
+    var fitBtn = d.querySelector(".vpm-img-fit-btn");
+    if (fitBtn) {
+      syncRowFitButton(fitBtn);
+      fitBtn.addEventListener("click", function () {
+        var IF = window.CraftguruImageFit;
+        var cur = fitBtn.getAttribute("data-image-fit") || "";
+        var next = IF && IF.toggleImageFit ? IF.toggleImageFit(cur) : cur === "contain" ? "" : "contain";
+        if (next) fitBtn.setAttribute("data-image-fit", next);
+        else fitBtn.removeAttribute("data-image-fit");
+        syncRowFitButton(fitBtn);
+      });
+    }
     return d;
   }
 
@@ -730,7 +758,7 @@
           rowMoneyNum("MRP (optional)", o.mrpInr, "vpf-sz-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
-          rowUrl("Image URL (optional)", o.image || "") +
+          rowUrl("Image URL (optional)", o.image || "", o.imageFit) +
           "</div>"
       )
     );
@@ -749,7 +777,7 @@
           rowMoneyNum("MRP (optional)", o.mrpInr, "vpf-qty-mrp") +
           "</div>" +
           '<div style="grid-column:1/-1">' +
-          rowUrl("Image URL (optional)", o.image || "") +
+          rowUrl("Image URL (optional)", o.image || "", o.imageFit) +
           "</div>"
       )
     );
@@ -796,7 +824,7 @@
       '<code class="vpf-color-readout"></code>' +
       "</div></div>" +
       '<div style="grid-column:1/-1">' +
-      rowUrl("Image URL (optional)", o.image || "") +
+      rowUrl("Image URL (optional)", o.image || "", o.imageFit) +
       "</div>";
     var row = wrapRow(inner);
     host.appendChild(row);
@@ -813,48 +841,60 @@
         var labInp = row.querySelector("input.vpf-color-name") || row.querySelector("input.vpf-opt-inp");
         var pick = row.querySelector("input.vpf-color-pick");
         var urlInp = row.querySelector("input.vpf-opt-url");
+        var fitBtn = row.querySelector(".vpm-img-fit-btn");
         var lab = labInp && labInp.value.trim();
         var hex = pick && pick.value.trim();
         var img = urlInp && urlInp.value.trim();
         if (!lab) return;
-        out.push({
+        var rowOut = {
           id: "c" + (idx + 1),
           label: lab.slice(0, 120),
           hex: normalizeHexVendor(hex || "#888888"),
           image: img || "",
-        });
+        };
+        var fitVal = fitBtn && fitBtn.getAttribute("data-image-fit");
+        if (fitVal === "contain" || fitVal === "cover") rowOut.imageFit = fitVal;
+        out.push(rowOut);
       } else if (kind === "size") {
         var labS = row.querySelector("input.vpf-opt-inp");
         var urlS = row.querySelector("input.vpf-opt-url");
+        var fitBtnS = row.querySelector(".vpm-img-fit-btn");
         var prS = row.querySelector("input.vpf-sz-price");
         var mrS = row.querySelector("input.vpf-sz-mrp");
         var lab = labS && labS.value.trim();
         if (!lab) return;
         var pr = prS && prS.value.trim() !== "" ? Number(prS.value) : null;
         var mr = mrS && mrS.value.trim() !== "" ? Number(mrS.value) : null;
-        out.push({
+        var szOut = {
           id: "s" + (idx + 1),
           label: lab.slice(0, 120),
           image: urlS ? urlS.value.trim() : "",
           priceInr: Number.isFinite(pr) && pr >= 0 ? pr : null,
           mrpInr: Number.isFinite(mr) && mr >= 0 ? mr : null,
-        });
+        };
+        var fitSz = fitBtnS && fitBtnS.getAttribute("data-image-fit");
+        if (fitSz === "contain" || fitSz === "cover") szOut.imageFit = fitSz;
+        out.push(szOut);
       } else if (kind === "qty") {
         var labQ = row.querySelector("input.vpf-opt-inp");
         var urlQ = row.querySelector("input.vpf-opt-url");
+        var fitBtnQ = row.querySelector(".vpm-img-fit-btn");
         var prQ = row.querySelector("input.vpf-qty-price");
         var mrQ = row.querySelector("input.vpf-qty-mrp");
         var labq = labQ && labQ.value.trim();
         if (!labq) return;
         var prq = prQ && prQ.value.trim() !== "" ? Number(prQ.value) : null;
         var mrq = mrQ && mrQ.value.trim() !== "" ? Number(mrQ.value) : null;
-        out.push({
+        var qtOut = {
           id: "q" + (idx + 1),
           label: labq.slice(0, 120),
           image: urlQ ? urlQ.value.trim() : "",
           priceInr: Number.isFinite(prq) && prq >= 0 ? prq : null,
           mrpInr: Number.isFinite(mrq) && mrq >= 0 ? mrq : null,
-        });
+        };
+        var fitQt = fitBtnQ && fitBtnQ.getAttribute("data-image-fit");
+        if (fitQt === "contain" || fitQt === "cover") qtOut.imageFit = fitQt;
+        out.push(qtOut);
       }
     });
     return out;
@@ -896,6 +936,18 @@
         addColorRow(s);
       });
     }
+    syncHeroFitButton(opt.heroImageFit);
+  }
+
+  function syncHeroFitButton(fit) {
+    var btn = document.getElementById("vpfHeroFitBtn");
+    if (!btn) return;
+    var IF = window.CraftguruImageFit;
+    var f = IF && IF.normalizeImageFit ? IF.normalizeImageFit(fit) : "";
+    if (f) btn.setAttribute("data-image-fit", f);
+    else btn.removeAttribute("data-image-fit");
+    btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(f) : f === "contain" ? "Fit: contain ✓" : "Fit image";
+    btn.classList.toggle("vpm-img-fit-btn--on", f === "contain");
   }
 
   function readOptionsFromForm() {
@@ -938,6 +990,11 @@
         note: sn ? sn.value.trim().slice(0, 500) : "",
       },
     };
+    var heroFitBtn = document.getElementById("vpfHeroFitBtn");
+    if (heroFitBtn) {
+      var hf = heroFitBtn.getAttribute("data-image-fit");
+      if (hf === "contain" || hf === "cover") o.heroImageFit = hf;
+    }
     return o;
   }
 
@@ -957,6 +1014,7 @@
     document.getElementById("vpfColorsBlock").innerHTML = "";
     renderOptionBlocks();
     setVendorFormCategories("", "");
+    syncHeroFitButton("");
     var sq0 = document.getElementById("vpfStockQty");
     var sn0 = document.getElementById("vpfStockNote");
     if (sq0) sq0.value = "";
@@ -1163,6 +1221,17 @@
       var el = document.getElementById(id);
       if (el) el.addEventListener("change", renderOptionBlocks);
     });
+    var heroFitBtn = document.getElementById("vpfHeroFitBtn");
+    if (heroFitBtn) {
+      heroFitBtn.addEventListener("click", function () {
+        var IF = window.CraftguruImageFit;
+        var cur = heroFitBtn.getAttribute("data-image-fit") || "";
+        var next = IF && IF.toggleImageFit ? IF.toggleImageFit(cur) : cur === "contain" ? "" : "contain";
+        if (next) heroFitBtn.setAttribute("data-image-fit", next);
+        else heroFitBtn.removeAttribute("data-image-fit");
+        syncHeroFitButton(next);
+      });
+    }
 
     document.querySelectorAll(".vpf-tab").forEach(function (btn) {
       btn.addEventListener("click", function () {

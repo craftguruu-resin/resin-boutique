@@ -128,6 +128,13 @@ function mergeOptionPriceRows(existingList, patchList) {
     }
     if (patch.image != null) prev.image = String(patch.image || "").trim().slice(0, 2000);
     if (patch.hex != null) prev.hex = String(patch.hex || "").trim().slice(0, 20);
+    if (Object.prototype.hasOwnProperty.call(patch, "imageFit")) {
+      var fit = String(patch.imageFit == null ? "" : patch.imageFit)
+        .trim()
+        .toLowerCase();
+      if (fit === "contain" || fit === "cover") prev.imageFit = fit;
+      else delete prev.imageFit;
+    }
     byId[id] = prev;
   });
   var out = (existingList || []).map(function (row) {

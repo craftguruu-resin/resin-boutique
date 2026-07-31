@@ -66,6 +66,75 @@
     renderEditor();
   }
 
+  function getImageFitApi() {
+    return window.CraftguruImageFit || null;
+  }
+
+  function fitButtonHtml(kind, id, fit) {
+    var IF = getImageFitApi();
+    var fitVal = IF && IF.normalizeImageFit ? IF.normalizeImageFit(fit) : "";
+    var label = IF && IF.fitButtonLabel ? IF.fitButtonLabel(fitVal) : fitVal === "contain" ? "Fit: contain ✓" : "Fit image";
+    return (
+      "<button type='button' class='vs-btn vs-btn--ghost vpm-img-fit-btn vio-img-fit-btn" +
+      (fitVal === "contain" ? " vpm-img-fit-btn--on" : "") +
+      "' data-vio-fit-kind='" +
+      esc(kind) +
+      "' data-vio-fit-id='" +
+      esc(id) +
+      "'" +
+      (fitVal ? " data-image-fit='" + esc(fitVal) + "'" : "") +
+      " title='Show full image (contain) when cropped'>" +
+      esc(label) +
+      "</button>"
+    );
+  }
+
+  function syncFitButton(btn) {
+    if (!btn) return;
+    var IF = getImageFitApi();
+    var fit = btn.getAttribute("data-image-fit") || "";
+    btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(fit) : fit === "contain" ? "Fit: contain ✓" : "Fit image";
+    btn.classList.toggle("vpm-img-fit-btn--on", fit === "contain");
+  }
+
+  function wireImageFitButtonsOnce() {
+    var host = document.getElementById("vioEditor");
+    if (!host || wireImageFitButtonsOnce.done) return;
+    wireImageFitButtonsOnce.done = true;
+    host.addEventListener("click", function (e) {
+      var btn = e.target && e.target.closest && e.target.closest(".vio-img-fit-btn");
+      if (!btn) return;
+      var IF = getImageFitApi();
+      var cur = btn.getAttribute("data-image-fit") || "";
+      var next = IF && IF.toggleImageFit ? IF.toggleImageFit(cur) : cur === "contain" ? "" : "contain";
+      if (next) btn.setAttribute("data-image-fit", next);
+      else btn.removeAttribute("data-image-fit");
+      syncFitButton(btn);
+      var cardImg =
+        btn.closest(".vio-color-card__head") &&
+        btn.closest(".vio-color-card__head").querySelector(".vio-color-card__img");
+      if (cardImg && IF && IF.applyImageFit) IF.applyImageFit(cardImg, next);
+      var sizeImg =
+        btn.closest(".vio-size-card__media") &&
+        btn.closest(".vio-size-card__media").querySelector(".vio-size-card__img");
+      if (sizeImg && IF && IF.applyImageFit) IF.applyImageFit(sizeImg, next);
+    });
+  }
+
+  function readImageFitPatches() {
+    var colors = [];
+    var sizes = [];
+    document.querySelectorAll(".vio-img-fit-btn").forEach(function (btn) {
+      var kind = btn.getAttribute("data-vio-fit-kind");
+      var id = btn.getAttribute("data-vio-fit-id");
+      if (!id) return;
+      var patch = { id: id, imageFit: btn.getAttribute("data-image-fit") || "" };
+      if (kind === "size") sizes.push(patch);
+      else colors.push(patch);
+    });
+    return { colors: colors, sizes: sizes };
+  }
+
   function variantRow(opt, sel) {
     var key = variantSlot(sel);
     var vi = (opt.vendorInventory && opt.vendorInventory.variants) || {};
@@ -96,9 +165,16 @@
 
   function colorCard(opt, color, sizes, packs) {
     var img = resolveMediaUrl(color.image || "");
+    var IF = getImageFitApi();
+    var fitVal = IF && IF.normalizeImageFit ? IF.normalizeImageFit(color.imageFit) : "";
     var imgHtml = img
-      ? "<img class='vio-color-card__img' src='" + esc(img) + "' alt='' width='72' height='72' loading='lazy' />"
+      ? "<img class='vio-color-card__img' src='" +
+        esc(img) +
+        "' alt='' width='72' height='72' loading='lazy'" +
+        (fitVal ? " data-image-fit='" + esc(fitVal) + "'" : "") +
+        " />"
       : "<span class='vio-color-card__swatch' style='background:" + esc(color.hex || "#e2e8f0") + "'></span>";
+    var fitBtn = color.id != null && String(color.id) !== "" ? fitButtonHtml("color", color.id, color.imageFit) : "";
     var rows = "";
     sizes.forEach(function (sz) {
       if (packs.length) {
@@ -122,7 +198,9 @@
       esc(color.label || color.id) +
       "</strong><br/><span class='vs-muted'>" +
       esc(color.id) +
-      "</span></div></div>" +
+      "</span>" +
+      (fitBtn ? "<div class='vio-color-card__fit'>" + fitBtn + "</div>" : "") +
+      "</div></div>" +
       "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Size / pack</th><th>Sell ₹</th><th>Cost ₹</th><th>Stock</th></tr></thead><tbody>" +
       rows +
       "</tbody></table></div></div>"
@@ -130,6 +208,18 @@
   }
 
   function sizeCard(opt, size, colors, packs) {
+    var img = resolveMediaUrl(size.image || "");
+    var IF = getImageFitApi();
+    var sizeFit = IF && IF.normalizeImageFit ? IF.normalizeImageFit(size.imageFit) : "";
+    var imgBlock = img
+      ? "<div class='vio-size-card__media'><img class='vio-size-card__img' src='" +
+        esc(img) +
+        "' alt='' width='72' height='72' loading='lazy'" +
+        (sizeFit ? " data-image-fit='" + esc(sizeFit) + "'" : "") +
+        " />" +
+        fitButtonHtml("size", size.id, size.imageFit) +
+        "</div>"
+      : "";
     var rows = "";
     colors.forEach(function (cl) {
       if (packs.length) {
@@ -147,7 +237,9 @@
       }
     });
     return (
-      "<div class='vio-size-card vs-card'><h3 class='vs-login__title' style='margin-top:0'>" +
+      "<div class='vio-size-card vs-card'>" +
+      imgBlock +
+      "<h3 class='vs-login__title' style='margin-top:0'>" +
       esc(size.label || size.id) +
       "</h3>" +
       "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Colour / pack</th><th>Sell ₹</th><th>Cost ₹</th><th>Stock</th></tr></thead><tbody>" +
@@ -213,6 +305,7 @@
     }
     host.innerHTML = html;
     renderPackSection(opt);
+    wireImageFitButtonsOnce();
   }
 
   function readVariantsFromDom() {
@@ -302,6 +395,9 @@
     var body = { variants: readVariantsFromDom() };
     var packs = readPackPatches();
     if (packs.length) body.qtyOptions = packs;
+    var fitPatches = readImageFitPatches();
+    if (fitPatches.colors.length) body.colors = fitPatches.colors;
+    if (fitPatches.sizes.length) body.sizes = fitPatches.sizes;
     var btn = document.getElementById("vioSaveBtn");
     if (btn) btn.disabled = true;
     return vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(productId) + "/variants"), {

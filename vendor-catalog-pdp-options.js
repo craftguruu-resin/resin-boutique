@@ -103,6 +103,7 @@
     var fit = btn.getAttribute("data-image-fit") || "";
     btn.textContent = IF && IF.fitButtonLabel ? IF.fitButtonLabel(fit) : fit === "contain" ? "Fit: contain ✓" : "Fit image";
     btn.classList.toggle("vpm-img-fit-btn--on", fit === "contain");
+  }
 
   function addSizeRow(o) {
     var host = document.getElementById("vpmSizeRows");
@@ -240,7 +241,7 @@
       label: label.slice(0, 120),
       hex: hex,
       image: cover,
-      imageFit: meta.imageFit || src.heroImageFit || undefined,
+      imageFit: meta.imageFit || opt.heroImageFit || undefined,
     });
 
     opt.useColor = true;
