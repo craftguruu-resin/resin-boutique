@@ -581,27 +581,8 @@ button.rm-pdp__bulk {
     gap: 1rem;
   }
 
-  .rm-pdp--modern .rm-pdp__gallery {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .rm-pdp--modern .rm-pdp__thumbs-rail {
-    flex-direction: row;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    gap: 0.45rem;
-    padding-bottom: 0.35rem;
-    scroll-snap-type: x proximity;
-  }
-
-  .rm-pdp--modern .rm-pdp__thumb {
-    flex: 0 0 auto;
-    scroll-snap-align: center;
-  }
-
-  .rm-pdp--modern .rm-pdp__hero-wrap {
+  /* Multi-image mobile stack: layout-responsive.css (≤899px) */
+  .rm-pdp--modern .rm-pdp-gallery--shell:not(:has(.rm-pdp__thumb + .rm-pdp__thumb)) .rm-pdp__hero-wrap {
     min-height: min(62vw, 320px);
   }
 

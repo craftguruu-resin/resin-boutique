@@ -14,8 +14,30 @@ function getConfig() {
   return { token: token, baseUrl: base.replace(/\/+$/, "") };
 }
 
+function isStagingBase(baseUrl) {
+  return /staging-express\.delhivery\.com/i.test(String(baseUrl || ""));
+}
+
+/**
+ * Public readiness probe (no secrets). Mirrors describeRazorpayConfig in server/index.js.
+ */
+function describeDelhiveryConfig() {
+  var cfg = getConfig();
+  var staging = isStagingBase(cfg.baseUrl);
+  var tokenSet = Boolean(cfg.token);
+  var blockedInProduction =
+    String(process.env.NODE_ENV || "").toLowerCase() === "production" && staging;
+  return {
+    configured: tokenSet && !blockedInProduction,
+    tokenSet: tokenSet,
+    staging: staging,
+    baseUrl: cfg.baseUrl,
+    blockedInProduction: blockedInProduction,
+  };
+}
+
 function isConfigured() {
-  return !!getConfig().token;
+  return describeDelhiveryConfig().configured;
 }
 
 /**
@@ -23,10 +45,20 @@ function isConfigured() {
  * @returns {Promise<object>}
  */
 function fetchTracking(waybill) {
-  var cfg = getConfig();
-  if (!cfg.token) {
-    return Promise.reject(new Error("DELHIVERY_API_TOKEN is not configured"));
+  var st = describeDelhiveryConfig();
+  if (st.blockedInProduction) {
+    return Promise.reject(
+      new Error(
+        "Delhivery staging API is blocked in production. Unset DELHIVERY_STAGING, use DELHIVERY_API_BASE=https://track.delhivery.com, and set your live API token."
+      )
+    );
   }
+  if (!st.tokenSet) {
+    return Promise.reject(
+      new Error("Delhivery is not configured. Set DELHIVERY_API_TOKEN in server environment (see server/.env.example).")
+    );
+  }
+  var cfg = getConfig();
   var awb = String(waybill || "").trim();
   if (!awb) return Promise.reject(new Error("Waybill required"));
 
@@ -53,7 +85,17 @@ function fetchTracking(waybill) {
           }
         }
         if (!res.ok) {
-          var msg = (body && (body.error || body.message)) || res.statusText || "Delhivery API error";
+          if (res.status === 401 || res.status === 403) {
+            throw new Error(
+              "Invalid Delhivery API token. Ensure DELHIVERY_API_TOKEN matches the environment (" +
+                (st.staging ? "staging" : "production") +
+                ") and Authorization header format Token <key>."
+            );
+          }
+          var msg =
+            (body && (body.error || body.message || body.Error)) ||
+            res.statusText ||
+            "Delhivery API error (" + res.status + ")";
           throw new Error(String(msg));
         }
         return body;
@@ -159,6 +201,7 @@ module.exports = {
   id: "delhivery",
   displayName: "Delhivery",
   isConfigured: isConfigured,
+  describeDelhiveryConfig: describeDelhiveryConfig,
   fetchTracking: fetchTracking,
   validateAwb: validateAwb,
   parseDelhiveryPayload: parseDelhiveryPayload,

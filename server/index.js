@@ -84,6 +84,7 @@ var httpHardening = require("./http-hardening.js");
 var orderPricing = require("./order-pricing.js");
 var shipmentSync = require("./shipment/shipment-sync.js");
 var shipmentDb = require("./shipment/shipment-db.js");
+var delhiveryCourier = require("./shipment/courier-delhivery.js");
 
 /** Cloud Run sets PORT=8080; local default 8080 (use PORT=3847 in server/.env for legacy local). */
 var PORT = Number(process.env.PORT) || 8080;
@@ -122,6 +123,10 @@ function describeRazorpayConfig() {
     blockedInProduction: blockedInProduction,
     keyIdPrefix: id ? id.slice(0, 12) + "…" : "",
   };
+}
+
+function describeDelhiveryConfig() {
+  return delhiveryCourier.describeDelhiveryConfig();
 }
 
 function getRazorpayClient() {
@@ -774,6 +779,8 @@ app.get("/api/health", function (_req, res) {
       whatsappConfigured: hasToken,
       razorpay: describeRazorpayConfig(),
       razorpayConfigured: describeRazorpayConfig().configured,
+      delhivery: describeDelhiveryConfig(),
+      delhiveryConfigured: describeDelhiveryConfig().configured,
       emailConfigured: Boolean(createMailTransport()),
       googleSignInConfigured: guestGoogleAuth.googleSignInConfigured(),
       database: poolMod.isEnabled()
@@ -888,6 +895,27 @@ app.get("/api/razorpay-status", function (_req, res) {
       : st.blockedInProduction
         ? "Test Razorpay keys are blocked in production. Set RAZORPAY_KEY_ID=rzp_live_… and RAZORPAY_KEY_SECRET on the server."
         : "Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server environment (see server/.env.example).",
+  });
+});
+
+/** Public: Delhivery readiness (no secrets). Vendor AWB validation + live tracking use this. */
+app.get("/api/delhivery-status", function (_req, res) {
+  var st = describeDelhiveryConfig();
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ok: true,
+    configured: st.configured,
+    tokenSet: st.tokenSet,
+    staging: st.staging,
+    baseUrl: st.baseUrl,
+    blockedInProduction: st.blockedInProduction,
+    hint: st.configured
+      ? "Delhivery tracking is ready (" + (st.staging ? "staging" : "production") + ")."
+      : st.blockedInProduction
+        ? "Delhivery staging is blocked in production. Unset DELHIVERY_STAGING, use track.delhivery.com, and set your live DELHIVERY_API_TOKEN."
+        : st.tokenSet
+          ? "Delhivery token is set but not usable in this environment."
+          : "Set DELHIVERY_API_TOKEN in server environment (see server/.env.example). AWB saves work without it; live validation and sync require the token.",
   });
 });
 
@@ -1918,7 +1946,9 @@ app.post("/api/vendor/order/:orderId/shipment/sync", function (req, res) {
     }
     shipmentSync.syncOrderShipment(oid, { skipCache: true }, function (e2, out) {
       if (e2) {
-        return res.status(400).json({ ok: false, error: String(e2.message || e2) });
+        var msg = String(e2.message || e2);
+        var code = msg.indexOf("not configured") >= 0 || msg.indexOf("blocked in production") >= 0 ? 503 : 400;
+        return res.status(code).json({ ok: false, error: msg });
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({
@@ -3990,12 +4020,30 @@ function onServerListen() {
     );
   }
   if (poolMod.isEnabled()) {
-    shipmentSync.startBackgroundSyncTimer();
-    console.log(
-      "Shipment sync: active AWBs refresh every " +
-        (Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30) +
-        " min (or run: node scripts/sync-shipments.js)"
-    );
+    var dh = describeDelhiveryConfig();
+    var syncTimer = shipmentSync.startBackgroundSyncTimer();
+    if (dh.configured && syncTimer) {
+      console.log(
+        "Delhivery: configured (" +
+          (dh.staging ? "staging · " + dh.baseUrl : "production · track.delhivery.com") +
+          "). Shipment sync every " +
+          (Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30) +
+          " min (or: node scripts/sync-shipments.js)"
+      );
+    } else if (dh.blockedInProduction) {
+      console.warn(
+        "[delhivery] Staging mode blocked in production — unset DELHIVERY_STAGING and use a live token on track.delhivery.com."
+      );
+    } else if (dh.tokenSet) {
+      console.warn("[delhivery] Token set but tracking disabled in this environment.");
+    } else {
+      console.warn(
+        "[delhivery] Not configured — AWB saves work locally; set DELHIVERY_API_TOKEN for live validation and sync (see server/.env.example)."
+      );
+    }
+    if (!syncTimer && dh.configured) {
+      console.log("Shipment sync: disabled via SHIPMENT_SYNC_DISABLED=1");
+    }
   }
 }
 

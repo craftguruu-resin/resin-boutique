@@ -1441,12 +1441,20 @@ button.rm-pdp__bulk.bulk-buy-btn--pdp {
 .product-card__media {
   width: 100%;
   height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.45rem, 2.5vw, 0.75rem);
+  box-sizing: border-box;
 }
 
 .product-card__media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
   display: block;
 }
 
@@ -2634,15 +2642,7 @@ body.product-page--oos .btn-add-lg {
   min-width: 0;
 }
 
-@media (max-width: 640px) {
-  .product-catalog-gallery--multi {
-    grid-template-columns: minmax(0, 1fr) 64px;
-  }
-
-  .product-catalog-gallery__thumb-col {
-    max-height: min(320px, 45vh);
-  }
-}
+/* Mobile multi-image gallery stack lives in layout-responsive.css (≤899px) */
 
 .qty-dock--under-photo {
   width: 100%;
@@ -6928,8 +6928,8 @@ a.home-auth-btn {
 }
 
 @media (max-width: 959px) {
-  /* Categories first on small screens (same flow as RM shop layout DOM order) */
-  .page-home .home-category-rail#categories {
+  /* Categories first on small screens when inline strip is shown (900–959px tablet band) */
+  body.page-home:not(.cg-rail-drawer-enabled) .home-category-rail#categories {
     order: -1;
     width: 100%;
   }
@@ -7596,6 +7596,11 @@ a.home-category-rail__title-link:focus-visible {
   overflow: hidden;
   border-radius: 0;
   background: linear-gradient(165deg, #eef2f9 0%, #e2e8f2 55%, #d5dee9 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(0.45rem, 2.5vw, 0.75rem);
+  box-sizing: border-box;
 }
 
 .featured-cat-card__media--empty {
@@ -7605,7 +7610,10 @@ a.home-category-rail__title-link:focus-visible {
 .featured-cat-card__media img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  object-position: center;
   display: block;
   transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }

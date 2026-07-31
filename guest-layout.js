@@ -606,33 +606,13 @@
       delete sidebar._cgRailAnchor;
     }
 
-    /** Home keeps an inline horizontal category strip on mobile — not a slide-out drawer. */
-    function releaseHomeCategoryRailDrawer() {
-      if (!document.body.classList.contains("page-home")) return;
-      var home = document.getElementById("categories");
-      if (!home) return;
-      restorePanelFromBody(home);
-      home.classList.remove("cg-rail-drawer-panel");
-      delete home.dataset.cgRailDrawer;
-      var layout = home.closest(".home-landing-layout");
-      if (layout) {
-        layout.querySelectorAll(".cg-rail-toggle").forEach(function (btn) {
-          if (btn.getAttribute("aria-controls") === home.id) btn.remove();
-        });
-      }
-    }
-
     function collectSidebars() {
       var items = [];
       var home = document.getElementById("categories");
-      if (
-        home &&
-        home.classList.contains("home-category-rail") &&
-        !document.body.classList.contains("page-home")
-      ) {
+      if (home && home.classList.contains("home-category-rail")) {
         items.push({
           el: home,
-          label: "Categories",
+          label: "Shop by category",
           host: home.closest(".home-landing-layout"),
         });
       }
@@ -697,8 +677,15 @@
       });
 
       sidebar.addEventListener("click", function (ev) {
-        var link = ev.target && ev.target.closest && ev.target.closest("a.rm-nav-tree__link, a.category-pill, .category-pill--rail");
-        if (link && mq.matches) closeAllDrawers();
+        var link =
+          ev.target &&
+          ev.target.closest &&
+          ev.target.closest("a.rm-nav-tree__link, a.category-pill, a.category-pill--rail");
+        if (!link || !mq.matches) return;
+        var dest = String(link.getAttribute("href") || "").trim();
+        /* Restoring the panel during click can cancel first-tap navigation on mobile. */
+        if (dest && dest !== "#" && dest.charAt(0) !== "#") return;
+        closeAllDrawers();
       });
     }
 
@@ -716,7 +703,6 @@
         document.querySelectorAll(".cg-rail-drawer-panel").forEach(restorePanelFromBody);
         return;
       }
-      releaseHomeCategoryRailDrawer();
       ensureBackdrop();
       removeOrphanToggles();
       collectSidebars().forEach(wireSidebar);

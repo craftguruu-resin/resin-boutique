@@ -2,6 +2,7 @@
 
 var shipmentDb = require("./shipment-db.js");
 var courierRegistry = require("./courier-registry.js");
+var delhiveryCourier = require("./courier-delhivery.js");
 var shipmentStatus = require("./shipment-status.js");
 var ordersDb = require("../orders-db.js");
 var shipmentNotifications = require("./shipment-notifications.js");
@@ -191,14 +192,23 @@ function saveAdminShipment(orderId, body, cb) {
     }
 
     if (!validateWithCourier || !courierRegistry.getCourier(courierName).isConfigured()) {
+      var delhiverySt = delhiveryCourier.describeDelhiveryConfig();
+      var skipMsg = "Shipment saved (courier validation skipped).";
+      if (validateWithCourier && delhiverySt.blockedInProduction) {
+        skipMsg =
+          "Shipment saved without live validation — Delhivery staging is blocked in production. Use a production token on track.delhivery.com.";
+      } else if (validateWithCourier && !delhiverySt.tokenSet) {
+        skipMsg =
+          "Shipment saved without live validation. Set DELHIVERY_API_TOKEN in server environment to validate AWB with Delhivery automatically.";
+      } else if (!courierRegistry.getCourier(courierName).isConfigured()) {
+        skipMsg = "Shipment saved. Set DELHIVERY_API_TOKEN to validate AWB automatically.";
+      }
       return shipmentDb.upsertShipment(orderId, manual, function (e2, shipment) {
         if (e2) return cb(e2);
         cb(null, {
           shipment: shipment,
           courierValidated: false,
-          message: courierRegistry.getCourier(courierName).isConfigured()
-            ? "Shipment saved (courier validation skipped)."
-            : "Shipment saved. Set DELHIVERY_API_TOKEN to validate AWB automatically.",
+          message: skipMsg,
         });
       });
     }
@@ -269,6 +279,7 @@ function runBackgroundSync(cb) {
 
 function startBackgroundSyncTimer() {
   if (String(process.env.SHIPMENT_SYNC_DISABLED || "").toLowerCase() === "1") return null;
+  if (!delhiveryCourier.describeDelhiveryConfig().configured) return null;
   var intervalMin = Math.max(10, Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30);
   var ms = intervalMin * 60 * 1000;
   var t = setInterval(function () {
