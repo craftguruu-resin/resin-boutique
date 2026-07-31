@@ -10,7 +10,7 @@
   <title>Corporate Gifting — Craft guru</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="catalog-filters.css" />
   <link rel="stylesheet" href="motion.css" />
@@ -21,6 +21,7 @@
   <link rel="stylesheet" href="hero-exact-shared.css" />
   <link rel="stylesheet" href="corporate-gifting-hero-exact.css" />
   <link rel="stylesheet" href="home-featured-collections.css" />
+  <link rel="stylesheet" href="premium-product-listing.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <link rel="stylesheet" href="layout-responsive.css" />
 </head>
@@ -140,25 +141,42 @@
           </div>
         </div>
         <div id="rg-shop">
-        <div class="cg-filter-panel cg-filter-panel--light" id="rgToolbar" aria-label="Filter and sort corporate gifting">
-          <div class="cg-filter-panel__glow" aria-hidden="true"></div>
-          <div class="cg-filter-panel__inner">
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="rgFilterView">Filter</label>
-              <select id="rgFilterView" class="category-toolbar__select">
-                <option value="all">All corporate gifting</option>
+        <div class="plp-shell" id="rgPlpShell">
+        <div class="plp-toolbar" aria-label="Filter and sort corporate gifting">
+          <div class="plp-toolbar__left">
+            <button type="button" class="plp-toolbar__btn" id="rgFiltersToggle" aria-expanded="false" aria-controls="rgFiltersPanel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Filters
+            </button>
+            <div class="plp-toolbar__select-wrap">
+              <select id="rgFilterView" class="plp-toolbar__select" aria-label="Filter by type">
+                <option value="all">All types</option>
                 <option value="photo">With product photo</option>
               </select>
             </div>
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="rgSortSelect">Sort</label>
-              <select id="rgSortSelect" class="category-toolbar__select">
+          </div>
+          <div class="plp-toolbar__right">
+            <div class="plp-toolbar__select-wrap">
+              <span class="plp-toolbar__select-label">Sort by:</span>
+              <select id="rgSortSelect" class="plp-toolbar__select" aria-label="Sort products">
                 <option value="name-asc">Name · A → Z</option>
                 <option value="name-desc">Name · Z → A</option>
                 <option value="price-asc">From price · low → high</option>
                 <option value="price-desc">From price · high → low</option>
               </select>
             </div>
+            <div class="plp-toolbar__view-toggle" role="group" aria-label="Grid or list view">
+              <button type="button" class="plp-toolbar__view-btn is-active" data-plp-view="grid" aria-pressed="true" aria-label="Grid view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button type="button" class="plp-toolbar__view-btn" data-plp-view="list" aria-pressed="false" aria-label="List view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="plp-filters-panel cg-filter-panel cg-filter-panel--light" id="rgFiltersPanel" hidden aria-label="Advanced filters">
+          <div class="cg-filter-panel__inner">
             <div class="category-toolbar__group cg-filter-panel__group--range">
               <div class="cg-dual-range" id="rgPriceDualWrap">
                 <span class="cg-dual-range__label">Price range (₹)</span>
@@ -175,7 +193,8 @@
             <button type="button" class="category-toolbar__clear" id="rgFilterClear">Clear filters</button>
           </div>
         </div>
-        <div class="featured-collections-grid" id="rgGrid"></div>
+        <div class="plp-grid featured-collections-grid" id="rgGrid"></div>
+        </div>
         </div>
       </div>
     </section>
@@ -293,6 +312,7 @@
   <script src="global-find.js"></script>
   <script src="catalog-filter-ui.js"></script>
   <script src="premium-category-cards.js"></script>
+  <script src="premium-product-listing.js"></script>
   <script src="return-gifts.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

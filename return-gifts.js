@@ -9,6 +9,21 @@
   var rgControlsWired = false;
   var rgDualApi = null;
   var rgDualWired = false;
+  var PLP = window.CraftguruProductListing;
+  var rgPlpMounted = false;
+
+  function mountRgPlpOnce() {
+    if (rgPlpMounted || !PLP) return;
+    var grid = document.getElementById("rgGrid");
+    if (!grid) return;
+    rgPlpMounted = true;
+    PLP.mountListingShell({
+      gridEl: grid,
+      storageKey: "plp-view-return-gifts",
+      filtersToggleId: "rgFiltersToggle",
+      filtersPanelId: "rgFiltersPanel",
+    });
+  }
 
   function esc(s) {
     var el = document.createElement("div");
@@ -163,9 +178,8 @@
 
   function wireControlsOnce() {
     if (rgControlsWired) return;
-    var toolbar = document.getElementById("rgToolbar");
     var sel = sortSelect();
-    if (!toolbar || !sel) return;
+    if (!sel) return;
     rgControlsWired = true;
     var params = new URLSearchParams(window.location.search);
     sel.value = allowedSort(params.get("sort") || DEFAULT_SORT);
@@ -191,7 +205,7 @@
     if (window.CraftguruCatalogFilterUi && !rgDualWired) {
       rgDualWired = true;
       rgDualApi = window.CraftguruCatalogFilterUi.wireDualPriceRange({
-        rootId: "rgToolbar",
+        rootId: "rgFiltersPanel",
         rangeMinId: "rgPriceRangeLo",
         rangeMaxId: "rgPriceRangeHi",
         inputMinId: "rgPriceMin",
@@ -246,9 +260,10 @@
   function paint() {
     wireReturnGiftsSearchOnce();
     wireControlsOnce();
+    mountRgPlpOnce();
     var grid = document.getElementById("rgGrid");
     if (!grid) return;
-    grid.className = "featured-collections-grid";
+    grid.className = "plp-grid featured-collections-grid";
     var base = collectReturnGifts();
     var items = sortItems(filterByPriceAndView(filterBySearch(base)));
     grid.innerHTML = "";
@@ -262,60 +277,47 @@
       var minP = minPrice(p);
       var pHref = "product.html?id=" + encodeURIComponent(p.id);
       var priceLabel = fromPriceLabel(p);
-      var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
+      var buildCard = PLP && PLP.buildProductCard;
       var card;
       if (buildCard) {
         card = buildCard({
           href: pHref,
-          title: p.name,
-          subtitle: priceLabel,
-          ctaText: "View piece →",
+          ctaHref: pHref,
+          name: p.name,
+          productId: p.id,
+          productName: p.name,
+          productUrl: productPageUrl(p.id),
+          priceLabel: priceLabel,
+          minPrice: minP > 0 ? String(minP) : "",
           imgSrc: p.image ? imgSrc(p.image) : "",
           imgFit: D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "",
-          hasPreview: !!(p.image && String(p.image).trim()),
-          minPrice: minP > 0 ? String(minP) : "",
-          searchText: D.productSearchHaystack
-            ? D.productSearchHaystack(p)
-            : ((p.name || "") + " " + (p.id || "")).toLowerCase(),
+          wishlistKind: "catalog",
+          ctaText: "View options →",
           stagger: i,
-          ariaLabel: "View " + p.name,
         });
+        if (D.productSearchHaystack) {
+          card.setAttribute("data-search-text", D.productSearchHaystack(p));
+        }
       } else {
         card = document.createElement("article");
-        card.className = "featured-collection-card is-inview";
+        card.className = "plp-card is-inview";
         card.style.setProperty("--stagger", String(i));
         card.innerHTML =
-          '<a class="featured-collection-card__hit" href="' +
+          '<a class="plp-card__hit" href="' +
           escAttr(pHref) +
-          '" aria-label="View ' +
-          escAttr(p.name) +
-          '">' +
-          '<div class="featured-collection-card__visual">' +
-          '<div class="featured-collection-card__media">' +
-          (p.image
-            ? '<img src="' + escAttr(imgSrc(p.image)) + '" alt="" loading="lazy" decoding="async" />'
-            : '<div class="featured-collection-card__media-empty" aria-hidden="true"></div>') +
-          "</div>" +
-          '<div class="featured-collection-card__panel">' +
-          "<h3 class=\"featured-collection-card__name\">" +
+          '"></a><div class="plp-card__body"><h3 class="plp-card__name">' +
           esc(p.name) +
-          "</h3>" +
-          (priceLabel ? '<p class="featured-collection-card__count">' + esc(priceLabel) + "</p>" : "") +
-          '<span class="featured-collection-card__cta">View piece →</span>' +
-          "</div></div></a>";
-        if (minP > 0) card.setAttribute("data-min-price", String(minP));
+          '</h3><p class="plp-card__price">' +
+          esc(priceLabel) +
+          '</p></div><div class="plp-card__actions"><a class="plp-card__cta" href="' +
+          escAttr(pHref) +
+          '">View options →</a>' +
+          bulkBuyCardHtml(p) +
+          "</div>";
       }
       grid.appendChild(card);
-      var cardImg = card.querySelector(".featured-collection-card__media img");
-      if (cardImg) {
-        var cardFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
-        if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
-          window.CraftguruImageFit.applyImageFit(cardImg, cardFit);
-        } else if (cardFit === "contain") {
-          cardImg.setAttribute("data-image-fit", "contain");
-        }
-      }
     });
+    if (PLP && PLP.wireAllCardWishlists) PLP.wireAllCardWishlists(grid);
     syncReturnGiftsUrl();
   }
 

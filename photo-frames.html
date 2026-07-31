@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="raw-material-pages.css" />
+  <link rel="stylesheet" href="premium-product-listing.css" />
   <link rel="stylesheet" href="hero-exact-shared.css" />
   <link rel="stylesheet" href="photo-frames-hero-exact.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
@@ -218,7 +219,44 @@
                 <p class="rm-best-sellers__sub" id="rmCatHubSub">Open a category to see its photo frame products.</p>
               </div>
               <div class="featured-collections-grid" id="rmCategoryHub"></div>
-              <div class="rm-grid-cards" id="rmGrid"></div>
+              <div class="plp-shell" id="rmPlpShell">
+                <header class="plp-header" id="rmPlpHeader">
+                  <nav class="plp-breadcrumb" aria-label="Breadcrumb">
+                    <a href="index.html">Home</a><span class="plp-breadcrumb__sep" aria-hidden="true">&gt;</span>
+                    <a href="photo-frames.html">Photo frames</a><span class="plp-breadcrumb__sep" aria-hidden="true">&gt;</span>
+                    <span id="rmPlpTitle">Photo frames</span>
+                  </nav>
+                  <div class="plp-title-row">
+                    <h2 class="plp-title" id="rmPlpHeading">Photo frames</h2>
+                    <span class="plp-title__spark" aria-hidden="true">✦</span>
+                  </div>
+                  <p class="plp-desc" id="rmPlpDesc"></p>
+                </header>
+                <div class="plp-toolbar" aria-label="Sort photo frames">
+                  <div class="plp-toolbar__left">
+                    <div class="plp-toolbar__select-wrap">
+                      <span class="plp-toolbar__select-label">Sort by:</span>
+                      <select id="rmPlpSortSelect" class="plp-toolbar__select" aria-label="Sort photo frames">
+                        <option value="name-asc">Name · A → Z</option>
+                        <option value="name-desc">Name · Z → A</option>
+                        <option value="price-asc">Price · low → high</option>
+                        <option value="price-desc">Price · high → low</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="plp-toolbar__right">
+                    <div class="plp-toolbar__view-toggle" role="group" aria-label="Grid or list view">
+                      <button type="button" class="plp-toolbar__view-btn is-active" data-plp-view="grid" aria-pressed="true" aria-label="Grid view">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+                      </button>
+                      <button type="button" class="plp-toolbar__view-btn" data-plp-view="list" aria-pressed="false" aria-label="List view">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <div class="plp-grid rm-grid-cards" id="rmGrid"></div>
+              </div>
             </section>
           </div>
         </div>
@@ -329,6 +367,7 @@
   <script src="header.js"></script>
   <script src="global-find.js"></script>
   <script src="premium-category-cards.js"></script>
+  <script src="premium-product-listing.js"></script>
   <script src="photo-frame-shop-nav.js"></script>
   <script src="photo-frame-shop.js"></script>
   <script>

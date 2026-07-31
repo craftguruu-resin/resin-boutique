@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="category-rail-icons.css" />
   <link rel="stylesheet" href="category-ethereal.css" />
+  <link rel="stylesheet" href="premium-product-listing.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
 </head>
 <body class="subpage page-category">
@@ -101,49 +102,58 @@
   <main class="sub-main">
     <section class="band-shop band-shop--flush">
       <div class="band-shop-inner">
-        <p class="crumb crumb--fx">
-          <a href="index.html">Home</a> <span aria-hidden="true">/</span>
-          <a id="crumbCatLink" href="#"><span id="crumbCat">Category</span></a>
-          <span id="crumbSubWrap" hidden> <span aria-hidden="true">/</span> <span id="crumbSubLabel">—</span></span>
-        </p>
-        <p class="flow-step flow-step--on-dark" id="categoryFlowStep" hidden></p>
-        <div class="section-head section-head--solo">
-          <div>
-            <h1 class="band-title band-title--fx" id="categoryHeading">Browse</h1>
-            <p class="band-sub" id="categorySub" hidden></p>
+        <div class="plp-shell" id="categoryPlpShell">
+        <header class="plp-header">
+          <nav class="plp-breadcrumb" aria-label="Breadcrumb">
+            <a href="index.html">Home</a><span class="plp-breadcrumb__sep" aria-hidden="true">&gt;</span>
+            <span id="crumbCat">Category</span>
+            <span id="crumbSubWrap" hidden><span class="plp-breadcrumb__sep" aria-hidden="true">&gt;</span><span id="crumbSubLabel">—</span></span>
+          </nav>
+          <div class="plp-title-row">
+            <h1 class="plp-title" id="categoryHeading">Browse</h1>
+            <span class="plp-title__spark" aria-hidden="true">✦</span>
           </div>
-        </div>
-        <div class="cg-filter-panel" id="categoryToolbar" aria-label="Sort and price filters">
-          <div class="cg-filter-panel__glow" aria-hidden="true"></div>
-          <div class="cg-filter-panel__inner">
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="categoryFilterView">Filter</label>
-              <select id="categoryFilterView" class="category-toolbar__select">
-                <option value="all">All pieces</option>
+          <p class="plp-desc" id="categoryDesc"></p>
+          <p class="flow-step flow-step--on-dark" id="categoryFlowStep" hidden></p>
+          <p class="band-sub" id="categorySub" hidden></p>
+        </header>
+        <div class="plp-toolbar" aria-label="Filter and sort products">
+          <div class="plp-toolbar__left">
+            <button type="button" class="plp-toolbar__btn" id="categoryFiltersToggle" aria-expanded="false" aria-controls="categoryFiltersPanel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M7 12h10M10 18h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              Filters
+            </button>
+            <div class="plp-toolbar__select-wrap">
+              <select id="categoryFilterView" class="plp-toolbar__select" aria-label="Filter by type">
+                <option value="all">All types</option>
                 <option value="photo">With product photo</option>
               </select>
             </div>
-            <div class="category-toolbar__group">
-              <label class="category-toolbar__label" for="categorySortSelect">Sort</label>
-              <select id="categorySortSelect" class="category-toolbar__select"></select>
+          </div>
+          <div class="plp-toolbar__right">
+            <div class="plp-toolbar__select-wrap">
+              <span class="plp-toolbar__select-label">Sort by:</span>
+              <select id="categorySortSelect" class="plp-toolbar__select" aria-label="Sort products"></select>
             </div>
+            <div class="plp-toolbar__view-toggle" role="group" aria-label="Grid or list view">
+              <button type="button" class="plp-toolbar__view-btn is-active" data-plp-view="grid" aria-pressed="true" aria-label="Grid view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/></svg>
+              </button>
+              <button type="button" class="plp-toolbar__view-btn" data-plp-view="list" aria-pressed="false" aria-label="List view">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="plp-filters-panel cg-filter-panel cg-filter-panel--light" id="categoryFiltersPanel" hidden aria-label="Advanced filters">
+          <div class="cg-filter-panel__inner">
             <div class="category-toolbar__group cg-filter-panel__group--range">
               <div class="cg-dual-range" id="categoryPriceDualWrap">
                 <span class="cg-dual-range__label">Price range (₹)</span>
                 <div class="cg-dual-range__slider">
                   <div class="cg-dual-range__track" aria-hidden="true"></div>
-                  <input
-                    type="range"
-                    class="cg-dual-range__lo"
-                    id="categoryPriceRangeLo"
-                    aria-label="Minimum from-price"
-                  />
-                  <input
-                    type="range"
-                    class="cg-dual-range__hi"
-                    id="categoryPriceRangeHi"
-                    aria-label="Maximum from-price"
-                  />
+                  <input type="range" class="cg-dual-range__lo" id="categoryPriceRangeLo" aria-label="Minimum from-price" />
+                  <input type="range" class="cg-dual-range__hi" id="categoryPriceRangeHi" aria-label="Maximum from-price" />
                 </div>
                 <span class="cg-dual-range__value" id="categoryPriceRangeLabel">Any price</span>
               </div>
@@ -153,9 +163,10 @@
             <button type="button" class="category-toolbar__clear" id="categoryFilterClear">Clear filters</button>
           </div>
         </div>
-        <div class="product-grid" id="subcategoryGrid" hidden></div>
-        <div class="product-grid" id="productGrid"></div>
+        <div class="plp-grid product-grid" id="subcategoryGrid" hidden></div>
+        <div class="plp-grid product-grid" id="productGrid"></div>
         <nav class="pagination" id="pagination" aria-label="Pagination"></nav>
+        </div>
       </div>
     </section>
   </main>
@@ -272,6 +283,7 @@
   <script src="header.js"></script>
   <script src="global-find.js"></script>
   <script src="catalog-filter-ui.js"></script>
+  <script src="premium-product-listing.js"></script>
   <script src="category.js"></script>
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();

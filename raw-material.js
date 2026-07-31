@@ -197,6 +197,86 @@
   var rmShopHubFilter = null;
   var rmShopSpaWired = false;
   var rmNavMaterialCount = -1;
+  var PLP = window.CraftguruProductListing;
+  var rmPlpMounted = false;
+
+  function humanizeSlug(s) {
+    return String(s || "")
+      .replace(/-/g, " ")
+      .replace(/\b\w/g, function (c) {
+        return c.toUpperCase();
+      });
+  }
+
+  function mountRmPlpOnce() {
+    if (rmPlpMounted || !PLP) return;
+    var grid = document.getElementById("rmGrid");
+    if (!grid) return;
+    rmPlpMounted = true;
+    PLP.mountListingShell({
+      gridEl: grid,
+      storageKey: "plp-view-raw-material",
+    });
+    var plpSort = document.getElementById("rmPlpSortSelect");
+    var hubSort = document.getElementById("rmSortSelect");
+    if (plpSort && hubSort) {
+      plpSort.value = hubSort.value || DEFAULT_SORT;
+      plpSort.addEventListener("change", function () {
+        hubSort.value = plpSort.value;
+        render(lastMaterials);
+      });
+      hubSort.addEventListener("change", function () {
+        plpSort.value = hubSort.value;
+      });
+    }
+  }
+
+  function updateRmPlpHeader(par) {
+    var shell = document.getElementById("rmPlpShell");
+    var heading = document.getElementById("rmPlpHeading");
+    var title = document.getElementById("rmPlpTitle");
+    var desc = document.getElementById("rmPlpDesc");
+    if (!shell || !heading) return;
+    var parts = [];
+    if (par.base) {
+      var tax = rmShopTaxDoc;
+      var baseLabel = par.base;
+      if (tax && tax.baseCategories) {
+        for (var i = 0; i < tax.baseCategories.length; i++) {
+          if (tax.baseCategories[i].id === par.base) {
+            baseLabel = tax.baseCategories[i].label || baseLabel;
+            break;
+          }
+        }
+      } else {
+        baseLabel = humanizeSlug(par.base);
+      }
+      parts.push(baseLabel);
+      if (par.sub) {
+        var subLabel = par.sub;
+        if (tax && tax.subcategories && tax.subcategories[par.base]) {
+          var subs = tax.subcategories[par.base];
+          for (var j = 0; j < subs.length; j++) {
+            if (subs[j].id === par.sub) {
+              subLabel = subs[j].label || subLabel;
+              break;
+            }
+          }
+        } else {
+          subLabel = humanizeSlug(par.sub);
+        }
+        parts.push(subLabel);
+      }
+    } else if (String(par.needle || "").trim()) {
+      parts.push("Search results");
+    } else {
+      parts.push("Materials");
+    }
+    var label = parts.join(" · ");
+    heading.textContent = label;
+    if (title) title.textContent = label;
+    if (desc && PLP) desc.textContent = PLP.getCategoryDescription("raw-materials");
+  }
 
   function qsParams() {
     try {
@@ -230,11 +310,12 @@
     var tb = document.getElementById("rm-shop");
     var hero = document.getElementById("rm-hero");
     var grid = document.getElementById("rmGrid");
+    var shell = document.getElementById("rmPlpShell");
     if (hub) hub.toggleAttribute("hidden", !home);
     if (tb) tb.toggleAttribute("hidden", !home);
-    /* Banner only on shop “home” (no category drill-in); product grid only after category pick or search. */
     if (hero) hero.toggleAttribute("hidden", !home);
-    if (grid) grid.toggleAttribute("hidden", !showGrid);
+    if (shell) shell.toggleAttribute("hidden", !showGrid);
+    if (grid && showGrid) grid.removeAttribute("hidden");
   }
 
   function readHubFilterFromDom() {
@@ -556,6 +637,8 @@
   }
 
   function sortSelect() {
+    var plp = document.getElementById("rmPlpSortSelect");
+    if (plp && plp.offsetParent !== null) return plp;
     return document.getElementById("rmSortSelect");
   }
 
@@ -598,9 +681,17 @@
 
   function render(list) {
     wireSortOnce();
+    mountRmPlpOnce();
     lastMaterials = list || [];
     var g = document.getElementById("rmGrid");
     if (!g) return;
+    var par = qsParams();
+    var needle = "";
+    try {
+      var gq = document.getElementById("globalFindQuery");
+      if (gq) needle = String(gq.value || "").trim();
+    } catch (_) {}
+    updateRmPlpHeader({ base: par.base, sub: par.sub, needle: needle });
     g.innerHTML = "";
     var rows = sortedList(lastMaterials);
     if (!rows.length) {
@@ -610,7 +701,7 @@
       var emptyMsg;
       if (catalogTotal === 0) {
         emptyMsg = "No materials listed yet.";
-      } else       if (!hasBrowse) {
+      } else if (!hasBrowse) {
         emptyMsg = "Choose a category from Shop by category or the sidebar to see products.";
       } else {
         g.innerHTML =
@@ -624,62 +715,59 @@
       g.innerHTML = '<p class="band-empty" style="grid-column:1/-1">' + esc(emptyMsg) + "</p>";
       return;
     }
-    rows.forEach(function (m) {
-      var card = document.createElement("article");
-      card.className = "rm-card-shop";
+    rows.forEach(function (m, i) {
       var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
       var img = m.image ? imgSrc(m.image) : "";
       var meta = minOfferMeta(m);
       var effMrp = effectiveMrpInr(m, meta.sel);
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
-      var mrp =
+      var priceLabel = meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "";
+      var mrpHtml =
         effMrp != null && Number(effMrp) > Number(meta.min)
-          ? '<span class="rm-card-shop__mrp">' + esc(fmtPrice(effMrp)) + "</span>"
+          ? '<span class="plp-card__mrp">' + esc(fmtPrice(effMrp)) + "</span>"
           : "";
-      card.innerHTML =
-        '<a class="rm-card-shop__hit" href="' +
-        escAttr(href) +
-        '">' +
-        '<div class="rm-card-shop__img">' +
-        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" decoding="async" />' : "") +
-        "</div>" +
-        '<div class="rm-card-shop__body">' +
-        '<span class="rm-card-shop__brand">Craft Guru</span>' +
-        "<h3 class=\"rm-card-shop__title\">" +
-        esc(m.name || "Material") +
-        "</h3>" +
-        (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "<p class=\"rm-card-shop__desc\"></p>") +
-        '<div class="rm-card-shop__row">' +
-        '<span class="rm-card-shop__price">' +
-        esc(meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "") +
-        "</span>" +
-        "<span>" +
-        mrp +
-        discountHtml(m) +
-        "</span></div></div></a>" +
-        (function () {
-          var WA = window.CRAFTGURU_WA;
-          if (!WA || typeof WA.listingButtonHtml !== "function") return "";
-          var abs;
-          try {
-            abs = new URL(href, window.location.href).href;
-          } catch (_) {
-            abs = href;
-          }
-          return (
-            '<div class="rm-card-shop__cta">' +
-            WA.listingButtonHtml({
-              productName: m.name || "Material",
-              productId: m.id,
-              productUrl: abs,
-            }) +
-            "</div>"
-          );
-        })();
+      var disc = discountHtml(m);
+      var discountBlock = disc ? disc.replace("rm-card-shop__pill", "plp-card__discount") : "";
+      var abs;
+      try {
+        abs = new URL(href, window.location.href).href;
+      } catch (_) {
+        abs = href;
+      }
+      var buildCard = PLP && PLP.buildProductCard;
+      var card;
+      if (buildCard) {
+        card = buildCard({
+          href: href,
+          ctaHref: href,
+          name: m.name || "Material",
+          productId: m.id,
+          productName: m.name,
+          productUrl: abs,
+          priceLabel: priceLabel,
+          mrpHtml: mrpHtml,
+          discountHtml: discountBlock,
+          minPrice: meta.min > 0 ? String(meta.min) : "",
+          imgSrc: img,
+          imgFit: D && D.getProductCoverImageFit ? D.getProductCoverImageFit(m) : "",
+          rating: m.ratingScore,
+          reviewCount: m.reviewCount,
+          wishlistKind: "raw_material",
+          ctaText: "View options →",
+          stagger: i,
+        });
+      } else {
+        card = document.createElement("article");
+        card.className = "plp-card";
+        card.innerHTML = '<a class="plp-card__hit" href="' + escAttr(href) + '"></a>';
+      }
       g.appendChild(card);
-      var listImg = card.querySelector(".rm-card-shop__img img");
-      applyListingImageFit(listImg, m);
+      if (!buildCard) {
+        var listImg = card.querySelector(".plp-card__media img");
+        applyListingImageFit(listImg, m);
+      }
     });
+    if (PLP && PLP.wireAllCardWishlists) PLP.wireAllCardWishlists(g);
   }
 
   function applyShopShellFromParams() {

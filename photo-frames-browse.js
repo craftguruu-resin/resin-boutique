@@ -194,39 +194,60 @@
   function renderProducts(list) {
     var g = document.getElementById("pfBrowseGrid");
     if (!g) return;
+    g.classList.add("plp-grid");
+    var PLP = window.CraftguruProductListing;
+    if (PLP && !g.dataset.plpMounted) {
+      g.dataset.plpMounted = "1";
+      PLP.mountListingShell({ gridEl: g, storageKey: "plp-view-pf-browse", trustBar: false });
+    }
     g.innerHTML = "";
     if (!list || !list.length) {
       g.innerHTML =
         '<p class="pf-browse__empty">No frames listed for this line yet. Add products in Vendor → Photo frames.</p>';
       return;
     }
-    list.forEach(function (m) {
+    list.forEach(function (m, i) {
       var meta = minOfferMeta(m);
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
       var href = pdpUrlForProductId(m && m.id != null ? m.id : "");
       if (!href) return;
       var img = m.image ? imgSrc(m.image) : "";
-      var card = document.createElement("article");
-      card.className = "rm-card-shop";
-      card.innerHTML =
-        '<a href="' +
-        escAttr(href) +
-        '" data-pf-pdp="1">' +
-        '<div class="rm-card-shop__img">' +
-        (img ? '<img src="' + escAttr(img) + '" alt="" loading="lazy" decoding="async" />' : "") +
-        "</div>" +
-        '<div class="rm-card-shop__body">' +
-        '<span class="rm-card-shop__brand">Craft Guru</span>' +
-        "<h3 class=\"rm-card-shop__title\">" +
-        esc(m.name || "Photo frame") +
-        "</h3>" +
-        (m.description ? '<p class="rm-card-shop__desc">' + esc(m.description) + "</p>" : "") +
-        '<div class="rm-card-shop__row">' +
-        '<span class="rm-card-shop__price">' +
-        esc(meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "") +
-        "</span></div></div></a>";
+      var priceLabel = meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "";
+      var buildCard = PLP && PLP.buildProductCard;
+      var card;
+      if (buildCard) {
+        card = buildCard({
+          href: href,
+          ctaHref: href,
+          name: m.name || "Photo frame",
+          productId: m.id,
+          productUrl: href,
+          priceLabel: priceLabel,
+          minPrice: meta.min > 0 ? String(meta.min) : "",
+          imgSrc: img,
+          rating: m.ratingScore,
+          reviewCount: m.reviewCount,
+          wishlistKind: "photo_frame",
+          ctaText: "View options →",
+          stagger: i,
+        });
+        var hit = card.querySelector(".plp-card__hit");
+        if (hit) hit.setAttribute("data-pf-pdp", "1");
+        var cta = card.querySelector(".plp-card__cta");
+        if (cta) cta.setAttribute("data-pf-pdp", "1");
+      } else {
+        card = document.createElement("article");
+        card.className = "plp-card";
+        card.innerHTML =
+          '<a href="' +
+          escAttr(href) +
+          '" data-pf-pdp="1"><div class="plp-card__body"><h3 class="plp-card__name">' +
+          esc(m.name || "Photo frame") +
+          "</h3></div></a>";
+      }
       g.appendChild(card);
     });
+    if (PLP && PLP.wireAllCardWishlists) PLP.wireAllCardWishlists(g);
     wirePfBrowsePdpClicksOnce();
   }
 
