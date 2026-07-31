@@ -44,17 +44,63 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
-  function hubCategoryPreview(c) {
+  function hubCategoryPreview(c, mats) {
+    var nav = String(
+      (c && c.nav_image) || (c && c.navImage) || (c && c.image) || ""
+    ).trim();
+    if (nav) {
+      return {
+        image: nav,
+        fit: String((c && c.nav_image_fit) || (c && c.navImageFit) || (c && c.imageFit) || "")
+          .trim()
+          .toLowerCase(),
+        fallback: "",
+      };
+    }
+    if (mats && c && c.id) {
+      for (var mi = 0; mi < mats.length; mi++) {
+        var m = mats[mi];
+        if (!materialBelongsToHubCategory(m, c)) continue;
+        var matImg = String(m.image || "").trim();
+        if (matImg) return { image: matImg, fit: "", fallback: "" };
+      }
+    }
+    if (c && Array.isArray(c.subcategories)) {
+      for (var si = 0; si < c.subcategories.length; si++) {
+        var subImg = String((c.subcategories[si] && c.subcategories[si].image) || "").trim();
+        if (subImg) return { image: subImg, fit: "", fallback: "" };
+      }
+    }
     if (D && D.getCategoryCardPreview && c && c.id) {
       var resin = D.getCategoryCardPreview(c.id);
       if (resin && resin.image) {
-        return { image: resin.image, fit: String(resin.fit || "").trim().toLowerCase() };
+        return {
+          image: resin.image,
+          fit: String(resin.fit || "").trim().toLowerCase(),
+          fallback: String(resin.fallback || "").trim(),
+        };
       }
     }
-    return {
-      image: (c && c.image) || "",
-      fit: String((c && c.imageFit) || "").trim().toLowerCase(),
-    };
+    return { image: "", fit: "", fallback: "" };
+  }
+
+  function wireHubPreviewImgOnerror(img, fallbackRel) {
+    if (!img || !fallbackRel) return;
+    var fb = imgSrc(fallbackRel);
+    img.setAttribute("data-fallback-src", fb);
+    img.addEventListener("error", function onHubPreviewErr() {
+      var alt = img.getAttribute("data-fallback-src") || "";
+      if (alt && img.src !== alt) {
+        img.src = alt;
+        img.removeAttribute("data-fallback-src");
+        return;
+      }
+      img.removeEventListener("error", onHubPreviewErr);
+      var media = img.closest(".craft-cat-card__media");
+      if (media) {
+        media.innerHTML = '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
+      }
+    });
   }
 
   function applyListingImageFit(imgEl, row) {
@@ -534,8 +580,9 @@
       var href = window.RmShopNav
         ? window.RmShopNav.shopHref(c.id, "")
         : "raw-material-shop.html?base=" + encodeURIComponent(c.id);
-      var preview = hubCategoryPreview(c);
+      var preview = hubCategoryPreview(c, mats);
       var imgRel = preview.image || "";
+      var imgFallback = preview.fallback || "";
       var imgFit = preview.fit || "";
       var countLabel = String(count) + (count === 1 ? " product in this category" : " products in this category");
       var buildCard = window.CraftguruPremiumCards && window.CraftguruPremiumCards.buildCategoryCard;
@@ -547,6 +594,8 @@
           subtitle: countLabel,
           ctaText: "Explore collection →",
           imgSrc: imgRel ? imgSrc(imgRel) : "",
+          imgFallback: imgFallback,
+          onImgError: wireHubPreviewImgOnerror,
           imgFit: imgFit,
           hasPreview: !!imgRel,
           stagger: idx % 10,

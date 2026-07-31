@@ -83,6 +83,21 @@
     if (opts.imgSrc && opts.imgFallback && typeof opts.onImgError === "function") {
       var previewImg = card.querySelector(".craft-cat-card__media img");
       if (previewImg) opts.onImgError(previewImg, opts.imgFallback);
+    } else if (opts.imgSrc) {
+      var errImg = card.querySelector(".craft-cat-card__media img");
+      if (errImg) {
+        errImg.addEventListener(
+          "error",
+          function onCatImgErr() {
+            errImg.removeEventListener("error", onCatImgErr);
+            var media = errImg.closest(".craft-cat-card__media");
+            if (media) {
+              media.innerHTML = '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
+            }
+          },
+          { once: true }
+        );
+      }
     }
 
     var fitImg = card.querySelector(".craft-cat-card__media img");
