@@ -86,13 +86,26 @@ body.page-home .btn-cart {
   font-weight: 600;
 }
 
-/* ---- Category sidebar (exact list-row graphics) ---- */
-body.page-home .home-category-rail--split {
-  background: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  border-radius: 28px;
-  box-shadow: var(--home-shadow);
-  padding: 1.15rem 0.75rem 1.15rem;
+/* ---- Category sidebar (RM nav-tree parity) ---- */
+body.page-home .home-shop-nav.home-category-rail--split {
+  position: sticky;
+  top: 5.5rem;
+  align-self: start;
+  max-height: calc(100vh - 6.25rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 20px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 18px 50px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  scrollbar-gutter: stable;
+  padding: 1.05rem 1.15rem;
 }
 
 body.page-home .home-category-rail::before,
@@ -100,12 +113,14 @@ body.page-home .home-category-rail::after {
   display: none;
 }
 
-body.page-home .home-category-rail__label {
-  color: rgba(26, 26, 64, 0.4);
-  letter-spacing: 0.16em;
-  font-size: 0.62rem;
-  font-weight: 700;
-  margin: 0 0.55rem 0.85rem;
+body.page-home .home-category-rail__label,
+body.page-home a.home-category-rail__title-link {
+  color: rgba(26, 26, 64, 0.45);
+  letter-spacing: 0.12em;
+  font-size: 0.72rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
 }
 
 body.page-home .home-category-rail--split .category-grid--rail {
@@ -196,6 +211,13 @@ body.page-home .category-grid--rail .category-pill.is-active {
 }
 
 @media (max-width: 959px) {
+  body.page-home .home-shop-nav.home-category-rail--split {
+    position: relative;
+    top: auto;
+    max-height: none;
+    padding: 0.85rem 0.95rem 1rem;
+  }
+
   body.page-home .home-category-rail--split .category-grid--rail {
     flex-direction: row;
     flex-wrap: nowrap;
