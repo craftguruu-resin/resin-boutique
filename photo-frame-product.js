@@ -793,6 +793,10 @@
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
     var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml("photo-frame") : "";
+    var descSection =
+      m.description && P && P.descriptionSectionHtml
+        ? P.descriptionSectionHtml(m.description, "pf-pdp-desc-h")
+        : "";
 
     var html =
       '<div class="rm-pdp rm-pdp--modern cg-pdp-shell" data-rm-material-id="' +
@@ -842,11 +846,6 @@
       "</div>" +
       taxNote +
       discBanner +
-      (m.description
-        ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose">' +
-          formatDescParagraphs(m.description) +
-          "</div></div>"
-        : "") +
       sizeHtml +
       qtyHtml +
       colHtml +
@@ -876,6 +875,7 @@
           "</div></div>"
         : "") +
       "</div>" +
+      descSection +
       (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div>";
 

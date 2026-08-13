@@ -290,6 +290,11 @@
   border: 1px solid var(--pdp-line);
 }
 
+.rm-pdp--modern .rm-pdp__desc-wrap--below {
+  margin: 0.35rem 0 0;
+  padding: 0.85rem 1rem;
+}
+
 .rm-pdp--modern .rm-pdp__desc-prose {
   max-width: 42rem;
 }

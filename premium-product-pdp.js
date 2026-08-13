@@ -179,6 +179,30 @@
     return serviceBannerHtml() + qualityBannerHtml(productType);
   }
 
+  function formatDescParagraphs(desc) {
+    var s = String(desc || "").trim();
+    if (!s) return "";
+    return "<p>" + esc(s).replace(/\n/g, "<br />") + "</p>";
+  }
+
+  /** Full-width description block below gallery + buy column (modern PDP shells). */
+  function descriptionSectionHtml(descText, headingId) {
+    var desc = String(descText || "").trim();
+    if (!desc) return "";
+    var hid = String(headingId || "cg-pdp-desc-h").trim() || "cg-pdp-desc-h";
+    return (
+      '<section class="product-overview product-overview--fullwidth rm-pdp__desc-wrap rm-pdp__desc-wrap--below glass-panel" aria-labelledby="' +
+      escAttr(hid) +
+      '">' +
+      '<h2 class="product-overview__h" id="' +
+      escAttr(hid) +
+      '">About this piece</h2>' +
+      '<div class="rm-pdp__desc-prose product-overview__copy">' +
+      formatDescParagraphs(desc) +
+      "</div></section>"
+    );
+  }
+
   function titleRowHtml(opts) {
     opts = opts || {};
     var title = opts.title || "";
@@ -371,6 +395,8 @@
     qualityBannerHtml: qualityBannerHtml,
     qualityFeaturesForType: qualityFeaturesForType,
     bottomSectionsHtml: bottomSectionsHtml,
+    descriptionSectionHtml: descriptionSectionHtml,
+    formatDescParagraphs: formatDescParagraphs,
     titleRowHtml: titleRowHtml,
     buildThumbButtons: buildThumbButtons,
     singleBuyMessage: singleBuyMessage,

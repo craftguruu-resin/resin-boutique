@@ -582,6 +582,24 @@ a.rm-empty-link:hover {
   align-items: start;
 }
 
+.rm-pdp > .cg-pdp__bottom,
+.rm-pdp > .rm-pdp__desc-wrap--below,
+.rm-pdp > .product-overview--fullwidth {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 0;
+}
+
+.rm-pdp > .cg-pdp__bottom {
+  margin-top: 0.5rem;
+}
+
+.rm-pdp > .rm-pdp__desc-wrap--below {
+  margin-top: 0.35rem;
+}
+
 .rm-pdp-gallery {
   display: grid;
   grid-template-columns: 88px minmax(0, 1fr);

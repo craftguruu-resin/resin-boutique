@@ -789,6 +789,10 @@
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "resinPdpBuyNow", waBuyId: "resinPdpWaBuy" }) : "";
     var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml(p.category) : "";
+    var descSection =
+      m.description && P && P.descriptionSectionHtml
+        ? P.descriptionSectionHtml(m.description, "resin-pdp-desc-h")
+        : "";
 
     var html =
       '<div class="resin-pdp-padded">' +
@@ -845,11 +849,6 @@
       "</div>" +
       taxNote +
       discBanner +
-      (m.description
-        ? '<div class="rm-pdp__desc-wrap"><div class="rm-pdp__desc-prose"><p>' +
-          esc(String(m.description).trim()).replace(/\n/g, "<br />") +
-          "</p></div></div>"
-        : "") +
       sizeHtml +
       qtyHtml +
       colHtml +
@@ -871,6 +870,7 @@
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       trustHtml +
       "</div>" +
+      descSection +
       (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div></div>";
 
