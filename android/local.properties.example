@@ -1,0 +1,14 @@
+# Local Android SDK path (Android Studio creates this automatically).
+# sdk.dir=/Users/you/Library/Android/sdk
+
+# --- Storefront URL (override gradle.properties for local dev) ---
+# Emulator + local server: CRAFTGURU_WEB_BASE_URL=http://10.0.2.2:8080
+# Emulator + API on host:  CRAFTGURU_API_BASE_URL=http://10.0.2.2:3847
+CRAFTGURU_WEB_BASE_URL=https://www.craftguru.co.in
+CRAFTGURU_API_BASE_URL=
+
+# --- Release signing (required for signed release APK) ---
+# RELEASE_STORE_FILE=/absolute/path/to/craftguru-release.keystore
+# RELEASE_STORE_PASSWORD=your_store_password
+# RELEASE_KEY_ALIAS=craftguru
+# RELEASE_KEY_PASSWORD=your_key_password

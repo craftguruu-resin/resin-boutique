@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.CraftGuru" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/cg_teal</item>
+        <item name="colorPrimaryDark">@color/cg_teal_dark</item>
+        <item name="android:statusBarColor">@color/cg_teal_dark</item>
+        <item name="android:navigationBarColor">@color/cg_page_bg</item>
+    </style>
+
+    <style name="Theme.CraftGuru.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cg_splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.CraftGuru</item>
+    </style>
+</resources>
