@@ -122,6 +122,7 @@
       <p class="flow-step flow-step--animate" id="flowStep">Piece overview</p>
 
       <div class="product-layout product-layout--split product-layout--buy-tight">
+        <div class="rm-pdp__left-stack">
         <div class="product-visual product-visual--fx">
           <div class="product-catalog-gallery" id="productCatalogGallery">
             <div class="product-catalog-gallery__hero">
@@ -140,13 +141,20 @@
               <div class="product-catalog-gallery__track" id="productGalleryTrack"></div>
               <button type="button" class="product-catalog-gallery__nav product-catalog-gallery__nav--down" id="productGalleryDown" aria-label="Scroll thumbnails down">▼</button>
             </div>
-            <div class="pdp-feature-bar cg-pdp__feature-pills" aria-label="Product highlights">
-              <div class="pdp-feature-bar__item cg-pdp__feature-pill">Handmade With Love</div>
-              <div class="pdp-feature-bar__item cg-pdp__feature-pill">Premium Quality</div>
-              <div class="pdp-feature-bar__item cg-pdp__feature-pill">Made To Last</div>
-              <div class="pdp-feature-bar__item cg-pdp__feature-pill">Perfect For Gifting</div>
-            </div>
           </div>
+        </div>
+
+        <section class="product-overview product-overview--fullwidth glass-panel" aria-labelledby="overview-h">
+          <h2 class="product-overview__h" id="overview-h">About this piece</h2>
+          <p class="product-overview__copy" id="productIntroText"></p>
+          <p class="product-overview__hint">
+            <a href="#qtyDock" class="overview-jump">Quantity</a>
+            <span class="overview-jump-sep" aria-hidden="true"> · </span>
+            <a href="#sizeDock" class="overview-jump">Sizes &amp; MRP →</a>
+          </p>
+        </section>
+
+        <div class="cg-pdp__bottom" id="productPdpBottom"></div>
         </div>
 
         <div class="product-detail product-detail--purchase product-detail--buy-column">
@@ -237,18 +245,6 @@
             <a href="about.html">contact us</a> for reseller pricing and timelines.
           </p>
         </div>
-
-        <section class="product-overview product-overview--fullwidth glass-panel" aria-labelledby="overview-h">
-          <h2 class="product-overview__h" id="overview-h">About this piece</h2>
-          <p class="product-overview__copy" id="productIntroText"></p>
-          <p class="product-overview__hint">
-            <a href="#qtyDock" class="overview-jump">Quantity</a>
-            <span class="overview-jump-sep" aria-hidden="true"> · </span>
-            <a href="#sizeDock" class="overview-jump">Sizes &amp; MRP →</a>
-          </p>
-        </section>
-
-        <div class="cg-pdp__bottom" id="productPdpBottom"></div>
       </div>
     </div>
   </main>

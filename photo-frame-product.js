@@ -249,6 +249,7 @@
     if (!root || !m) return true;
     var shell = root.querySelector(".rm-pdp--modern");
     if (!shell) return true;
+    if (!shell.querySelector(".rm-pdp__left-stack")) return true;
     if (String(shell.getAttribute("data-rm-material-id") || "") !== String(m.id)) return true;
     var track = root.querySelector(".rm-pdp-thumb-track");
     var thumbN = track ? track.querySelectorAll(".rm-pdp__thumb").length : 0;
@@ -782,7 +783,6 @@
     var brandKicker = String(opt.brandLine || "").trim();
     if (!brandKicker) brandKicker = "Photo Frames";
     var detailText = String(opt.detailBody || "").trim() || String(m.description || "").trim();
-    var featureHtml = P && P.featurePillsHtml ? P.featurePillsHtml() : "";
     var fsBtn = P && P.fullscreenBtnHtml ? P.fullscreenBtnHtml() : "";
     var catTag = P && P.categoryTagHtml ? P.categoryTagHtml(brandKicker) : '<p class="rm-pdp__brand">' + esc(brandKicker) + "</p>";
     var headerHtml =
@@ -802,15 +802,17 @@
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
     var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml("photo-frame") : "";
+    var descSource = String(m.description || "").trim() || detailText;
     var descSection =
-      m.description && P && P.descriptionSectionHtml
-        ? P.descriptionSectionHtml(m.description, "pf-pdp-desc-h")
+      descSource && P && P.descriptionSectionHtml
+        ? P.descriptionSectionHtml(descSource, "pf-pdp-desc-h")
         : "";
 
     var html =
       '<div class="rm-pdp rm-pdp--modern cg-pdp-shell" data-rm-material-id="' +
       escAttr(String(m.id)) +
       '">' +
+      '<div class="rm-pdp__left-stack">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
       '<div class="rm-pdp-thumb-col">' +
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
@@ -837,7 +839,9 @@
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div>" +
-      featureHtml +
+      "</div>" +
+      descSection +
+      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       headerHtml +
@@ -872,19 +876,7 @@
       '<div class="rm-pdp__bulk-row" id="rmBulkBuyWrap"></div>' +
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       trustHtml +
-      (detailText
-        ? '<div class="rm-pdp-accordion rm-pdp-accordion--modern">' +
-          '<button type="button" class="rm-pdp-acc-head" id="rmPdpAccBtn" aria-expanded="true">' +
-          "<span>Detail</span>" +
-          '<span class="rm-pdp-acc-icon" id="rmPdpAccIcon" aria-hidden="true">−</span>' +
-          "</button>" +
-          '<div class="rm-pdp-acc-body" id="rmPdpAccBody">' +
-          esc(detailText) +
-          "</div></div>"
-        : "") +
       "</div>" +
-      descSection +
-      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div>";
 
     if (shellNeedsRebuild(root, m, entries, galleryUrlCount)) {

@@ -27,6 +27,47 @@ body:not(.vendor-saas) {
   --pdp-mint-soft: var(--cg-pdp-teal-soft);
 }
 
+/* ── Left column stack (gallery → description → service/quality cards) ── */
+.rm-pdp__left-stack {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(0.65rem, 1.5vw, 0.85rem);
+  min-width: 0;
+  align-self: start;
+}
+
+.rm-pdp__left-stack .rm-pdp-gallery--shell {
+  flex: 0 0 auto;
+}
+
+.rm-pdp__left-stack .cg-pdp__bottom {
+  margin-top: 0;
+  gap: 0.65rem;
+  position: relative;
+  z-index: 0;
+}
+
+.rm-pdp__left-stack .rm-pdp__desc-wrap--below,
+.rm-pdp__left-stack .product-overview--fullwidth {
+  margin: 0;
+}
+
+.rm-pdp__left-stack .rm-pdp__desc-prose,
+.rm-pdp__left-stack .product-overview__copy {
+  max-width: 100%;
+}
+
+.page-product .product-layout--split > .rm-pdp__left-stack {
+  min-width: 0;
+  align-self: start;
+}
+
+.page-product .product-detail--purchase.product-detail--buy-column {
+  position: sticky;
+  top: 5.75rem;
+  align-self: start;
+}
+
 .rm-pdp-gallery--shell .cg-pdp__feature-pills,
 .rm-pdp--modern .rm-pdp-gallery--shell .cg-pdp__feature-pills {
   grid-column: 1 / -1;
@@ -772,6 +813,10 @@ body.cg-pdp-lightbox-open {
   }
 
   .rm-pdp--modern .rm-pdp__detail-card {
+    position: static;
+  }
+
+  .page-product .product-detail--purchase.product-detail--buy-column {
     position: static;
   }
 

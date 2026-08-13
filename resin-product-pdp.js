@@ -498,6 +498,7 @@
     if (!root || !m) return true;
     var shell = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
     if (!shell) return true;
+    if (!shell.querySelector(".rm-pdp__left-stack")) return true;
     if (String(shell.getAttribute("data-resin-material-id") || "") !== String(m.id)) return true;
     if (String(shell.getAttribute("data-resin-opt-sig") || "") !== optionsLayoutSig(m)) return true;
     var track = root.querySelector(".rm-pdp-thumb-track");
@@ -777,7 +778,6 @@
 
     var brandKicker = String(opt.brandLine || "").trim() || (D.getCategoryLabel ? D.getCategoryLabel(p.category) : "Resin");
     var catLabel = D.getCategoryLabel ? D.getCategoryLabel(p.category) : brandKicker;
-    var featureHtml = P && P.featurePillsHtml ? P.featurePillsHtml() : "";
     var fsBtn = P && P.fullscreenBtnHtml ? P.fullscreenBtnHtml() : "";
     var catTag = P && P.categoryTagHtml ? P.categoryTagHtml(catLabel) : "<p class=\"rm-pdp__brand\">" + esc(brandKicker) + "</p>";
     var headerHtml =
@@ -815,6 +815,7 @@
       '<div class="rm-pdp rm-pdp--modern cg-pdp-shell" data-resin-pdp="1" data-resin-material-id="' +
       escAttr(m.id) +
       '">' +
+      '<div class="rm-pdp__left-stack">' +
       '<div class="rm-pdp-gallery rm-pdp-gallery--shell">' +
       '<div class="rm-pdp-thumb-col">' +
       '<button type="button" class="rm-pdp-thumb-nav rm-pdp-thumb-nav--up" aria-label="Scroll thumbnails up">▲</button>' +
@@ -839,7 +840,9 @@
           ')"/></div>'
         : '<div class="band-empty">No image</div>') +
       "</div>" +
-      featureHtml +
+      "</div>" +
+      descSection +
+      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       headerHtml +
@@ -877,8 +880,6 @@
       (m.note ? '<p class="rm-pdp__ship">' + esc(m.note) + "</p>" : "") +
       trustHtml +
       "</div>" +
-      descSection +
-      (bottomHtml ? '<div class="cg-pdp__bottom">' + bottomHtml + "</div>" : "") +
       "</div></div>";
 
     root.innerHTML = html;

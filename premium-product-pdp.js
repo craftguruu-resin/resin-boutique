@@ -236,7 +236,7 @@
     return "<p>" + esc(s).replace(/\n/g, "<br />") + "</p>";
   }
 
-  /** Full-width description block below gallery + buy column (modern PDP shells). */
+  /** Description block in the left column below the gallery. */
   function descriptionSectionHtml(descText, headingId) {
     var desc = String(descText || "").trim();
     if (!desc) return "";
