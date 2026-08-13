@@ -3,6 +3,7 @@
 # Required secrets in Secret Manager (create via infra/gcp/setup-secrets.sh):
 #   craftguru-database-url, craftguru-razorpay-key-id, craftguru-razorpay-key-secret
 # Optional: whatsapp, bill secret, otp pepper, google client id, smtp pass, vendor password
+# All mapped in deploy step below (create via infra/gcp/setup-secrets.sh).
 #
 # Substitutions:
 #   _REGION _SERVICE _AR_REPO _MIN_INSTANCES
@@ -11,7 +12,7 @@ substitutions:
   _REGION: asia-south1
   _SERVICE: craftguru-api
   _AR_REPO: craftguru
-  _MIN_INSTANCES: "0"
+  _MIN_INSTANCES: "1"
 
 options:
   logging: CLOUD_LOGGING_ONLY
@@ -48,17 +49,18 @@ steps:
       - --platform=managed
       - --allow-unauthenticated
       - --port=8080
-      - --cpu=1
-      - --memory=1Gi
+      - --cpu=2
+      - --memory=2Gi
       - --min-instances=${_MIN_INSTANCES}
-      - --max-instances=20
-      - --concurrency=80
+      - --max-instances=30
+      - --concurrency=40
       - --timeout=300
       - --cpu-boost
       - --execution-environment=gen2
-      - --session-affinity
+      - --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=3,timeoutSeconds=3,periodSeconds=8,failureThreshold=6
+      - --liveness-probe=httpGet.path=/health,httpGet.port=8080,timeoutSeconds=3,periodSeconds=30,failureThreshold=3
       - --env-vars-file=infra/gcp/env.cloudrun.yaml
-      - --set-secrets=DATABASE_URL=craftguru-database-url:latest,RAZORPAY_KEY_ID=craftguru-razorpay-key-id:latest,RAZORPAY_KEY_SECRET=craftguru-razorpay-key-secret:latest
+      - --set-secrets=DATABASE_URL=craftguru-database-url:latest,GOOGLE_CLIENT_ID=craftguru-google-client-id:latest,GMAIL_APP_PASSWORD=craftguru-smtp-pass:latest,VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest

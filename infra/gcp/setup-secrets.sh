@@ -70,8 +70,20 @@ upsert_secret "craftguru-whatsapp-access-token" "$(prompt_or_env WHATSAPP_ACCESS
 upsert_secret "craftguru-whatsapp-phone-number-id" "$(prompt_or_env WHATSAPP_PHONE_NUMBER_ID)"
 upsert_secret "craftguru-bill-api-secret" "$(prompt_or_env BILL_API_SECRET)"
 upsert_secret "craftguru-guest-otp-pepper" "$(prompt_or_env GUEST_OTP_PEPPER)"
+smtp_or_gmail_pass() {
+  local v="${SMTP_PASS:-}"
+  if [[ -z "$v" ]]; then v="${GMAIL_APP_PASSWORD:-}"; fi
+  if [[ -n "$v" ]]; then
+    echo "$v"
+    return 0
+  fi
+  read -rsp "GMAIL_APP_PASSWORD or SMTP_PASS (hidden, Enter to skip): " input
+  echo ""
+  echo "$input"
+}
+
 upsert_secret "craftguru-google-client-id" "$(prompt_or_env GOOGLE_CLIENT_ID)"
-upsert_secret "craftguru-smtp-pass" "$(prompt_or_env SMTP_PASS)"
+upsert_secret "craftguru-smtp-pass" "$(smtp_or_gmail_pass)"
 upsert_secret "craftguru-vendor-portal-password" "$(prompt_or_env VENDOR_PORTAL_PASSWORD)"
 
 echo ""

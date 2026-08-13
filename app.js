@@ -170,7 +170,7 @@
       hidePromoHero();
       return;
     }
-    fetch(base + "/api/catalog/hero-slides", { cache: "no-store" })
+    fetch(base + "/api/catalog/hero-slides")
       .then(function (res) {
         return res.json();
       })
@@ -201,8 +201,9 @@
         function encodedSrc(rel) {
           var r = String(rel || "").trim();
           if (!r) return "";
+          if (D.imageUrl) return D.imageUrl(r, 1280);
           if (r.indexOf("http") === 0 || r.indexOf("//") === 0) return r;
-          return D.imageUrl ? D.imageUrl(r) : r;
+          return r;
         }
         function stripPromoMotionClasses() {
           img.classList.remove(

@@ -2735,7 +2735,6 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (eSup) {
         return res.status(500).json({ ok: false, error: String(eSup.message || eSup) });
       }
-      res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, overrides: out, suppressedProductIds: suppressed || [] });
     });
   });
@@ -2747,7 +2746,6 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, products: list || [] });
   });
 });
@@ -2789,7 +2787,6 @@ app.get("/api/catalog/categories", function (_req, res) {
     )
     .then(function (r) {
       var merged = mergeCategoriesDbWithCatalog(r.rows);
-      res.setHeader("Cache-Control", "no-store");
       res.json({
         ok: true,
         source: r.rows.length ? "database+merged" : "data_js",
@@ -2844,7 +2841,6 @@ app.get("/api/catalog/hero-slides", function (_req, res) {
     if (settings.customHeroEnabled === false) {
       slides = [];
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({
       ok: true,
       slides: slides,

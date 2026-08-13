@@ -6,10 +6,13 @@
  */
 
 var DEFAULT_TTL_MS = Math.max(15_000, Number(process.env.CATALOG_API_CACHE_MS) || 60_000);
+var CACHE_MAX_AGE_SEC = Math.max(15, Math.floor(DEFAULT_TTL_MS / 1000));
+var STALE_SEC = Math.min(600, CACHE_MAX_AGE_SEC * 2);
 
 var store = Object.create(null);
 
-var CATALOG_CACHE_CONTROL = "public, max-age=60, stale-while-revalidate=120";
+var CATALOG_CACHE_CONTROL =
+  "public, max-age=" + CACHE_MAX_AGE_SEC + ", stale-while-revalidate=" + STALE_SEC;
 
 function cacheKey(method, url) {
   return String(method || "GET").toUpperCase() + " " + String(url || "");

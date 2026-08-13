@@ -51,6 +51,7 @@ function applyHttpHardening(app) {
     var start = Date.now();
     res.on("finish", function () {
       var ms = Date.now() - start;
+      if (isProduction() && res.statusCode < 400 && ms < 750) return;
       var line =
         "[" +
         new Date().toISOString() +
@@ -62,9 +63,8 @@ function applyHttpHardening(app) {
         res.statusCode +
         " " +
         ms +
-        "ms";
+        " ms";
       if (res.statusCode >= 500) console.error(line);
-      else if (isProduction()) console.log(line);
       else console.log(line);
     });
     next();

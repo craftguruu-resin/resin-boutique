@@ -604,11 +604,27 @@ var SIZE_DEFAULT = {
     return "";
   }
 
-  function imageUrl(relPath) {
+  /** Cloudinary delivery transforms: auto format/quality, optional width cap. */
+  function cloudinaryDisplayUrl(url, displayWidth) {
+    var s = String(url || "").trim();
+    if (!/res\.cloudinary\.com/i.test(s) || s.indexOf("/image/upload/") < 0) return s;
+    if (/[?&]f_auto|[,/]f_auto/.test(s)) return s;
+    var transforms = ["f_auto", "q_auto"];
+    var w = Number(displayWidth);
+    if (Number.isFinite(w) && w > 0 && w < 4000) {
+      transforms.push("w_" + Math.round(w), "c_limit");
+    }
+    var insert = transforms.join(",");
+    return s.replace("/image/upload/", "/image/upload/" + insert + "/");
+  }
+
+  function imageUrl(relPath, displayWidth) {
     if (!relPath) return "";
     var s = String(relPath).trim();
     /* Absolute URLs (e.g. Cloudinary, R2, Imgur) — use as-is; no Render disk needed. */
-    if (/^https?:\/\//i.test(s)) return s;
+    if (/^https?:\/\//i.test(s)) {
+      return cloudinaryDisplayUrl(s, displayWidth);
+    }
     if (s.indexOf("//") === 0) return s;
     var q = "";
     var qIx = s.indexOf("?");

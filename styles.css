@@ -3984,9 +3984,12 @@ body.product-page--oos .btn-add-lg {
   line-height: 1;
 }
 
-.catalog-sync-btn:disabled {
-  opacity: 0.45;
-  cursor: wait;
+.site-top-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .site-top-end {
@@ -6066,6 +6069,47 @@ a.home-auth-btn {
   min-height: 2.35rem;
   padding-inline: 0.6rem;
   flex-shrink: 0;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.home-header-wish:hover,
+.home-header-wish:focus-visible {
+  border-color: rgba(38, 166, 154, 0.55);
+  transform: translateY(-1px);
+}
+
+@media (min-width: 901px) {
+  .home-header-wish[data-tip]::after,
+  .home-header-wish[title]:not([title=""])::after {
+    content: attr(title);
+    position: absolute;
+    top: calc(100% + 0.45rem);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    padding: 0.28rem 0.55rem;
+    border-radius: 0.45rem;
+    background: rgba(15, 23, 42, 0.92);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 40;
+  }
+
+  .home-header-wish:hover::after,
+  .home-header-wish:focus-visible::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 
 .home-header-wish__label {
@@ -6091,11 +6135,6 @@ a.home-auth-btn {
 .home-header-wish.is-on {
   border-color: rgba(38, 166, 154, 0.45);
   color: var(--accent);
-}
-
-.home-header-wish:hover,
-.home-header-wish:focus-visible {
-  border-color: rgba(38, 166, 154, 0.55);
 }
 
 @media (max-width: 520px) {

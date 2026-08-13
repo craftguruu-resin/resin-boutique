@@ -519,9 +519,43 @@
     });
   }
 
+  function removeLegacyCatalogSyncButton() {
+    var btn = document.getElementById("catalogSyncBtn");
+    if (btn) btn.remove();
+  }
+
+  function ensureSiteTopActions(host) {
+    if (!host) return null;
+    var actions = host.querySelector(".site-top-actions");
+    if (!actions) {
+      actions = document.createElement("div");
+      actions.className = "site-top-actions";
+      var cartEl = document.getElementById("cartToggle");
+      if (cartEl) {
+        host.insertBefore(actions, cartEl);
+      } else {
+        host.appendChild(actions);
+      }
+    }
+    return actions;
+  }
+
   /** Catalog subpages historically omitted the home auth bar — inject so Sign up / Log in match index.html. */
   function injectStorefrontAuthChrome() {
-    if (document.getElementById("homeAuthBar")) return;
+    removeLegacyCatalogSyncButton();
+    if (document.getElementById("homeAuthBar")) {
+      var topEndExisting = document.querySelector(".site-top-end");
+      var wishExisting = document.getElementById("homeWishlistLink");
+      var cartExisting = document.getElementById("cartToggle");
+      if (topEndExisting && wishExisting && cartExisting) {
+        var actionsExisting = ensureSiteTopActions(topEndExisting);
+        if (actionsExisting && wishExisting.parentElement !== actionsExisting) {
+          actionsExisting.insertBefore(wishExisting, cartExisting);
+        }
+      }
+      wireHeaderWishlistLink();
+      return;
+    }
     var pn = currentPageName();
     if (!pn) return;
     var pl = pn.toLowerCase();
@@ -541,16 +575,20 @@
       '<button type="button" class="home-auth-btn is-hidden" id="homeAuthLogout">Log out</button>';
     topEnd.insertBefore(bar, topEnd.firstChild);
 
+    var cartEl = document.getElementById("cartToggle");
+    var actions = ensureSiteTopActions(topEnd);
     var wishlist = document.createElement("a");
     wishlist.href = "wishlist.html";
     wishlist.className = "home-auth-btn home-header-wish";
     wishlist.id = "homeWishlistLink";
     wishlist.setAttribute("aria-label", "Wishlist");
+    wishlist.title = "Wishlist";
     wishlist.innerHTML =
       '<span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>' +
       '<span class="home-header-wish__count" id="homeWishlistCount" hidden></span>';
-    var cartEl = document.getElementById("cartToggle");
-    if (cartEl) {
+    if (actions && cartEl) {
+      actions.insertBefore(wishlist, cartEl);
+    } else if (cartEl) {
       topEnd.insertBefore(wishlist, cartEl);
     } else {
       topEnd.appendChild(wishlist);
@@ -626,6 +664,24 @@
 
   function wireHeaderWishlistLink() {
     syncHeaderWishlistUi();
+    var link = document.getElementById("homeWishlistLink");
+    if (link && !link.dataset.wishHeaderWired) {
+      link.dataset.wishHeaderWired = "1";
+      link.title = "Wishlist";
+      link.addEventListener("click", function (ev) {
+        try {
+          var tok = String(localStorage.getItem("craftguruGuestToken") || "").trim();
+          if (!tok) {
+            ev.preventDefault();
+            if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.openAuth === "function") {
+              window.CRAFT_AUTH_HOME.openAuth("login");
+            } else {
+              window.location.href = "account.html";
+            }
+          }
+        } catch (_) {}
+      });
+    }
     window.addEventListener("resinWishlistChanged", syncHeaderWishlistUi);
   }
 
@@ -683,7 +739,7 @@
 
   function injectSocialFloatWidgets() {
     var pn = currentPageName();
-    if (pn === "index.html" || pn === "") return;
+    if (pn.indexOf("vendor") === 0) return;
     ensureSocialFloatStack();
     ensureStylesheet("social-float-stack.css");
     ensureStylesheet("whatsapp-widget.css");
@@ -910,8 +966,20 @@
     document.head.appendChild(link);
   }
 
+  function ensureCloudinaryPreconnect() {
+    if (document.querySelector("link[data-cg-preconnect='cloudinary']")) return;
+    var link = document.createElement("link");
+    link.rel = "preconnect";
+    link.href = "https://res.cloudinary.com";
+    link.crossOrigin = "anonymous";
+    link.setAttribute("data-cg-preconnect", "cloudinary");
+    document.head.appendChild(link);
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
+    ensureCloudinaryPreconnect();
+    removeLegacyCatalogSyncButton();
     if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {
       window.CraftguruCategoryScroll.resetPageScroll();
     }

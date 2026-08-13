@@ -133,7 +133,7 @@
   }
 
   function imgSrc(rel) {
-    return D.imageUrl ? D.imageUrl(rel) : rel;
+    return D.imageUrl ? D.imageUrl(rel, 520) : rel;
   }
 
   function productPageUrl(id) {

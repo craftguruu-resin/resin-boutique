@@ -499,6 +499,7 @@
     boot: boot,
     getSessionEmail: getSessionEmail,
     getApiBase: getApiBase,
+    openAuth: openAuth,
   };
 
   /* Wait for DOMContentLoaded so guest-layout.js can inject #authModal on catalog pages first. */

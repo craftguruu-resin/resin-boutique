@@ -199,13 +199,29 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-weight: 700;
-  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
-  line-height: 1.22;
+  font-size: clamp(1.15rem, 1.1rem + 1.1vw, 1.85rem);
+  line-height: 1.18;
   color: var(--cg-pdp-navy);
-  letter-spacing: -0.018em;
+  letter-spacing: -0.02em;
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: auto;
+  max-width: min(100%, 38rem);
+}
+
+.cg-pdp__title[data-title-scale="medium"],
+.page-product .cg-pdp__title[data-title-scale="medium"] {
+  font-size: clamp(1.05rem, 0.95rem + 0.85vw, 1.55rem);
+  line-height: 1.22;
+  letter-spacing: -0.015em;
+}
+
+.cg-pdp__title[data-title-scale="long"],
+.page-product .cg-pdp__title[data-title-scale="long"] {
+  font-size: clamp(0.98rem, 0.82rem + 0.55vw, 1.32rem);
+  line-height: 1.28;
+  letter-spacing: -0.01em;
+  max-width: min(100%, 34rem);
 }
 
 .cg-pdp__title-actions {

@@ -9,12 +9,13 @@
   position: fixed;
   right: var(--cg-float-edge-x);
   bottom: calc(var(--cg-float-edge-y) + env(safe-area-inset-bottom, 0px));
-  z-index: 12050;
+  z-index: 2147483000;
   display: flex;
   flex-direction: column-reverse;
   align-items: flex-end;
   gap: var(--cg-float-gap);
   pointer-events: none;
+  visibility: visible;
   animation: cg-social-float 5s ease-in-out infinite;
 }
 
@@ -39,9 +40,12 @@
 @media (max-width: 480px) {
   .cg-social-float-stack {
     --cg-float-fab: 3.5rem;
-    --cg-float-edge-x: 1rem;
-    --cg-float-edge-y: 1rem;
+    --cg-float-edge-x: max(0.75rem, env(safe-area-inset-right, 0px));
+    --cg-float-edge-y: max(0.75rem, env(safe-area-inset-bottom, 0px));
     --cg-float-gap: 0.65rem;
+    z-index: 2147483000;
+    visibility: visible !important;
+    opacity: 1 !important;
   }
 }
 

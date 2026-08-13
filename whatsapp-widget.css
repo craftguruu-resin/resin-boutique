@@ -11,7 +11,7 @@ body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
   position: fixed;
   right: clamp(1rem, 3.5vw, 1.65rem);
   bottom: calc(clamp(1rem, 3.5vw, 1.65rem) + env(safe-area-inset-bottom, 0px));
-  z-index: 12050;
+  z-index: 2147483000;
   animation: cg-wa-float 5s ease-in-out infinite;
 }
 

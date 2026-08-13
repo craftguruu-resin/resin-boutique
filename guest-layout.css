@@ -22,11 +22,20 @@
   body.guest-site .site-top-end {
     gap: 0.45rem;
     flex-wrap: nowrap;
+    align-items: center;
+  }
+
+  body.guest-site .site-top-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.38rem;
+    flex-shrink: 0;
   }
 
   body.guest-site .home-auth-bar {
     flex-wrap: nowrap;
     gap: 0.38rem;
+    align-items: center;
   }
 
   body.guest-site .home-auth-btn,

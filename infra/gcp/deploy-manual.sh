@@ -26,16 +26,25 @@ gcloud config set project "$PROJECT_ID"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
-echo "==> Building and deploying API (Cloud Build → Cloud Run)..."
+SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo manual)"
+echo "==> Building and deploying API (Cloud Build → Cloud Run) tag=$SHORT_SHA..."
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions="_REGION=${REGION},_SERVICE=${SERVICE},_AR_REPO=${AR_REPO},_MIN_INSTANCES=0" \
+  --substitutions="_REGION=${REGION},_SERVICE=${SERVICE},_AR_REPO=${AR_REPO},_MIN_INSTANCES=1,SHORT_SHA=${SHORT_SHA}" \
   .
 
 RUN_URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')"
 echo ""
 echo "API deployed: $RUN_URL"
-echo "Health check: ${RUN_URL}/api/health"
+echo "Health check: ${RUN_URL}/health"
+echo "Detailed:     ${RUN_URL}/api/health"
+
+if [[ -x "$(dirname "$0")/post-deploy-update-origins.sh" ]]; then
+  echo ""
+  echo "==> Updating ALLOWED_ORIGIN for parallel testing..."
+  GCP_PROJECT_ID="$PROJECT_ID" GCP_REGION="$REGION" GCP_SERVICE="$SERVICE" \
+    "$(dirname "$0")/post-deploy-update-origins.sh"
+fi
 
 if [[ -n "$PUBLIC_BILL_API_BASE" ]]; then
   echo ""

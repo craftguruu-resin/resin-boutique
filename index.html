@@ -12,6 +12,7 @@
   <title>Craft guru — Jaipur wholesale &amp; retail catalog</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="motion.css" />
@@ -94,7 +95,8 @@
         <a href="account.html" class="home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthOrders">My orders</a>
         <button type="button" class="home-auth-btn is-hidden" id="homeAuthLogout">Log out</button>
       </div>
-      <a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist">
+      <div class="site-top-actions">
+      <a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist" title="Wishlist">
         <span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>
         <span class="home-header-wish__count" id="homeWishlistCount" hidden></span>
       </a>
@@ -102,6 +104,7 @@
         <span class="btn-cart-label">Cart</span>
         <span class="cart-count" id="cartCount">0</span>
       </button>
+      </div>
     </div>
   </header>
 
@@ -567,8 +570,8 @@
 
   <script defer src="image-fit.js"></script>
   <script src="craftguru-api-base.js"></script>
-  <script defer src="data.js"></script>
-  <script defer src="catalog-merge.js"></script>
+  <script defer src="data.js?v=20260813"></script>
+  <script defer src="catalog-merge.js?v=20260813"></script>
   <script defer src="cart.js"></script>
   <script defer src="category-rail-icons.js"></script>
   <script defer src="guest-layout.js"></script>

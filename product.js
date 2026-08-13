@@ -13,6 +13,15 @@
     product = id ? D.getProduct(id) : null;
   }
 
+  function applyProductTitleTypography(el, name) {
+    if (!el) return;
+    var len = String(name || "").trim().length;
+    var scale = "short";
+    if (len > 52) scale = "long";
+    else if (len > 34) scale = "medium";
+    el.setAttribute("data-title-scale", scale);
+  }
+
   /** Size tiles render prices once; server overrides merge async (catalog-merge.js). */
   function offeredSizeKeys() {
     if (!product || !D.getOfferedSizeKeysForProduct) return ["s", "m", "l"];
@@ -285,12 +294,14 @@
   var selectedQty = 1;
   var galleryState = { urls: [], idx: 0, colorUrlById: Object.create(null) };
 
-  function resolveCatalogImg(rel) {
+  function resolveCatalogImg(rel, displayWidth) {
     if (!rel) return "";
     var s = String(rel).trim();
     if (!s) return "";
-    if (s.indexOf("http") === 0 || s.indexOf("//") === 0) return s;
-    return D.imageUrl ? D.imageUrl(s) : s;
+    if (s.indexOf("http") === 0 || s.indexOf("//") === 0) {
+      return D.imageUrl ? D.imageUrl(s, displayWidth) : s;
+    }
+    return D.imageUrl ? D.imageUrl(s, displayWidth) : s;
   }
 
   var PLACEHOLDER_REL = "media/placeholder-product.svg";
@@ -405,7 +416,9 @@
     });
     var hero = document.getElementById("productImage");
     if (hero && galleryState.urls[idx]) {
-      hero.src = galleryState.urls[idx];
+      var heroSrc =
+        D.imageUrl ? D.imageUrl(galleryState.urls[idx], 960) : galleryState.urls[idx];
+      hero.src = heroSrc;
       var opt = vendorPdpOptions(product);
       if (window.CraftguruImageFit && opt) {
         window.CraftguruImageFit.applyImageFit(hero, window.CraftguruImageFit.getFitForUrl(opt, galleryState.urls[idx]));
@@ -922,7 +935,10 @@
     var catLabel = D.getCategoryLabel(product.category);
     var baseUid = safeId(product.id);
 
-    if (els.title) els.title.textContent = product.name;
+    if (els.title) {
+      els.title.textContent = product.name;
+      applyProductTitleTypography(els.title, product.name);
+    }
     if (els.catBadge) els.catBadge.textContent = catLabel;
     if (els.crumbName) els.crumbName.textContent = product.name;
     if (els.flowStep) {

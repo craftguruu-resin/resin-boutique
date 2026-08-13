@@ -86,9 +86,12 @@
 
   var mergeInflight = null;
   var mergeFinished = false;
+  var lastMergeAt = 0;
+  var CATEGORIES_CACHE_KEY = "__cgCategoriesCache";
   var VENDOR_CACHE_KEY = "__cgVendorProductsCache";
   var OVERRIDES_CACHE_KEY = "__cgCatalogOverridesCache";
   var CACHE_TTL_MS = 5 * 60 * 1000;
+  var VISIBILITY_REFRESH_MIN_MS = 2 * 60 * 1000;
 
   function readSessionJson(key) {
     try {
@@ -106,16 +109,56 @@
     } catch (_) {}
   }
 
+  function cacheFresh(entry) {
+    return entry && entry.ts && Date.now() - entry.ts < CACHE_TTL_MS;
+  }
+
+  function applyOverridesPayload(j) {
+    if (!j || !j.ok) return;
+    if (j.overrides) {
+      try {
+        window.__cgCatalogOverrides = j.overrides;
+      } catch (_) {}
+      D.applyPriceOverrides(j.overrides);
+    }
+    var suppressed = [];
+    if (j.suppressedProductIds && j.suppressedProductIds.length) {
+      suppressed = suppressed.concat(j.suppressedProductIds);
+    }
+    if (j.overrides && typeof j.overrides === "object") {
+      Object.keys(j.overrides).forEach(function (k) {
+        if (j.overrides[k] && j.overrides[k].listed === false) suppressed.push(k);
+      });
+    }
+    if (suppressed.length && typeof D.applyCatalogSuppressions === "function") {
+      try {
+        window.__cgCatalogSuppressions = suppressed;
+      } catch (_) {}
+      D.applyCatalogSuppressions(suppressed);
+    }
+    if (j.overrides) {
+      writeSessionJson(OVERRIDES_CACHE_KEY, {
+        ts: Date.now(),
+        overrides: j.overrides,
+        suppressed: suppressed,
+      });
+    }
+    if (typeof D.rebuildCategoryProductIndex === "function") {
+      D.rebuildCategoryProductIndex();
+    }
+  }
+
   function hydrateCatalogFromSessionCache() {
-    var now = Date.now();
+    var cat = readSessionJson(CATEGORIES_CACHE_KEY);
+    if (cacheFresh(cat) && cat.categories && typeof D.applyCategoriesMerge === "function") {
+      D.applyCategoriesMerge(cat.categories);
+    }
     var vendor = readSessionJson(VENDOR_CACHE_KEY);
-    if (vendor && vendor.products && vendor.ts && now - vendor.ts < CACHE_TTL_MS) {
-      if (typeof D.applyVendorProductsMerge === "function") {
-        D.applyVendorProductsMerge(vendor.products);
-      }
+    if (cacheFresh(vendor) && vendor.products && typeof D.applyVendorProductsMerge === "function") {
+      D.applyVendorProductsMerge(vendor.products);
     }
     var ovWrap = readSessionJson(OVERRIDES_CACHE_KEY);
-    if (ovWrap && ovWrap.overrides && ovWrap.ts && now - ovWrap.ts < CACHE_TTL_MS) {
+    if (cacheFresh(ovWrap) && ovWrap.overrides) {
       try {
         window.__cgCatalogOverrides = ovWrap.overrides;
       } catch (_) {}
@@ -138,14 +181,20 @@
 
   function clearSessionCatalogCache() {
     try {
+      sessionStorage.removeItem(CATEGORIES_CACHE_KEY);
       sessionStorage.removeItem(VENDOR_CACHE_KEY);
       sessionStorage.removeItem(OVERRIDES_CACHE_KEY);
     } catch (_) {}
   }
 
+  function catalogFetch(base, path) {
+    return fetch(base + path, { credentials: "same-origin" }).then(function (res) {
+      return res.json();
+    });
+  }
+
   function runMerge(forceFresh) {
     if (mergeInflight) return mergeInflight;
-    if (forceFresh) clearSessionCatalogCache();
 
     var base = billApiBase();
     if (!base) {
@@ -154,73 +203,66 @@
       return Promise.resolve();
     }
 
-    mergeInflight = fetch(base + "/api/catalog/categories", { cache: "no-store" })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (jc) {
-        if (jc && jc.ok && jc.categories && typeof D.applyCategoriesMerge === "function") {
-          D.applyCategoriesMerge(jc.categories);
-        }
-        dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
-      })
-      .catch(function () {})
-      .then(function () {
-        return fetch(base + "/api/catalog/vendor-products", { cache: "no-store" });
-      })
-      .then(function (res) {
-        return res.json();
-      })
-      .then(function (j2) {
-        if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
-          D.applyVendorProductsMerge(j2.products);
-          writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j2.products });
-        }
-        dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
-        return fetch(base + "/api/catalog/price-overrides", { cache: "no-store" }).then(function (res) {
-          return res.json();
-        });
-      })
-      .then(function (j) {
-        if (j && j.ok && j.overrides) {
-          try {
-            window.__cgCatalogOverrides = j.overrides;
-          } catch (_) {}
-          /* Applies per-product options_json to all resin product.html PDPs via product.js */
-          D.applyPriceOverrides(j.overrides);
-        }
-        if (j && j.ok) {
-          var suppressed = [];
-          if (j.suppressedProductIds && j.suppressedProductIds.length) {
-            suppressed = suppressed.concat(j.suppressedProductIds);
+    if (forceFresh) clearSessionCatalogCache();
+
+    var catEntry = readSessionJson(CATEGORIES_CACHE_KEY);
+    var vendorEntry = readSessionJson(VENDOR_CACHE_KEY);
+    var ovEntry = readSessionJson(OVERRIDES_CACHE_KEY);
+    var needCategories = forceFresh || !cacheFresh(catEntry) || !catEntry.categories;
+    var needVendor = forceFresh || !cacheFresh(vendorEntry) || !vendorEntry.products;
+    var needOverrides = forceFresh || !cacheFresh(ovEntry) || !ovEntry.overrides;
+
+    if (!needCategories && !needVendor && !needOverrides) {
+      mergeFinished = true;
+      lastMergeAt = Date.now();
+      dispatchCatalogEvent("craftguruCatalogPricesMerged");
+      return Promise.resolve();
+    }
+
+    var tasks = [];
+
+    if (needCategories) {
+      tasks.push(
+        catalogFetch(base, "/api/catalog/categories").then(function (jc) {
+          if (jc && jc.ok && jc.categories && typeof D.applyCategoriesMerge === "function") {
+            D.applyCategoriesMerge(jc.categories);
+            writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: jc.categories });
           }
-          if (j.overrides && typeof j.overrides === "object") {
-            Object.keys(j.overrides).forEach(function (k) {
-              if (j.overrides[k] && j.overrides[k].listed === false) suppressed.push(k);
-            });
+          dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
+        })
+      );
+    } else if (catEntry && catEntry.categories) {
+      dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
+    }
+
+    if (needVendor) {
+      tasks.push(
+        catalogFetch(base, "/api/catalog/vendor-products").then(function (j2) {
+          if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
+            D.applyVendorProductsMerge(j2.products);
+            writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j2.products });
           }
-          if (suppressed.length && typeof D.applyCatalogSuppressions === "function") {
-            try {
-              window.__cgCatalogSuppressions = suppressed;
-            } catch (_) {}
-            D.applyCatalogSuppressions(suppressed);
-          }
-          if (j.overrides) {
-            writeSessionJson(OVERRIDES_CACHE_KEY, {
-              ts: Date.now(),
-              overrides: j.overrides,
-              suppressed: suppressed,
-            });
-          }
-        }
-        if (typeof D.rebuildCategoryProductIndex === "function") {
-          D.rebuildCategoryProductIndex();
-        }
-      })
+          dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+        })
+      );
+    } else {
+      dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+    }
+
+    if (needOverrides) {
+      tasks.push(
+        catalogFetch(base, "/api/catalog/price-overrides").then(function (j) {
+          applyOverridesPayload(j);
+        })
+      );
+    }
+
+    mergeInflight = Promise.all(tasks)
       .catch(function () {})
       .finally(function () {
         mergeFinished = true;
         mergeInflight = null;
+        lastMergeAt = Date.now();
         dispatchCatalogEvent("craftguruCatalogPricesMerged");
       });
 
@@ -242,9 +284,11 @@
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", runMerge);
+    document.addEventListener("DOMContentLoaded", function () {
+      runMerge(false);
+    });
   } else {
-    runMerge();
+    runMerge(false);
   }
 
   window.CraftguruCatalogMerge = {
@@ -259,10 +303,22 @@
   var visibilityRefreshTimer = null;
   document.addEventListener("visibilitychange", function () {
     if (document.visibilityState !== "visible") return;
+    if (Date.now() - lastMergeAt < VISIBILITY_REFRESH_MIN_MS) return;
     if (visibilityRefreshTimer) clearTimeout(visibilityRefreshTimer);
     visibilityRefreshTimer = setTimeout(function () {
       visibilityRefreshTimer = null;
-      runMerge(true);
+      runMerge(false);
     }, 400);
   });
+
+  function removeLegacyCatalogSyncButton() {
+    var btn = document.getElementById("catalogSyncBtn");
+    if (btn) btn.remove();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", removeLegacyCatalogSyncButton);
+  } else {
+    removeLegacyCatalogSyncButton();
+  }
 })();

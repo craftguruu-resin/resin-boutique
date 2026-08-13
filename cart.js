@@ -716,6 +716,22 @@
       if (done) done(new Error("id required"));
       return false;
     }
+
+    var tok = guestBearer();
+    if (!tok) {
+      try {
+        if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.openAuth === "function") {
+          window.CRAFT_AUTH_HOME.openAuth("login");
+        } else {
+          window.location.href = "account.html";
+        }
+      } catch (_) {
+        window.location.href = "account.html";
+      }
+      if (done) done(new Error("login required"));
+      return false;
+    }
+
     if (!wishHydrated) applyWishCache(loadWishlistLocal());
     var key = wishEntryKey(pid, pk);
     var nextOn = !wishCache[key];
@@ -723,7 +739,6 @@
     else delete wishCache[key];
     notifyWishlist();
 
-    var tok = guestBearer();
     var base = wishApiBase();
     if (tok && base) {
       fetch(base + "/api/guest/wishlist/toggle", {
