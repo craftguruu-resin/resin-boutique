@@ -37,3 +37,96 @@ body.is-scrolling .rm-pdp--modern .rm-pdp__detail-card {
   content-visibility: auto;
   contain-intrinsic-size: auto 220px;
 }
+
+/* ── Mobile scroll performance (≤899px) ── */
+@media (max-width: 899px) {
+  /* Decorative fixed layers repaint the full viewport while scrolling */
+  body.guest-site .mesh-gradient,
+  body.guest-site .tone-shift,
+  body.guest-site .animated-backdrop,
+  body.guest-site .grid-lines,
+  body.guest-site .page-atmosphere,
+  body.guest-site .pdp-ethereal-fx,
+  body.guest-site .mist {
+    display: none !important;
+  }
+
+  body.guest-site .cg-social-float-stack {
+    animation: none !important;
+    contain: layout style paint;
+  }
+
+  body.guest-site .product-hero-img--zoomhost img,
+  body.guest-site .hero-tilt {
+    will-change: auto !important;
+  }
+
+  body.pdp-ethereal .rm-pdp--modern .rm-pdp__hero-zoom img,
+  body.pdp-ethereal .product-hero-img img,
+  body.pdp-ethereal #productImage {
+    filter: none !important;
+  }
+
+  body.guest-site .site-top--fx,
+  body.guest-site .nav-dock--fx,
+  body.guest-site .global-find__popover,
+  body.guest-site .glass-panel,
+  body.guest-site .rm-nav-tree-wrap,
+  body.pdp-ethereal .rm-nav-tree-wrap,
+  body.pdp-ethereal .glass-panel,
+  body.pdp-ethereal .product-visual--fx,
+  body.pdp-ethereal .product-detail--purchase,
+  body.pdp-ethereal .pdp-feature-bar {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  body.guest-site .glass-panel {
+    background: rgba(255, 255, 255, 0.96);
+  }
+
+  body.guest-site .site-top--fx {
+    contain: layout style;
+  }
+
+  body.guest-site .site-footer {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 360px;
+  }
+
+  body.guest-site .band-shop .product-grid .product-card:nth-child(n+4),
+  body.guest-site .featured-cat-grid .featured-cat-card:nth-child(n+4),
+  body.guest-site #shop .craft-cat-card:nth-child(n+5),
+  body.guest-site .testimonials-grid .testimonial-card:nth-child(n+3) {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 260px;
+  }
+
+  body.guest-site .rm-pdp__left-stack .cg-pdp__service-banner,
+  body.guest-site .rm-pdp__left-stack .cg-pdp__quality-banner,
+  body.guest-site .connect-strip {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 180px;
+  }
+
+  body.is-scrolling-mobile .product-card,
+  body.is-scrolling-mobile .featured-cat-card,
+  body.is-scrolling-mobile .craft-cat-card,
+  body.is-scrolling-mobile .rm-pdp__detail-card,
+  body.is-scrolling-mobile .rm-pdp-gallery--shell,
+  body.is-scrolling-mobile .product-detail--buy-column {
+    box-shadow: none !important;
+  }
+
+  body.is-scrolling-mobile .hero-atelier__bubble,
+  body.is-scrolling-mobile .hero-atelier__particle,
+  body.is-scrolling-mobile .hero-atelier__shimmer,
+  body.is-scrolling-mobile .hero-atelier__wave,
+  body.is-scrolling-mobile .hero-atelier__glow,
+  body.is-scrolling-mobile .hero-atelier__gold,
+  body.is-scrolling-mobile .hero-atelier__glass,
+  body.is-scrolling-mobile .home-landing-hero__hits,
+  body.is-scrolling-mobile .hero-atelier__btn--primary::after {
+    animation-play-state: paused !important;
+  }
+}

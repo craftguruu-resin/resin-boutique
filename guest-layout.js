@@ -994,6 +994,10 @@
     var scrollRaf = 0;
     var idleTimer = 0;
     var scrolledClass = false;
+    var isMobile = false;
+    try {
+      isMobile = window.matchMedia("(max-width: 899px)").matches;
+    } catch (_) {}
 
     function onScrollFrame() {
       scrollRaf = 0;
@@ -1008,21 +1012,24 @@
 
     function markScrolling() {
       document.body.classList.add("is-scrolling");
+      if (isMobile) document.body.classList.add("is-scrolling-mobile");
       if (idleTimer) clearTimeout(idleTimer);
       idleTimer = setTimeout(function () {
         document.body.classList.remove("is-scrolling");
+        document.body.classList.remove("is-scrolling-mobile");
         idleTimer = 0;
-      }, 150);
+      }, isMobile ? 200 : 150);
     }
 
-    window.addEventListener(
-      "scroll",
-      function () {
-        markScrolling();
-        if (!scrollRaf) scrollRaf = requestAnimationFrame(onScrollFrame);
-      },
-      { passive: true }
-    );
+    function onScrollSignal() {
+      markScrolling();
+      if (!scrollRaf) scrollRaf = requestAnimationFrame(onScrollFrame);
+    }
+
+    window.addEventListener("scroll", onScrollSignal, { passive: true });
+    document.addEventListener("scroll", onScrollSignal, { passive: true });
+    window.addEventListener("touchstart", markScrolling, { passive: true });
+    document.addEventListener("touchmove", markScrolling, { passive: true });
 
     onScrollFrame();
   }

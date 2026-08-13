@@ -37,6 +37,12 @@
   }
 }
 
+@media (max-width: 899px) {
+  .cg-social-float-stack {
+    animation: none !important;
+  }
+}
+
 @media (max-width: 480px) {
   .cg-social-float-stack {
     --cg-float-fab: 3.5rem;

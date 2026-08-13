@@ -377,7 +377,7 @@
         href +
         '"><span class="hero-spot-card__glow" aria-hidden="true"></span><span class="hero-spot-card__media"><img src="' +
         escapeAttr(imgUrl(p.image)) +
-        '" alt="" loading="lazy" width="240" height="240"' +
+        '" alt="" loading="lazy" decoding="async" width="240" height="240"' +
         fitAttr +
         ' /></span><span class="hero-spot-card__meta"><span class="hero-spot-card__name">' +
         escapeHtml(short) +

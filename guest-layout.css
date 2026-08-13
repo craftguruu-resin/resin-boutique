@@ -411,7 +411,12 @@ body:not(.vendor-saas) .product-card__media {
   transition: none;
   user-select: none;
   -webkit-user-drag: none;
-  will-change: transform;
+}
+
+@media (min-width: 900px) {
+  .product-hero-img--zoomhost img {
+    will-change: transform;
+  }
 }
 
 .product-page .product-hero-img--zoomhost:hover img {

@@ -929,6 +929,20 @@ body.page-home .hero-atelier__dots span.is-active {
   }
 }
 
+@media (max-width: 899px) {
+  body.page-home .hero-atelier__bubble,
+  body.page-home .hero-atelier__particle,
+  body.page-home .hero-atelier__shimmer,
+  body.page-home .hero-atelier__wave,
+  body.page-home .hero-atelier__glow,
+  body.page-home .hero-atelier__gold,
+  body.page-home .hero-atelier__glass,
+  body.page-home .hero-atelier__btn--primary::after,
+  body.page-home .home-landing-hero__hits {
+    animation: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   body.page-home .hero-atelier__shell--exact-ref,
   body.page-home .hero-atelier__shell--exact-ref::before,
