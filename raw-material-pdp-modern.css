@@ -53,11 +53,9 @@
   min-width: 0;
   padding: clamp(0.65rem, 1.5vw, 1rem);
   border-radius: var(--pdp-radius-lg);
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92) 0%, rgba(248, 250, 252, 0.88) 100%);
+  background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--pdp-line);
   box-shadow: var(--pdp-shadow-soft);
-  backdrop-filter: var(--pdp-glass);
-  -webkit-backdrop-filter: var(--pdp-glass);
 }
 
 .rm-pdp--modern .rm-pdp-thumb-col {
@@ -144,11 +142,9 @@
   align-self: start;
   padding: clamp(1.1rem, 2.5vw, 1.65rem);
   border-radius: var(--pdp-radius-lg);
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
+  background: linear-gradient(165deg, #ffffff 0%, #f8fafc 100%);
   border: 1px solid var(--pdp-line);
   box-shadow: var(--pdp-shadow);
-  backdrop-filter: var(--pdp-glass);
-  -webkit-backdrop-filter: var(--pdp-glass);
 }
 
 @media (max-width: 960px) {

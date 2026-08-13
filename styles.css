@@ -29,7 +29,13 @@
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: auto;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html:focus-within {
+    scroll-behavior: smooth;
+  }
 }
 
 body {
@@ -270,10 +276,9 @@ body:not(.vendor-saas) .hero-atelier__kicker::before {
 .site-top--fx {
   z-index: 3;
   transition:
-    padding 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.35s ease,
-    box-shadow 0.45s ease,
-    border-color 0.35s ease;
+    background 0.25s ease,
+    box-shadow 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .site-top--fx::after {
@@ -296,11 +301,7 @@ body:not(.vendor-saas) .hero-atelier__kicker::before {
 }
 
 .site-top--fx.is-scrolled {
-  padding-top: 0.65rem;
-  padding-bottom: 0.65rem;
-  background: rgba(255, 255, 255, 0.52);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 12px 40px rgba(15, 35, 65, 0.1);
   border-radius: 0 0 1.25rem 1.25rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.45);

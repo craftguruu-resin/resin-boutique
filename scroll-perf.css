@@ -1,0 +1,39 @@
+/**
+ * Scroll performance — pause expensive paint during active scroll.
+ * Wired by guest-layout.js (body.is-scrolling).
+ */
+
+/* Pause ambient / decorative animations while the user scrolls */
+body.is-scrolling .mesh-gradient,
+body.is-scrolling .tone-shift,
+body.is-scrolling .animated-backdrop,
+body.is-scrolling .pdp-ethereal-fx,
+body.is-scrolling .orb {
+  animation-play-state: paused !important;
+}
+
+body.is-scrolling .rm-pdp--modern .rm-pdp__hero-zoom img,
+body.is-scrolling .product-hero-img img,
+body.is-scrolling #productImage,
+body.is-scrolling .rm-pdp--modern .rm-pdp__add::after {
+  animation-play-state: paused !important;
+}
+
+/* Backdrop blur is costly on sticky layers during scroll */
+body.is-scrolling .site-top--fx,
+body.is-scrolling .site-top--fx.is-scrolled,
+body.is-scrolling .rm-pdp__detail-card,
+body.is-scrolling .rm-pdp-gallery--shell,
+body.is-scrolling .product-detail--buy-column,
+body.is-scrolling .rm-pdp--modern .rm-pdp__detail-card {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+/* Defer off-screen PDP sections until near viewport */
+.rm-pdp__left-stack .cg-pdp__bottom,
+.rm-pdp__left-stack .cg-pdp__quality-banner,
+.page-product .rm-pdp__left-stack .product-overview--fullwidth {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 220px;
+}

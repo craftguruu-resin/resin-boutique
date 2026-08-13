@@ -86,23 +86,3 @@
     });
   }
 })();
-/**
- * Scroll-reactive header + optional nav sparkle (respects reduced motion).
- */
-(function () {
-  "use strict";
-
-  var header = document.querySelector(".site-top--fx");
-  if (!header) return;
-
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  function onScroll() {
-    if (reduce) return;
-    var y = window.scrollY || document.documentElement.scrollTop;
-    header.classList.toggle("is-scrolled", y > 16);
-  }
-
-  window.addEventListener("scroll", onScroll, { passive: true });
-  onScroll();
-})();

@@ -168,18 +168,15 @@
 .reveal {
   opacity: 0;
   transform: translate3d(0, 28px, 0) scale(0.98);
-  filter: blur(6px);
   transition:
     opacity var(--reveal-duration) var(--ease-out-expo),
-    transform var(--reveal-duration) var(--ease-out-expo),
-    filter 0.8s var(--ease-out-expo);
+    transform var(--reveal-duration) var(--ease-out-expo);
   transition-delay: var(--delay, 0s);
 }
 
 .reveal.is-inview {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);
-  filter: blur(0);
 }
 
 /* Category hub: never hide #shop or cards behind reveal fade */

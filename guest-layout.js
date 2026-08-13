@@ -976,6 +976,57 @@
     document.head.appendChild(link);
   }
 
+  function ensureScrollPerfStyles() {
+    if (document.querySelector("link[data-cg-scroll-perf]")) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = "scroll-perf.css";
+    link.setAttribute("data-cg-scroll-perf", "1");
+    document.head.appendChild(link);
+  }
+
+  function wireScrollPerf() {
+    if (window.__cgScrollPerfWired) return;
+    window.__cgScrollPerfWired = 1;
+    if (reduce) return;
+
+    var header = document.querySelector(".site-top--fx");
+    var scrollRaf = 0;
+    var idleTimer = 0;
+    var scrolledClass = false;
+
+    function onScrollFrame() {
+      scrollRaf = 0;
+      if (!header) return;
+      var y = window.scrollY || document.documentElement.scrollTop;
+      var next = y > 16;
+      if (next !== scrolledClass) {
+        scrolledClass = next;
+        header.classList.toggle("is-scrolled", scrolledClass);
+      }
+    }
+
+    function markScrolling() {
+      document.body.classList.add("is-scrolling");
+      if (idleTimer) clearTimeout(idleTimer);
+      idleTimer = setTimeout(function () {
+        document.body.classList.remove("is-scrolling");
+        idleTimer = 0;
+      }, 150);
+    }
+
+    window.addEventListener(
+      "scroll",
+      function () {
+        markScrolling();
+        if (!scrollRaf) scrollRaf = requestAnimationFrame(onScrollFrame);
+      },
+      { passive: true }
+    );
+
+    onScrollFrame();
+  }
+
   function ensureCloudinaryPreconnect() {
     if (document.querySelector("link[data-cg-preconnect='cloudinary']")) return;
     var link = document.createElement("link");
@@ -988,6 +1039,8 @@
 
   function boot() {
     document.body.classList.add("guest-site");
+    ensureScrollPerfStyles();
+    wireScrollPerf();
     ensureCloudinaryPreconnect();
     removeLegacyCatalogSyncButton();
     if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {

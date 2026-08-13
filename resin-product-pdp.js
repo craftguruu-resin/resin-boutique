@@ -831,7 +831,7 @@
           '<button type="button" class="rm-pdp__nav rm-pdp__nav--next" data-rm-gallery-nav="1" aria-label="Next image">›</button>'
         : "") +
       (mainImg
-        ? '<div class="rm-pdp__hero-zoom" id="resinPdpHeroZoom"><img id="resinPdpHero" src="' +
+        ? '<div class="rm-pdp__hero-zoom" id="resinPdpHeroZoom"><img id="resinPdpHero" decoding="async" fetchpriority="high" src="' +
           escAttr(imgSrc(mainImg)) +
           '" alt="' +
           escAttr(m.name) +

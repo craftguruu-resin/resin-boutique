@@ -604,15 +604,17 @@ var SIZE_DEFAULT = {
     return "";
   }
 
-  /** Cloudinary delivery transforms: auto format/quality, optional width cap. */
+  /** Cloudinary delivery transforms: auto format/quality/dpr, optional width cap. */
   function cloudinaryDisplayUrl(url, displayWidth) {
     var s = String(url || "").trim();
     if (!/res\.cloudinary\.com/i.test(s) || s.indexOf("/image/upload/") < 0) return s;
     if (/[?&]f_auto|[,/]f_auto/.test(s)) return s;
-    var transforms = ["f_auto", "q_auto"];
+    var transforms = ["f_auto", "q_auto", "dpr_auto"];
     var w = Number(displayWidth);
     if (Number.isFinite(w) && w > 0 && w < 4000) {
       transforms.push("w_" + Math.round(w), "c_limit");
+    } else {
+      transforms.push("w_auto");
     }
     var insert = transforms.join(",");
     return s.replace("/image/upload/", "/image/upload/" + insert + "/");
