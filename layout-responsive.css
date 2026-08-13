@@ -123,7 +123,27 @@ body.guest-site:not(.page-home) {
     grid-row: 1;
     justify-self: end;
     align-self: center;
-    gap: 0.35rem;
+    gap: 0.3rem;
+    max-width: calc(100vw - min(38vw, 9.5rem) - 1.5rem);
+    flex-wrap: nowrap;
+  }
+
+  body.guest-site .home-auth-bar {
+    gap: 0.28rem;
+    flex-shrink: 1;
+    min-width: 0;
+  }
+
+  body.guest-site .home-auth-btn {
+    padding: 0.42rem 0.52rem;
+    font-size: 0.62rem;
+    min-height: 2.35rem;
+  }
+
+  body.guest-site .home-header-wish {
+    min-height: 2.35rem;
+    padding-inline: 0.48rem;
+    flex-shrink: 0;
   }
 
   body.guest-site .brand__logo-img {
@@ -157,6 +177,10 @@ body.guest-site:not(.page-home) {
   body.guest-site .nav-dock-link {
     flex: 0 0 auto;
     white-space: nowrap;
+  }
+
+  body.guest-site .site-top-end {
+    gap: 0.35rem;
   }
 
   body.guest-site .site-top-end {
@@ -274,6 +298,11 @@ body.guest-site .rm-landing {
     max-height: none;
     width: 100%;
     margin-top: 0.15rem;
+  }
+
+  .product-catalog-gallery--multi .pdp-feature-bar.cg-pdp__feature-pills {
+    order: 3;
+    margin-top: 0.45rem;
   }
 
   .product-catalog-gallery--multi .product-catalog-gallery__nav {
@@ -533,13 +562,48 @@ body.guest-site .rm-landing {
 
 /* ── Footer ── */
 @media (max-width: 640px) {
+  body.guest-site:not(.page-home) .site-footer--craftguru {
+    margin-top: 1.5rem;
+    padding-top: 1.75rem;
+    padding-left: clamp(0.75rem, 3vw, 1.25rem);
+    padding-right: clamp(0.75rem, 3vw, 1.25rem);
+  }
+
   body.guest-site .footer-sitemap {
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
+    gap: 1rem;
+    margin-inline: auto;
+    width: 100%;
+    text-align: center;
+    padding: 1.35rem clamp(0.85rem, 3vw, 1.25rem);
+  }
+
+  body.guest-site .footer-sitemap__col {
+    text-align: center;
+    justify-items: center;
+  }
+
+  body.guest-site .footer-sitemap__title {
+    text-align: center;
+  }
+
+  body.guest-site .footer-sitemap__list {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+  }
+
+  body.guest-site .footer-sitemap__list li {
+    margin-bottom: 0.25rem;
   }
 
   body.guest-site .site-footer--craftguru {
     padding-inline: clamp(0.75rem, 3vw, 1.25rem);
+  }
+
+  body.guest-site .footer-copy--craftguru {
+    text-align: center;
   }
 }
 

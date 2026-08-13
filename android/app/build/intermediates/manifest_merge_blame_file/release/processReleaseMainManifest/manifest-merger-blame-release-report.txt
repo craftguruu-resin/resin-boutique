@@ -1,0 +1,429 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.craftguru.app"
+4    android:versionCode="1"
+5    android:versionName="1.0.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="29"
+9        android:targetSdkVersion="34" />
+10
+11    <uses-permission android:name="android.permission.INTERNET" />
+11-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:4:5-67
+11-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:4:22-64
+12    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+12-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:5:5-79
+12-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:5:22-76
+13    <uses-permission android:name="android.permission.CAMERA" />
+13-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:6:5-65
+13-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:6:22-62
+14    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+14-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:7:5-76
+14-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:7:22-73
+15    <uses-permission
+15-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:8:5-107
+16        android:name="android.permission.READ_EXTERNAL_STORAGE"
+16-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:8:22-77
+17        android:maxSdkVersion="32" />
+17-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:8:78-104
+18    <uses-permission
+18-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:9:5-108
+19        android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+19-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:9:22-78
+20        android:maxSdkVersion="28" />
+20-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:9:79-105
+21    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+21-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:10:5-77
+21-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:10:22-74
+22
+23    <uses-feature
+23-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:12:5-85
+24        android:name="android.hardware.camera"
+24-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:12:19-57
+25        android:required="false" />
+25-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:12:58-82
+26
+27    <uses-permission android:name="android.permission.WAKE_LOCK" /> <!-- Required by older versions of Google Play services to create IID tokens -->
+27-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:24:5-68
+27-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:24:22-65
+28    <uses-permission android:name="com.google.android.c2dm.permission.RECEIVE" />
+28-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:26:5-82
+28-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:26:22-79
+29
+30    <permission
+30-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:22:5-24:47
+31        android:name="com.craftguru.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
+31-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:23:9-81
+32        android:protectionLevel="signature" />
+32-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:24:9-44
+33
+34    <uses-permission android:name="com.craftguru.app.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION" />
+34-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:26:5-97
+34-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:26:22-94
+35
+36    <application
+36-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:14:5-78:19
+37        android:name="com.craftguru.app.CraftGuruApplication"
+37-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:15:9-45
+38        android:allowBackup="true"
+38-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:16:9-35
+39        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+39-->[androidx.core:core:1.13.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/86d139a0de0560a1a2e026d7936fd794/transformed/core-1.13.1/AndroidManifest.xml:28:18-86
+40        android:extractNativeLibs="false"
+41        android:icon="@mipmap/ic_launcher"
+41-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:17:9-43
+42        android:label="@string/app_name"
+42-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:18:9-41
+43        android:networkSecurityConfig="@xml/network_security_config"
+43-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:19:9-69
+44        android:roundIcon="@mipmap/ic_launcher_round"
+44-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:20:9-54
+45        android:supportsRtl="true"
+45-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:21:9-35
+46        android:theme="@style/Theme.CraftGuru"
+46-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:22:9-47
+47        android:usesCleartextTraffic="true" >
+47-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:23:9-44
+48        <activity
+48-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:25:9-33:20
+49            android:name="com.craftguru.app.SplashActivity"
+49-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:26:13-43
+50            android:exported="true"
+50-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:27:13-36
+51            android:theme="@style/Theme.CraftGuru.Splash" >
+51-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:28:13-58
+52            <intent-filter>
+52-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:29:13-32:29
+53                <action android:name="android.intent.action.MAIN" />
+53-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:30:17-69
+53-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:30:25-66
+54
+55                <category android:name="android.intent.category.LAUNCHER" />
+55-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:31:17-77
+55-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:31:27-74
+56            </intent-filter>
+57        </activity>
+58        <activity
+58-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:35:9-58:20
+59            android:name="com.craftguru.app.MainActivity"
+59-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:36:13-41
+60            android:configChanges="orientation|screenSize|keyboardHidden"
+60-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:37:13-74
+61            android:exported="true"
+61-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:38:13-36
+62            android:launchMode="singleTask"
+62-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:39:13-44
+63            android:theme="@style/Theme.CraftGuru"
+63-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:40:13-51
+64            android:windowSoftInputMode="adjustResize" >
+64-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:41:13-55
+65
+66            <!-- Deep links: product pages (extend paths as needed). -->
+67            <intent-filter android:autoVerify="true" >
+67-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:44:13-50:29
+67-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:44:28-53
+68                <action android:name="android.intent.action.VIEW" />
+68-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:45:17-69
+68-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:45:25-66
+69
+70                <category android:name="android.intent.category.DEFAULT" />
+70-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:46:17-76
+70-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:46:27-73
+71                <category android:name="android.intent.category.BROWSABLE" />
+71-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:47:17-78
+71-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:47:27-75
+72
+73                <data
+73-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:17-83
+74                    android:host="www.craftguru.co.in"
+74-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:46-80
+75                    android:scheme="https" />
+75-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:23-45
+76                <data
+76-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:17-83
+77                    android:host="craftguru.co.in"
+77-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:46-80
+78                    android:scheme="https" />
+78-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:23-45
+79            </intent-filter>
+80            <intent-filter>
+80-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:52:13-57:29
+81                <action android:name="android.intent.action.VIEW" />
+81-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:45:17-69
+81-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:45:25-66
+82
+83                <category android:name="android.intent.category.DEFAULT" />
+83-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:46:17-76
+83-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:46:27-73
+84                <category android:name="android.intent.category.BROWSABLE" />
+84-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:47:17-78
+84-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:47:27-75
+85
+86                <data
+86-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:17-83
+87                    android:host="open"
+87-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:46-80
+88                    android:scheme="craftguru" />
+88-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:48:23-45
+89            </intent-filter>
+90        </activity>
+91
+92        <provider
+93            android:name="androidx.core.content.FileProvider"
+93-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:61:13-62
+94            android:authorities="com.craftguru.app.fileprovider"
+94-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:62:13-64
+95            android:exported="false"
+95-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:63:13-37
+96            android:grantUriPermissions="true" >
+96-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:64:13-47
+97            <meta-data
+97-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:65:13-67:54
+98                android:name="android.support.FILE_PROVIDER_PATHS"
+98-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:66:17-67
+99                android:resource="@xml/file_paths" />
+99-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:67:17-51
+100        </provider>
+101
+102        <!-- FCM: enable when google-services.json is added. -->
+103        <service
+103-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:71:9-77:19
+104            android:name="com.craftguru.app.fcm.CraftGuruFirebaseMessagingService"
+104-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:72:13-66
+105            android:exported="false" >
+105-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:73:13-37
+106            <intent-filter>
+106-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:74:13-76:29
+107                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+107-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:75:17-78
+107-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:75:25-75
+108            </intent-filter>
+109        </service>
+110
+111        <provider
+111-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:24:9-32:20
+112            android:name="androidx.startup.InitializationProvider"
+112-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:25:13-67
+113            android:authorities="com.craftguru.app.androidx-startup"
+113-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:26:13-68
+114            android:exported="false" >
+114-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:27:13-37
+115            <meta-data
+115-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:29:13-31:52
+116                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+116-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:30:17-75
+117                android:value="androidx.startup" />
+117-->[androidx.emoji2:emoji2:1.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/a5b1ddb4dd34aceeb2b802e969e6092c/transformed/emoji2-1.3.0/AndroidManifest.xml:31:17-49
+118            <meta-data
+118-->[androidx.lifecycle:lifecycle-process:2.6.2] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/428e9beebfc6f4aa98bb011a6c7dfc17/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:29:13-31:52
+119                android:name="androidx.lifecycle.ProcessLifecycleInitializer"
+119-->[androidx.lifecycle:lifecycle-process:2.6.2] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/428e9beebfc6f4aa98bb011a6c7dfc17/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:30:17-78
+120                android:value="androidx.startup" />
+120-->[androidx.lifecycle:lifecycle-process:2.6.2] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/428e9beebfc6f4aa98bb011a6c7dfc17/transformed/lifecycle-process-2.6.2/AndroidManifest.xml:31:17-49
+121            <meta-data
+121-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:29:13-31:52
+122                android:name="androidx.profileinstaller.ProfileInstallerInitializer"
+122-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:30:17-85
+123                android:value="androidx.startup" />
+123-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:31:17-49
+124        </provider>
+125
+126        <service
+126-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:23:9-29:19
+127            android:name="com.google.firebase.components.ComponentDiscoveryService"
+127-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:24:13-84
+128            android:directBootAware="true"
+128-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:32:13-43
+129            android:exported="false" >
+129-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:25:13-37
+130            <meta-data
+130-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:26:13-28:85
+131                android:name="com.google.firebase.components:com.google.firebase.messaging.ktx.FirebaseMessagingLegacyRegistrar"
+131-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:27:17-129
+132                android:value="com.google.firebase.components.ComponentRegistrar" />
+132-->[com.google.firebase:firebase-messaging-ktx:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/56ffc3319e148b2c8c4f87a0a6dd6bc9/transformed/firebase-messaging-ktx-24.0.0/AndroidManifest.xml:28:17-82
+133            <meta-data
+133-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:57:13-59:85
+134                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingKtxRegistrar"
+134-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:58:17-122
+135                android:value="com.google.firebase.components.ComponentRegistrar" />
+135-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:59:17-82
+136            <meta-data
+136-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:60:13-62:85
+137                android:name="com.google.firebase.components:com.google.firebase.messaging.FirebaseMessagingRegistrar"
+137-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:61:17-119
+138                android:value="com.google.firebase.components.ComponentRegistrar" />
+138-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:62:17-82
+139            <meta-data
+139-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:15:13-17:85
+140                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsKtxRegistrar"
+140-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:16:17-130
+141                android:value="com.google.firebase.components.ComponentRegistrar" />
+141-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:17:17-82
+142            <meta-data
+142-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:18:13-20:85
+143                android:name="com.google.firebase.components:com.google.firebase.installations.FirebaseInstallationsRegistrar"
+143-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:19:17-127
+144                android:value="com.google.firebase.components.ComponentRegistrar" />
+144-->[com.google.firebase:firebase-installations:18.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/24f61798178182a7d482b3e8ba122934/transformed/firebase-installations-18.0.0/AndroidManifest.xml:20:17-82
+145            <meta-data
+145-->[com.google.firebase:firebase-common-ktx:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/3a3942fca233bd6fa9fdc308b3781070/transformed/firebase-common-ktx-21.0.0/AndroidManifest.xml:12:13-14:85
+146                android:name="com.google.firebase.components:com.google.firebase.ktx.FirebaseCommonLegacyRegistrar"
+146-->[com.google.firebase:firebase-common-ktx:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/3a3942fca233bd6fa9fdc308b3781070/transformed/firebase-common-ktx-21.0.0/AndroidManifest.xml:13:17-116
+147                android:value="com.google.firebase.components.ComponentRegistrar" />
+147-->[com.google.firebase:firebase-common-ktx:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/3a3942fca233bd6fa9fdc308b3781070/transformed/firebase-common-ktx-21.0.0/AndroidManifest.xml:14:17-82
+148            <meta-data
+148-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:35:13-37:85
+149                android:name="com.google.firebase.components:com.google.firebase.FirebaseCommonKtxRegistrar"
+149-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:36:17-109
+150                android:value="com.google.firebase.components.ComponentRegistrar" />
+150-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:37:17-82
+151            <meta-data
+151-->[com.google.firebase:firebase-datatransport:18.2.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/83e9b293961699a21e657b5f1c603398/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:25:13-27:85
+152                android:name="com.google.firebase.components:com.google.firebase.datatransport.TransportRegistrar"
+152-->[com.google.firebase:firebase-datatransport:18.2.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/83e9b293961699a21e657b5f1c603398/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:26:17-115
+153                android:value="com.google.firebase.components.ComponentRegistrar" />
+153-->[com.google.firebase:firebase-datatransport:18.2.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/83e9b293961699a21e657b5f1c603398/transformed/firebase-datatransport-18.2.0/AndroidManifest.xml:27:17-82
+154        </service>
+155
+156        <receiver
+156-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:29:9-40:20
+157            android:name="com.google.firebase.iid.FirebaseInstanceIdReceiver"
+157-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:30:13-78
+158            android:exported="true"
+158-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:31:13-36
+159            android:permission="com.google.android.c2dm.permission.SEND" >
+159-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:32:13-73
+160            <intent-filter>
+160-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:33:13-35:29
+161                <action android:name="com.google.android.c2dm.intent.RECEIVE" />
+161-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:34:17-81
+161-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:34:25-78
+162            </intent-filter>
+163
+164            <meta-data
+164-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:37:13-39:40
+165                android:name="com.google.android.gms.cloudmessaging.FINISHED_AFTER_HANDLED"
+165-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:38:17-92
+166                android:value="true" />
+166-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:39:17-37
+167        </receiver>
+168        <!--
+169             FirebaseMessagingService performs security checks at runtime,
+170             but set to not exported to explicitly avoid allowing another app to call it.
+171        -->
+172        <service
+172-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:46:9-53:19
+173            android:name="com.google.firebase.messaging.FirebaseMessagingService"
+173-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:47:13-82
+174            android:directBootAware="true"
+174-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:48:13-43
+175            android:exported="false" >
+175-->[com.google.firebase:firebase-messaging:24.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/08a76085bfd35f9a3beb53cf95ff05e9/transformed/firebase-messaging-24.0.0/AndroidManifest.xml:49:13-37
+176            <intent-filter android:priority="-500" >
+176-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:74:13-76:29
+177                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+177-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:75:17-78
+177-->/Users/devesh/Desktop/resin-boutique/android/app/src/main/AndroidManifest.xml:75:25-75
+178            </intent-filter>
+179        </service>
+180
+181        <activity
+181-->[com.google.android.gms:play-services-base:18.0.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/cdfedde4d0cb084034cefe5106a79a39/transformed/play-services-base-18.0.1/AndroidManifest.xml:20:9-22:45
+182            android:name="com.google.android.gms.common.api.GoogleApiActivity"
+182-->[com.google.android.gms:play-services-base:18.0.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/cdfedde4d0cb084034cefe5106a79a39/transformed/play-services-base-18.0.1/AndroidManifest.xml:20:19-85
+183            android:exported="false"
+183-->[com.google.android.gms:play-services-base:18.0.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/cdfedde4d0cb084034cefe5106a79a39/transformed/play-services-base-18.0.1/AndroidManifest.xml:22:19-43
+184            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+184-->[com.google.android.gms:play-services-base:18.0.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/cdfedde4d0cb084034cefe5106a79a39/transformed/play-services-base-18.0.1/AndroidManifest.xml:21:19-78
+185
+186        <provider
+186-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:23:9-28:39
+187            android:name="com.google.firebase.provider.FirebaseInitProvider"
+187-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:24:13-77
+188            android:authorities="com.craftguru.app.firebaseinitprovider"
+188-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:25:13-72
+189            android:directBootAware="true"
+189-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:26:13-43
+190            android:exported="false"
+190-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:27:13-37
+191            android:initOrder="100" />
+191-->[com.google.firebase:firebase-common:21.0.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fa10697f263963146316e2c4ad6fdbc1/transformed/firebase-common-21.0.0/AndroidManifest.xml:28:13-36
+192
+193        <meta-data
+193-->[com.google.android.gms:play-services-basement:18.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/bef41bd716cfd8da143f9ab04fa4424d/transformed/play-services-basement-18.3.0/AndroidManifest.xml:21:9-23:69
+194            android:name="com.google.android.gms.version"
+194-->[com.google.android.gms:play-services-basement:18.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/bef41bd716cfd8da143f9ab04fa4424d/transformed/play-services-basement-18.3.0/AndroidManifest.xml:22:13-58
+195            android:value="@integer/google_play_services_version" />
+195-->[com.google.android.gms:play-services-basement:18.3.0] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/bef41bd716cfd8da143f9ab04fa4424d/transformed/play-services-basement-18.3.0/AndroidManifest.xml:23:13-66
+196
+197        <receiver
+197-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:34:9-52:20
+198            android:name="androidx.profileinstaller.ProfileInstallReceiver"
+198-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:35:13-76
+199            android:directBootAware="false"
+199-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:36:13-44
+200            android:enabled="true"
+200-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:37:13-35
+201            android:exported="true"
+201-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:38:13-36
+202            android:permission="android.permission.DUMP" >
+202-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:39:13-57
+203            <intent-filter>
+203-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:40:13-42:29
+204                <action android:name="androidx.profileinstaller.action.INSTALL_PROFILE" />
+204-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:17-91
+204-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:41:25-88
+205            </intent-filter>
+206            <intent-filter>
+206-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:43:13-45:29
+207                <action android:name="androidx.profileinstaller.action.SKIP_FILE" />
+207-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:17-85
+207-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:44:25-82
+208            </intent-filter>
+209            <intent-filter>
+209-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:46:13-48:29
+210                <action android:name="androidx.profileinstaller.action.SAVE_PROFILE" />
+210-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:17-88
+210-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:47:25-85
+211            </intent-filter>
+212            <intent-filter>
+212-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:49:13-51:29
+213                <action android:name="androidx.profileinstaller.action.BENCHMARK_OPERATION" />
+213-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:17-95
+213-->[androidx.profileinstaller:profileinstaller:1.3.1] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/35be0532e9c9ad707a1548ee3a3cd148/transformed/profileinstaller-1.3.1/AndroidManifest.xml:50:25-92
+214            </intent-filter>
+215        </receiver>
+216
+217        <service
+217-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:28:9-34:19
+218            android:name="com.google.android.datatransport.runtime.backends.TransportBackendDiscovery"
+218-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:29:13-103
+219            android:exported="false" >
+219-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:30:13-37
+220            <meta-data
+220-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:31:13-33:39
+221                android:name="backend:com.google.android.datatransport.cct.CctBackendFactory"
+221-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:32:17-94
+222                android:value="cct" />
+222-->[com.google.android.datatransport:transport-backend-cct:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/72af157852ceba79c53bd041134dd4db/transformed/transport-backend-cct-3.1.9/AndroidManifest.xml:33:17-36
+223        </service>
+224        <service
+224-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:26:9-30:19
+225            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.JobInfoSchedulerService"
+225-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:27:13-117
+226            android:exported="false"
+226-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:28:13-37
+227            android:permission="android.permission.BIND_JOB_SERVICE" >
+227-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:29:13-69
+228        </service>
+229
+230        <receiver
+230-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:32:9-34:40
+231            android:name="com.google.android.datatransport.runtime.scheduling.jobscheduling.AlarmManagerSchedulerBroadcastReceiver"
+231-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:33:13-132
+232            android:exported="false" />
+232-->[com.google.android.datatransport:transport-runtime:3.1.9] /private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/9a90abdcd9d55903823c1abed8268350/transformed/transport-runtime-3.1.9/AndroidManifest.xml:34:13-37
+233    </application>
+234
+235</manifest>

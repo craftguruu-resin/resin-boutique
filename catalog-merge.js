@@ -36,6 +36,11 @@
 
   function billApiBase() {
     try {
+      if (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function") {
+        return window.CraftguruApiBase.get();
+      }
+    } catch (_) {}
+    try {
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
@@ -60,6 +65,9 @@
         var loc = window.location;
         var port = loc.port || (loc.protocol === "https:" ? "443" : "80");
         if (STATIC_DEV_PORTS[port]) {
+          if (window.CraftguruApiBase && window.CraftguruApiBase.isAndroidWebView && window.CraftguruApiBase.isAndroidWebView()) {
+            return "http://10.0.2.2:" + (billApiPortOverride() || "3847");
+          }
           return "http://127.0.0.1:" + (billApiPortOverride() || "3847");
         }
         return String(loc.origin).replace(/\/+$/, "");
@@ -257,30 +265,4 @@
       runMerge(true);
     }, 400);
   });
-
-  function wireCatalogRefreshControl() {
-    var cartEl = document.getElementById("cartToggle");
-    var host = cartEl && cartEl.parentElement;
-    if (!host || document.getElementById("catalogSyncBtn")) return;
-    var btn = document.createElement("button");
-    btn.type = "button";
-    btn.id = "catalogSyncBtn";
-    btn.className = "icon-btn catalog-sync-btn";
-    btn.setAttribute("aria-label", "Refresh catalog prices from server");
-    btn.title = "Refresh catalog";
-    btn.textContent = "↻";
-    btn.addEventListener("click", function () {
-      btn.disabled = true;
-      runMerge(true).finally(function () {
-        btn.disabled = false;
-      });
-    });
-    host.insertBefore(btn, cartEl);
-  }
-
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", wireCatalogRefreshControl);
-  } else {
-    wireCatalogRefreshControl();
-  }
 })();

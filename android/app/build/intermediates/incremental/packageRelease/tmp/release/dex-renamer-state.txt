@@ -1,0 +1,4 @@
+#Thu Aug 13 11:17:53 IST 2026
+base.0=/Users/devesh/Desktop/resin-boutique/android/app/build/intermediates/dex/release/minifyReleaseWithR8/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

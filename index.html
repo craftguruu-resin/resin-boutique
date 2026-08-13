@@ -88,16 +88,16 @@
         <p id="globalFindHint"></p>
       </div>
       <div class="home-auth-bar" id="homeAuthBar">
-        <a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist">
-          <span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>
-          <span class="home-header-wish__count" id="homeWishlistCount" hidden></span>
-        </a>
         <span class="home-auth-user is-hidden" id="homeAuthUser"></span>
         <button type="button" class="home-auth-btn" id="homeAuthSignup">Sign up</button>
         <button type="button" class="home-auth-btn" id="homeAuthLogin">Log in</button>
         <a href="account.html" class="home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthOrders">My orders</a>
         <button type="button" class="home-auth-btn is-hidden" id="homeAuthLogout">Log out</button>
       </div>
+      <a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist">
+        <span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>
+        <span class="home-header-wish__count" id="homeWishlistCount" hidden></span>
+      </a>
       <button type="button" class="btn-cart btn-cart--fx" id="cartToggle" aria-label="Open shopping cart">
         <span class="btn-cart-label">Cart</span>
         <span class="cart-count" id="cartCount">0</span>
@@ -566,6 +566,7 @@
   </div>
 
   <script defer src="image-fit.js"></script>
+  <script src="craftguru-api-base.js"></script>
   <script defer src="data.js"></script>
   <script defer src="catalog-merge.js"></script>
   <script defer src="cart.js"></script>

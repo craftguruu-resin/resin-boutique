@@ -534,15 +534,27 @@
     bar.className = "home-auth-bar";
     bar.id = "homeAuthBar";
     bar.innerHTML =
-      '<a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist">' +
-      '<span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>' +
-      '<span class="home-header-wish__count" id="homeWishlistCount" hidden></span></a>' +
       '<span class="home-auth-user is-hidden" id="homeAuthUser"></span>' +
       '<button type="button" class="home-auth-btn" id="homeAuthSignup">Sign up</button>' +
       '<button type="button" class="home-auth-btn" id="homeAuthLogin">Log in</button>' +
       '<a href="account.html" class="home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthOrders">My orders</a>' +
       '<button type="button" class="home-auth-btn is-hidden" id="homeAuthLogout">Log out</button>';
     topEnd.insertBefore(bar, topEnd.firstChild);
+
+    var wishlist = document.createElement("a");
+    wishlist.href = "wishlist.html";
+    wishlist.className = "home-auth-btn home-header-wish";
+    wishlist.id = "homeWishlistLink";
+    wishlist.setAttribute("aria-label", "Wishlist");
+    wishlist.innerHTML =
+      '<span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>' +
+      '<span class="home-header-wish__count" id="homeWishlistCount" hidden></span>';
+    var cartEl = document.getElementById("cartToggle");
+    if (cartEl) {
+      topEnd.insertBefore(wishlist, cartEl);
+    } else {
+      topEnd.appendChild(wishlist);
+    }
 
     if (document.getElementById("authModal")) return;
 

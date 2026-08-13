@@ -1,0 +1,20 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.craftguru.app-mergeReleaseResources-2:/values-v29/values-v29.xml",
+            "map": [
+                {
+                    "source": "/private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fe3d4312c28e54a7567029b240298fb8/transformed/core-splashscreen-1.0.1/res/values-v29/values-v29.xml",
+                    "from": {
+                        "startLines": "2,7",
+                        "startColumns": "4,4",
+                        "startOffsets": "55,374",
+                        "endLines": "6,8",
+                        "endColumns": "12,12",
+                        "endOffsets": "369,464"
+                    }
+                }
+            ]
+        }
+    ]
+}

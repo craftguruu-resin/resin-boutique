@@ -12,3 +12,4 @@
 *.aab
 output/
 google-services.json
+craftguru-release.keystore

@@ -568,31 +568,40 @@ var SIZE_DEFAULT = {
 
   function storefrontApiBaseForMedia() {
     try {
+      if (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function") {
+        var shared = String(window.CraftguruApiBase.get() || "").trim().replace(/\/+$/, "");
+        if (shared) return shared;
+      }
       if (typeof window === "undefined" || !window.location) return "";
       if (window.location.protocol === "file:") return "";
       var port = String(window.location.port || (window.location.protocol === "https:" ? "443" : "80"));
       if (!STATIC_DEV_PORTS[port]) return "";
-      var override = "";
-      try {
-        var v = document.documentElement.getAttribute("data-bill-api-port");
-        if (v != null && String(v).trim()) {
-          var n = parseInt(String(v).trim(), 10);
-          if (Number.isFinite(n) && n > 0 && n < 65536) override = String(n);
-        }
-      } catch (_) {}
-      if (!override) {
-        try {
-          var ls = localStorage.getItem("craftguruBillApiPort");
-          if (ls != null && String(ls).trim()) {
-            var n2 = parseInt(String(ls).trim(), 10);
-            if (Number.isFinite(n2) && n2 > 0 && n2 < 65536) override = String(n2);
-          }
-        } catch (_) {}
+      if (window.CraftguruApiBase && window.CraftguruApiBase.isAndroidWebView && window.CraftguruApiBase.isAndroidWebView()) {
+        return "http://10.0.2.2:" + (billApiPortOverride() || "3847");
       }
+      var override = billApiPortOverride();
       return "http://127.0.0.1:" + (override || "3847");
     } catch (_) {
       return "";
     }
+  }
+
+  function billApiPortOverride() {
+    try {
+      var v = document.documentElement.getAttribute("data-bill-api-port");
+      if (v != null && String(v).trim()) {
+        var n = parseInt(String(v).trim(), 10);
+        if (Number.isFinite(n) && n > 0 && n < 65536) return String(n);
+      }
+    } catch (_) {}
+    try {
+      var ls = localStorage.getItem("craftguruBillApiPort");
+      if (ls != null && String(ls).trim()) {
+        var n2 = parseInt(String(ls).trim(), 10);
+        if (Number.isFinite(n2) && n2 > 0 && n2 < 65536) return String(n2);
+      }
+    } catch (_) {}
+    return "";
   }
 
   function imageUrl(relPath) {

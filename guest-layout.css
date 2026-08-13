@@ -18,6 +18,24 @@
   min-width: 0;
 }
 
+@media (min-width: 901px) {
+  body.guest-site .site-top-end {
+    gap: 0.45rem;
+    flex-wrap: nowrap;
+  }
+
+  body.guest-site .home-auth-bar {
+    flex-wrap: nowrap;
+    gap: 0.38rem;
+  }
+
+  body.guest-site .home-auth-btn,
+  body.guest-site .home-header-wish,
+  body.guest-site .btn-cart {
+    min-height: 2.35rem;
+  }
+}
+
 .guest-header-search {
   position: relative;
   display: flex;

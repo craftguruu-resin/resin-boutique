@@ -438,7 +438,9 @@ body:not(.vendor-saas) .brand__logo-img {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.55rem 1.15rem;
+  padding: 0.48rem 1.05rem;
+  min-height: 2.35rem;
+  box-sizing: border-box;
   border: none;
   border-radius: var(--radius-pill);
   background: var(--white);
@@ -2478,6 +2480,24 @@ body.product-page--oos .btn-add-lg {
   align-items: start;
 }
 
+.page-product .product-layout--split > .cg-pdp__bottom {
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  margin-top: 0.25rem;
+  clear: both;
+  position: relative;
+  z-index: 1;
+}
+
+.page-product .product-detail--purchase.product-detail--buy-column {
+  position: relative;
+  z-index: 2;
+  align-self: start;
+  overflow: visible;
+  min-width: 0;
+}
+
 @media (min-width: 900px) {
   .product-layout--split {
     grid-template-columns: 1.02fr 0.98fr;
@@ -2523,6 +2543,11 @@ body.product-page--oos .btn-add-lg {
   grid-template-columns: minmax(0, 1fr) 76px;
   gap: clamp(0.65rem, 1.5vw, 1.1rem);
   align-items: stretch;
+}
+
+.product-catalog-gallery--multi .pdp-feature-bar.cg-pdp__feature-pills {
+  grid-column: 1 / -1;
+  margin-top: 0.35rem;
 }
 
 .product-catalog-gallery__thumb-col {
@@ -2703,17 +2728,18 @@ body.product-page--oos .btn-add-lg {
   margin: 0 0 0.5rem;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: clamp(1.75rem, 3.8vw, 2.45rem);
-  letter-spacing: -0.035em;
-  line-height: 1.28;
+  font-size: clamp(1.35rem, 2.8vw, 1.85rem);
+  letter-spacing: -0.025em;
+  line-height: 1.22;
   color: var(--ink);
   overflow: visible;
   text-overflow: clip;
   white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
   max-width: 100%;
-  padding-block: 0.06em;
+  padding-block: 0.04em;
 }
 
 .product-meta-line {
@@ -3967,7 +3993,50 @@ body.product-page--oos .btn-add-lg {
   justify-self: end;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  min-width: 0;
+}
+
+.site-top-end--home {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.home-auth-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.home-auth-btn {
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background: rgba(255, 255, 255, 0.42);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: rgba(26, 32, 44, 0.78);
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 0.48rem 0.7rem;
+  border-radius: var(--radius-pill);
+  cursor: pointer;
+  min-height: 2.35rem;
+  box-sizing: border-box;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .header-orders-link {
@@ -5970,44 +6039,7 @@ body.product-page--oos .btn-add-lg {
   margin-top: 0;
 }
 
-/* Homepage auth (index only) */
-.site-top-end--home {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.home-auth-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.home-auth-btn {
-  border: 1px solid rgba(255, 255, 255, 0.55);
-  background: rgba(255, 255, 255, 0.42);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  color: rgba(26, 32, 44, 0.78);
-  font-family: inherit;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  padding: 0.45rem 0.65rem;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition:
-    background 0.2s,
-    border-color 0.2s,
-    color 0.2s;
-}
-
+/* Homepage auth — shared rules also at .site-top-end / .home-auth-bar above */
 a.home-auth-btn {
   text-decoration: none;
   display: inline-flex;
@@ -6031,8 +6063,9 @@ a.home-auth-btn {
   align-items: center;
   gap: 0.28rem;
   position: relative;
-  min-height: 2.05rem;
-  padding-inline: 0.55rem;
+  min-height: 2.35rem;
+  padding-inline: 0.6rem;
+  flex-shrink: 0;
 }
 
 .home-header-wish__label {
@@ -8552,8 +8585,11 @@ a.home-category-rail__title-link:focus-visible {
 .page-product .pd-buy-rail {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.85rem;
   margin-top: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .page-product .pd-buy-rail__price-row {

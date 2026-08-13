@@ -172,17 +172,18 @@
 .rm-pdp--modern .rm-pdp__title {
   font-family: "Syne", "Plus Jakarta Sans", system-ui, sans-serif;
   font-weight: 700;
-  font-size: clamp(1.65rem, 4vw, 2.35rem);
-  letter-spacing: -0.03em;
-  line-height: 1.28;
+  font-size: clamp(1.35rem, 3.2vw, 1.95rem);
+  letter-spacing: -0.022em;
+  line-height: 1.22;
   color: var(--pdp-ink);
   margin-bottom: 0.65rem;
   overflow: visible;
   white-space: normal;
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
   max-width: 100%;
-  padding-block: 0.06em;
+  padding-block: 0.04em;
 }
 
 .rm-pdp--modern .rm-pdp__meta-rating-row {

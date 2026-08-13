@@ -17,6 +17,8 @@ import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updatePadding
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.craftguru.app.databinding.ActivityMainBinding
 import java.io.File
 
@@ -188,6 +190,8 @@ class MainActivity : AppCompatActivity() {
 
         webView.addJavascriptInterface(NativeBridge(this), "CraftGuruNative")
 
+        setupDocumentStartScripts(webView)
+
         val webBase = BuildConfig.WEB_BASE_URL
         webView.webViewClient = CraftGuruWebViewClient(
             webBase = webBase,
@@ -204,6 +208,25 @@ class MainActivity : AppCompatActivity() {
         )
 
         webView.setDownloadListener(CraftGuruDownloadListener(this))
+    }
+
+    private fun setupDocumentStartScripts(webView: WebView) {
+        if (!WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)) return
+        val webBase = BuildConfig.WEB_BASE_URL.trim().removeSuffix("/")
+        val apiBase = BuildConfig.API_BASE_URL.trim().removeSuffix("/").ifEmpty { webBase }
+        val escapedApi = apiBase.replace("\\", "\\\\").replace("'", "\\'")
+        val script = """
+            (function(){
+              try {
+                document.documentElement.setAttribute('data-native-app','android');
+                var cfg = document.documentElement.getAttribute('data-bill-api-base') || '';
+                if (!cfg || cfg.indexOf('127.0.0.1') >= 0 || cfg.indexOf('localhost') >= 0) {
+                  document.documentElement.setAttribute('data-bill-api-base','$escapedApi');
+                }
+              } catch (e) {}
+            })();
+        """.trimIndent()
+        WebViewCompat.addDocumentStartJavaScript(webView, script, setOf("*"))
     }
 
     private fun setupBackNavigation() {
@@ -247,17 +270,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun injectNativeHelpers(webView: WebView) {
-        val apiBase = BuildConfig.API_BASE_URL.trim()
-        val apiJs = if (apiBase.isNotEmpty()) {
-            "document.documentElement.setAttribute('data-bill-api-base','$apiBase');"
-        } else {
-            ""
-        }
         val script = """
             (function() {
               try {
-                document.documentElement.setAttribute('data-native-app','android');
-                $apiJs
+                if (window.CraftguruApiBase && typeof window.CraftguruApiBase.refresh === 'function') {
+                  window.CraftguruApiBase.refresh();
+                }
                 if (!navigator.share) {
                   navigator.share = function(data) {
                     var url = (data && data.url) ? data.url : window.location.href;

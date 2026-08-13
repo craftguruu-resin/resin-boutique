@@ -1,0 +1,30 @@
+R_DEF: Internal format may change without notice
+local
+color cg_offline
+color cg_page_bg
+color cg_splash_bg
+color cg_teal
+color cg_teal_dark
+color ic_launcher_background
+drawable ic_launcher_foreground
+id offlineBanner
+id progressBar
+id splashLogo
+id swipeRefresh
+id webView
+layout activity_main
+layout activity_splash
+mipmap ic_launcher
+mipmap ic_launcher_round
+string action_home
+string action_refresh
+string action_share
+string app_name
+string choose_file
+string download_failed
+string download_started
+string offline_message
+style Theme.CraftGuru
+style Theme.CraftGuru.Splash
+xml file_paths
+xml network_security_config

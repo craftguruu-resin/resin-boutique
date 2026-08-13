@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="cg_offline">#B45309</color>
+    <color name="cg_page_bg">#FFFFFF</color>
+    <color name="cg_splash_bg">#F8F4FA</color>
+    <color name="cg_teal">#26A69A</color>
+    <color name="cg_teal_dark">#1E8E84</color>
+    <color name="ic_launcher_background">#26A69A</color>
+    <string name="action_home">Home</string>
+    <string name="action_refresh">Refresh</string>
+    <string name="action_share">Share</string>
+    <string name="app_name">Craft Guru</string>
+    <string name="choose_file">Choose file</string>
+    <string name="download_failed">Download failed</string>
+    <string name="download_started">Download started</string>
+    <string name="offline_message">No internet connection. Some features may not work.</string>
+    <style name="Theme.CraftGuru" parent="Theme.Material3.Light.NoActionBar">
+        <item name="colorPrimary">@color/cg_teal</item>
+        <item name="colorPrimaryDark">@color/cg_teal_dark</item>
+        <item name="android:statusBarColor">@color/cg_teal_dark</item>
+        <item name="android:navigationBarColor">@color/cg_page_bg</item>
+    </style>
+    <style name="Theme.CraftGuru.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cg_splash_bg</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.CraftGuru</item>
+    </style>
+</resources>

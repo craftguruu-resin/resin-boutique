@@ -1,0 +1,38 @@
+{
+    "logs": [
+        {
+            "outputFile": "com.craftguru.app-mergeReleaseResources-2:/values-watch-v20/values-watch-v20.xml",
+            "map": [
+                {
+                    "source": "/private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/fe3d4312c28e54a7567029b240298fb8/transformed/core-splashscreen-1.0.1/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,3,4,5,6,7,8,9",
+                        "startColumns": "4,4,4,4,4,4,4,4",
+                        "startOffsets": "55,129,205,280,357,428,496,566",
+                        "endColumns": "73,75,74,76,70,67,69,67",
+                        "endOffsets": "124,200,275,352,423,491,561,629"
+                    }
+                },
+                {
+                    "source": "/private/var/folders/fl/jyx23myd0kx_8_zrp4xk99f00000gn/T/cursor-sandbox-cache/141250d33673a21be4155284ec5b6f7a/gradle/caches/transforms-4/100256d850437ee2389d0bd3d608a9cf/transformed/appcompat-1.7.0/res/values-watch-v20/values-watch-v20.xml",
+                    "from": {
+                        "startLines": "2,5,8",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "55,214,385",
+                        "endLines": "4,7,10",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "209,380,553"
+                    },
+                    "to": {
+                        "startLines": "10,13,16",
+                        "startColumns": "4,4,4",
+                        "startOffsets": "634,793,964",
+                        "endLines": "12,15,18",
+                        "endColumns": "12,12,12",
+                        "endOffsets": "788,959,1132"
+                    }
+                }
+            ]
+        }
+    ]
+}

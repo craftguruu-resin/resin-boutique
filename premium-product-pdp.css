@@ -199,10 +199,13 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-weight: 700;
-  font-size: clamp(1.75rem, 4.2vw, 2.35rem);
-  line-height: 1.12;
+  font-size: clamp(1.35rem, 2.6vw, 1.9rem);
+  line-height: 1.22;
   color: var(--cg-pdp-navy);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.018em;
+  overflow-wrap: break-word;
+  word-break: normal;
+  hyphens: auto;
 }
 
 .cg-pdp__title-actions {
@@ -652,6 +655,11 @@ body.cg-pdp-lightbox-open {
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 420px);
   gap: clamp(1rem, 2.5vw, 2rem);
   align-items: start;
+}
+
+.page-product .product-layout--split > .cg-pdp__bottom {
+  grid-column: 1 / -1;
+  margin-top: 0.5rem;
 }
 
 .page-product .product-title--fx,
