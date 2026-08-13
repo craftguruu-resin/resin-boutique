@@ -780,10 +780,18 @@
     var featureHtml = P && P.featurePillsHtml ? P.featurePillsHtml() : "";
     var fsBtn = P && P.fullscreenBtnHtml ? P.fullscreenBtnHtml() : "";
     var catTag = P && P.categoryTagHtml ? P.categoryTagHtml(catLabel) : "<p class=\"rm-pdp__brand\">" + esc(brandKicker) + "</p>";
-    var titleRow =
-      P && P.titleRowHtml
-        ? P.titleRowHtml({ title: m.name, shareHostId: "resinPdpShare", wishId: "resinPdpWishLink" })
-        : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>";
+    var headerHtml =
+      P && P.pdpHeaderHtml
+        ? P.pdpHeaderHtml({
+            categoryLabel: catLabel,
+            title: m.name,
+            shareHostId: "resinPdpShare",
+            wishId: "resinPdpWishLink",
+          })
+        : catTag +
+          (P && P.titleRowHtml
+            ? P.titleRowHtml({ title: m.name, shareHostId: "resinPdpShare", wishId: "resinPdpWishLink" })
+            : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>");
     var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
@@ -834,8 +842,7 @@
       featureHtml +
       "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
-      catTag +
-      titleRow +
+      headerHtml +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
       CART.formatMoney(eff) +
@@ -875,6 +882,7 @@
       "</div></div>";
 
     root.innerHTML = html;
+    if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: m.name });
     var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
     if (shellEl) shellEl.setAttribute("data-resin-opt-sig", optionsLayoutSig(m));
     updateResinThumbNavVisibility(root);

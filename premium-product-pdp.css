@@ -171,7 +171,7 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
 /* ── Category tag ── */
 .cg-pdp__cat-tag {
   display: inline-block;
-  margin-bottom: 0.55rem;
+  margin-bottom: 0;
   padding: 0.28rem 0.65rem;
   border-radius: 999px;
   background: var(--cg-pdp-teal-soft);
@@ -191,7 +191,26 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   color: var(--cg-pdp-teal-deep);
 }
 
-/* ── Title row ── */
+/* ── PDP header (category row + full-width title) ── */
+.cg-pdp__header {
+  margin-bottom: 0.75rem;
+}
+
+.cg-pdp__meta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  margin-bottom: 0.45rem;
+}
+
+.cg-pdp__meta-start {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* ── Title row (legacy fallback) ── */
 .cg-pdp__title-row {
   display: flex;
   flex-wrap: wrap;
@@ -203,7 +222,10 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
 
 .cg-pdp__title,
 .rm-pdp--modern .cg-pdp__title {
-  flex: 1 1 12rem;
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  flex: none;
   margin: 0;
   font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
   font-weight: 700;
@@ -214,7 +236,7 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   overflow-wrap: break-word;
   word-break: normal;
   hyphens: auto;
-  max-width: min(100%, 38rem);
+  max-width: 100%;
 }
 
 .cg-pdp__title[data-title-scale="medium"],
@@ -222,6 +244,7 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   font-size: clamp(1.05rem, 0.95rem + 0.85vw, 1.55rem);
   line-height: 1.22;
   letter-spacing: -0.015em;
+  max-width: 100%;
 }
 
 .cg-pdp__title[data-title-scale="long"],
@@ -229,16 +252,17 @@ body.pdp-ethereal .cg-pdp__feature-pill::before {
   font-size: clamp(0.98rem, 0.82rem + 0.55vw, 1.32rem);
   line-height: 1.28;
   letter-spacing: -0.01em;
-  max-width: min(100%, 34rem);
+  max-width: 100%;
 }
 
 .cg-pdp__title-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.65rem 1rem;
+  justify-content: flex-end;
+  gap: 0.5rem 0.75rem;
   flex: 0 0 auto;
-  margin-top: 0.35rem;
+  margin-top: 0;
 }
 
 .cg-pdp__wishlist-link {
@@ -775,13 +799,17 @@ body.cg-pdp-lightbox-open {
     grid-template-columns: 1fr;
   }
 
-  .cg-pdp__title-row {
-    flex-direction: column;
+  .cg-pdp__meta-row {
+    gap: 0.45rem 0.5rem;
   }
 
   .cg-pdp__title-actions {
-    width: 100%;
-    justify-content: flex-start;
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .cg-pdp__title-row {
+    flex-direction: column;
   }
 }
 

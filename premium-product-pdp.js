@@ -48,10 +48,61 @@
     );
   }
 
-  function categoryTagHtml(label) {
+  function categoryTagHtml(label, opts) {
+    opts = opts || {};
     var t = String(label || "").trim();
     if (!t) return "";
-    return '<span class="cg-pdp__cat-tag">' + esc(t.toUpperCase()) + "</span>";
+    var idAttr = opts.id ? " id=\"" + escAttr(opts.id) + "\"" : "";
+    return "<span class=\"cg-pdp__cat-tag\"" + idAttr + ">" + esc(t.toUpperCase()) + "</span>";
+  }
+
+  function shareWishlistActionsHtml(shareHostId, wishId) {
+    var shareHost = shareHostId
+      ? '<div class="product-share-bar product-share-bar--rm-pdp cg-pdp__share-host" id="' +
+        escAttr(shareHostId) +
+        '" aria-label="Share"></div>'
+      : "";
+    var wishBtn = wishId
+      ? '<button type="button" class="cg-pdp__wishlist-link" id="' +
+        escAttr(wishId) +
+        '" aria-label="Save to wishlist"><span aria-hidden="true">♡</span> Wishlist</button>'
+      : "";
+    if (!shareHost && !wishBtn) return "";
+    return '<div class="cg-pdp__title-actions">' + shareHost + wishBtn + "</div>";
+  }
+
+  function applyTitleTypography(el, name) {
+    if (!el) return;
+    var len = String(name || "").trim().length;
+    el.setAttribute("data-title-scale", len > 72 ? "long" : len > 42 ? "medium" : "short");
+  }
+
+  /** Shared PDP header: category + share/wishlist row, then full-width title. */
+  function pdpHeaderHtml(opts) {
+    opts = opts || {};
+    var catLabel = opts.categoryLabel || "";
+    var title = opts.title || "";
+    var titleId = opts.titleId || "";
+    var extraTitleClass = opts.titleExtraClass ? " " + String(opts.titleExtraClass).trim() : "";
+    var catTag = categoryTagHtml(catLabel, { id: opts.catId || "" });
+    var actions = shareWishlistActionsHtml(opts.shareHostId || "", opts.wishId || "");
+    var titleIdAttr = titleId ? " id=\"" + escAttr(titleId) + "\"" : "";
+    return (
+      '<div class="cg-pdp__header">' +
+      '<div class="cg-pdp__meta-row">' +
+      '<div class="cg-pdp__meta-start">' +
+      catTag +
+      "</div>" +
+      actions +
+      "</div>" +
+      '<h1 class="rm-pdp__title cg-pdp__title' +
+      (extraTitleClass ? " " + extraTitleClass : "") +
+      '"' +
+      titleIdAttr +
+      ">" +
+      esc(title) +
+      "</h1></div>"
+    );
   }
 
   function priceTaxNoteHtml() {
@@ -204,28 +255,21 @@
   }
 
   function titleRowHtml(opts) {
-    opts = opts || {};
-    var title = opts.title || "";
-    var shareHostId = opts.shareHostId || "";
-    var wishId = opts.wishId || "";
-    var shareHost = shareHostId
-      ? '<div class="product-share-bar product-share-bar--rm-pdp cg-pdp__share-host" id="' + escAttr(shareHostId) + '" aria-label="Share"></div>'
-      : "";
-    var wishBtn = wishId
-      ? '<button type="button" class="cg-pdp__wishlist-link" id="' +
-        escAttr(wishId) +
-        '" aria-label="Save to wishlist"><span aria-hidden="true">♡</span> Wishlist</button>'
-      : "";
-    return (
-      '<div class="cg-pdp__title-row">' +
-      '<h1 class="rm-pdp__title cg-pdp__title">' +
-      esc(title) +
-      "</h1>" +
-      '<div class="cg-pdp__title-actions">' +
-      shareHost +
-      wishBtn +
-      "</div></div>"
-    );
+    return pdpHeaderHtml({
+      categoryLabel: opts.categoryLabel || "",
+      catId: opts.catId || "",
+      title: opts.title || "",
+      titleId: opts.titleId || "",
+      titleExtraClass: opts.titleExtraClass || "",
+      shareHostId: opts.shareHostId || "",
+      wishId: opts.wishId || "",
+    });
+  }
+
+  function wirePdpHeader(root, opts) {
+    if (!root) return;
+    var titleEl = root.querySelector(".cg-pdp__title");
+    if (titleEl && opts && opts.title) applyTitleTypography(titleEl, opts.title);
   }
 
   function buildThumbButtons(entries, activeIdx, imgSrcFn, maxVisible) {
@@ -397,6 +441,9 @@
     bottomSectionsHtml: bottomSectionsHtml,
     descriptionSectionHtml: descriptionSectionHtml,
     formatDescParagraphs: formatDescParagraphs,
+    pdpHeaderHtml: pdpHeaderHtml,
+    applyTitleTypography: applyTitleTypography,
+    wirePdpHeader: wirePdpHeader,
     titleRowHtml: titleRowHtml,
     buildThumbButtons: buildThumbButtons,
     singleBuyMessage: singleBuyMessage,
