@@ -47,6 +47,19 @@
               </div>
             </div>
 
+            <div class="vs-row-actions" style="margin: 0.75rem 0 1rem; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
+              <div class="vs-field" style="margin: 0; min-width: 9rem">
+                <label for="vspExportFrom">Billing from</label>
+                <input type="date" id="vspExportFrom" />
+              </div>
+              <div class="vs-field" style="margin: 0; min-width: 9rem">
+                <label for="vspExportTo">Billing to</label>
+                <input type="date" id="vspExportTo" />
+              </div>
+              <button type="button" class="vs-btn" id="vspExportPdf">Export billing PDF</button>
+              <button type="button" class="vs-btn vs-btn--primary" id="vspExportXlsx">Export billing Excel</button>
+            </div>
+
             <div class="vd-kpi-row">
               <div class="vd-kpi-card">
                 <div class="vd-kpi-card__body">

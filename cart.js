@@ -463,7 +463,75 @@
     }
   }
 
-  var WISH_KEY = "resin_wishlist_v1";
+  function liveLinePrice(line) {
+    if (!line || !line.id) return safeNumber(line.price, 0);
+    try {
+      var D = global.RESIN_DATA;
+      if (!D || typeof D.getProduct !== "function") return safeNumber(line.price, 0);
+      var p = D.getProduct(line.id);
+      if (!p || !p.prices) return safeNumber(line.price, 0);
+      var sizeKey = String(line.size || "m").trim().toLowerCase();
+      if (sizeKey !== "s" && sizeKey !== "m" && sizeKey !== "l") sizeKey = "m";
+      var slotPrice = Number(p.prices[sizeKey]);
+      if (Number.isFinite(slotPrice) && slotPrice > 0) return slotPrice;
+      var keys = ["s", "m", "l"];
+      for (var i = 0; i < keys.length; i++) {
+        var pr = Number(p.prices[keys[i]]);
+        if (Number.isFinite(pr) && pr > 0) return pr;
+      }
+      if (typeof D.getStartingPriceInr === "function") {
+        var start = D.getStartingPriceInr(p);
+        if (Number.isFinite(start) && start > 0) return start;
+      }
+    } catch (_) {}
+    return safeNumber(line.price, 0);
+  }
+
+  function syncCartPricesFromCatalog() {
+    var lines = load();
+    if (!lines.length) return false;
+    var changed = false;
+    lines.forEach(function (line) {
+      var next = liveLinePrice(line);
+      var prev = safeNumber(line.price, 0);
+      if (next > 0 && Math.abs(next - prev) > 0.009) {
+        line.price = next;
+        changed = true;
+      }
+    });
+    if (changed) {
+      save(lines);
+    }
+    return changed;
+  }
+
+  function onCatalogPricesMergedForCart() {
+    syncCartPricesFromCatalog();
+    syncSaveLaterPricesFromCatalog();
+  }
+
+  function syncSaveLaterPricesFromCatalog() {
+    var lines = loadSaveLater();
+    if (!lines.length) return;
+    var changed = false;
+    lines.forEach(function (line) {
+      var next = liveLinePrice(line);
+      var prev = safeNumber(line.price, 0);
+      if (next > 0 && Math.abs(next - prev) > 0.009) {
+        line.price = next;
+        changed = true;
+      }
+    });
+    if (changed) {
+      saveSaveLater(lines);
+    }
+  }
+
+  try {
+    global.addEventListener("craftguruCatalogPricesMerged", onCatalogPricesMergedForCart);
+    global.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogPricesMergedForCart);
+  } catch (_) {}
+
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var wishCache = Object.create(null);
   var wishHydrated = false;
@@ -718,6 +786,8 @@
     storageKey: storageKey,
     lineExtraKey: lineExtraKey,
     liveDisplayName: liveDisplayName,
+    liveLinePrice: liveLinePrice,
+    syncPricesFromCatalog: syncCartPricesFromCatalog,
     load: load,
     save: save,
     addItem: addItem,

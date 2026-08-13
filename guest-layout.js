@@ -534,6 +534,9 @@
     bar.className = "home-auth-bar";
     bar.id = "homeAuthBar";
     bar.innerHTML =
+      '<a href="wishlist.html" class="home-auth-btn home-header-wish" id="homeWishlistLink" aria-label="Wishlist">' +
+      '<span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>' +
+      '<span class="home-header-wish__count" id="homeWishlistCount" hidden></span></a>' +
       '<span class="home-auth-user is-hidden" id="homeAuthUser"></span>' +
       '<button type="button" class="home-auth-btn" id="homeAuthSignup">Sign up</button>' +
       '<button type="button" class="home-auth-btn" id="homeAuthLogin">Log in</button>' +
@@ -585,6 +588,33 @@
     if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.boot === "function") {
       window.CRAFT_AUTH_HOME.boot();
     }
+    wireHeaderWishlistLink();
+  }
+
+  function syncHeaderWishlistUi() {
+    var countEl = document.getElementById("homeWishlistCount");
+    var link = document.getElementById("homeWishlistLink");
+    if (!countEl && !link) return;
+    var n = 0;
+    try {
+      var WL = window.RESIN_WISHLIST;
+      if (WL && typeof WL.load === "function") n = (WL.load() || []).length;
+    } catch (_) {}
+    if (countEl) {
+      if (n > 0) {
+        countEl.textContent = String(n);
+        countEl.removeAttribute("hidden");
+      } else {
+        countEl.textContent = "";
+        countEl.setAttribute("hidden", "hidden");
+      }
+    }
+    if (link) link.classList.toggle("is-on", n > 0);
+  }
+
+  function wireHeaderWishlistLink() {
+    syncHeaderWishlistUi();
+    window.addEventListener("resinWishlistChanged", syncHeaderWishlistUi);
   }
 
   function injectScriptOnce(src, defer) {
@@ -887,6 +917,7 @@
     wireMobileSidebarDrawers();
     injectHeaderSearch();
     injectStorefrontAuthChrome();
+    wireHeaderWishlistLink();
     injectSocialFloatWidgets();
     injectFooterMainMenu();
   }

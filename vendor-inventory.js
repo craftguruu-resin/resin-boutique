@@ -17,6 +17,8 @@
   var catalogCategoryFilter = "";
   var catalogListView = "size";
   var viCategoriesCache = [];
+  var VI_STATE_KEY = "craftguruViInventoryState";
+  var viRestoreScrollY = 0;
   var viStorefrontCategories = [
     { id: "__raw_materials__", label: "Raw Materials" },
     { id: "__photo_frames__", label: "Photo Frames" },
@@ -178,8 +180,11 @@
     return "0";
   }
 
+  var viSkipCatalogReset = false;
+
   function setTab(tab) {
     activeTab = tab;
+    saveInventoryState();
     var studio = document.getElementById("viStudioPanel");
     var cat = document.getElementById("viCatalogPanel");
     var addP = document.getElementById("viAddProductPanel");
@@ -192,7 +197,7 @@
       b.classList.toggle("vs-btn--primary", isAct);
       b.classList.toggle("vs-btn--ghost", !isAct);
     });
-    if (tab === "catalog") {
+    if (tab === "catalog" && !viSkipCatalogReset) {
       catalogOffset = 0;
       loadCatalogPage(true);
     }
@@ -797,6 +802,72 @@
     return bits.length ? bits.join(", ") : "options";
   }
 
+  function saveInventoryState() {
+    try {
+      sessionStorage.setItem(
+        VI_STATE_KEY,
+        JSON.stringify({
+          tab: activeTab,
+          catalogQ: catalogQ,
+          catalogOffset: catalogOffset,
+          catalogCategoryFilter: catalogCategoryFilter,
+          catalogListView: catalogListView,
+          studioCategoryFilter: studioCategoryFilter,
+          studioProductFilter: studioProductFilter,
+          studioSearchQ: studioSearchQ,
+          scrollY: window.scrollY || 0,
+        })
+      );
+    } catch (_) {}
+  }
+
+  function readInventoryState() {
+    try {
+      var raw = sessionStorage.getItem(VI_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function applyInventoryState(state) {
+    if (!state || typeof state !== "object") return false;
+    if (state.tab === "catalog" || state.tab === "studio" || state.tab === "addproduct") {
+      activeTab = state.tab;
+    }
+    catalogQ = String(state.catalogQ || "");
+    catalogOffset = Math.max(0, Number(state.catalogOffset) || 0);
+    catalogCategoryFilter = String(state.catalogCategoryFilter || "");
+    catalogListView = state.catalogListView === "color" ? "color" : "size";
+    studioCategoryFilter = String(state.studioCategoryFilter || "");
+    studioProductFilter = String(state.studioProductFilter || "");
+    studioSearchQ = String(state.studioSearchQ || "");
+    viRestoreScrollY = Math.max(0, Number(state.scrollY) || 0);
+
+    var catSearch = document.getElementById("viCatalogSearch");
+    if (catSearch) catSearch.value = catalogQ;
+    var catCat = document.getElementById("viCatalogCategoryFilter");
+    if (catCat) catCat.value = catalogCategoryFilter;
+    setCatalogListView(catalogListView);
+    return true;
+  }
+
+  function restoreCatalogOffset(targetOffset) {
+    targetOffset = Math.max(0, Number(targetOffset) || 0);
+    catalogOffset = 0;
+    function step() {
+      if (catalogOffset >= targetOffset || catalogOffset >= catalogTotal) {
+        requestAnimationFrame(function () {
+          window.scrollTo(0, viRestoreScrollY);
+        });
+        return Promise.resolve();
+      }
+      return loadCatalogPage(false).then(step);
+    }
+    return loadCatalogPage(true).then(step);
+  }
+
   function catalogMoreOptionsBtn(pid, it) {
     if (!it.hasExtendedOptions && !it.useColor && !it.useQty && !it.hasVariants) return "";
     var href =
@@ -804,7 +875,7 @@
     return (
       " <a class='vs-btn vs-btn--ghost vi-cat-more' href='" +
       esc(href) +
-      "' style='margin-top:0.35rem;display:inline-block'>More options</a>"
+      "' data-vi-save-state='1' style='margin-top:0.35rem;display:inline-block'>More options</a>"
     );
   }
 
@@ -974,9 +1045,13 @@
 
   function boot() {
     showDesk(true);
+    var saved = readInventoryState();
     var startTab = "studio";
-    if (window.location.hash === "#add-product") startTab = "addproduct";
+    if (saved && saved.tab) startTab = saved.tab;
+    else if (window.location.hash === "#add-product") startTab = "addproduct";
     else if (window.location.hash === "#catalog") startTab = "catalog";
+    if (saved) applyInventoryState(saved);
+    if (saved && startTab === "catalog" && Number(saved.catalogOffset) > 0) viSkipCatalogReset = true;
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
@@ -995,6 +1070,15 @@
       })
       .then(function () {
         setTab(startTab);
+        if (startTab === "catalog" && saved && saved.catalogOffset > 0) {
+          return restoreCatalogOffset(saved.catalogOffset);
+        }
+        if (viRestoreScrollY > 0) {
+          requestAnimationFrame(function () {
+            window.scrollTo(0, viRestoreScrollY);
+          });
+        }
+        viSkipCatalogReset = false;
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));
@@ -1392,6 +1476,13 @@
         window.alert(String((e && e.message) || e));
       });
   });
+
+  document.addEventListener("click", function (ev) {
+    var link = ev.target && ev.target.closest ? ev.target.closest("a[data-vi-save-state='1']") : null;
+    if (link) saveInventoryState();
+  });
+
+  window.addEventListener("beforeunload", saveInventoryState);
 
   boot();
 })();

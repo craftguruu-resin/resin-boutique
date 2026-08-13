@@ -1,5 +1,16 @@
 /* Guest chrome: left category rail, header search cluster, global tweaks */
 
+.product-catalog-gallery__dots {
+  display: none;
+  margin: 0;
+}
+
+@media (max-width: 899px) {
+  .product-catalog-gallery--multi .product-catalog-gallery__dots {
+    display: flex;
+  }
+}
+
 .guest-top-cluster {
   display: flex;
   align-items: center;

@@ -6026,6 +6026,57 @@ a.home-auth-btn {
   letter-spacing: 0.04em;
 }
 
+.home-header-wish {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  position: relative;
+  min-height: 2.05rem;
+  padding-inline: 0.55rem;
+}
+
+.home-header-wish__label {
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+}
+
+.home-header-wish__count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.1rem;
+  height: 1.1rem;
+  padding: 0 0.28rem;
+  border-radius: 999px;
+  background: rgba(38, 166, 154, 0.92);
+  color: #fff;
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.home-header-wish.is-on {
+  border-color: rgba(38, 166, 154, 0.45);
+  color: var(--accent);
+}
+
+.home-header-wish:hover,
+.home-header-wish:focus-visible {
+  border-color: rgba(38, 166, 154, 0.55);
+}
+
+@media (max-width: 520px) {
+  .home-header-wish__label {
+    display: none;
+  }
+
+  .home-header-wish {
+    padding-inline: 0.48rem;
+    min-width: 2.05rem;
+    justify-content: center;
+  }
+}
+
 .home-auth-user {
   font-size: 0.72rem;
   font-weight: 600;

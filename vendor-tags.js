@@ -809,6 +809,52 @@
     });
   });
 
+  function downloadOrdersExport(format) {
+    var params = new URLSearchParams();
+    params.set("format", format);
+    params.set("payment", filter);
+    params.set("fulfillment", ffFilter);
+    params.set("ship", shipFilter);
+    if (searchQ) params.set("q", searchQ);
+    var fromEl = document.getElementById("vtExportFrom");
+    var toEl = document.getElementById("vtExportTo");
+    var custEl = document.getElementById("vtExportCustomer");
+    if (fromEl && fromEl.value) params.set("from", fromEl.value);
+    if (toEl && toEl.value) params.set("to", toEl.value);
+    if (custEl && custEl.value.trim()) params.set("customer", custEl.value.trim());
+    var url = V.vendorApiUrl("/api/vendor/orders/export?" + params.toString());
+    return vf(url, { headers: V.authHeaders() })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (t) {
+            throw new Error(t || res.statusText || "Export failed");
+          });
+        }
+        return res.blob();
+      })
+      .then(function (blob) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = format === "xlsx" ? "craftguru-orders.xlsx" : "craftguru-orders.pdf";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        }, 1200);
+      })
+      .catch(function (e) {
+        window.alert(String((e && e.message) || e));
+      });
+  }
+
+  on("vtExportPdf", "click", function () {
+    downloadOrdersExport("pdf");
+  });
+  on("vtExportXlsx", "click", function () {
+    downloadOrdersExport("xlsx");
+  });
+
   on("vtSearch", "input", function () {
     searchQ = String(this.value || "")
       .toLowerCase()

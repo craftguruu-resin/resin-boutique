@@ -128,8 +128,16 @@
 
   hydrateCatalogFromSessionCache();
 
-  function runMerge() {
+  function clearSessionCatalogCache() {
+    try {
+      sessionStorage.removeItem(VENDOR_CACHE_KEY);
+      sessionStorage.removeItem(OVERRIDES_CACHE_KEY);
+    } catch (_) {}
+  }
+
+  function runMerge(forceFresh) {
     if (mergeInflight) return mergeInflight;
+    if (forceFresh) clearSessionCatalogCache();
 
     var base = billApiBase();
     if (!base) {
@@ -232,10 +240,23 @@
   }
 
   window.CraftguruCatalogMerge = {
-    refresh: runMerge,
+    refresh: function () {
+      return runMerge(true);
+    },
     whenReady: whenCatalogReady,
     getApiBase: billApiBase,
+    clearCache: clearSessionCatalogCache,
   };
+
+  var visibilityRefreshTimer = null;
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState !== "visible") return;
+    if (visibilityRefreshTimer) clearTimeout(visibilityRefreshTimer);
+    visibilityRefreshTimer = setTimeout(function () {
+      visibilityRefreshTimer = null;
+      runMerge(true);
+    }, 400);
+  });
 
   function wireCatalogRefreshControl() {
     var cartEl = document.getElementById("cartToggle");
@@ -250,7 +271,7 @@
     btn.textContent = "↻";
     btn.addEventListener("click", function () {
       btn.disabled = true;
-      runMerge().finally(function () {
+      runMerge(true).finally(function () {
         btn.disabled = false;
       });
     });

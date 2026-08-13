@@ -344,6 +344,45 @@
     });
   }
 
+  function downloadBillingExport(format) {
+    var params = new URLSearchParams();
+    params.set("format", format);
+    params.set("period", chartPeriod);
+    var fromEl = document.getElementById("vspExportFrom");
+    var toEl = document.getElementById("vspExportTo");
+    if (fromEl && fromEl.value) params.set("from", fromEl.value);
+    if (toEl && toEl.value) params.set("to", toEl.value);
+    var url = V.vendorApiUrl("/api/vendor/analytics/sales-profit/export?" + params.toString());
+    return vf(url, { headers: V.authHeaders() })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.text().then(function (t) {
+            throw new Error(t || res.statusText || "Export failed");
+          });
+        }
+        return res.blob();
+      })
+      .then(function (blob) {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = format === "xlsx" ? "craftguru-billing.xlsx" : "craftguru-billing.pdf";
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () {
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        }, 1200);
+      })
+      .catch(function (e) {
+        showErr(document.getElementById("vspErr"), String((e && e.message) || e));
+      });
+  }
+
+  var vspPdf = document.getElementById("vspExportPdf");
+  if (vspPdf) vspPdf.addEventListener("click", function () { downloadBillingExport("pdf"); });
+  var vspXlsx = document.getElementById("vspExportXlsx");
+  if (vspXlsx) vspXlsx.addEventListener("click", function () { downloadBillingExport("xlsx"); });
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", loadProfit);
   } else {

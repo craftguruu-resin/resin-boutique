@@ -412,6 +412,14 @@
       })
       .then(function () {
         showMsg("vioOk", "Saved variant inventory.");
+        try {
+          var raw = sessionStorage.getItem("craftguruViInventoryState");
+          if (raw) {
+            var st = JSON.parse(raw);
+            st.tab = "catalog";
+            sessionStorage.setItem("craftguruViInventoryState", JSON.stringify(st));
+          }
+        } catch (_) {}
         return loadProduct();
       })
       .catch(function (e) {

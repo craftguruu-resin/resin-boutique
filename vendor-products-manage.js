@@ -625,6 +625,7 @@
   }
 
   function openEdit(p) {
+    saveListViewState();
     editingId = p.id;
     editingSource = p.source === "catalog" ? "catalog" : "vendor";
     editingProductOptions = p.options && typeof p.options === "object" ? Object.assign({}, p.options) : null;
@@ -743,6 +744,7 @@
     if (note) note.style.display = "none";
     if (window.VendorCatalogPdpOptions) window.VendorCatalogPdpOptions.clearEditors();
     showMsg("", false);
+    restoreListViewState();
   }
 
   function manageListUrl() {
@@ -768,6 +770,7 @@
           }
           rawProducts = j.products || [];
           renderTable();
+          if (!editingId) restoreListViewState();
           refreshGuestCatalogMerge();
         });
       })
@@ -991,6 +994,35 @@
   }
 
   var searchDebounceTimer = null;
+  var VPM_STATE_KEY = "craftguruVpmListState";
+
+  function saveListViewState() {
+    try {
+      sessionStorage.setItem(
+        VPM_STATE_KEY,
+        JSON.stringify({ searchQ: searchQ, scrollY: window.scrollY || 0 })
+      );
+    } catch (_) {}
+  }
+
+  function restoreListViewState() {
+    try {
+      var raw = sessionStorage.getItem(VPM_STATE_KEY);
+      if (!raw) return;
+      var st = JSON.parse(raw);
+      if (st.searchQ) {
+        searchQ = String(st.searchQ);
+        var inp = document.getElementById("vpmSearch");
+        if (inp) inp.value = searchQ;
+      }
+      var sy = Number(st.scrollY);
+      if (Number.isFinite(sy) && sy > 0) {
+        requestAnimationFrame(function () {
+          window.scrollTo(0, sy);
+        });
+      }
+    } catch (_) {}
+  }
 
   function runSearch() {
     var el = document.getElementById("vpmSearch");

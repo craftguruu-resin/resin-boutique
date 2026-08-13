@@ -57,6 +57,25 @@
               <label for="vtSearch">Search order #, tag, tracking ID</label>
               <input type="search" id="vtSearch" placeholder="e.g. 10042, CG-… or AWB" />
             </div>
+            <div class="vs-row-actions" style="margin-top: 0.65rem; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
+              <div class="vs-field" style="margin: 0; min-width: 9rem">
+                <label for="vtExportFrom">Export from</label>
+                <input type="date" id="vtExportFrom" />
+              </div>
+              <div class="vs-field" style="margin: 0; min-width: 9rem">
+                <label for="vtExportTo">Export to</label>
+                <input type="date" id="vtExportTo" />
+              </div>
+              <div class="vs-field" style="margin: 0; min-width: 10rem">
+                <label for="vtExportCustomer">Customer filter</label>
+                <input type="search" id="vtExportCustomer" placeholder="Name or phone" />
+              </div>
+              <button type="button" class="vs-btn" id="vtExportPdf">Export PDF</button>
+              <button type="button" class="vs-btn vs-btn--primary" id="vtExportXlsx">Export Excel</button>
+            </div>
+            <p class="vs-muted" style="margin: 0.45rem 0 0; font-size: 0.75rem">
+              Exports use the payment, fulfillment, shipment, and search filters above.
+            </p>
             <p class="vs-toolbar-heading" style="margin-top: 0.85rem">Shipment</p>
             <div class="vs-pill-row">
               <button type="button" class="vs-pill vt-ship-filter" data-ship="all">All shipments</button>

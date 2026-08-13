@@ -326,6 +326,34 @@
     if (opts.bulkBanner !== false) injectBulkBanner(grid);
   }
 
+  function patchCardPrices(root) {
+    var D = window.RESIN_DATA;
+    if (!D || typeof D.getProduct !== "function" || typeof D.formatStartingFromPrice !== "function") return;
+    var fmt =
+      window.RESIN_CART && typeof window.RESIN_CART.formatMoney === "function"
+        ? window.RESIN_CART.formatMoney
+        : null;
+    (root || document).querySelectorAll(".plp-card[data-product-id]").forEach(function (card) {
+      var id = card.getAttribute("data-product-id");
+      if (!id) return;
+      var p = D.getProduct(id);
+      if (!p) return;
+      var minP = D.getStartingPriceInr ? D.getStartingPriceInr(p) : 0;
+      if (minP > 0) card.setAttribute("data-min-price", String(minP));
+      var label = D.formatStartingFromPrice(p, fmt);
+      var fromEl = card.querySelector(".plp-card__price");
+      if (fromEl && label) fromEl.textContent = label;
+    });
+  }
+
+  window.addEventListener("craftguruCatalogPricesMerged", function () {
+    patchCardPrices(document);
+    wireAllCardWishlists(document);
+  });
+  window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
+    patchCardPrices(document);
+  });
+
   window.addEventListener("resinWishlistChanged", function () {
     wireAllCardWishlists(document);
   });
@@ -337,6 +365,7 @@
     applyCardImageFit: applyCardImageFit,
     wireCardWishlist: wireCardWishlist,
     wireAllCardWishlists: wireAllCardWishlists,
+    patchCardPrices: patchCardPrices,
     getCategoryDescription: getCategoryDescription,
     defaultRatingMeta: defaultRatingMeta,
     starsHtml: starsHtml,

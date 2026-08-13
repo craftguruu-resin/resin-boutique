@@ -13,6 +13,7 @@ var nodemailer = require("nodemailer");
 var { renderOrderBillJpeg } = require("./render-bill-jpeg.js");
 var { renderOrderBillPdf } = require("./render-bill-pdf.js");
 var ordersRepo = require("./orders-repository.js");
+var vendorExport = require("./vendor-export.js");
 var vendorExtrasDb = require("./vendor-extras-db.js");
 var catalogFromData = require("./catalog-from-data.js");
 var vendorCatalogDb = require("./vendor-catalog-db.js");
@@ -1863,6 +1864,127 @@ app.get("/api/vendor/analytics/sales-profit", function (req, res) {
       }
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, insights: data });
+    });
+  });
+});
+
+/** Export orders — PDF or Excel (vendor token). Query mirrors vendor-tags filters. */
+app.get("/api/vendor/orders/export", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var format = String((req.query && req.query.format) || "pdf").toLowerCase();
+    if (format !== "pdf" && format !== "xlsx") format = "pdf";
+    var lim = Number(req.query && req.query.limit);
+    if (!Number.isFinite(lim) || lim < 1) lim = 5000;
+    if (lim > 5000) lim = 5000;
+    ordersRepo.getOrdersRecent(lim, function (e2, list) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      var rows = vendorExport.filterOrders(list || [], {
+        q: req.query && req.query.q,
+        from: req.query && req.query.from,
+        to: req.query && req.query.to,
+        customer: req.query && req.query.customer,
+        payment: req.query && req.query.payment,
+        fulfillment: req.query && req.query.fulfillment,
+        ship: req.query && req.query.ship,
+      });
+      var subtitle =
+        "Exported " +
+        rows.length +
+        " orders · IST · " +
+        new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
+      if (format === "xlsx") {
+        var xbuf = vendorExport.ordersToXlsx(rows);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", "attachment; filename=craftguru-orders.xlsx");
+        res.setHeader("Cache-Control", "no-store");
+        return res.send(xbuf);
+      }
+      vendorExport
+        .renderOrdersPdf({ title: "Orders export", subtitle: subtitle }, rows)
+        .then(function (buf) {
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", "attachment; filename=craftguru-orders.pdf");
+          res.setHeader("Cache-Control", "no-store");
+          res.send(buf);
+        })
+        .catch(function (e3) {
+          res.status(500).json({ ok: false, error: String((e3 && e3.message) || e3) });
+        });
+    });
+  });
+});
+
+/** Export billing / sales-profit ledger — PDF or Excel (vendor token). */
+app.get("/api/vendor/analytics/sales-profit/export", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) {
+      return res.status(500).json({ ok: false, error: String(err.message || err) });
+    }
+    if (!ok) {
+      return res.status(401).json({ ok: false, error: "Unauthorized" });
+    }
+    var format = String((req.query && req.query.format) || "pdf").toLowerCase();
+    if (format !== "pdf" && format !== "xlsx") format = "pdf";
+    var period = String((req.query && req.query.period) || "monthly").toLowerCase();
+    if (period !== "daily" && period !== "weekly" && period !== "monthly" && period !== "yearly") {
+      period = "monthly";
+    }
+    ordersRepo.getVendorSalesProfit(period, function (e2, data) {
+      if (e2) {
+        var msg = String((e2 && e2.message) || e2);
+        var code = msg.indexOf("not configured") >= 0 ? 503 : 500;
+        return res.status(code).json({ ok: false, error: msg });
+      }
+      var lineRows = vendorExport.flattenBillingRows(data);
+      var from = String((req.query && req.query.from) || "").trim();
+      var to = String((req.query && req.query.to) || "").trim();
+      if (from || to) {
+        lineRows = lineRows.filter(function (r) {
+          var d = vendorExport.istYmd(r.createdAt);
+          if (from && d < from) return false;
+          if (to && d > to) return false;
+          return true;
+        });
+      }
+      var totals = (data && data.totals) || { revenue: 0, totalCost: 0, profit: 0 };
+      if (lineRows.length) {
+        totals = lineRows.reduce(
+          function (acc, r) {
+            acc.revenue += Number(r.revenue) || 0;
+            acc.totalCost += Number(r.cost) || 0;
+            acc.profit += Number(r.profit) || 0;
+            return acc;
+          },
+          { revenue: 0, totalCost: 0, profit: 0 }
+        );
+      }
+      var subtitle = "Period: " + period + " · " + lineRows.length + " line items · IST";
+      if (format === "xlsx") {
+        var xbuf = vendorExport.billingToXlsx(lineRows, totals);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.setHeader("Content-Disposition", "attachment; filename=craftguru-billing.xlsx");
+        res.setHeader("Cache-Control", "no-store");
+        return res.send(xbuf);
+      }
+      vendorExport
+        .renderBillingPdf({ title: "Billing & profit export", subtitle: subtitle }, lineRows, totals)
+        .then(function (buf) {
+          res.setHeader("Content-Type", "application/pdf");
+          res.setHeader("Content-Disposition", "attachment; filename=craftguru-billing.pdf");
+          res.setHeader("Cache-Control", "no-store");
+          res.send(buf);
+        })
+        .catch(function (e3) {
+          res.status(500).json({ ok: false, error: String((e3 && e3.message) || e3) });
+        });
     });
   });
 });
