@@ -753,6 +753,13 @@
     injectScriptOnce("instagram-widget.js", true);
   }
 
+  /* Run as soon as guest-layout loads so floats appear on every storefront page. */
+  if (document.body) {
+    injectSocialFloatWidgets();
+  } else {
+    document.addEventListener("DOMContentLoaded", injectSocialFloatWidgets);
+  }
+
   function ensureLayoutResponsiveStyles() {
     ensureStylesheet("layout-responsive.css");
     try {

@@ -302,8 +302,8 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__price-row::after {
   display: flex;
   align-items: center;
   gap: 0.55rem;
-  margin: 0.85rem 0 1rem;
-  padding: 0.65rem 0.85rem;
+  margin: 0.55rem 0 0.65rem;
+  padding: 0.55rem 0.75rem;
   border-radius: var(--cg-pdp-radius);
   background: linear-gradient(90deg, rgba(0, 121, 107, 0.12), rgba(0, 121, 107, 0.06));
   border: 1px solid var(--cg-pdp-teal-border);
@@ -669,8 +669,12 @@ body.cg-pdp-lightbox-open {
 .page-product .product-layout--split {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) minmax(280px, 420px);
-  gap: clamp(1rem, 2.5vw, 2rem);
+  gap: clamp(0.85rem, 2vw, 1.35rem);
   align-items: start;
+}
+
+.page-product .product-layout--split > .product-overview--fullwidth {
+  grid-column: 1 / -1;
 }
 
 .page-product .product-layout--split > .cg-pdp__bottom {
@@ -725,7 +729,7 @@ body.cg-pdp-lightbox-open {
 }
 
 .page-product .cg-pdp__bottom {
-  margin-top: 1.5rem;
+  margin-top: 0.75rem;
 }
 
 /* ── Mobile breakpoints ── */
@@ -746,7 +750,15 @@ body.cg-pdp-lightbox-open {
 }
 
 @media (max-width: 720px) {
-  .cg-pdp__feature-pills,
+  .page-product .product-overview--fullwidth {
+    margin-top: 0.35rem;
+    padding: 0.75rem 0.85rem;
+  }
+
+  .page-product .product-detail--buy-column {
+    max-width: 100%;
+  }
+
   body.pdp-ethereal .cg-pdp__feature-pills {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -1015,6 +1015,7 @@ body.guest-site .animated-backdrop {
 /* Normalize vertical rhythm on guest subpages (preserve home hero + footer spacing) */
 body.guest-site:not(.page-home):not(.page-checkout) .sub-main {
   min-height: 0;
+  padding-top: 0.85rem;
 }
 
 body.guest-site:not(.page-home) .band-shop:not(.band-shop--home) {
