@@ -33,8 +33,8 @@
     return String(s).replace(/"/g, "&quot;");
   }
 
-  function imgUrl(rel) {
-    return D.imageUrl ? D.imageUrl(rel) : rel;
+  function imgUrl(rel, width) {
+    return D.imageUrl ? D.imageUrl(rel, width || 480) : rel;
   }
 
   function getLineImage(line) {
@@ -616,6 +616,12 @@
     syncHomeFindUrl();
   }
 
+  var homeFilterTimer = null;
+  function scheduleHomeCatalogFilter() {
+    clearTimeout(homeFilterTimer);
+    homeFilterTimer = setTimeout(applyHomeCatalogFilter, 120);
+  }
+
   function renderCategories() {
     if (!els.categoryGrid) return;
     els.categoryGrid.innerHTML = "";
@@ -885,19 +891,32 @@
   function bindHeroTilt() {
     if (prefersReducedMotion() || !els.heroStage) return;
     var nodes = els.heroStage.querySelectorAll("[data-tilt]");
+    var tiltRaf = null;
+    var tiltPending = null;
+    function applyTilt(node, e) {
+      var r = node.getBoundingClientRect();
+      var x = (e.clientX - r.left) / r.width - 0.5;
+      var y = (e.clientY - r.top) / r.height - 0.5;
+      node.style.transform =
+        "perspective(900px) rotateY(" +
+        (x * 8).toFixed(2) +
+        "deg) rotateX(" +
+        (y * -7).toFixed(2) +
+        "deg) scale(1.01)";
+    }
     nodes.forEach(function (node) {
       node.addEventListener(
         "mousemove",
         function (e) {
-          var r = node.getBoundingClientRect();
-          var x = (e.clientX - r.left) / r.width - 0.5;
-          var y = (e.clientY - r.top) / r.height - 0.5;
-          node.style.transform =
-            "perspective(900px) rotateY(" +
-            (x * 8).toFixed(2) +
-            "deg) rotateX(" +
-            (y * -7).toFixed(2) +
-            "deg) scale(1.01)";
+          tiltPending = { node: node, e: e };
+          if (!tiltRaf) {
+            tiltRaf = requestAnimationFrame(function () {
+              tiltRaf = null;
+              var p = tiltPending;
+              tiltPending = null;
+              if (p) applyTilt(p.node, p.e);
+            });
+          }
         },
         { passive: true }
       );
@@ -1137,7 +1156,7 @@
   bootConfigurableHero();
   renderHeroSpotlight();
   if (gq) {
-    gq.addEventListener("input", applyHomeCatalogFilter);
+    gq.addEventListener("input", scheduleHomeCatalogFilter);
   }
   observeReveals();
   bindHeroTilt();
@@ -1198,14 +1217,17 @@
     renderHeroSpotlight();
   });
 
+  var storefrontMergeTimer = null;
   function onStorefrontCatalogMerged() {
-    renderFeatured();
-    renderCategories();
-    paintHeroFloatCatalog();
-    bootConfigurableHero();
-    renderHeroSpotlight();
+    clearTimeout(storefrontMergeTimer);
+    storefrontMergeTimer = setTimeout(function () {
+      renderFeatured();
+      renderCategories();
+      paintHeroFloatCatalog();
+      bootConfigurableHero();
+      renderHeroSpotlight();
+    }, 40);
   }
 
-  window.addEventListener("craftguruCatalogVendorProductsMerged", onStorefrontCatalogMerged);
   window.addEventListener("craftguruCatalogPricesMerged", onStorefrontCatalogMerged);
 })();

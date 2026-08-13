@@ -62,7 +62,7 @@
   function fetchTaxonomy() {
     var base = catalogApiBase();
     if (base) {
-      return fetch(base + "/api/catalog/raw-material-taxonomy", { cache: "no-store" })
+      return fetch(base + "/api/catalog/raw-material-taxonomy")
         .then(function (r) {
           return r.json();
         })

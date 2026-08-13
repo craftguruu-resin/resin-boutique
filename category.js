@@ -433,6 +433,7 @@
       return;
     }
 
+    var frag = document.createDocumentFragment();
     result.items.forEach(function (p, i) {
       var minP = minPrice(p);
       var pHref = "product.html?id=" + encodeURIComponent(p.id);
@@ -473,8 +474,9 @@
           bulkBuyCardHtml(p) +
           "</div>";
       }
-      els.productGrid.appendChild(card);
+      frag.appendChild(card);
     });
+    els.productGrid.appendChild(frag);
     if (PLP && PLP.wireAllCardWishlists) PLP.wireAllCardWishlists(els.productGrid);
 
     if (els.pager) {

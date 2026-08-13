@@ -207,6 +207,13 @@ body:not(.vendor-saas) .band-shop-inner:has(.plp-shell) {
 }
 
 /* ── Product card ── */
+body:not(.vendor-saas) .plp-card,
+body:not(.vendor-saas) .craft-cat-card,
+body:not(.vendor-saas) .featured-cat-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 320px;
+}
+
 .plp-card {
   position: relative;
   display: flex;

@@ -370,7 +370,7 @@
         ? items
             .map(function (p) {
               var href = "product.html?id=" + encodeURIComponent(p.id);
-              var img = p.image && D2.imageUrl ? D2.imageUrl(p.image) : p.image || "";
+              var img = p.image && D2.imageUrl ? D2.imageUrl(p.image, 80) : p.image || "";
               var from =
                 D2.formatStartingFromPrice && window.RESIN_CART && window.RESIN_CART.formatMoney
                   ? D2.formatStartingFromPrice(p, window.RESIN_CART.formatMoney)
@@ -415,7 +415,7 @@
       res.innerHTML = list
         .map(function (m) {
           var href = pdpHref + encodeURIComponent(m.id);
-          var img = m.image && D2 && D2.imageUrl ? D2.imageUrl(m.image) : String((m && m.image) || "").trim();
+          var img = m.image && D2 && D2.imageUrl ? D2.imageUrl(m.image, 80) : String((m && m.image) || "").trim();
           var sub =
             [m.baseCategorySlug, m.subcategorySlug].filter(Boolean).join(" · ") || subDefault;
           return (
@@ -448,7 +448,7 @@
         return;
       }
       if (headerSearchUsesRawMaterialsApi()) {
-        fetch(rawMaterialsSearchFetchUrl(q), { cache: "no-store" })
+        fetch(rawMaterialsSearchFetchUrl(q))
           .then(function (r) {
             return r.json();
           })
@@ -509,12 +509,15 @@
     bootGuestSearchFromUrl(inp);
     if (String(inp.value || "").trim()) runSearch();
     window.addEventListener("craftguruCatalogVendorProductsMerged", function () {
+      if (!String(inp.value || "").trim()) return;
       runSearch();
     });
     window.addEventListener("craftguruCatalogPricesMerged", function () {
+      if (!String(inp.value || "").trim()) return;
       runSearch();
     });
     window.addEventListener("craftguruCatalogCategoriesMerged", function () {
+      if (!String(inp.value || "").trim()) return;
       runSearch();
     });
   }

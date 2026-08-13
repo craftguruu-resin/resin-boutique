@@ -50,7 +50,7 @@ steps:
       - --allow-unauthenticated
       - --port=8080
       - --cpu=2
-      - --memory=2Gi
+      - --memory=4Gi
       - --min-instances=${_MIN_INSTANCES}
       - --max-instances=30
       - --concurrency=40

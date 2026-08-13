@@ -391,6 +391,15 @@
     });
   }
 
+  function preloadGalleryImage(rawUrl, width) {
+    if (!rawUrl) return;
+    var u = D.imageUrl ? D.imageUrl(rawUrl, width || 960) : rawUrl;
+    if (!u) return;
+    var img = new Image();
+    img.decoding = "async";
+    img.src = u;
+  }
+
   function setGalleryIndex(idx) {
     idx = Math.max(0, Math.min(galleryState.urls.length - 1, idx));
     galleryState.idx = idx;
@@ -423,6 +432,8 @@
       if (window.CraftguruImageFit && opt) {
         window.CraftguruImageFit.applyImageFit(hero, window.CraftguruImageFit.getFitForUrl(opt, galleryState.urls[idx]));
       }
+      if (idx + 1 < galleryState.urls.length) preloadGalleryImage(galleryState.urls[idx + 1], 960);
+      if (idx > 0) preloadGalleryImage(galleryState.urls[idx - 1], 960);
     }
   }
 

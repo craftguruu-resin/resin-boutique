@@ -2809,7 +2809,6 @@ app.get("/api/catalog/raw-material-taxonomy", function (_req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, taxonomy: doc });
   });
 });
@@ -2820,7 +2819,6 @@ app.get("/api/catalog/photo-frame-nav", function (_req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, nav: doc });
   });
 });
@@ -2858,7 +2856,6 @@ app.get("/api/catalog/raw-materials", function (req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, materials: list || [] });
   });
 });
@@ -2872,7 +2869,6 @@ app.get("/api/catalog/raw-materials/:id", function (req, res) {
     if (!row) {
       return res.status(404).json({ ok: false, error: "Not found" });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, material: row });
   });
 });
@@ -2886,7 +2882,6 @@ app.get("/api/catalog/photo-frame-products", function (req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, materials: list || [] });
   });
 });
@@ -2900,7 +2895,6 @@ app.get("/api/catalog/photo-frame-products/:id", function (req, res) {
     if (!row) {
       return res.status(404).json({ ok: false, error: "Not found" });
     }
-    res.setHeader("Cache-Control", "no-store");
     res.json({ ok: true, material: row });
   });
 });

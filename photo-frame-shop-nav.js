@@ -55,7 +55,7 @@
   function fetchTaxonomy() {
     var base = catalogApiBase();
     if (base) {
-      return fetch(base + "/api/catalog/photo-frame-nav", { cache: "no-store" })
+      return fetch(base + "/api/catalog/photo-frame-nav")
         .then(function (r) {
           return r.json();
         })

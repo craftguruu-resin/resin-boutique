@@ -18,7 +18,7 @@
 | Setting | Before | After |
 |---------|--------|-------|
 | CPU | 1 | **2** |
-| Memory | 1 Gi | **2 Gi** |
+| Memory | 1 Gi | **4 Gi** |
 | Min instances | 0 | **1** (eliminates idle cold starts) |
 | Max instances | 20 | **30** |
 | Concurrency | 80 | **40** (better latency per request) |
