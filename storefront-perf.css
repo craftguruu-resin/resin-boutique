@@ -1,0 +1,34 @@
+/**
+ * Storefront performance — layout stability (CLS) and paint containment.
+ */
+
+body.page-home .featured-collections-grid {
+  min-height: clamp(18rem, 42vw, 28rem);
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+body.page-home .home-category-rail .category-grid--rail {
+  min-height: clamp(12rem, 28vh, 22rem);
+}
+
+body.page-home .hero-atelier__shell.home-landing-hero--exact,
+body.page-home .hero-atelier__shell--exact-ref {
+  min-height: clamp(14rem, 38vw, 22rem);
+}
+
+body.page-home .hero-promo-carousel__frame {
+  aspect-ratio: 16 / 9;
+  min-height: clamp(12rem, 34vw, 20rem);
+}
+
+body.page-home .hero-promo-carousel__frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+body.guest-site .plp-grid.product-grid,
+body.guest-site .product-grid {
+  min-height: clamp(12rem, 30vh, 24rem);
+}

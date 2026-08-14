@@ -1064,12 +1064,30 @@
   }
 
   function ensureScrollPerfStyles() {
-    if (document.querySelector("link[data-cg-scroll-perf]")) return;
-    var link = document.createElement("link");
-    link.rel = "stylesheet";
-    link.href = "scroll-perf.css";
-    link.setAttribute("data-cg-scroll-perf", "1");
-    document.head.appendChild(link);
+    if (!document.querySelector("link[data-cg-scroll-perf]")) {
+      var link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "scroll-perf.css";
+      link.setAttribute("data-cg-scroll-perf", "1");
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector("link[data-cg-storefront-perf]")) {
+      var perf = document.createElement("link");
+      perf.rel = "stylesheet";
+      perf.href = "storefront-perf.css";
+      perf.setAttribute("data-cg-storefront-perf", "1");
+      document.head.appendChild(perf);
+    }
+  }
+
+  function registerStorefrontServiceWorker() {
+    if (!("serviceWorker" in navigator)) return;
+    try {
+      if (window.location.protocol === "file:") return;
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw-storefront.js", { scope: "/" }).catch(function () {});
+      });
+    } catch (_) {}
   }
 
   function wireScrollPerf() {
@@ -1136,6 +1154,7 @@
     ensureScrollPerfStyles();
     wireScrollPerf();
     ensureCloudinaryPreconnect();
+    registerStorefrontServiceWorker();
     removeLegacyCatalogSyncButton();
     if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {
       window.CraftguruCategoryScroll.resetPageScroll();

@@ -2776,6 +2776,120 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
   });
 });
 
+/**
+ * Public: single round-trip bootstrap for storefront catalog merge (categories + vendor extras + price overrides).
+ * Reduces cold-session latency vs three parallel API calls.
+ */
+app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
+  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [] };
+  var pending = 3;
+  var failed = false;
+
+  function finish() {
+    if (failed) return;
+    if (pending > 0) return;
+    res.json(out);
+  }
+
+  function failOnce(msg) {
+    if (failed) return;
+    failed = true;
+    res.status(500).json({ ok: false, error: String(msg || "Bootstrap failed") });
+  }
+
+  vendorProductsDb.listExtraProductsForStorefront(function (e, list) {
+    if (e) return failOnce(e.message || e);
+    out.products = list || [];
+    pending -= 1;
+    finish();
+  });
+
+  function categoriesFromDataJsOnly() {
+    try {
+      var list = catalogFromData.getCategoriesList().map(function (c) {
+        if (!c) return c;
+        return {
+          id: c.id,
+          label: c.label,
+          folder: c.folder || "",
+          subcategories: normalizeCategorySubcategories(c.subcategories),
+          nav_image: "",
+          nav_image_fit: "",
+          vendor_owned: false,
+        };
+      });
+      list.sort(function (a, b) {
+        return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
+      });
+      return list;
+    } catch (e2) {
+      failOnce(e2.message || e2);
+      return [];
+    }
+  }
+
+  if (!poolMod.isEnabled()) {
+    out.categories = categoriesFromDataJsOnly();
+    pending -= 1;
+    finish();
+  } else {
+    poolMod
+      .getPool()
+      .query(
+        "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
+      )
+      .then(function (r) {
+        out.categories = mergeCategoriesDbWithCatalog(r.rows);
+        pending -= 1;
+        finish();
+      })
+      .catch(function (e3) {
+        out.categories = categoriesFromDataJsOnly();
+        if (!out.categories.length) failOnce(e3.message || e3);
+        pending -= 1;
+        finish();
+      });
+  }
+
+  vendorCatalogDb.listOverridesMap(function (e4, map) {
+    if (e4) return failOnce(e4.message || e4);
+    var overridesOut = {};
+    Object.keys(map || {}).forEach(function (k) {
+      var key = String(k != null ? k : "").trim();
+      if (!key) return;
+      var x = map[k];
+      var o = {};
+      if (x.s != null && Number.isFinite(Number(x.s))) o.s = Number(x.s);
+      if (x.m != null && Number.isFinite(Number(x.m))) o.m = Number(x.m);
+      if (x.l != null && Number.isFinite(Number(x.l))) o.l = Number(x.l);
+      if (x.stockS != null && Number.isFinite(Number(x.stockS))) o.stockS = Number(x.stockS);
+      if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
+      if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
+      o.returnGift = !!x.returnGift;
+      o.listed = x.listed !== false;
+      if (x.name != null && String(x.name).trim()) o.name = String(x.name).trim().slice(0, 500);
+      var slIn = x.sizeLabels != null && typeof x.sizeLabels === "object" ? x.sizeLabels : {};
+      var slOut = {};
+      ["s", "m", "l"].forEach(function (letter) {
+        var slot = slIn[letter];
+        if (slot && slot.name) slOut[letter] = { name: String(slot.name).trim().slice(0, 120) };
+      });
+      if (Object.keys(slOut).length) o.sizeLabels = slOut;
+      if (vendorCatalogDb.catalogOptionsHasPayload(x.options)) {
+        o.options = vendorCatalogDb.sanitizeOptionsForPublic(x.options);
+      }
+      overridesOut[key] = o;
+    });
+    out.overrides = overridesOut;
+    vendorCatalogDb.listSuppressedProductIds(function (eSup, suppressed) {
+      if (eSup) return failOnce(eSup.message || eSup);
+      out.suppressedProductIds = suppressed || [];
+      pending -= 1;
+      finish();
+    });
+  });
+});
+
 /** Public: merged resin categories (data.js + Postgres overlays and vendor-owned rows). */
 app.get("/api/catalog/categories", function (_req, res) {
   function fromDataJsOnly() {

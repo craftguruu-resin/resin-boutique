@@ -622,6 +622,23 @@
     homeFilterTimer = setTimeout(applyHomeCatalogFilter, 120);
   }
 
+  function patchHomeCategoriesFromMerge() {
+    if (!els.categoryGrid || !els.categoryGrid.children.length) return false;
+    var railApi = window.CRAFT_RAIL_ICONS;
+    D.categories.forEach(function (cat) {
+      var link = els.categoryGrid.querySelector('[data-cat-id="' + String(cat.id).replace(/"/g, "") + '"]');
+      if (!link) return;
+      link.setAttribute("data-search-text", (cat.label + " " + cat.id).toLowerCase());
+      if (railApi && railApi.fillRailLink) {
+        railApi.fillRailLink(link, { id: cat.id, label: cat.label });
+      } else {
+        link.textContent = cat.label;
+      }
+    });
+    applyHomeCatalogFilter();
+    return true;
+  }
+
   function renderCategories() {
     if (!els.categoryGrid) return;
     els.categoryGrid.innerHTML = "";
@@ -635,6 +652,7 @@
         a.style.setProperty("--delay", (0.035 * i).toFixed(3) + "s");
       }
       a.href = "category.html?cat=" + encodeURIComponent(cat.id);
+      a.setAttribute("data-cat-id", String(cat.id));
       a.setAttribute("data-search-text", (cat.label + " " + cat.id).toLowerCase());
       if (rail && railApi && railApi.fillRailLink) {
         railApi.fillRailLink(a, { id: cat.id, label: cat.label });
@@ -1211,8 +1229,7 @@
   }
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
-    renderCategories();
-    renderFeatured();
+    if (!patchHomeCategoriesFromMerge()) renderCategories();
     paintHeroFloatCatalog();
     renderHeroSpotlight();
   });
@@ -1221,8 +1238,8 @@
   function onStorefrontCatalogMerged() {
     clearTimeout(storefrontMergeTimer);
     storefrontMergeTimer = setTimeout(function () {
-      renderFeatured();
-      renderCategories();
+      if (!patchHomeCategoriesFromMerge()) renderCategories();
+      if (!patchFeaturedCardPrices()) renderFeatured();
       paintHeroFloatCatalog();
       bootConfigurableHero();
       renderHeroSpotlight();

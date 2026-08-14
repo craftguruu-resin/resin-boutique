@@ -219,6 +219,38 @@
       return Promise.resolve();
     }
 
+    if (needCategories && needVendor && needOverrides) {
+      mergeInflight = catalogFetch(base, "/api/catalog/storefront-bootstrap")
+        .then(function (j) {
+          if (j && j.ok) {
+            if (j.categories && typeof D.applyCategoriesMerge === "function") {
+              D.applyCategoriesMerge(j.categories);
+              writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: j.categories });
+            }
+            if (j.products && typeof D.applyVendorProductsMerge === "function") {
+              D.applyVendorProductsMerge(j.products);
+              writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j.products });
+            }
+            applyOverridesPayload(j);
+            writeSessionJson(OVERRIDES_CACHE_KEY, {
+              ts: Date.now(),
+              overrides: j.overrides || {},
+              suppressedProductIds: j.suppressedProductIds || [],
+            });
+            dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
+            dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+          }
+        })
+        .catch(function () {})
+        .finally(function () {
+          mergeFinished = true;
+          mergeInflight = null;
+          lastMergeAt = Date.now();
+          dispatchCatalogEvent("craftguruCatalogPricesMerged");
+        });
+      return mergeInflight;
+    }
+
     var tasks = [];
 
     if (needCategories) {
