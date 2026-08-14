@@ -83,7 +83,7 @@ var BUNDLED_MEDIA_MARKERS = [
 
 /** Browser cache: images load fast; HTML stays fresh to avoid stale-page flashes. */
 var CACHE = {
-  html: "no-cache, must-revalidate",
+  html: "private, no-store, no-cache, must-revalidate, max-age=0",
   scriptStyle: "public, max-age=86400, must-revalidate",
   scriptStyleVersioned: "public, max-age=31536000, immutable",
   font: "public, max-age=31536000, immutable",

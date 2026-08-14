@@ -24,6 +24,8 @@ function escAttr(s) {
 }
 
 function publicOrigin(req) {
+  var envOrigin = String(process.env.PUBLIC_SITE_ORIGIN || "").trim().replace(/\/+$/, "");
+  if (envOrigin) return envOrigin;
   try {
     var proto = String(req.headers["x-forwarded-proto"] || req.protocol || "https").split(",")[0].trim();
     var host = String(req.headers["x-forwarded-host"] || req.get("host") || "").split(",")[0].trim();
@@ -255,7 +257,8 @@ function serveHomepage(req, res, next) {
   storefrontBootstrap.loadStorefrontBootstrap(function (bootErr, bootstrap) {
     if (bootErr) {
       console.error("[homepage-ssr] bootstrap failed:", bootErr.message || bootErr);
-      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
       return res.type("html").send(template);
     }
 
@@ -275,7 +278,8 @@ function serveHomepage(req, res, next) {
         showPromoHero: hero.showPromo,
       });
 
-      res.setHeader("Cache-Control", "no-cache, must-revalidate");
+      res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
+      res.setHeader("Pragma", "no-cache");
       res.setHeader("Vary", "Accept-Encoding");
       res.type("html").send(html);
     });
