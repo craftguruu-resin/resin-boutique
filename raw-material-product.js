@@ -34,7 +34,6 @@
 
   function imgSrc(rel) {
     if (!rel) return "";
-    if (String(rel).indexOf("http") === 0 || String(rel).indexOf("//") === 0) return rel;
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 

@@ -205,17 +205,16 @@
   /** Resolve thumbnail: stored line image, else catalog by productId. */
   function lineImageSrc(it) {
     var raw = String((it && it.image) || "").trim();
+    var D0 = window.RESIN_DATA;
     if (raw) {
-      if (/^https?:\/\//i.test(raw) || raw.charAt(0) === "/") return raw;
-      var D0 = window.RESIN_DATA;
-      if (D0 && typeof D0.imageUrl === "function") return D0.imageUrl(raw);
+      if (D0 && typeof D0.imageUrl === "function") return D0.imageUrl(raw, 96);
       return raw;
     }
     var pid = String((it && it.productId) || "").trim();
     var D = window.RESIN_DATA;
     if (D && typeof D.getProduct === "function" && pid) {
       var p = D.getProduct(pid);
-      if (p && p.image && D.imageUrl) return D.imageUrl(p.image);
+      if (p && p.image && D.imageUrl) return D.imageUrl(p.image, 96);
       if (p && p.image) return p.image;
     }
     return "";

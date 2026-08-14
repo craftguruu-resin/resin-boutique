@@ -606,6 +606,8 @@ var SIZE_DEFAULT = {
 
   /** Cloudinary delivery transforms: auto format/quality/dpr, optional width cap. */
   function cloudinaryDisplayUrl(url, displayWidth) {
+    var CD = typeof CraftguruCloudinaryDelivery !== "undefined" ? CraftguruCloudinaryDelivery : null;
+    if (CD && CD.cloudinaryTransform) return CD.cloudinaryTransform(url, displayWidth);
     var s = String(url || "").trim();
     if (!/res\.cloudinary\.com/i.test(s) || s.indexOf("/image/upload/") < 0) return s;
     if (/[?&]f_auto|[,/]f_auto/.test(s)) return s;
@@ -616,11 +618,23 @@ var SIZE_DEFAULT = {
     } else {
       transforms.push("w_auto");
     }
-    var insert = transforms.join(",");
-    return s.replace("/image/upload/", "/image/upload/" + insert + "/");
+    return s.replace("/image/upload/", "/image/upload/" + transforms.join(",") + "/");
+  }
+
+  function imageDeliveryOpts() {
+    var CD = typeof CraftguruCloudinaryDelivery !== "undefined" ? CraftguruCloudinaryDelivery : null;
+    var base = storefrontApiBaseForMedia();
+    return {
+      apiBase: base || "",
+      cloudName: "",
+    };
   }
 
   function imageUrl(relPath, displayWidth) {
+    var CD = typeof CraftguruCloudinaryDelivery !== "undefined" ? CraftguruCloudinaryDelivery : null;
+    if (CD && CD.deliveryUrl) {
+      return CD.deliveryUrl(relPath, displayWidth, imageDeliveryOpts());
+    }
     if (!relPath) return "";
     var s = String(relPath).trim();
     /* Absolute URLs (e.g. Cloudinary, R2, Imgur) — use as-is; no Render disk needed. */
@@ -634,12 +648,40 @@ var SIZE_DEFAULT = {
       q = s.slice(qIx);
       s = s.slice(0, qIx);
     }
+    var params = [];
+    if (q && q.indexOf("?") === 0) {
+      q.slice(1)
+        .split("&")
+        .forEach(function (pair) {
+          if (pair) params.push(pair);
+        });
+    }
+    var w = Number(displayWidth);
+    if (Number.isFinite(w) && w > 0 && w < 4000) {
+      params.push("w=" + Math.round(w));
+    }
+    if (/\.(png|jpe?g|webp|gif|tiff?)$/i.test(s)) {
+      params.push("f=webp");
+    }
     var enc = s.split("/").map(function (seg) { return encodeURIComponent(seg); }).join("/");
+    var qs = params.length ? "?" + params.join("&") : "";
     var base = storefrontApiBaseForMedia();
     if (base && s.indexOf("media/") === 0) {
-      return base.replace(/\/+$/, "") + "/" + enc + q;
+      return base.replace(/\/+$/, "") + "/" + enc + qs;
     }
-    return enc + q;
+    return enc + qs;
+  }
+
+  function imageSrcSet(relPath, widths) {
+    var CD = typeof CraftguruCloudinaryDelivery !== "undefined" ? CraftguruCloudinaryDelivery : null;
+    if (CD && CD.srcSet) return CD.srcSet(relPath, widths, imageDeliveryOpts());
+    return "";
+  }
+
+  function imageSizes(kind) {
+    var CD = typeof CraftguruCloudinaryDelivery !== "undefined" ? CraftguruCloudinaryDelivery : null;
+    if (CD && CD.sizesAttr) return CD.sizesAttr(kind);
+    return "100vw";
   }
 
   function normalizeOptionsOverride(raw) {
@@ -1185,6 +1227,8 @@ var SIZE_DEFAULT = {
     listProductsAll: listProductsAll,
     getFeatured: getFeatured,
     imageUrl: imageUrl,
+    imageSrcSet: imageSrcSet,
+    imageSizes: imageSizes,
     applyPriceOverrides: applyPriceOverrides,
     applyCatalogSuppressions: applyCatalogSuppressions,
     isProductSuppressed: isProductSuppressed,

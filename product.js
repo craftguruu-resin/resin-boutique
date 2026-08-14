@@ -742,8 +742,7 @@
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
     var heroUrl = urls[0] || "";
     var heroOpt = D.imageUrl ? D.imageUrl(heroUrl, 960) : heroUrl;
-    img.src = heroUrl;
-    if (heroOpt) preloadLinkImage(heroOpt);
+    img.src = heroOpt || heroUrl;
     if (urls.length > 1) preloadGalleryImage(urls[1], 960);
     urls.forEach(function (u, i) {
       if (i > 0) preloadGalleryImage(u, 480);

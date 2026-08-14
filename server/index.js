@@ -83,6 +83,8 @@ var guestDb = require("./guest-db.js");
 var guestWishlistDb = require("./guest-wishlist-db.js");
 var wa = require("./whatsapp-meta.js");
 var httpHardening = require("./http-hardening.js");
+var mediaOptimizer = require("./media-optimizer.js");
+var homepageSsr = require("./homepage-ssr.js");
 var apiResponseCache = require("./api-response-cache.js");
 var orderPricing = require("./order-pricing.js");
 var shipmentSync = require("./shipment/shipment-sync.js");
@@ -736,6 +738,12 @@ function normalizeGuestParcel(g) {
 var app = express();
 httpHardening.applyHttpHardening(app);
 app.use(express.json({ limit: "400kb" }));
+
+app.use("/api", function (_req, res, next) {
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+  res.setHeader("Pragma", "no-cache");
+  next();
+});
 
 /** CORS: "*" is wide open. Otherwise merge env list with common Live Server / Vite ports on loopback (fixes vendor login from browser when .env only lists :5500 but Live Server uses :5501, etc.). */
 function buildCorsOriginOption() {
@@ -2788,6 +2796,7 @@ app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
   function finish() {
     if (failed) return;
     if (pending > 0) return;
+    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
     res.json(out);
   }
 
@@ -4244,8 +4253,15 @@ app.get("/vendororder", function (_req, res) {
 var staticSiteOpts = httpHardening.makeExpressStaticOptions("site-root");
 var staticUploadOpts = httpHardening.makeExpressStaticOptions("mutable-upload");
 var versionedStaticCache = httpHardening.markVersionedStaticCache;
+var optimizedMedia = mediaOptimizer.createMediaOptimizer({
+  siteRoot: siteRoot,
+  catalogMediaFsRoot: catalogMediaPath.catalogMediaFsRoot(),
+  heroMediaFsRoot: catalogMediaPath.heroMediaFsRoot(),
+  rawMaterialsMediaFsRoot: catalogMediaPath.rawMaterialsMediaFsRoot(),
+  photoFrameProductsMediaFsRoot: catalogMediaPath.photoFrameProductsMediaFsRoot(),
+});
+app.use(optimizedMedia);
 
-/** Legacy shop URL — single Photo Frames page is photo-frames.html (hero + shop). */
 app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
   var q = "";
   try {
@@ -4257,6 +4273,10 @@ app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
   }
   res.redirect(302, "/photo-frames.html" + q);
 });
+
+/** Server-rendered homepage — categories + featured grid in initial HTML (hydrate client-side). */
+app.get("/", homepageSsr.serveHomepage);
+app.get("/index.html", homepageSsr.serveHomepage);
 
 app.use("/media/catalog", versionedStaticCache, express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
 app.use("/media/hero", versionedStaticCache, express.static(catalogMediaPath.heroMediaFsRoot(), staticUploadOpts));

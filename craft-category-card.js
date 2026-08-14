@@ -51,10 +51,16 @@
     var mediaInner;
     var imgFit = opts.imgFit != null ? String(opts.imgFit).trim() : "";
     if (opts.imgSrc) {
+      var srcsetAttr =
+        opts.imgSrcSet ? ' srcset="' + escAttr(opts.imgSrcSet) + '"' : "";
+      var sizesAttr = opts.imgSizes ? ' sizes="' + escAttr(opts.imgSizes) + '"' : "";
       mediaInner =
         '<img src="' +
         escAttr(opts.imgSrc) +
-        '" alt="" loading="lazy" decoding="async"' +
+        '"' +
+        srcsetAttr +
+        sizesAttr +
+        ' alt="" width="640" height="457" loading="lazy" decoding="async"' +
         (imgFit ? ' data-image-fit="' + escAttr(imgFit) + '"' : "") +
         " />";
     } else {

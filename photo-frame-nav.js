@@ -40,7 +40,6 @@
     if (!rel) return "";
     var r = String(rel).trim();
     if (!r) return "";
-    if (r.indexOf("http") === 0 || r.indexOf("//") === 0) return r;
     return D && typeof D.imageUrl === "function" ? D.imageUrl(r) : r;
   }
 

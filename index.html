@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="styles.css?v=20260814" as="style" />
-  <link rel="preload" href="guest-layout.css?v=20260814" as="style" />
+  <link rel="preload" href="styles.css?v=20260816" as="style" />
+  <link rel="preload" href="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260816" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="media/brand-craftguru.png?v=20260730" as="image" />
   <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="192x192" />
@@ -15,28 +16,28 @@
   <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
   <link
     rel="preload"
-    href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=optional"
     as="style"
     onload="this.onload=null;this.rel='stylesheet'"
   />
   <noscript>
     <link
-      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=optional"
       rel="stylesheet"
     />
   </noscript>
-  <link rel="stylesheet" href="styles.css?v=20260814" />
-  <link rel="stylesheet" href="motion.css?v=20260814" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="guest-layout.css?v=20260814" />
-  <link rel="stylesheet" href="category-rail-icons.css?v=20260814" />
-  <link rel="stylesheet" href="hero-exact-shared.css?v=20260814" />
-  <link rel="stylesheet" href="home-hero-ethereal.css?v=20260814" />
-  <link rel="stylesheet" href="home-featured-collections.css?v=20260814" />
-  <link rel="stylesheet" href="craft-category-card.css?v=20260814" />
-  <link rel="stylesheet" href="connect-section.css?v=20260814" media="print" onload="this.media='all'" />
-  <link rel="stylesheet" href="craftguru-theme.css?v=20260814" />
-  <link rel="stylesheet" href="layout-responsive.css?v=20260814" />
-  <link rel="stylesheet" href="storefront-perf.css?v=20260814" />
+  <link rel="stylesheet" href="styles.css?v=20260816" />
+  <link rel="stylesheet" href="motion.css?v=20260816" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="guest-layout.css?v=20260816" />
+  <link rel="stylesheet" href="category-rail-icons.css?v=20260816" />
+  <link rel="stylesheet" href="hero-exact-shared.css?v=20260816" />
+  <link rel="stylesheet" href="home-hero-ethereal.css?v=20260816" />
+  <link rel="stylesheet" href="home-featured-collections.css?v=20260816" />
+  <link rel="stylesheet" href="craft-category-card.css?v=20260816" />
+  <link rel="stylesheet" href="connect-section.css?v=20260816" media="print" onload="this.media='all'" />
+  <link rel="stylesheet" href="craftguru-theme.css?v=20260816" />
+  <link rel="stylesheet" href="layout-responsive.css?v=20260816" />
+  <link rel="stylesheet" href="storefront-perf.css?v=20260816" />
 </head>
 <body id="top" class="page-home">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -65,7 +66,7 @@
     <div class="noise-overlay"></div>
   </div>
 
-  <header class="site-top site-top--fx reveal" data-reveal-delay="0">
+  <header class="site-top site-top--fx reveal is-inview" data-reveal-delay="0">
     <a href="index.html" class="brand brand--fx" aria-label="Craftguru — home">
       <img
         class="brand__logo-img"
@@ -134,17 +135,23 @@
       <div class="hero-atelier" id="heroStage">
         <div class="hero-atelier__builtin-wrap" id="heroAtelierBuiltin">
         <div class="hero-atelier__shell hero-atelier__shell--exact-ref home-landing-hero--exact">
-          <img
-            class="hero-atelier__exact-art home-landing-hero__exact-art"
-            src="media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343"
-            width="1536"
-            height="1024"
-            fetchpriority="high"
-            alt="Hand-poured resin for modern walls — Craft Guru geode clock showcase"
-            loading="eager"
-            decoding="async"
-            fetchpriority="high"
-          />
+          <picture>
+            <source
+              type="image/webp"
+              srcset="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260816 1280w"
+              sizes="(max-width: 899px) 100vw, min(1200px, 72vw)"
+            />
+            <img
+              class="hero-atelier__exact-art home-landing-hero__exact-art"
+              src="media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343"
+              width="1536"
+              height="1024"
+              fetchpriority="high"
+              alt="Hand-poured resin for modern walls — Craft Guru geode clock showcase"
+              loading="eager"
+              decoding="async"
+            />
+          </picture>
           <div class="hero-atelier__light home-landing-hero__copy">
             <p class="hero-atelier__kicker">From the Jaipur bench</p>
             <h2 class="hero-atelier__title">Hand-poured resin <span>for modern walls</span></h2>
@@ -580,22 +587,20 @@
     </div>
   </div>
 
-  <link rel="preload" href="data.js?v=20260814" as="script" />
-  <script defer src="image-fit.js?v=20260814"></script>
+  <script src="cloudinary-delivery.js?v=20260816"></script>
+  <script src="image-fit.js?v=20260816"></script>
   <script src="craftguru-api-base.js"></script>
-  <script defer src="data.js?v=20260814"></script>
-  <script defer src="catalog-merge.js?v=20260814"></script>
-  <script defer src="cart.js?v=20260814"></script>
-  <script defer src="category-rail-icons.js?v=20260814"></script>
-  <script defer src="guest-layout.js?v=20260814"></script>
-  <script defer src="header.js?v=20260814"></script>
-  <script defer src="global-find.js?v=20260814"></script>
-  <script defer src="auth-db.js?v=20260814"></script>
-  <script defer src="google-signin.js?v=20260814"></script>
-  <script defer src="auth-home.js?v=20260814"></script>
-  <script defer src="catalog-filter-ui.js?v=20260814"></script>
-  <script defer src="craft-category-card.js?v=20260814"></script>
-  <script defer src="premium-category-cards.js?v=20260814"></script>
-  <script defer src="app.js?v=20260814"></script>
+  <script src="data.js?v=20260816"></script>
+  <script src="catalog-merge.js?v=20260816"></script>
+  <script src="cart.js?v=20260816"></script>
+  <script src="category-rail-icons.js?v=20260816"></script>
+  <script src="craft-category-card.js?v=20260816"></script>
+  <script src="premium-category-cards.js?v=20260816"></script>
+  <script src="app.js?v=20260816"></script>
+  <script defer src="guest-layout.js?v=20260816"></script>
+  <script defer src="header.js?v=20260816"></script>
+  <script defer src="global-find.js?v=20260816"></script>
+  <script defer src="auth-lazy.js?v=20260816"></script>
+  <script defer src="catalog-filter-ui.js?v=20260816"></script>
 </body>
 </html>

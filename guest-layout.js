@@ -814,11 +814,22 @@
     injectScriptOnce("instagram-widget.js", true);
   }
 
-  /* Run as soon as guest-layout loads so floats appear on every storefront page. */
+  function scheduleSocialFloatWidgets() {
+    var run = function () {
+      injectSocialFloatWidgets();
+    };
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(run, { timeout: 4500 });
+    } else {
+      window.setTimeout(run, 1800);
+    }
+  }
+
+  /* Defer floats until idle so first paint stays clean on cold visits. */
   if (document.body) {
-    injectSocialFloatWidgets();
+    scheduleSocialFloatWidgets();
   } else {
-    document.addEventListener("DOMContentLoaded", injectSocialFloatWidgets);
+    document.addEventListener("DOMContentLoaded", scheduleSocialFloatWidgets);
   }
 
   function ensureLayoutResponsiveStyles() {

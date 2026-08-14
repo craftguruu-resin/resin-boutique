@@ -164,6 +164,12 @@
 
   function bootConfigurableHero() {
     stopHeroCarouselTimer();
+    var promo = document.getElementById("heroPromoCarousel");
+    if (promo && promo.getAttribute("data-cg-ssr-hero") === "1") {
+      var stage = document.getElementById("heroStage");
+      if (stage) stage.classList.add("hero-atelier--promo");
+      return;
+    }
     var M = window.CraftguruCatalogMerge;
     var base = M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
     if (!base) {
@@ -641,6 +647,10 @@
 
   function renderCategories() {
     if (!els.categoryGrid) return;
+    if (els.categoryGrid.getAttribute("data-cg-ssr") === "1" && els.categoryGrid.children.length) {
+      patchHomeCategoriesFromMerge();
+      return;
+    }
     els.categoryGrid.innerHTML = "";
     var rail = els.categoryGrid.classList && els.categoryGrid.classList.contains("category-grid--rail");
     var railApi = window.CRAFT_RAIL_ICONS;
@@ -670,6 +680,14 @@
 
   function renderFeatured() {
     if (!els.productGrid) return;
+    if (els.productGrid.getAttribute("data-cg-ssr") === "1" && els.productGrid.children.length) {
+      wireHomeFiltersOnce();
+      els.productGrid.className = "featured-collections-grid";
+      applyHomeCatalogFilter();
+      var shop = document.getElementById("shop");
+      if (shop) shop.classList.add("is-inview");
+      return;
+    }
     wireHomeFiltersOnce();
     els.productGrid.className = "featured-collections-grid";
     els.productGrid.innerHTML = "";
@@ -706,7 +724,14 @@
           title: cat.label,
           subtitle: countLabel,
           ctaText: "Explore collection →",
-          imgSrc: imgRel ? imgUrl(imgRel) : imgFallback ? imgUrl(imgFallback) : "",
+          imgSrc: imgRel ? imgUrl(imgRel, 640) : imgFallback ? imgUrl(imgFallback, 640) : "",
+          imgSrcSet:
+            imgRel || imgFallback
+              ? D.imageSrcSet
+                ? D.imageSrcSet(imgRel || imgFallback, [320, 480, 640, 960])
+                : ""
+              : "",
+          imgSizes: D.imageSizes ? D.imageSizes("card") : "",
           imgFit: categoryPreviewFit(cat.id, imgRel || imgFallback),
           imgFallback: imgFallback,
           onImgError: wireCategoryPreviewImgOnerror,
@@ -732,7 +757,7 @@
           '<div class="craft-cat-card__shell">' +
           '<div class="craft-cat-card__media">' +
           (imgRel || imgFallback
-            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" loading="lazy" decoding="async" data-image-fit="contain" />'
+            ? '<img src="' + escapeAttr(imgUrl(imgRel || imgFallback)) + '" alt="" width="640" height="457" loading="lazy" decoding="async" data-image-fit="contain" />'
             : '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>') +
           "</div>" +
           '<div class="craft-cat-card__body">' +

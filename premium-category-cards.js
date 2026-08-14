@@ -43,7 +43,7 @@
     var mediaInner = opts.imgSrc
       ? '<img src="' +
         escAttr(opts.imgSrc) +
-        '" alt="" loading="lazy" decoding="async" data-image-fit="contain" />'
+        '" alt="" width="640" height="457" loading="lazy" decoding="async" data-image-fit="contain" />'
       : '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
 
     card.innerHTML =
