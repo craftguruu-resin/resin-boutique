@@ -85,6 +85,10 @@ smtp_or_gmail_pass() {
 upsert_secret "craftguru-google-client-id" "$(prompt_or_env GOOGLE_CLIENT_ID)"
 upsert_secret "craftguru-smtp-pass" "$(smtp_or_gmail_pass)"
 upsert_secret "craftguru-vendor-portal-password" "$(prompt_or_env VENDOR_PORTAL_PASSWORD)"
+upsert_secret "craftguru-bigship-username" "$(prompt_or_env BIGSHIP_USERNAME)"
+upsert_secret "craftguru-bigship-password" "$(prompt_or_env BIGSHIP_PASSWORD)"
+upsert_secret "craftguru-bigship-access-key" "$(prompt_or_env BIGSHIP_ACCESS_KEY)"
+upsert_secret "craftguru-delhivery-api-token" "$(prompt_or_env DELHIVERY_API_TOKEN)"
 
 echo ""
 echo "Granting Cloud Run service account access to secrets..."
@@ -93,7 +97,8 @@ RUN_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
 
 for secret in craftguru-database-url craftguru-razorpay-key-id craftguru-razorpay-key-secret \
   craftguru-whatsapp-access-token craftguru-whatsapp-phone-number-id craftguru-bill-api-secret \
-  craftguru-guest-otp-pepper craftguru-google-client-id craftguru-smtp-pass craftguru-vendor-portal-password; do
+  craftguru-guest-otp-pepper craftguru-google-client-id craftguru-smtp-pass craftguru-vendor-portal-password \
+  craftguru-bigship-username craftguru-bigship-password craftguru-bigship-access-key craftguru-delhivery-api-token; do
   if gcloud secrets describe "$secret" --project="$PROJECT_ID" >/dev/null 2>&1; then
     gcloud secrets add-iam-policy-binding "$secret" \
       --member="serviceAccount:${RUN_SA}" \

@@ -36,9 +36,11 @@ function publicShipmentView(shipment, opts) {
   if (!shipment) return null;
   var includeNotes = opts && opts.includeNotes;
   var timeline = shipmentStatus.buildTimeline(shipment.shipmentStatusCode, shipment.shipmentHistory);
+  var courierPartner = extractCourierPartner(shipment);
   var out = {
     trackingNumber: shipment.trackingNumber,
     courierName: shipment.courierName,
+    courierPartner: courierPartner,
     shipmentStatus: shipment.shipmentStatus || timeline.currentLabel,
     shipmentStatusCode: shipment.shipmentStatusCode || timeline.currentCode,
     trackingUrl:
@@ -63,6 +65,7 @@ function guestPublicShipmentView(shipment, opts) {
   var view = publicShipmentView(shipment, opts);
   if (!view) return null;
   delete view.courierName;
+  delete view.courierPartner;
   delete view.trackingUrl;
   if (view.timeline && view.timeline.steps) {
     view.timeline.steps.forEach(function (step) {
@@ -101,6 +104,20 @@ function parseOptionalDate(val) {
   if (val == null || val === "") return null;
   var d = new Date(val);
   return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+/** Latest carrier partner from sync history (e.g. Delhivery under BigShip). */
+function extractCourierPartner(shipment) {
+  if (!shipment) return null;
+  var hist = shipment.shipmentHistory;
+  if (!Array.isArray(hist)) return null;
+  for (var i = hist.length - 1; i >= 0; i--) {
+    var h = hist[i];
+    if (h && h.courierPartner && String(h.courierPartner).trim()) {
+      return String(h.courierPartner).trim();
+    }
+  }
+  return null;
 }
 
 /** @param {number} orderId */
@@ -174,6 +191,10 @@ function upsertShipment(orderId, data, cb) {
     var history =
       data.shipmentHistory != null ? mergeHistory(existing && existing.shipmentHistory, data.shipmentHistory) : existing && existing.shipmentHistory;
     if (!Array.isArray(history)) history = [];
+    if (data.courierPartner && history.length) {
+      var last = history[history.length - 1];
+      if (last && !last.courierPartner) last.courierPartner = String(data.courierPartner).trim();
+    }
     var lastTrackingSync =
       data.lastTrackingSync !== undefined ? parseOptionalDate(data.lastTrackingSync) : existing && existing.lastTrackingSync;
 
@@ -259,6 +280,7 @@ module.exports = {
   publicShipmentView: publicShipmentView,
   guestPublicShipmentView: guestPublicShipmentView,
   mergeHistory: mergeHistory,
+  extractCourierPartner: extractCourierPartner,
   getShipmentByOrderId: getShipmentByOrderId,
   findOrderIdByTrackingNumber: findOrderIdByTrackingNumber,
   upsertShipment: upsertShipment,

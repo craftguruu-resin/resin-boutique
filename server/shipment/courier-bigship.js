@@ -2,7 +2,9 @@
 
 var shipmentStatus = require("./shipment-status.js");
 var courierHttp = require("./courier-http.js");
+var courierLogger = require("./courier-logger.js");
 
+var COURIER_ID = "bigship";
 var DEFAULT_BASE = "https://api.bigship.in";
 
 var tokenCache = {
@@ -58,6 +60,8 @@ function login() {
   if (tokenCache.inflight) return tokenCache.inflight;
 
   var cfg = getConfig();
+  courierLogger.info(COURIER_ID, "login start", { baseUrl: cfg.baseUrl });
+
   tokenCache.inflight = courierHttp
     .fetchWithRetry(
       cfg.baseUrl + "/api/login/user",
@@ -70,16 +74,19 @@ function login() {
           access_key: cfg.accessKey,
         }),
       },
-      { maxRetries: 2 }
+      { maxRetries: 2, courierId: COURIER_ID, label: "POST /api/login/user" }
     )
     .then(function (res) {
       return courierHttp.readJsonResponse(res).then(function (body) {
         if (!body || !body.success || !body.data || !body.data.token) {
           clearToken();
-          throw new Error((body && body.message) || "BigShip login failed");
+          var msg = (body && body.message) || "BigShip login failed";
+          courierLogger.error(COURIER_ID, "login failed", { message: msg });
+          throw new Error(msg);
         }
         tokenCache.token = body.data.token;
         tokenCache.expiry = Date.now() + cfg.tokenTtlMs;
+        courierLogger.info(COURIER_ID, "login ok");
         return tokenCache.token;
       });
     })
@@ -107,10 +114,14 @@ function apiGet(path, query) {
     if (parts.length) qs = "?" + parts.join("&");
   }
   return login().then(function (token) {
-    return courierHttp.fetchWithRetry(cfg.baseUrl + path + qs, {
-      method: "GET",
-      headers: { accept: "application/json", Authorization: "Bearer " + token },
-    });
+    return courierHttp.fetchWithRetry(
+      cfg.baseUrl + path + qs,
+      {
+        method: "GET",
+        headers: { accept: "application/json", Authorization: "Bearer " + token },
+      },
+      { courierId: COURIER_ID, label: "GET " + path }
+    );
   });
 }
 
@@ -118,6 +129,53 @@ function parseIso(val) {
   if (!val) return null;
   var d = new Date(val);
   return Number.isFinite(d.getTime()) ? d.toISOString() : null;
+}
+
+function firstNonEmpty(obj, keys) {
+  if (!obj) return "";
+  for (var i = 0; i < keys.length; i++) {
+    var v = obj[keys[i]];
+    if (v != null && String(v).trim()) return String(v).trim();
+  }
+  return "";
+}
+
+/** Extract ETA from known fields or scan remarks (e.g. "EDD: 2026-08-20"). */
+function extractEstimatedDelivery(data, events) {
+  var direct = parseIso(
+    firstNonEmpty(data, [
+      "estimated_delivery_date",
+      "expected_delivery_date",
+      "edd",
+      "promised_delivery_date",
+      "delivery_date_expected",
+    ])
+  );
+  if (direct) return direct;
+
+  var list = Array.isArray(events) ? events : [];
+  for (var i = list.length - 1; i >= 0; i--) {
+    var ev = list[i];
+    if (!ev) continue;
+    var remarks = String(ev.scan_remarks || ev.scan_status || "").trim();
+    var m = remarks.match(/(?:edd|est\.?\s*delivery|expected\s*delivery)[:\s-]*(\d{4}-\d{2}-\d{2})/i);
+    if (m) return parseIso(m[1]);
+    var m2 = remarks.match(/(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)/);
+    if (m2 && /delivery|edd/i.test(remarks)) return parseIso(m2[1]);
+  }
+  return null;
+}
+
+/** Underlying carrier assigned by BigShip (e.g. Delhivery, DTDC). */
+function extractCourierPartner(data) {
+  return firstNonEmpty(data, [
+    "courier_name",
+    "transporter_name",
+    "partner_courier_name",
+    "carrier_name",
+    "logistics_partner",
+    "courier_partner",
+  ]);
 }
 
 /**
@@ -139,13 +197,14 @@ function parseBigShipPayload(awb, payload) {
   var statusCode = shipmentStatus.mapCourierStatusToCode(rawStatus);
   var statusLabel = shipmentStatus.statusLabel(statusCode);
   var events = Array.isArray(data.tracking_events) ? data.tracking_events : [];
+  var courierPartner = extractCourierPartner(data);
 
   var history = events
     .map(function (ev) {
       if (!ev) return null;
       var scanStatus = ev.scan_status || ev.scan_remarks || "";
       var code = shipmentStatus.mapCourierStatusToCode(scanStatus);
-      return {
+      var entry = {
         statusCode: code,
         statusLabel: shipmentStatus.statusLabel(code),
         rawStatus: String(scanStatus || rawStatus).trim(),
@@ -153,24 +212,29 @@ function parseBigShipPayload(awb, payload) {
         location: String(ev.scan_location || "").trim(),
         source: "bigship",
       };
+      if (courierPartner) entry.courierPartner = courierPartner;
+      return entry;
     })
     .filter(Boolean);
 
   if (!history.length && rawStatus) {
-    history.push({
+    var fallback = {
       statusCode: statusCode,
       statusLabel: statusLabel,
       rawStatus: rawStatus,
       at: null,
       source: "bigship",
-    });
+    };
+    if (courierPartner) fallback.courierPartner = courierPartner;
+    history.push(fallback);
   }
 
   history.sort(function (a, b) {
     return new Date(a.at || 0) - new Date(b.at || 0);
   });
 
-  var estimatedDeliveryDate = null;
+  var estimatedDeliveryDate = extractEstimatedDelivery(data, events);
+  var dispatchDate = history.length && history[0].at ? history[0].at : null;
   var actualDeliveryDate =
     statusCode === shipmentStatus.STATUS.DELIVERED
       ? history.length
@@ -182,11 +246,12 @@ function parseBigShipPayload(awb, payload) {
     ok: true,
     found: true,
     courierName: "BigShip",
+    courierPartner: courierPartner || null,
     trackingNumber: String(data.tracking_id || awb).trim(),
     shipmentStatus: statusLabel,
     shipmentStatusCode: statusCode,
     trackingUrl: shipmentStatus.defaultTrackingUrl("BigShip", awb),
-    dispatchDate: history.length ? history[0].at : null,
+    dispatchDate: dispatchDate,
     estimatedDeliveryDate: estimatedDeliveryDate,
     actualDeliveryDate: actualDeliveryDate,
     history: history,
@@ -205,17 +270,30 @@ function fetchTracking(waybill, opts) {
   if (!awb) return Promise.reject(new Error("Waybill required"));
   var trackingType = String((opts && opts.trackingType) || "awb").toLowerCase();
 
+  courierLogger.info(COURIER_ID, "fetch tracking", { awb: awb, trackingType: trackingType });
+
   return apiGet("/api/tracking", { tracking_id: awb, tracking_type: trackingType })
     .then(function (res) {
       return courierHttp.readJsonResponse(res);
     })
     .then(function (payload) {
-      return parseBigShipPayload(awb, payload);
+      var parsed = parseBigShipPayload(awb, payload);
+      if (parsed.found) {
+        courierLogger.info(COURIER_ID, "tracking ok", {
+          awb: parsed.trackingNumber,
+          status: parsed.shipmentStatusCode,
+          courierPartner: parsed.courierPartner || undefined,
+        });
+      } else {
+        courierLogger.warn(COURIER_ID, "tracking not found", { awb: awb, error: parsed.error });
+      }
+      return parsed;
     })
     .catch(function (err) {
-      if (err && /401|403|auth/i.test(String(err.message || err))) {
+      if (err && /401|403|auth|blocked|non-active/i.test(String(err.message || err))) {
         clearToken();
       }
+      courierLogger.error(COURIER_ID, "tracking failed", { awb: awb, error: String(err.message || err) });
       throw err;
     });
 }

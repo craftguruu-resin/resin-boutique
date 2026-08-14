@@ -21,6 +21,25 @@
   /** Set from URL ?range=today|week|month|revenue — filters table + drives product rollup. */
   var rangeFilter = null;
   var rollupDebounce = null;
+  /** Cached from GET /api/shipping/providers */
+  var shippingProviders = null;
+
+  function loadShippingProviders() {
+    return vf(V.vendorApiUrl("/api/shipping/providers"))
+      .then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (!x.okHttp || !x.json || !x.json.ok) return null;
+          return x.json;
+        });
+      })
+      .then(function (j) {
+        if (j && Array.isArray(j.providers)) shippingProviders = j.providers;
+        return j;
+      })
+      .catch(function () {
+        return null;
+      });
+  }
 
   function parseRangeFromUrl() {
     try {
@@ -149,19 +168,28 @@
 
   function buildCourierSelectOptions(selected) {
     var sel = String(selected || "BigShip").trim();
-    var providers = [
-      { value: "BigShip", label: "BigShip" },
-      { value: "Delhivery", label: "Delhivery" },
-    ];
+    var providers = shippingProviders
+      ? shippingProviders.map(function (p) {
+          return {
+            value: p.displayName || p.id,
+            label: p.displayName || p.id,
+            configured: p.configured,
+          };
+        })
+      : [
+          { value: "BigShip", label: "BigShip", configured: false },
+          { value: "Delhivery", label: "Delhivery", configured: false },
+        ];
     return providers
       .map(function (p) {
+        var cfgHint = p.configured ? "" : " (API not configured)";
         return (
           "<option value='" +
           esc(p.value) +
           "'" +
           (sel === p.value ? " selected" : "") +
           ">" +
-          esc(p.label) +
+          esc(p.label + cfgHint) +
           "</option>"
         );
       })
@@ -194,6 +222,19 @@
     var s = (order && order.shipment) || {};
     var ship = order || {};
     var courierSel = ship.courierName || s.courierName || "BigShip";
+    var courierPartner =
+      (s.courierPartner || ship.courierPartner || "").trim() ||
+      (function () {
+        var hist = s.shipmentHistory || ship.shipmentHistory;
+        if (!Array.isArray(hist)) return "";
+        for (var hi = hist.length - 1; hi >= 0; hi--) {
+          if (hist[hi] && hist[hi].courierPartner) return String(hist[hi].courierPartner).trim();
+        }
+        return "";
+      })();
+    var partnerRow = courierPartner
+      ? "<div class='vs-field'><label>Carrier partner</label><p class='cg-ship-readonly'>" + esc(courierPartner) + "</p></div>"
+      : "";
     return (
       "<div class='vs-card cg-ship-panel' id='vtShipmentPanel'>" +
       "<p class='vs-section-title' style='margin-top:0'>Shipment information</p>" +
@@ -212,6 +253,7 @@
       esc(ship.shipmentStatus || s.shipmentStatus || "—") +
       (s.lastTrackingSync ? " <span class='vs-muted'>(synced " + esc(fmtShortDate(s.lastTrackingSync)) + ")</span>" : "") +
       "</p></div>" +
+      partnerRow +
       "<div class='vs-field'><label for='vtShipDispatch'>Dispatch date</label>" +
       "<input id='vtShipDispatch' type='date' value='" +
       esc((ship.dispatchDate || s.dispatchDate || "").slice(0, 10)) +
@@ -309,9 +351,11 @@
           return x.json;
         });
       })
-      .then(function () {
+      .then(function (j) {
         openDetail(orderId);
         loadOrders().catch(function () {});
+        var syncMsg = (j && j.message) || "Shipment synced with shipping provider.";
+        window.alert(syncMsg);
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));
@@ -806,6 +850,7 @@
   function boot() {
     applyRangeDefaults();
     showDesk(true);
+    loadShippingProviders().catch(function () {});
     loadOrders().catch(showOrdersLoadErr);
     if (rangeFilter) {
       try {

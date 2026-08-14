@@ -2135,10 +2135,22 @@ app.post("/api/vendor/order/:orderId/shipment/sync", function (req, res) {
         return res.status(code).json({ ok: false, error: msg });
       }
       res.setHeader("Cache-Control", "no-store");
+      var shipView = shipmentDb.publicShipmentView(out.shipment, { includeNotes: true });
+      var syncMsg =
+        "Synced with " +
+        (shipView && shipView.courierName ? shipView.courierName : "shipping provider") +
+        ". Status: " +
+        (shipView && shipView.shipmentStatus ? shipView.shipmentStatus : "updated") +
+        ".";
+      if (shipView && shipView.courierPartner) {
+        syncMsg += " Carrier: " + shipView.courierPartner + ".";
+      }
       res.json({
         ok: true,
         orderId: oid,
-        shipment: shipmentDb.publicShipmentView(out.shipment, { includeNotes: true }),
+        shipment: shipView,
+        message: syncMsg,
+        fulfillmentUpdated: out.fulfillmentUpdated,
       });
     });
   });

@@ -1,7 +1,10 @@
 "use strict";
 
 var shipmentStatus = require("./shipment-status.js");
+var courierHttp = require("./courier-http.js");
+var courierLogger = require("./courier-logger.js");
 
+var COURIER_ID = "delhivery";
 var DEFAULT_BASE = "https://track.delhivery.com";
 var STAGING_BASE = "https://staging-express.delhivery.com";
 
@@ -70,10 +73,17 @@ function fetchTracking(waybill) {
     encodeURIComponent(awb) +
     "&verbose=2";
 
-  return fetch(url, {
-    method: "GET",
-    headers: { accept: "application/json", Authorization: "Token " + cfg.token },
-  })
+  courierLogger.info(COURIER_ID, "fetch tracking", { awb: awb });
+
+  return courierHttp
+    .fetchWithRetry(
+      url,
+      {
+        method: "GET",
+        headers: { accept: "application/json", Authorization: "Token " + cfg.token },
+      },
+      { courierId: COURIER_ID, label: "GET /api/v1/packages/json" }
+    )
     .then(function (res) {
       return res.text().then(function (text) {
         var body = {};
@@ -102,7 +112,17 @@ function fetchTracking(waybill) {
       });
     })
     .then(function (payload) {
-      return parseDelhiveryPayload(awb, payload);
+      var parsed = parseDelhiveryPayload(awb, payload);
+      if (parsed.found) {
+        courierLogger.info(COURIER_ID, "tracking ok", { awb: awb, status: parsed.shipmentStatusCode });
+      } else {
+        courierLogger.warn(COURIER_ID, "tracking not found", { awb: awb, error: parsed.error });
+      }
+      return parsed;
+    })
+    .catch(function (err) {
+      courierLogger.error(COURIER_ID, "tracking failed", { awb: awb, error: String(err.message || err) });
+      throw err;
     });
 }
 
@@ -151,6 +171,7 @@ function parseDelhiveryPayload(awb, payload) {
         at: parseIso(sd.ScanDateTime || sd.StatusDateTime || sd.StatusDate),
         location: String(sd.ScannedLocation || sd.CityLocation || "").trim(),
         source: "delhivery",
+        courierPartner: "Delhivery",
       };
     })
     .filter(Boolean);
@@ -162,6 +183,7 @@ function parseDelhiveryPayload(awb, payload) {
       rawStatus: String(rawStatus).trim(),
       at: parseIso(statusObj.StatusDateTime || statusObj.StatusDate),
       source: "delhivery",
+      courierPartner: "Delhivery",
     });
   }
 
@@ -180,6 +202,7 @@ function parseDelhiveryPayload(awb, payload) {
     ok: true,
     found: true,
     courierName: "Delhivery",
+    courierPartner: "Delhivery",
     trackingNumber: awb,
     shipmentStatus: statusLabel,
     shipmentStatusCode: statusCode,

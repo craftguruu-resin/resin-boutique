@@ -2,7 +2,8 @@
 #
 # Required secrets in Secret Manager (create via infra/gcp/setup-secrets.sh):
 #   craftguru-database-url, craftguru-razorpay-key-id, craftguru-razorpay-key-secret
-# Optional: whatsapp, bill secret, otp pepper, google client id, smtp pass, vendor password
+# Optional: whatsapp, bill secret, otp pepper, google client id, smtp pass, vendor password,
+# bigship (username, password, access key), delhivery api token
 # All mapped in deploy step below (create via infra/gcp/setup-secrets.sh).
 #
 # Substitutions:
@@ -60,7 +61,7 @@ steps:
       - --startup-probe=httpGet.path=/health,httpGet.port=8080,initialDelaySeconds=3,timeoutSeconds=3,periodSeconds=8,failureThreshold=6
       - --liveness-probe=httpGet.path=/health,httpGet.port=8080,timeoutSeconds=3,periodSeconds=30,failureThreshold=3
       - --env-vars-file=infra/gcp/env.cloudrun.yaml
-      - --set-secrets=DATABASE_URL=craftguru-database-url:latest,GOOGLE_CLIENT_ID=craftguru-google-client-id:latest,GMAIL_APP_PASSWORD=craftguru-smtp-pass:latest,VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest
+      - --set-secrets=DATABASE_URL=craftguru-database-url:latest,GOOGLE_CLIENT_ID=craftguru-google-client-id:latest,GMAIL_APP_PASSWORD=craftguru-smtp-pass:latest,VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest,BIGSHIP_USERNAME=craftguru-bigship-username:latest,BIGSHIP_PASSWORD=craftguru-bigship-password:latest,BIGSHIP_ACCESS_KEY=craftguru-bigship-access-key:latest
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
