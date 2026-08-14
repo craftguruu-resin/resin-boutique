@@ -400,6 +400,18 @@
     img.src = u;
   }
 
+  function preloadLinkImage(href) {
+    if (!href) return;
+    var key = String(href).slice(-48);
+    if (document.querySelector("link[data-cg-preload-pdp='" + key.replace(/"/g, "") + "']")) return;
+    var link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "image";
+    link.href = href;
+    link.setAttribute("data-cg-preload-pdp", key);
+    document.head.appendChild(link);
+  }
+
   function setGalleryIndex(idx) {
     idx = Math.max(0, Math.min(galleryState.urls.length - 1, idx));
     galleryState.idx = idx;
@@ -728,7 +740,14 @@
     var multi = urls.length > 1;
     col.hidden = !multi;
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
-    img.src = urls[0] || "";
+    var heroUrl = urls[0] || "";
+    var heroOpt = D.imageUrl ? D.imageUrl(heroUrl, 960) : heroUrl;
+    img.src = heroUrl;
+    if (heroOpt) preloadLinkImage(heroOpt);
+    if (urls.length > 1) preloadGalleryImage(urls[1], 960);
+    urls.forEach(function (u, i) {
+      if (i > 0) preloadGalleryImage(u, 480);
+    });
     var opt = vendorPdpOptions(product);
     if (window.CraftguruImageFit && opt && urls[0]) {
       window.CraftguruImageFit.applyImageFit(img, window.CraftguruImageFit.getFitForUrl(opt, urls[0]));
@@ -985,6 +1004,12 @@
     setupProductGallery();
     if (selectedColorId) {
       setGalleryIndex(galleryIndexForColorId(selectedColorId));
+    }
+    if (window.CraftguruGuestLayout) {
+      if (window.CraftguruGuestLayout.injectCategoryRail) window.CraftguruGuestLayout.injectCategoryRail();
+      if (product.category && window.CraftguruGuestLayout.markCategoryRailActive) {
+        window.CraftguruGuestLayout.markCategoryRailActive(product.category);
+      }
     }
     if (els.back) {
       els.back.href = "category.html?cat=" + encodeURIComponent(product.category);
@@ -1386,6 +1411,9 @@
 
   /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {
+    if (window.CraftguruGuestLayout && window.CraftguruGuestLayout.closeMobileDrawers) {
+      window.CraftguruGuestLayout.closeMobileDrawers();
+    }
     if (!ev.persisted) return;
     try {
       var nextId = new URLSearchParams(window.location.search).get("id");

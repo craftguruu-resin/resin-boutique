@@ -603,6 +603,10 @@
     if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.scrollActivePill) {
       window.CraftguruCategoryScroll.scrollActivePill(rail);
     }
+    if (window.CraftguruGuestLayout) {
+      if (window.CraftguruGuestLayout.injectCategoryRail) window.CraftguruGuestLayout.injectCategoryRail();
+      if (window.CraftguruGuestLayout.markCategoryRailActive) window.CraftguruGuestLayout.markCategoryRailActive(cat);
+    }
   }
 
   function patchProductGridPrices() {
@@ -675,6 +679,26 @@
   window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogDataMerged);
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogDataMerged);
   window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogDataMerged);
+
+  window.addEventListener("pageshow", function (ev) {
+    if (window.CraftguruGuestLayout && window.CraftguruGuestLayout.closeMobileDrawers) {
+      window.CraftguruGuestLayout.closeMobileDrawers();
+    }
+    if (ev.persisted) {
+      try {
+        var p = new URLSearchParams(window.location.search);
+        var nextCat = D.normalizeCategoryId(p.get("cat"));
+        if (nextCat && nextCat !== cat) {
+          cat = nextCat;
+          page = parseInt(p.get("page") || "1", 10) || 1;
+          urlQ = (p.get("q") || "").trim();
+          render();
+        } else if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.restorePageScroll) {
+          window.CraftguruCategoryScroll.restorePageScroll();
+        }
+      } catch (_) {}
+    }
+  });
 
   render();
 })();

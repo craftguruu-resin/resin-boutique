@@ -279,25 +279,24 @@
   function buildShipmentSectionHtml(o) {
     var s = o.shipment;
     if (!s || !String(s.trackingNumber || "").trim()) return "";
-    var trackUrl = String(s.trackingUrl || "").trim();
     var expanded = shipmentExpanded(o.orderId);
     var hasTimeline = !!(s.timeline && Array.isArray(s.timeline.steps) && s.timeline.steps.length);
     var staleNote =
       s.stale && s.lastTrackingSync
         ? "<p class='account-shipment__stale'>Last synced " +
           escapeHtml(fmtShortDate(s.lastTrackingSync)) +
-          ". Live courier data may be temporarily unavailable.</p>"
+          ". Live tracking updates may be temporarily unavailable.</p>"
         : "";
     var statusLabel = s.shipmentStatus || "Processing";
     var timelineInner =
       hasTimeline
         ? renderShipmentTimelineHtml(s.timeline)
         : expanded
-          ? "<p class='account-shipment__timeline-empty'>Fetching latest courier updates…</p>"
+          ? "<p class='account-shipment__timeline-empty'>Fetching latest delivery updates…</p>"
           : "";
     var timelineHint =
       !expanded && !hasTimeline
-        ? "<p class='account-shipment__timeline-hint'>Tap <strong>Track shipment</strong> for live status and delivery timeline.</p>"
+        ? "<p class='account-shipment__timeline-hint'>Tap <strong>Track Your Order</strong> for live status and delivery timeline.</p>"
         : "";
     return (
       "<section class='account-shipment' data-shipment-order='" +
@@ -305,10 +304,8 @@
       "'>" +
       "<div class='account-shipment__head'>" +
       "<div class='account-shipment__head-copy'>" +
-      "<h3 class='account-shipment__title'>Shipment</h3>" +
-      "<p class='account-shipment__courier'>" +
-      escapeHtml(s.courierName || "Delhivery") +
-      "</p>" +
+      "<h3 class='account-shipment__title'>Track Your Order</h3>" +
+      "<p class='account-shipment__courier'>Shipment updates and delivery progress</p>" +
       "</div>" +
       "<span class='account-shipment__badge " +
       shipmentStatusBadgeClass(s) +
@@ -351,7 +348,6 @@
       "' data-track-order='" +
       escapeAttr(String(o.orderId)) +
       "'" +
-      (trackUrl ? " data-track-url='" + escapeAttr(trackUrl) + "'" : "") +
       " aria-expanded='" +
       (expanded ? "true" : "false") +
       "' aria-controls='account-shipment-tl-" +
@@ -359,14 +355,9 @@
       "'" +
       (trackingLoadOrders[String(o.orderId)] ? " disabled aria-busy='true'" : "") +
       ">" +
-      "<span class='account-shipment-track__label'>Track shipment</span>" +
+      "<span class='account-shipment-track__label'>Track Your Order</span>" +
       "<span class='account-shipment-track__spinner' aria-hidden='true'></span>" +
       "</button>" +
-      (trackUrl
-        ? "<a class='account-shipment-ext' href='" +
-          escapeAttr(trackUrl) +
-          "' target='_blank' rel='noopener noreferrer'>Open Delhivery</a>"
-        : "") +
       "</div></section>"
     );
   }

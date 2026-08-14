@@ -178,9 +178,12 @@ function validateTrackingNumber(trackingNumber, courierName) {
   if (!/^[A-Za-z0-9]+$/.test(awb)) {
     return { ok: false, error: "Tracking ID may only contain letters and numbers." };
   }
-  var courier = String(courierName || "Delhivery").trim();
+  var courier = String(courierName || "BigShip").trim();
   if (/delhivery/i.test(courier) && !/^[0-9]{10,16}$/.test(awb) && !/^[A-Z0-9]{10,16}$/i.test(awb)) {
     return { ok: false, error: "Delhivery AWB is usually 10–16 alphanumeric digits." };
+  }
+  if (/bigship/i.test(courier) && awb.length < 10) {
+    return { ok: false, error: "BigShip tracking ID is usually at least 10 characters." };
   }
   return { ok: true, trackingNumber: awb };
 }
@@ -190,6 +193,9 @@ function defaultTrackingUrl(courierName, trackingNumber) {
   if (!awb) return "";
   if (/delhivery/i.test(String(courierName || ""))) {
     return "https://www.delhivery.com/track/package/" + encodeURIComponent(awb);
+  }
+  if (/bigship/i.test(String(courierName || ""))) {
+    return "https://app.bigship.in/tracking?awb=" + encodeURIComponent(awb);
   }
   return "";
 }

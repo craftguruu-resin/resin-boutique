@@ -2,7 +2,6 @@
 
 var shipmentDb = require("./shipment-db.js");
 var courierRegistry = require("./courier-registry.js");
-var delhiveryCourier = require("./courier-delhivery.js");
 var shipmentStatus = require("./shipment-status.js");
 var ordersDb = require("../orders-db.js");
 var shipmentNotifications = require("./shipment-notifications.js");
@@ -69,7 +68,7 @@ function applyTrackingToOrder(orderId, trackData, cb) {
       orderId,
       {
         trackingNumber: trackData.trackingNumber,
-        courierName: trackData.courierName || "Delhivery",
+        courierName: trackData.courierName || "BigShip",
         shipmentStatus: trackData.shipmentStatus,
         shipmentStatusCode: trackData.shipmentStatusCode,
         trackingUrl: trackData.trackingUrl,
@@ -164,8 +163,26 @@ function syncOrderShipment(orderId, opts, cb) {
  * @param {object} body
  * @param {(err: Error|null, out?: object) => void} cb
  */
+function describeValidationSkipMessage(courierName, validateWithCourier) {
+  if (!validateWithCourier) return "Shipment saved (courier validation skipped).";
+  var courier = courierRegistry.getCourier(courierName);
+  if (!courier.isConfigured()) {
+    return "Shipment saved without live validation. Configure shipping API credentials on the server to validate AWB automatically.";
+  }
+  if (courier.id === "delhivery" && typeof courier.describeDelhiveryConfig === "function") {
+    var delhiverySt = courier.describeDelhiveryConfig();
+    if (delhiverySt.blockedInProduction) {
+      return "Shipment saved without live validation — Delhivery staging is blocked in production. Use a production token on track.delhivery.com.";
+    }
+    if (!delhiverySt.tokenSet) {
+      return "Shipment saved without live validation. Set DELHIVERY_API_TOKEN on the server to validate AWB with Delhivery.";
+    }
+  }
+  return "Shipment saved (courier validation skipped).";
+}
+
 function saveAdminShipment(orderId, body, cb) {
-  var courierName = String((body && body.courierName) || "Delhivery").trim() || "Delhivery";
+  var courierName = String((body && body.courierName) || "BigShip").trim() || "BigShip";
   var val = courierRegistry.validateTracking(courierName, body && body.trackingNumber);
   if (!val.ok) return process.nextTick(function () { cb(new Error(val.error)); });
 
@@ -192,17 +209,7 @@ function saveAdminShipment(orderId, body, cb) {
     }
 
     if (!validateWithCourier || !courierRegistry.getCourier(courierName).isConfigured()) {
-      var delhiverySt = delhiveryCourier.describeDelhiveryConfig();
-      var skipMsg = "Shipment saved (courier validation skipped).";
-      if (validateWithCourier && delhiverySt.blockedInProduction) {
-        skipMsg =
-          "Shipment saved without live validation — Delhivery staging is blocked in production. Use a production token on track.delhivery.com.";
-      } else if (validateWithCourier && !delhiverySt.tokenSet) {
-        skipMsg =
-          "Shipment saved without live validation. Set DELHIVERY_API_TOKEN in server environment to validate AWB with Delhivery automatically.";
-      } else if (!courierRegistry.getCourier(courierName).isConfigured()) {
-        skipMsg = "Shipment saved. Set DELHIVERY_API_TOKEN to validate AWB automatically.";
-      }
+      var skipMsg = describeValidationSkipMessage(courierName, validateWithCourier);
       return shipmentDb.upsertShipment(orderId, manual, function (e2, shipment) {
         if (e2) return cb(e2);
         cb(null, {
@@ -216,7 +223,7 @@ function saveAdminShipment(orderId, body, cb) {
     fetchCourierTracking(courierName, awb, { skipCache: true })
       .then(function (data) {
         if (!data.found) {
-          return cb(new Error(data.error || "AWB not found on Delhivery"));
+          return cb(new Error(data.error || "AWB not found with selected shipping provider"));
         }
         manual.shipmentStatus = data.shipmentStatus;
         manual.shipmentStatusCode = data.shipmentStatusCode;
@@ -231,7 +238,7 @@ function saveAdminShipment(orderId, body, cb) {
           cb(null, {
             shipment: out.shipment,
             courierValidated: true,
-            message: "Shipment saved and validated with Delhivery.",
+            message: "Shipment saved and validated with shipping provider.",
             fulfillmentUpdated: out.fulfillmentUpdated,
           });
         });
@@ -279,7 +286,7 @@ function runBackgroundSync(cb) {
 
 function startBackgroundSyncTimer() {
   if (String(process.env.SHIPMENT_SYNC_DISABLED || "").toLowerCase() === "1") return null;
-  if (!delhiveryCourier.describeDelhiveryConfig().configured) return null;
+  if (!courierRegistry.anyCourierConfigured()) return null;
   var intervalMin = Math.max(10, Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30);
   var ms = intervalMin * 60 * 1000;
   var t = setInterval(function () {

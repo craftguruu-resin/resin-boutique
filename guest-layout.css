@@ -348,6 +348,32 @@ body.guest-site:not(.page-home) .guest-page-category-rail .category-pill--rail.i
   box-shadow: 0 8px 22px rgba(35, 60, 110, 0.1);
 }
 
+/* Category + PDP: keep injected rail visible on desktop/tablet */
+body.guest-site.page-category .guest-page-category-rail,
+body.guest-site.page-product .guest-page-category-rail {
+  display: block;
+  visibility: visible;
+}
+
+@media (min-width: 900px) {
+  body.guest-site.page-category main.sub-main:has(.guest-page-category-rail),
+  body.guest-site.page-product main.sub-main:has(.guest-page-category-rail) {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+  }
+
+  body.guest-site.page-category .guest-page-category-rail,
+  body.guest-site.page-product .guest-page-category-rail {
+    position: sticky;
+    top: 5.25rem;
+    flex: var(--cg-sidebar-flex, 0 0 clamp(13rem, 15vw, 17rem));
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    z-index: 3;
+  }
+}
+
 body.guest-site .global-find {
   display: none !important;
 }

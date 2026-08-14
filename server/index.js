@@ -88,6 +88,8 @@ var orderPricing = require("./order-pricing.js");
 var shipmentSync = require("./shipment/shipment-sync.js");
 var shipmentDb = require("./shipment/shipment-db.js");
 var delhiveryCourier = require("./shipment/courier-delhivery.js");
+var bigshipCourier = require("./shipment/courier-bigship.js");
+var courierRegistry = require("./shipment/courier-registry.js");
 
 /** Cloud Run sets PORT=8080; local default 8080 (use PORT=3847 in server/.env for legacy local). */
 var PORT = Number(process.env.PORT) || 8080;
@@ -130,6 +132,14 @@ function describeRazorpayConfig() {
 
 function describeDelhiveryConfig() {
   return delhiveryCourier.describeDelhiveryConfig();
+}
+
+function describeBigShipConfig() {
+  return bigshipCourier.describeBigShipConfig();
+}
+
+function describeShippingProviders() {
+  return courierRegistry.listCouriers();
 }
 
 function getRazorpayClient() {
@@ -803,6 +813,10 @@ app.get("/api/health", function (_req, res) {
       razorpayConfigured: describeRazorpayConfig().configured,
       delhivery: describeDelhiveryConfig(),
       delhiveryConfigured: describeDelhiveryConfig().configured,
+      bigship: describeBigShipConfig(),
+      bigshipConfigured: describeBigShipConfig().configured,
+      shippingProviders: describeShippingProviders(),
+      shippingConfigured: courierRegistry.anyCourierConfigured(),
       emailConfigured: Boolean(createMailTransport()),
       googleSignInConfigured: guestGoogleAuth.googleSignInConfigured(),
       database: poolMod.isEnabled()
@@ -938,6 +952,18 @@ app.get("/api/delhivery-status", function (_req, res) {
         : st.tokenSet
           ? "Delhivery token is set but not usable in this environment."
           : "Set DELHIVERY_API_TOKEN in server environment (see server/.env.example). AWB saves work without it; live validation and sync require the token.",
+  });
+});
+
+/** Public: shipping provider readiness (no secrets). */
+app.get("/api/shipping/providers", function (_req, res) {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({
+    ok: true,
+    providers: describeShippingProviders(),
+    delhivery: describeDelhiveryConfig(),
+    bigship: describeBigShipConfig(),
+    anyConfigured: courierRegistry.anyCourierConfigured(),
   });
 });
 
@@ -1665,7 +1691,7 @@ app.get("/api/guest/order/:orderId/tracking", function (req, res) {
         res.json({
           ok: true,
           orderId: oid,
-          shipment: shipmentDb.publicShipmentView(out.shipment, { includeNotes: false }),
+          shipment: shipmentDb.guestPublicShipmentView(out.shipment, { includeNotes: false }),
         });
       });
     });
@@ -4169,12 +4195,20 @@ function onServerListen() {
   }
   if (poolMod.isEnabled()) {
     var dh = describeDelhiveryConfig();
+    var bh = describeBigShipConfig();
     var syncTimer = shipmentSync.startBackgroundSyncTimer();
-    if (dh.configured && syncTimer) {
+    if (courierRegistry.anyCourierConfigured() && syncTimer) {
+      var parts = [];
+      if (bh.configured) parts.push("BigShip (" + bh.baseUrl + ")");
+      if (dh.configured) {
+        parts.push(
+          "Delhivery (" + (dh.staging ? "staging · " + dh.baseUrl : "production · track.delhivery.com") + ")"
+        );
+      }
       console.log(
-        "Delhivery: configured (" +
-          (dh.staging ? "staging · " + dh.baseUrl : "production · track.delhivery.com") +
-          "). Shipment sync every " +
+        "Shipping sync: " +
+          parts.join(", ") +
+          ". Interval " +
           (Number(process.env.SHIPMENT_SYNC_INTERVAL_MINUTES) || 30) +
           " min (or: node scripts/sync-shipments.js)"
       );
@@ -4184,12 +4218,12 @@ function onServerListen() {
       );
     } else if (dh.tokenSet) {
       console.warn("[delhivery] Token set but tracking disabled in this environment.");
-    } else {
+    } else if (!bh.configured) {
       console.warn(
-        "[delhivery] Not configured — AWB saves work locally; set DELHIVERY_API_TOKEN for live validation and sync (see server/.env.example)."
+        "[shipping] No live courier APIs configured — AWB saves work locally; set BigShip or Delhivery credentials for validation and sync (see server/.env.example)."
       );
     }
-    if (!syncTimer && dh.configured) {
+    if (!syncTimer && courierRegistry.anyCourierConfigured()) {
       console.log("Shipment sync: disabled via SHIPMENT_SYNC_DISABLED=1");
     }
   }

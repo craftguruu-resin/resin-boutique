@@ -38,6 +38,12 @@ body.is-scrolling .rm-pdp--modern .rm-pdp__detail-card {
   contain-intrinsic-size: auto 220px;
 }
 
+body.guest-site.page-category .product-grid .product-card:nth-child(n+7),
+body.guest-site .plp-grid .product-card:nth-child(n+7) {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 280px;
+}
+
 /* ── Mobile scroll performance (≤899px) ── */
 @media (max-width: 899px) {
   /* Decorative fixed layers repaint the full viewport while scrolling */

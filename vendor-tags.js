@@ -147,23 +147,67 @@
     return "<ol class='cg-ship-timeline cg-ship-timeline--admin'>" + steps + "</ol>" + alert;
   }
 
+  function buildCourierSelectOptions(selected) {
+    var sel = String(selected || "BigShip").trim();
+    var providers = [
+      { value: "BigShip", label: "BigShip" },
+      { value: "Delhivery", label: "Delhivery" },
+    ];
+    return providers
+      .map(function (p) {
+        return (
+          "<option value='" +
+          esc(p.value) +
+          "'" +
+          (sel === p.value ? " selected" : "") +
+          ">" +
+          esc(p.label) +
+          "</option>"
+        );
+      })
+      .join("");
+  }
+
+  function syncButtonLabelForCourier(courierName) {
+    var n = String(courierName || "")
+      .trim()
+      .toLowerCase();
+    if (n === "bigship") return "Sync with BigShip";
+    if (n === "delhivery") return "Sync with Delhivery";
+    return "Sync tracking";
+  }
+
+  function wireShipmentCourierSelect() {
+    var sel = document.getElementById("vtShipCourier");
+    var syncBtn = document.getElementById("vtSyncShipmentBtn");
+    if (!sel || !syncBtn) return;
+    function refreshSyncLabel() {
+      syncBtn.textContent = syncButtonLabelForCourier(sel.value);
+    }
+    refreshSyncLabel();
+    if (sel.dataset.cgCourierWired === "1") return;
+    sel.dataset.cgCourierWired = "1";
+    sel.addEventListener("change", refreshSyncLabel);
+  }
+
   function buildShipmentForm(order) {
     var s = (order && order.shipment) || {};
     var ship = order || {};
+    var courierSel = ship.courierName || s.courierName || "BigShip";
     return (
       "<div class='vs-card cg-ship-panel' id='vtShipmentPanel'>" +
       "<p class='vs-section-title' style='margin-top:0'>Shipment information</p>" +
-      "<p class='vs-muted cg-ship-panel__hint'>Default courier Delhivery. Saving validates AWB when DELHIVERY_API_TOKEN is set on the server.</p>" +
+      "<p class='vs-muted cg-ship-panel__hint'>Select shipping provider and AWB. Live validation runs when API credentials are configured on the server.</p>" +
       "<div id='vtShipmentMsg' class='vs-err' hidden></div>" +
       "<div class='vs-form-grid cg-ship-form-grid'>" +
       "<div class='vs-field'><label for='vtShipCourier'>Courier partner</label>" +
-      "<select id='vtShipCourier'><option value='Delhivery'" +
-      (String(ship.courierName || s.courierName || "Delhivery") === "Delhivery" ? " selected" : "") +
-      ">Delhivery</option></select></div>" +
+      "<select id='vtShipCourier'>" +
+      buildCourierSelectOptions(courierSel) +
+      "</select></div>" +
       "<div class='vs-field'><label for='vtShipAwb'>Tracking ID / AWB</label>" +
       "<input id='vtShipAwb' type='text' autocomplete='off' value='" +
       esc(ship.trackingNumber || s.trackingNumber || "") +
-      "' placeholder='10–16 digit AWB' /></div>" +
+      "' placeholder='Tracking / AWB number' /></div>" +
       "<div class='vs-field'><label>Shipment status</label><p class='cg-ship-readonly'>" +
       esc(ship.shipmentStatus || s.shipmentStatus || "—") +
       (s.lastTrackingSync ? " <span class='vs-muted'>(synced " + esc(fmtShortDate(s.lastTrackingSync)) + ")</span>" : "") +
@@ -182,7 +226,7 @@
       "<div class='vs-field vs-field--wide'><label for='vtShipTrackUrl'>Tracking URL (optional)</label>" +
       "<input id='vtShipTrackUrl' type='url' value='" +
       esc(ship.trackingUrl || s.trackingUrl || "") +
-      "' placeholder='https://www.delhivery.com/track/package/…' /></div>" +
+      "' placeholder='Optional carrier tracking page URL' /></div>" +
       "<div class='vs-field vs-field--wide'><label for='vtShipNotes'>Shipment notes</label>" +
       "<textarea id='vtShipNotes' rows='1' placeholder='Internal notes for studio'>" +
       esc(ship.shipmentNotes || s.shipmentNotes || "") +
@@ -195,7 +239,9 @@
       "'>Save shipment details</button> " +
       "<button type='button' class='vs-btn' id='vtSyncShipmentBtn' data-oid='" +
       esc(String(order.orderId)) +
-      "'>Sync from Delhivery</button>" +
+      "'>" +
+      esc(syncButtonLabelForCourier(courierSel)) +
+      "</button>" +
       "</div></div>"
     );
   }
@@ -204,7 +250,7 @@
     var msgEl = document.getElementById("vtShipmentMsg");
     showErr(msgEl, "");
     var body = {
-      courierName: (document.getElementById("vtShipCourier") && document.getElementById("vtShipCourier").value) || "Delhivery",
+      courierName: (document.getElementById("vtShipCourier") && document.getElementById("vtShipCourier").value) || "BigShip",
       trackingNumber: document.getElementById("vtShipAwb") && document.getElementById("vtShipAwb").value,
       trackingUrl: document.getElementById("vtShipTrackUrl") && document.getElementById("vtShipTrackUrl").value,
       dispatchDate: document.getElementById("vtShipDispatch") && document.getElementById("vtShipDispatch").value,
@@ -605,6 +651,7 @@
             syncShipment(syncBtn.getAttribute("data-oid"));
           });
         }
+        wireShipmentCourierSelect();
         var markBtn = document.getElementById("vtMarkPaidBtn");
         if (markBtn) {
           markBtn.addEventListener("click", function () {

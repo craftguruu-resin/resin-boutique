@@ -58,6 +58,25 @@ function publicShipmentView(shipment, opts) {
   return out;
 }
 
+/** Guest storefront view — no courier branding or external carrier URLs. */
+function guestPublicShipmentView(shipment, opts) {
+  var view = publicShipmentView(shipment, opts);
+  if (!view) return null;
+  delete view.courierName;
+  delete view.trackingUrl;
+  if (view.timeline && view.timeline.steps) {
+    view.timeline.steps.forEach(function (step) {
+      if (step && step.source) delete step.source;
+    });
+  }
+  if (view.shipmentHistory && Array.isArray(view.shipmentHistory)) {
+    view.shipmentHistory.forEach(function (h) {
+      if (h && h.source) delete h.source;
+    });
+  }
+  return view;
+}
+
 function mergeHistory(existing, incoming) {
   var list = Array.isArray(existing) ? existing.slice() : [];
   var seen = {};
@@ -238,6 +257,7 @@ function appendHistoryEntry(orderId, entry, cb) {
 module.exports = {
   mapRow: mapRow,
   publicShipmentView: publicShipmentView,
+  guestPublicShipmentView: guestPublicShipmentView,
   mergeHistory: mergeHistory,
   getShipmentByOrderId: getShipmentByOrderId,
   findOrderIdByTrackingNumber: findOrderIdByTrackingNumber,

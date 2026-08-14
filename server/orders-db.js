@@ -45,9 +45,8 @@ function attachShipmentSummary(orderObj, row) {
     orderObj.shipment = null;
     return orderObj;
   }
-  orderObj.shipment = shipmentDb.publicShipmentView(ship, { includeNotes: false });
+  orderObj.shipment = shipmentDb.guestPublicShipmentView(ship, { includeNotes: false });
   orderObj.trackingNumber = ship.trackingNumber;
-  orderObj.courierName = ship.courierName;
   orderObj.shipmentStatus = ship.shipmentStatus || shipmentStatusMod.statusLabel(ship.shipmentStatusCode);
   orderObj.shipmentStatusCode = ship.shipmentStatusCode;
   orderObj.dispatchDate = ship.dispatchDate;
@@ -845,7 +844,7 @@ function getGuestOrderTracking(guestId, orderId, cb) {
         }
         cb(null, {
           orderId: oid,
-          shipment: shipmentDb.publicShipmentView(shipment, { includeNotes: false }),
+          shipment: shipmentDb.guestPublicShipmentView(shipment, { includeNotes: false }),
         });
       });
     })
