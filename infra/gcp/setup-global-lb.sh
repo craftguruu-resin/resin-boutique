@@ -71,7 +71,8 @@ gcloud compute backend-services update "$BACKEND" \
   --enable-cdn \
   --cache-mode=USE_ORIGIN_HEADERS \
   --compression-mode=AUTOMATIC \
-  --negative-caching=false \
+  --no-negative-caching \
+  --serve-while-stale=0 \
   --project="$PROJECT_ID"
 
 echo "==> URL map..."
