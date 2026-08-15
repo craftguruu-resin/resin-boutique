@@ -84,13 +84,37 @@ function buildProductIndex(staticData, bootstrap) {
 }
 
 function categoryPreviewImage(cat, index) {
+  var nav = cat.nav_image ? String(cat.nav_image).trim() : "";
+  if (nav) return nav;
   var list = index.byCat[cat.id] || [];
   for (var i = 0; i < list.length; i++) {
     var img = String(list[i].image || "").trim();
     if (img && img.indexOf("placeholder-product") < 0) return img;
   }
-  if (cat.nav_image) return String(cat.nav_image).trim();
   return "";
+}
+
+function categoryPreviewPair(cat, index) {
+  var nav = cat.nav_image ? String(cat.nav_image).trim() : "";
+  var product = "";
+  var list = index.byCat[cat.id] || [];
+  for (var i = 0; i < list.length; i++) {
+    var img = String(list[i].image || "").trim();
+    if (img && img.indexOf("placeholder-product") < 0) {
+      product = img;
+      break;
+    }
+  }
+  if (nav && product && nav !== product) {
+    return { primary: nav, fallback: product };
+  }
+  return { primary: nav || product, fallback: "" };
+}
+
+function categoryPreviewFit(cat) {
+  var fit = cat.nav_image_fit != null ? String(cat.nav_image_fit).trim().toLowerCase() : "";
+  if (fit === "cover" || fit === "contain") return fit;
+  return "contain";
 }
 
 function renderCategoryRail(categories) {
@@ -114,7 +138,9 @@ function renderCategoryRail(categories) {
 }
 
 function renderFeaturedCard(req, cat, index, stagger) {
-  var imgRel = categoryPreviewImage(cat, index);
+  var pair = categoryPreviewPair(cat, index);
+  var imgRel = pair.primary;
+  var imgFallback = pair.fallback;
   var count = (index.byCat[cat.id] || []).length;
   if (!count) return "";
   var minFrom = null;
@@ -128,6 +154,7 @@ function renderFeaturedCard(req, cat, index, stagger) {
   if (minFrom != null) bits.push(String(minFrom));
 
   var mediaInner;
+  var imgFit = categoryPreviewFit(cat);
   if (imgRel) {
     var src = imgUrl(req, imgRel, 640);
     var srcset = imgSrcSet(req, imgRel, [320, 480, 640, 960]);
@@ -138,7 +165,11 @@ function renderFeaturedCard(req, cat, index, stagger) {
       escAttr(srcset) +
       '" sizes="' +
       escAttr(cloudinaryDelivery.sizesAttr("card")) +
-      '" alt="" width="640" height="457" loading="lazy" decoding="async" data-image-fit="contain" />';
+      '" alt="" width="640" height="457" loading="lazy" decoding="async" data-image-fit="' +
+      escAttr(imgFit) +
+      '"' +
+      (imgFallback ? ' data-preview-fallback="' + escAttr(imgUrl(req, imgFallback, 640)) + '"' : "") +
+      " />";
   } else {
     mediaInner = '<div class="craft-cat-card__media-empty" aria-hidden="true"></div>';
   }

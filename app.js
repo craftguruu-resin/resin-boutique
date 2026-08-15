@@ -683,6 +683,7 @@
     if (els.productGrid.getAttribute("data-cg-ssr") === "1" && els.productGrid.children.length) {
       wireHomeFiltersOnce();
       els.productGrid.className = "featured-collections-grid";
+      patchFeaturedCardImages();
       applyHomeCatalogFilter();
       var shop = document.getElementById("shop");
       if (shop) shop.classList.add("is-inview");
@@ -1233,6 +1234,59 @@
     if (CART.syncShippingNotice) CART.syncShippingNotice();
   });
 
+  function patchFeaturedCardImages() {
+    if (!els.productGrid) return false;
+    var cards = els.productGrid.querySelectorAll(".craft-cat-card");
+    if (!cards.length) return false;
+    cards.forEach(function (card) {
+      var catId = "";
+      var link = card.querySelector(".craft-cat-card__hit");
+      if (link && link.getAttribute("href")) {
+        try {
+          var u = new URL(link.href, window.location.href);
+          catId = u.searchParams.get("cat") || "";
+        } catch (_) {}
+      }
+      if (!catId) return;
+      var pair = categoryPreviewPair(catId);
+      var imgRel = (pair && pair.primary) || "";
+      var imgFallback = (pair && pair.fallback) || "";
+      if (!imgRel && !imgFallback) return;
+      var media = card.querySelector(".craft-cat-card__media");
+      if (!media) return;
+      var img = media.querySelector("img");
+      var fit = categoryPreviewFit(catId, imgRel || imgFallback);
+      if (!img) {
+        if (!imgRel) return;
+        media.innerHTML =
+          '<img src="' +
+          escapeAttr(imgUrl(imgRel, 640)) +
+          '" srcset="' +
+          escapeAttr(D.imageSrcSet ? D.imageSrcSet(imgRel, [320, 480, 640, 960]) : "") +
+          '" sizes="' +
+          escapeAttr(D.imageSizes ? D.imageSizes("card") : "") +
+          '" alt="" width="640" height="457" loading="lazy" decoding="async" data-image-fit="' +
+          escapeAttr(fit) +
+          '" />';
+        img = media.querySelector("img");
+      } else if (imgRel) {
+        img.src = imgUrl(imgRel, 640);
+        if (D.imageSrcSet) img.srcset = D.imageSrcSet(imgRel, [320, 480, 640, 960]);
+        if (D.imageSizes) img.sizes = D.imageSizes("card");
+      }
+      if (img) {
+        img.setAttribute("data-image-fit", fit);
+        if (window.CraftguruImageFit && window.CraftguruImageFit.applyImageFit) {
+          window.CraftguruImageFit.applyImageFit(img, fit);
+        }
+        if (imgFallback) {
+          wireCategoryPreviewImgOnerror(img, imgFallback);
+        }
+      }
+    });
+    return true;
+  }
+
   function patchFeaturedCardPrices() {
     if (!els.productGrid) return;
     var cards = els.productGrid.querySelectorAll(".craft-cat-card[data-min-price]");
@@ -1264,7 +1318,11 @@
     clearTimeout(storefrontMergeTimer);
     storefrontMergeTimer = setTimeout(function () {
       if (!patchHomeCategoriesFromMerge()) renderCategories();
-      if (!patchFeaturedCardPrices()) renderFeatured();
+      if (!patchFeaturedCardImages() && !patchFeaturedCardPrices()) renderFeatured();
+      else {
+        patchFeaturedCardImages();
+        patchFeaturedCardPrices();
+      }
       paintHeroFloatCatalog();
       bootConfigurableHero();
       renderHeroSpotlight();

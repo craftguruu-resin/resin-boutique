@@ -48,8 +48,4 @@ body.page-home .site-top.reveal.is-inview {
   transform: none;
 }
 
-.craft-cat-card__media img {
-  width: 100%;
-  height: 100%;
-  aspect-ratio: 4 / 2.85;
-}
+/* Aspect ratio lives on .craft-cat-card__media — do not duplicate on <img> (breaks contain presentation). */

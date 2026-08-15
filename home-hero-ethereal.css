@@ -936,7 +936,10 @@ body.page-home .hero-atelier__dots span.is-active {
   body.page-home .hero-atelier__wave,
   body.page-home .hero-atelier__glow,
   body.page-home .hero-atelier__gold,
-  body.page-home .hero-atelier__glass,
+  body.page-home .hero-atelier__glass {
+    opacity: 0.72;
+  }
+
   body.page-home .hero-atelier__btn--primary::after,
   body.page-home .home-landing-hero__hits {
     animation: none !important;

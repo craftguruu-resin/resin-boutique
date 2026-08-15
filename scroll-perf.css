@@ -46,19 +46,34 @@ body.guest-site .plp-grid .product-card:nth-child(n+7) {
 
 /* ── Mobile scroll performance (≤899px) ── */
 @media (max-width: 899px) {
-  /* Decorative fixed layers repaint the full viewport while scrolling */
+  /* Keep ambient layers visible but lighter; pause while scrolling instead of removing */
   body.guest-site .mesh-gradient,
   body.guest-site .tone-shift,
   body.guest-site .animated-backdrop,
-  body.guest-site .grid-lines,
   body.guest-site .page-atmosphere,
   body.guest-site .pdp-ethereal-fx,
   body.guest-site .mist {
-    display: none !important;
+    opacity: 0.42;
+    pointer-events: none;
+  }
+
+  body.guest-site .grid-lines {
+    opacity: 0.18;
+    pointer-events: none;
+  }
+
+  body.is-scrolling-mobile .mesh-gradient,
+  body.is-scrolling-mobile .tone-shift,
+  body.is-scrolling-mobile .animated-backdrop,
+  body.is-scrolling-mobile .page-atmosphere,
+  body.is-scrolling-mobile .pdp-ethereal-fx,
+  body.is-scrolling-mobile .mist,
+  body.is-scrolling-mobile .orb {
+    animation-play-state: paused !important;
   }
 
   body.guest-site .cg-social-float-stack {
-    animation: none !important;
+    animation: cg-social-float 3.8s ease-in-out infinite;
     contain: layout style paint;
   }
 

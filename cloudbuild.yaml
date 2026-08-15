@@ -20,6 +20,13 @@ options:
   machineType: E2_HIGHCPU_8
 
 steps:
+  - id: bump-asset-version
+    name: node:20
+    entrypoint: bash
+    args:
+      - -c
+      - ASSET_V=$SHORT_SHA node tools/bump-html-assets.js
+
   - id: build-image
     name: gcr.io/cloud-builders/docker
     args:

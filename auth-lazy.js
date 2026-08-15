@@ -40,7 +40,7 @@
     if (cb) queue.push(cb);
     if (loading) return;
     loading = true;
-    var v = "20260817";
+    var v = "20260815b";
     Promise.resolve()
       .then(function () {
         return loadScript("auth-db.js?v=" + v);

@@ -307,6 +307,14 @@ body:not(.vendor-saas) .hero-atelier__kicker::before {
   border-bottom: 1px solid rgba(255, 255, 255, 0.45);
 }
 
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .site-top--fx.is-scrolled {
+    background: rgba(255, 255, 255, 0.78);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+  }
+}
+
 .brand__text {
   display: inline-flex;
   flex-direction: column;

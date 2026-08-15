@@ -317,6 +317,14 @@ body.pdp-ethereal #productImage {
   }
 }
 
+@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
+  body.pdp-ethereal .rm-pdp--modern .rm-pdp__hero-zoom img,
+  body.pdp-ethereal .product-hero-img img,
+  body.pdp-ethereal #productImage {
+    animation: pdpEHeroFloat 4.2s ease-in-out infinite alternate;
+  }
+}
+
 body.pdp-ethereal .rm-pdp--modern .rm-pdp__detail-card {
   background: rgba(255, 255, 255, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.9);
