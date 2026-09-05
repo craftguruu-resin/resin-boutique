@@ -1,3 +1,5 @@
+@import url("homepage-glossy.css");
+
 /**
  * Storefront performance — layout stability (CLS) and paint containment.
  * Heights follow real content; avoid reserving large empty bands.
