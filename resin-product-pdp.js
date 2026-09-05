@@ -49,6 +49,14 @@
     var x = Number(n);
     return Number.isFinite(x) ? x : null;
   }
+  function offeredOptionSizes(opt) {
+    if (D && typeof D.getOfferedOptionSizes === "function") return D.getOfferedOptionSizes(opt);
+    if (!opt || !Array.isArray(opt.sizes)) return [];
+    return opt.sizes.filter(function (s) {
+      var pr = finMoney(s && s.priceInr);
+      return pr != null && pr > 0;
+    });
+  }
   function effectivePriceInr(m, sel) {
     var base = finMoney(m.priceInr) != null ? Number(m.priceInr) : 0;
     if (!Number.isFinite(base) || base < 0) base = 0;
@@ -209,6 +217,7 @@
         if (kind === "co") out.hex = normalizeHexClient(row.hex != null ? row.hex : row.Hex);
         var pi = finMoney(row.priceInr);
         var mi = finMoney(row.mrpInr);
+        if (kind === "sz" && (pi == null || pi <= 0)) return null;
         if (pi != null) out.priceInr = pi;
         if (mi != null) out.mrpInr = mi;
         return out;
@@ -283,10 +292,9 @@
     if (sizes.length) opt.sizes = sizes;
     if (colors.length) opt.colors = colors;
     if (qtyOptions.length) opt.qtyOptions = qtyOptions;
-    if (!useSize) {
+    if (!useSize || !opt.sizes || !opt.sizes.length) {
+      opt.useSize = false;
       opt.sizes = [];
-    } else if (!opt.sizes || !opt.sizes.length) {
-      opt.sizes = base.sizes;
     }
     if (!useColor) opt.colors = [];
     if (!useQty) opt.qtyOptions = [];
@@ -322,8 +330,9 @@
 
   function ensureSelValid(m) {
     var opt = m.options || {};
-    if (opt.useSize && opt.sizes && opt.sizes.length) {
-      if (!findOpt(opt.sizes, state.sel.sid)) state.sel.sid = String(opt.sizes[0].id || "");
+    var sizes = offeredOptionSizes(opt);
+    if (opt.useSize && sizes.length) {
+      if (!findOpt(sizes, state.sel.sid)) state.sel.sid = String(sizes[0].id || "");
     }
     if (opt.useQty && opt.qtyOptions && opt.qtyOptions.length) {
       if (!findOpt(opt.qtyOptions, state.sel.qid)) state.sel.qid = String(opt.qtyOptions[0].id || "");
@@ -359,7 +368,7 @@
       });
     }
     return {
-      useSize: true,
+      useSize: sizes.length > 0,
       useQty: false,
       useColor: colors.length > 1,
       sizes: sizes,
@@ -686,10 +695,11 @@
     }
 
     var sizeHtml = "";
-    if (opt.useSize && opt.sizes && opt.sizes.length) {
+    var offeredSizes = offeredOptionSizes(opt);
+    if (opt.useSize && offeredSizes.length) {
       sizeHtml =
         '<div class="rm-opt-block rm-opt-block--modern"><span class="rm-opt-block__label">Size</span><div class="rm-opt-pills" data-rm-opt="size">' +
-        opt.sizes
+        offeredSizes
           .map(function (s) {
             var on = s.id === state.sel.sid ? " is-on" : "";
             return (

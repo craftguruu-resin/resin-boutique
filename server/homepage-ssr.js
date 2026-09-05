@@ -263,12 +263,12 @@ function injectHomepage(html, injections) {
   }
   if (injections.showPromoHero && injections.heroPromo) {
     out = out.replace(
-      /class="hero-atelier" id="heroStage"/,
-      "class=\"hero-atelier hero-atelier--promo\" id=\"heroStage\""
+      /class="rm-hero rm-hero--premium rm-landing-hero rm-landing-hero--exact home-resin-hero" id="heroStage"/,
+      "class=\"rm-hero rm-hero--premium rm-landing-hero rm-landing-hero--exact home-resin-hero home-resin-hero--promo\" id=\"heroStage\""
     );
     out = out.replace(
-      /<div class="hero-atelier__builtin-wrap" id="heroAtelierBuiltin">/,
-      '<div class="hero-atelier__builtin-wrap" id="heroAtelierBuiltin" hidden>'
+      /<div id="heroAtelierBuiltin">/,
+      '<div id="heroAtelierBuiltin" hidden>'
     );
     out = out.replace(
       /<div\s+class="hero-promo-carousel"[\s\S]*?<\/div>\s*(?=<\/div>\s*<div class="hero-spotlight")/,

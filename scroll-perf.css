@@ -1,33 +1,21 @@
 /**
- * Scroll performance — pause expensive paint during active scroll.
- * Wired by guest-layout.js (body.is-scrolling).
+ * Scroll performance — static compositor-friendly rules (no scroll JS class toggling).
  */
 
-/* Pause ambient / decorative animations while the user scrolls */
-body.is-scrolling .mesh-gradient,
-body.is-scrolling .tone-shift,
-body.is-scrolling .animated-backdrop,
-body.is-scrolling .pdp-ethereal-fx,
-body.is-scrolling .orb {
-  animation-play-state: paused !important;
+/* Isolate fixed decorative layers from document scroll repaints */
+body.guest-site .mesh-gradient,
+body.guest-site .tone-shift,
+body.guest-site .animated-backdrop,
+body.guest-site .page-atmosphere,
+body.guest-site .grid-lines {
+  contain: strict;
+  pointer-events: none;
 }
 
-body.is-scrolling .rm-pdp--modern .rm-pdp__hero-zoom img,
-body.is-scrolling .product-hero-img img,
-body.is-scrolling #productImage,
-body.is-scrolling .rm-pdp--modern .rm-pdp__add::after {
-  animation-play-state: paused !important;
-}
-
-/* Backdrop blur is costly on sticky layers during scroll */
-body.is-scrolling .site-top--fx,
-body.is-scrolling .site-top--fx.is-scrolled,
-body.is-scrolling .rm-pdp__detail-card,
-body.is-scrolling .rm-pdp-gallery--shell,
-body.is-scrolling .product-detail--buy-column,
-body.is-scrolling .rm-pdp--modern .rm-pdp__detail-card {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+body.guest-site .orb {
+  contain: strict;
+  pointer-events: none;
+  will-change: transform;
 }
 
 /* Defer off-screen PDP sections until near viewport */
@@ -38,15 +26,8 @@ body.is-scrolling .rm-pdp--modern .rm-pdp__detail-card {
   contain-intrinsic-size: auto 220px;
 }
 
-body.guest-site.page-category .product-grid .product-card:nth-child(n+7),
-body.guest-site .plp-grid .product-card:nth-child(n+7) {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 280px;
-}
-
 /* ── Mobile scroll performance (≤899px) ── */
 @media (max-width: 899px) {
-  /* Keep ambient layers visible but lighter; pause while scrolling instead of removing */
   body.guest-site .mesh-gradient,
   body.guest-site .tone-shift,
   body.guest-site .animated-backdrop,
@@ -60,16 +41,6 @@ body.guest-site .plp-grid .product-card:nth-child(n+7) {
   body.guest-site .grid-lines {
     opacity: 0.18;
     pointer-events: none;
-  }
-
-  body.is-scrolling-mobile .mesh-gradient,
-  body.is-scrolling-mobile .tone-shift,
-  body.is-scrolling-mobile .animated-backdrop,
-  body.is-scrolling-mobile .page-atmosphere,
-  body.is-scrolling-mobile .pdp-ethereal-fx,
-  body.is-scrolling-mobile .mist,
-  body.is-scrolling-mobile .orb {
-    animation-play-state: paused !important;
   }
 
   body.guest-site .cg-social-float-stack {
@@ -120,7 +91,7 @@ body.guest-site .plp-grid .product-card:nth-child(n+7) {
   body.guest-site #shop .craft-cat-card:nth-child(n+5),
   body.guest-site .testimonials-grid .testimonial-card:nth-child(n+3) {
     content-visibility: auto;
-    contain-intrinsic-size: auto 260px;
+    contain-intrinsic-size: auto 200px;
   }
 
   body.guest-site .rm-pdp__left-stack .cg-pdp__service-banner,
@@ -130,24 +101,23 @@ body.guest-site .plp-grid .product-card:nth-child(n+7) {
     contain-intrinsic-size: auto 180px;
   }
 
-  body.is-scrolling-mobile .product-card,
-  body.is-scrolling-mobile .featured-cat-card,
-  body.is-scrolling-mobile .craft-cat-card,
-  body.is-scrolling-mobile .rm-pdp__detail-card,
-  body.is-scrolling-mobile .rm-pdp-gallery--shell,
-  body.is-scrolling-mobile .product-detail--buy-column {
-    box-shadow: none !important;
-  }
-
-  body.is-scrolling-mobile .hero-atelier__bubble,
-  body.is-scrolling-mobile .hero-atelier__particle,
-  body.is-scrolling-mobile .hero-atelier__shimmer,
-  body.is-scrolling-mobile .hero-atelier__wave,
-  body.is-scrolling-mobile .hero-atelier__glow,
-  body.is-scrolling-mobile .hero-atelier__gold,
-  body.is-scrolling-mobile .hero-atelier__glass,
-  body.is-scrolling-mobile .home-landing-hero__hits,
-  body.is-scrolling-mobile .hero-atelier__btn--primary::after {
+  /* Home hero decorative FX — pause on mobile to keep touch scroll native and fast */
+  body.page-home .rm-landing-hero__bubble,
+  body.page-home .rm-landing-hero__particle,
+  body.page-home .rm-landing-hero__shimmer,
+  body.page-home .rm-landing-hero__wave,
+  body.page-home .rm-landing-hero__glow,
+  body.page-home .rm-landing-hero__gold,
+  body.page-home .rm-landing-hero__glass {
     animation-play-state: paused !important;
   }
+}
+
+/* During active scroll, pause infinite decorative animations — native scroll stays immediate */
+html.cg-scroll-active body.guest-site .animated-backdrop .orb,
+html.cg-scroll-active body.guest-site .mesh-gradient,
+html.cg-scroll-active body.guest-site .tone-shift,
+html.cg-scroll-active body.page-home .rm-landing-hero__fx *,
+html.cg-scroll-active body.page-home .home-landing-hero__fx * {
+  animation-play-state: paused !important;
 }

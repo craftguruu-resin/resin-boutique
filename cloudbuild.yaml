@@ -8,6 +8,8 @@
 #
 # Substitutions:
 #   _REGION _SERVICE _AR_REPO _MIN_INSTANCES
+# Image tag uses $BUILD_ID (always set by Cloud Build, including local gcloud builds submit).
+# $SHORT_SHA is only populated for repo-triggered builds and is empty on directory upload.
 
 substitutions:
   _REGION: asia-south1
@@ -25,7 +27,7 @@ steps:
     entrypoint: bash
     args:
       - -c
-      - ASSET_V=$SHORT_SHA node tools/bump-html-assets.js
+      - ASSET_V=$BUILD_ID node tools/bump-html-assets.js
 
   - id: build-image
     name: gcr.io/cloud-builders/docker
@@ -33,7 +35,7 @@ steps:
       - build
       - --file=Dockerfile
       - -t
-      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
       - .
@@ -52,7 +54,7 @@ steps:
       - run
       - deploy
       - ${_SERVICE}
-      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
       - --region=${_REGION}
       - --platform=managed
       - --allow-unauthenticated
@@ -70,7 +72,7 @@ steps:
       - --env-vars-file=infra/gcp/env.cloudrun.yaml
       - --set-secrets=DATABASE_URL=craftguru-database-url:latest,GOOGLE_CLIENT_ID=craftguru-google-client-id:latest,GMAIL_APP_PASSWORD=craftguru-smtp-pass:latest,VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest,BIGSHIP_USERNAME=craftguru-bigship-username:latest,BIGSHIP_PASSWORD=craftguru-bigship-password:latest,BIGSHIP_ACCESS_KEY=craftguru-bigship-access-key:latest
 images:
-  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$SHORT_SHA
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
 
 timeout: 1800s

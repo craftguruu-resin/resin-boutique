@@ -26,11 +26,10 @@ gcloud config set project "$PROJECT_ID"
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
-SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null || echo manual)"
-echo "==> Building and deploying API (Cloud Build → Cloud Run) tag=$SHORT_SHA..."
+echo "==> Building and deploying API (Cloud Build → Cloud Run); image tag will be the Cloud Build BUILD_ID..."
 gcloud builds submit \
   --config=cloudbuild.yaml \
-  --substitutions="_REGION=${REGION},_SERVICE=${SERVICE},_AR_REPO=${AR_REPO},_MIN_INSTANCES=1,SHORT_SHA=${SHORT_SHA}" \
+  --substitutions="_REGION=${REGION},_SERVICE=${SERVICE},_AR_REPO=${AR_REPO},_MIN_INSTANCES=1" \
   .
 
 RUN_URL="$(gcloud run services describe "$SERVICE" --region="$REGION" --format='value(status.url)')"

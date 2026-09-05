@@ -636,12 +636,25 @@ function buildDefaultOptionsFromTiers(p, ov, opt) {
     l: ov.l != null ? Number(ov.l) : p.prices.l,
   };
   var sl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
-  opt.useSize = true;
-  opt.sizes = [
-    { id: "sz-s", label: (sl.s && sl.s.name) || "Compact", priceInr: eff.s },
-    { id: "sz-m", label: (sl.m && sl.m.name) || "Classic", priceInr: eff.m },
-    { id: "sz-l", label: (sl.l && sl.l.name) || "Grand", priceInr: eff.l },
+  var tierMeta = [
+    { key: "s", id: "sz-s", fallback: "Compact" },
+    { key: "m", id: "sz-m", fallback: "Classic" },
+    { key: "l", id: "sz-l", fallback: "Grand" },
   ];
+  var sizes = [];
+  tierMeta.forEach(function (t) {
+    var pr = Number(eff[t.key]);
+    if (!Number.isFinite(pr) || pr <= 0) return;
+    var label = (sl[t.key] && sl[t.key].name) || t.fallback;
+    sizes.push({ id: t.id, label: label, priceInr: pr });
+  });
+  if (sizes.length) {
+    opt.useSize = true;
+    opt.sizes = sizes;
+  } else {
+    opt.useSize = false;
+    opt.sizes = [];
+  }
   return variantInventory.ensureVendorInventory(opt);
 }
 

@@ -170,19 +170,8 @@
   transform: translate3d(0, 28px, 0) scale(0.98);
   transition:
     opacity var(--reveal-duration) var(--ease-out-expo),
-    transform var(--reveal-duration) var(--ease-out-expo),
-    filter var(--reveal-duration) var(--ease-out-expo);
+    transform var(--reveal-duration) var(--ease-out-expo);
   transition-delay: var(--delay, 0s);
-}
-
-@media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
-  .reveal {
-    filter: blur(6px);
-  }
-
-  .reveal.is-inview {
-    filter: blur(0);
-  }
 }
 
 .reveal.is-inview {

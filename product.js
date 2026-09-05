@@ -24,7 +24,7 @@
 
   /** Size tiles render prices once; server overrides merge async (catalog-merge.js). */
   function offeredSizeKeys() {
-    if (!product || !D.getOfferedSizeKeysForProduct) return ["s", "m", "l"];
+    if (!product || !D.getOfferedSizeKeysForProduct) return [];
     return D.getOfferedSizeKeysForProduct(product);
   }
 
@@ -519,14 +519,17 @@
   }
 
   function vendorUsesCustomSizePills(opt) {
-    return !!(opt && opt.useSize && opt.sizes && opt.sizes.length);
+    if (!opt || !opt.useSize) return false;
+    var sizes = D.getOfferedOptionSizes ? D.getOfferedOptionSizes(opt) : (opt.sizes || []);
+    return sizes.length > 0;
   }
 
   function renderVendorSizeOptions() {
     var opt = vendorPdpOptions(product);
     if (!els.sizes) return;
-    if (!vendorUsesCustomSizePills(opt)) {
-      if (els.sizeDock) els.sizeDock.hidden = false;
+    var offeredSizes = D.getOfferedOptionSizes ? D.getOfferedOptionSizes(opt) : (opt && opt.sizes) || [];
+    if (!vendorUsesCustomSizePills(opt) || !offeredSizes.length) {
+      if (els.sizeDock) els.sizeDock.hidden = offeredSizeKeys().length === 0;
       return;
     }
     if (els.sizeDock) els.sizeDock.hidden = false;
@@ -534,10 +537,10 @@
       els.sizeScale.hidden = true;
       els.sizeScale.setAttribute("aria-hidden", "true");
     }
-    if (!selectedVendorSid || !opt.sizes.some(function (s) { return String(s.id) === String(selectedVendorSid); })) {
-      selectedVendorSid = String(opt.sizes[0].id || "");
+    if (!selectedVendorSid || !offeredSizes.some(function (s) { return String(s.id) === String(selectedVendorSid); })) {
+      selectedVendorSid = String(offeredSizes[0].id || "");
     }
-    els.sizes.innerHTML = opt.sizes
+    els.sizes.innerHTML = offeredSizes
       .map(function (s) {
         var sid = String(s.id || "");
         var on = sid === selectedVendorSid ? " is-on" : "";
@@ -885,21 +888,34 @@
     if (!product || !els.price) return;
     var opt = vendorPdpOptions(product);
     var base;
+    var offeredSizes = D.getOfferedOptionSizes ? D.getOfferedOptionSizes(opt) : [];
     if (opt && vendorUsesCustomSizePills(opt) && selectedVendorSid) {
-      for (var si = 0; si < opt.sizes.length; si++) {
-        if (String(opt.sizes[si].id) === String(selectedVendorSid)) {
+      for (var si = 0; si < offeredSizes.length; si++) {
+        if (String(offeredSizes[si].id) === String(selectedVendorSid)) {
           base =
-            opt.sizes[si].priceInr != null && Number.isFinite(Number(opt.sizes[si].priceInr))
-              ? Number(opt.sizes[si].priceInr)
-              : product.prices.m;
-          if (els.priceSizeLabel) els.priceSizeLabel.textContent = String(opt.sizes[si].label || "");
+            offeredSizes[si].priceInr != null && Number.isFinite(Number(offeredSizes[si].priceInr))
+              ? Number(offeredSizes[si].priceInr)
+              : null;
+          if (els.priceSizeLabel) els.priceSizeLabel.textContent = String(offeredSizes[si].label || "");
           break;
         }
       }
-      if (base == null || !Number.isFinite(Number(base))) base = product.prices[selected] || product.prices.m;
-    } else {
+    } else if (offeredSizeKeys().length) {
       base = product.prices[selected];
+    } else if (D.getStartingPriceInr) {
+      base = D.getStartingPriceInr(product);
     }
+    if (base == null || !Number.isFinite(Number(base))) {
+      ["s", "m", "l"].some(function (k) {
+        var pr = Number(product.prices && product.prices[k]);
+        if (Number.isFinite(pr) && pr > 0) {
+          base = pr;
+          return true;
+        }
+        return false;
+      });
+    }
+    if (base == null || !Number.isFinite(Number(base))) base = 0;
     var q = selectedQty;
     var unit = Math.round(Number(base) * 100) / 100;
     var total = Math.round(unit * q * 100) / 100;
@@ -1073,6 +1089,7 @@
         });
         els.sizes.appendChild(btn);
       });
+      if (els.sizeDock) els.sizeDock.hidden = offered.length === 0;
     }
 
     if (els.sizeScale) {
@@ -1295,6 +1312,7 @@
 
     function onWheel(e) {
       if (!img.naturalWidth) return;
+      if (scale <= 1.02) return;
       var dy = e.deltaY;
       if (e.deltaMode === 1) dy *= 14;
       else if (e.deltaMode === 2) dy *= host.clientHeight || 480;

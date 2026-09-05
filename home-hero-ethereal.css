@@ -286,6 +286,13 @@ body.page-home .category-grid--rail .category-pill.is-active {
 }
 
 /* ---- Exact design-reference hero (full panel + overlay CTAs, same pattern as RM/PF) ---- */
+
+@media (min-width: 960px) {
+  body.page-home .home-shop-layout {
+    gap: var(--cg-shop-layout-gap, clamp(1rem, 3vw, 2.5rem));
+  }
+}
+
 body.page-home .hero-atelier__shell,
 body.page-home .hero-atelier__shell--exact-ref,
 body.page-home .home-landing-hero--exact {
@@ -349,8 +356,7 @@ body.page-home .hero-atelier__art-zone {
 }
 
 body.page-home .home-landing-hero__exact-art,
-body.page-home .hero-atelier__exact-art {
-  /* Sizing/object-fit owned by hero-exact-shared.css — keep theme-only polish here */
+body.page-home .rm-landing-hero__exact-art.home-landing-hero__exact-art {
   border-radius: inherit;
 }
 
@@ -370,6 +376,12 @@ body.page-home .home-landing-hero--exact .hero-atelier__light {
   max-width: none !important;
   min-height: 0 !important;
   background: transparent !important;
+}
+
+body.page-home .hero-atelier__fx,
+body.page-home .home-landing-hero__fx {
+  contain: strict;
+  pointer-events: none;
 }
 
 body.page-home .home-landing-hero__hits {
@@ -904,12 +916,12 @@ body.page-home .hero-atelier__dots span.is-active {
 
   body.page-home .home-landing-hero__exact-art,
   body.page-home .hero-atelier__exact-art {
-    object-position: center center;
+    object-position: center top;
     width: 100% !important;
     max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
-    max-height: none !important;
+    max-height: var(--cg-home-hero-max-h-mobile) !important;
     object-fit: contain !important;
   }
 

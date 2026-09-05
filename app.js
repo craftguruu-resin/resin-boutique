@@ -147,7 +147,7 @@
     var promo = document.getElementById("heroPromoCarousel");
     var img = document.getElementById("heroPromoImg");
     if (stage) {
-      stage.classList.remove("hero-atelier--promo");
+      stage.classList.remove("home-resin-hero--promo");
     }
     if (promo) {
       promo.setAttribute("hidden", "");
@@ -167,7 +167,7 @@
     var promo = document.getElementById("heroPromoCarousel");
     if (promo && promo.getAttribute("data-cg-ssr-hero") === "1") {
       var stage = document.getElementById("heroStage");
-      if (stage) stage.classList.add("hero-atelier--promo");
+      if (stage) stage.classList.add("home-resin-hero--promo");
       return;
     }
     var M = window.CraftguruCatalogMerge;
@@ -237,7 +237,7 @@
           promo.classList.remove("hero-promo-carousel--slide");
         }
 
-        stage.classList.add("hero-atelier--promo");
+        stage.classList.add("home-resin-hero--promo");
         promo.removeAttribute("hidden");
 
         var idx = 0;
@@ -362,40 +362,7 @@
   }
 
   function renderHeroSpotlight() {
-    var host = document.getElementById("heroSpotlightStrip");
-    if (!host) return;
-    var pool = firstShopProductPerCategory().slice(0, 6);
-    if (!pool.length) {
-      host.innerHTML = "";
-      host.setAttribute("hidden", "");
-      return;
-    }
-    host.removeAttribute("hidden");
-    var parts = pool.map(function (p) {
-      var href = "product.html?id=" + encodeURIComponent(p.id);
-      var nm = String(p.name || "Piece").trim();
-      var short = nm.length > 44 ? nm.slice(0, 44) + "…" : nm;
-      var fit = D.getCategoryPreviewImageFit ? D.getCategoryPreviewImageFit(p.category, p.image) : "";
-      var fitAttr =
-        fit === "contain" || fit === "cover" ? ' data-image-fit="' + escapeAttr(fit) + '"' : "";
-      return (
-        '<a class="hero-spot-card reveal-tile" href="' +
-        href +
-        '"><span class="hero-spot-card__glow" aria-hidden="true"></span><span class="hero-spot-card__media"><img src="' +
-        escapeAttr(imgUrl(p.image)) +
-        '" alt="" loading="lazy" decoding="async" width="240" height="240"' +
-        fitAttr +
-        ' /></span><span class="hero-spot-card__meta"><span class="hero-spot-card__name">' +
-        escapeHtml(short) +
-        '</span><span class="hero-spot-card__hint">Open piece →</span></span></a>'
-      );
-    });
-    host.innerHTML =
-      '<p class="hero-spotlight__kicker">Our best sellers</p>' +
-      '<div class="hero-spotlight__track">' +
-      parts.join("") +
-      "</div>";
-    observeTiles();
+    /* Best sellers strip removed from Resin Home — keep no-op for legacy callers. */
   }
 
   /** Same set as category.html: listed on storefront (not delisted via catalog overrides). */

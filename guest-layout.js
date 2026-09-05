@@ -933,7 +933,7 @@
         items.push({
           el: home,
           label: "Shop by category",
-          host: home.closest(".home-landing-layout"),
+          host: home.closest(".rm-shop-layout") || home.closest(".home-shop-layout"),
         });
       }
       var guest = document.getElementById("guestPageCategoryRail");
@@ -1107,46 +1107,31 @@
     if (reduce) return;
 
     var header = document.querySelector(".site-top--fx");
+    if (!header) return;
+
     var scrollRaf = 0;
-    var idleTimer = 0;
     var scrolledClass = false;
-    var isMobile = false;
-    try {
-      isMobile = window.matchMedia("(max-width: 899px)").matches;
-    } catch (_) {}
+    var scrollIdleTimer = 0;
 
     function onScrollFrame() {
       scrollRaf = 0;
-      if (!header) return;
-      var y = window.scrollY || document.documentElement.scrollTop;
+      var y = window.scrollY || document.documentElement.scrollTop || 0;
       var next = y > 16;
-      if (next !== scrolledClass) {
-        scrolledClass = next;
-        header.classList.toggle("is-scrolled", scrolledClass);
-      }
-    }
-
-    function markScrolling() {
-      document.body.classList.add("is-scrolling");
-      if (isMobile) document.body.classList.add("is-scrolling-mobile");
-      if (idleTimer) clearTimeout(idleTimer);
-      idleTimer = setTimeout(function () {
-        document.body.classList.remove("is-scrolling");
-        document.body.classList.remove("is-scrolling-mobile");
-        idleTimer = 0;
-      }, isMobile ? 200 : 150);
+      if (next === scrolledClass) return;
+      scrolledClass = next;
+      header.classList.toggle("is-scrolled", scrolledClass);
     }
 
     function onScrollSignal() {
-      markScrolling();
+      document.documentElement.classList.add("cg-scroll-active");
+      window.clearTimeout(scrollIdleTimer);
+      scrollIdleTimer = window.setTimeout(function () {
+        document.documentElement.classList.remove("cg-scroll-active");
+      }, 120);
       if (!scrollRaf) scrollRaf = requestAnimationFrame(onScrollFrame);
     }
 
     window.addEventListener("scroll", onScrollSignal, { passive: true });
-    document.addEventListener("scroll", onScrollSignal, { passive: true });
-    window.addEventListener("touchstart", markScrolling, { passive: true });
-    document.addEventListener("touchmove", markScrolling, { passive: true });
-
     onScrollFrame();
   }
 

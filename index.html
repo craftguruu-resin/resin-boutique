@@ -31,7 +31,10 @@
   <link rel="stylesheet" href="guest-layout.css?v=20260815b" />
   <link rel="stylesheet" href="category-rail-icons.css?v=20260815b" />
   <link rel="stylesheet" href="hero-exact-shared.css?v=20260815b" />
+  <link rel="stylesheet" href="raw-material-pages.css?v=20260815b" />
+  <link rel="stylesheet" href="raw-materials-hero-exact.css?v=20260815b" />
   <link rel="stylesheet" href="home-hero-ethereal.css?v=20260815b" />
+  <link rel="stylesheet" href="scroll-perf.css?v=20260815b" />
   <link rel="stylesheet" href="home-featured-collections.css?v=20260815b" />
   <link rel="stylesheet" href="craft-category-card.css?v=20260815b" />
   <link rel="stylesheet" href="connect-section.css?v=20260815b" media="print" onload="this.media='all'" />
@@ -121,107 +124,95 @@
     </div>
   </header>
 
-  <main>
-    <section class="hero hero--landing" aria-labelledby="hero-heading">
-      <h1 id="hero-heading" class="visually-hidden">
-        Craftguru handmade resin — wall clocks, spiritual frames, coasters, and personalized gifts
-      </h1>
-      <div class="home-landing-layout home-shop-layout">
-        <aside class="home-category-rail home-category-rail--split home-category-rail--icons home-shop-nav" id="categories" aria-labelledby="cat-heading">
-          <p class="home-category-rail__label" id="cat-heading">Shop by category</p>
-          <nav class="category-grid category-grid--rail" id="categoryGrid" aria-label="Product categories"></nav>
-        </aside>
-        <div class="home-landing-main home-shop-layout__main">
-      <div class="hero-atelier" id="heroStage">
-        <div class="hero-atelier__builtin-wrap" id="heroAtelierBuiltin">
-        <div class="hero-atelier__shell hero-atelier__shell--exact-ref home-landing-hero--exact">
-          <picture>
-            <source
-              type="image/webp"
-              srcset="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260815b 1280w"
-              sizes="(max-width: 899px) 100vw, min(1200px, 72vw)"
-            />
-            <img
-              class="hero-atelier__exact-art home-landing-hero__exact-art"
-              src="media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343"
-              width="1536"
-              height="1024"
-              fetchpriority="high"
-              alt="Hand-poured resin for modern walls — Craft Guru geode clock showcase"
-              loading="eager"
-              decoding="async"
-            />
-          </picture>
-          <div class="hero-atelier__light home-landing-hero__copy">
-            <p class="hero-atelier__kicker">From the Jaipur bench</p>
-            <h2 class="hero-atelier__title">Hand-poured resin <span>for modern walls</span></h2>
-            <p class="hero-atelier__deck">
-              Wholesale and retail—clocks, mantra frames, coasters, and custom pours. Crystal-clear epoxy, pigments that keep their voice, and finishes tuned for real homes.
-            </p>
-            <div class="hero-atelier__actions" aria-hidden="true">
-              <a href="#categories" class="hero-atelier__btn hero-atelier__btn--primary" tabindex="-1">Shop categories →</a>
-              <a href="return-gifts.html" class="hero-atelier__btn hero-atelier__btn--ghost" tabindex="-1">Corporate Gifting →</a>
-            </div>
-            <div class="hero-atelier__dots" aria-hidden="true">
-              <span class="is-active"></span><span></span><span></span>
-            </div>
-          </div>
-          <div class="home-landing-hero__hits">
-            <a class="hero-exact-hit home-landing-hero__hit home-landing-hero__hit--browse" href="return-gifts.html" aria-label="Corporate Gifting"></a>
-          </div>
-          <div class="hero-atelier__fx home-landing-hero__fx" aria-hidden="true">
-            <span class="hero-atelier__wave"></span>
-            <span class="hero-atelier__glow"></span>
-            <span class="hero-atelier__bubble hero-atelier__bubble--a"></span>
-            <span class="hero-atelier__bubble hero-atelier__bubble--b"></span>
-            <span class="hero-atelier__bubble hero-atelier__bubble--c"></span>
-            <span class="hero-atelier__bubble hero-atelier__bubble--d"></span>
-            <span class="hero-atelier__bubble hero-atelier__bubble--e"></span>
-            <span class="hero-atelier__particle hero-atelier__particle--a"></span>
-            <span class="hero-atelier__particle hero-atelier__particle--b"></span>
-            <span class="hero-atelier__particle hero-atelier__particle--c"></span>
-            <span class="hero-atelier__particle hero-atelier__particle--d"></span>
-            <span class="hero-atelier__particle hero-atelier__particle--e"></span>
-            <span class="hero-atelier__gold"></span>
-            <span class="hero-atelier__shimmer"></span>
-            <span class="hero-atelier__glass"></span>
-          </div>
-        </div>
-        </div>
-        <div
-          class="hero-promo-carousel"
-          id="heroPromoCarousel"
-          hidden
-          aria-roledescription="carousel"
-          aria-label="Featured offers and announcements"
-        >
-          <div class="hero-promo-carousel__frame">
-            <img
-              class="hero-promo-carousel__img"
-              id="heroPromoImg"
-              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
-              alt=""
-              width="1200"
-              height="640"
-              loading="eager"
-              decoding="async"
-            />
-          </div>
-        </div>
-      </div>
-      <div class="hero-spotlight reveal" id="heroSpotlightStrip" hidden aria-label="Our best sellers from the catalog"></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="band-shop band-shop--home" id="shop">
+  <main class="sub-main">
+    <section class="band-shop band-shop--flush band-shop--home" id="shop" aria-labelledby="hero-heading">
       <div class="band-shop-inner band-shop-inner--home">
-        <header class="craft-cat-section__head">
-          <h2 class="craft-cat-section__title band-title" id="filterLabel">Shop by category</h2>
-          <a href="#categories" class="craft-cat-section__all-link" aria-label="View all categories">View all categories →</a>
-        </header>
-        <div class="featured-collections-grid" id="productGrid"></div>
-        <div class="cg-category-section__trust" aria-label="Why customers trust Craftguru">
+        <div class="rm-shop-layout home-shop-layout" id="homeShopLayout">
+          <aside class="home-category-rail home-category-rail--split home-category-rail--icons home-shop-nav rm-category-rail" id="categories" aria-labelledby="cat-heading">
+            <p class="home-category-rail__label" id="cat-heading">Shop by category</p>
+            <nav class="category-grid category-grid--rail" id="categoryGrid" aria-label="Product categories"></nav>
+          </aside>
+          <div class="rm-shop-layout__main home-shop-layout__main">
+            <h1 id="hero-heading" class="visually-hidden">
+              Craftguru handmade resin — wall clocks, spiritual frames, coasters, and personalized gifts
+            </h1>
+            <div class="rm-hero rm-hero--premium rm-landing-hero rm-landing-hero--exact home-resin-hero" id="heroStage" aria-labelledby="homeHeroHeading">
+              <div id="heroAtelierBuiltin">
+                <picture>
+                  <source
+                    type="image/webp"
+                    srcset="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260815b 1280w"
+                    sizes="(max-width: 899px) 100vw, min(1200px, 72vw)"
+                  />
+                  <img
+                    class="rm-landing-hero__exact-art home-landing-hero__exact-art"
+                    src="media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343"
+                    width="1536"
+                    height="1024"
+                    fetchpriority="high"
+                    alt="Hand-poured resin for modern walls — Craft Guru geode clock showcase"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </picture>
+              </div>
+              <div class="rm-hero__inner rm-landing-hero__copy home-landing-hero__copy">
+                <p class="rm-hero__kicker">From the Jaipur bench</p>
+                <h2 id="homeHeroHeading" class="rm-hero__title-stack">
+                  <span class="rm-hero__title-line1">Hand-poured resin for modern walls</span>
+                </h2>
+                <p class="rm-hero__sub">
+                  Wholesale and retail—clocks, mantra frames, coasters, and custom pours. Crystal-clear epoxy, pigments that keep their voice, and finishes tuned for real homes.
+                </p>
+              </div>
+              <div class="rm-landing-hero__hits home-landing-hero__hits">
+                <a class="hero-exact-hit rm-landing-hero__hit rm-landing-hero__hit--browse home-landing-hero__hit home-landing-hero__hit--browse" href="return-gifts.html" aria-label="Corporate Gifting"></a>
+              </div>
+              <div class="rm-landing-hero__fx home-landing-hero__fx" aria-hidden="true">
+                <span class="rm-landing-hero__wave"></span>
+                <span class="rm-landing-hero__glow"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--a"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--b"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--c"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--d"></span>
+                <span class="rm-landing-hero__bubble rm-landing-hero__bubble--e"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--a"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--b"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--c"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--d"></span>
+                <span class="rm-landing-hero__particle rm-landing-hero__particle--e"></span>
+                <span class="rm-landing-hero__gold"></span>
+                <span class="rm-landing-hero__shimmer"></span>
+                <span class="rm-landing-hero__glass"></span>
+              </div>
+              <div
+                class="hero-promo-carousel"
+                id="heroPromoCarousel"
+                hidden
+                aria-roledescription="carousel"
+                aria-label="Featured offers and announcements"
+              >
+                <div class="hero-promo-carousel__frame">
+                  <img
+                    class="hero-promo-carousel__img"
+                    id="heroPromoImg"
+                    src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+                    alt=""
+                    width="1200"
+                    height="640"
+                    loading="eager"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+            </div>
+            <section class="rm-cat-hub home-cat-hub" aria-labelledby="filterLabel">
+              <header class="craft-cat-section__head rm-cat-hub__head">
+                <h2 class="craft-cat-section__title band-title" id="filterLabel">Shop by category</h2>
+                <a href="#categories" class="craft-cat-section__all-link" aria-label="View all categories">View all categories →</a>
+              </header>
+              <div class="featured-collections-grid" id="productGrid"></div>
+              <div class="cg-category-section__trust" aria-label="Why customers trust Craftguru">
           <div class="cg-category-section__trust-item">
             <span class="cg-category-section__trust-icon" aria-hidden="true">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 14.8 7.2 17l.9-5.4L4.2 7.7l5.4-.8L12 2z"/></svg>
@@ -257,6 +248,9 @@
               <strong>Trusted by Creators</strong>
               <span>Loved by 10,000+</span>
             </div>
+          </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>

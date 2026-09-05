@@ -7,6 +7,9 @@
 /* ---- Unified panel frame: container follows the image ---- */
 :root {
   --hero-exact-radius: clamp(1.75rem, 4.5vw, 2.75rem);
+  /* Shared shop layout tokens — Resin Raw Materials is the reference */
+  --cg-shop-sidebar-col: minmax(13rem, 17rem);
+  --cg-shop-layout-gap: clamp(1rem, 3vw, 2.5rem);
 }
 
 .home-landing-hero--exact,
@@ -32,12 +35,32 @@
   background-image: none !important;
 }
 
-/* Split layout: hero column flush with category rail top edge */
-body.page-home .hero-atelier,
-body.guest-site .hero-atelier {
-  padding: 0 !important;
-  margin: 0;
-  max-width: none;
+/* Promo hero on Resin Home — same frame as exact panel, no viewport min-heights */
+body.page-home .home-resin-hero--promo #heroAtelierBuiltin {
+  display: none !important;
+}
+
+body.page-home .home-resin-hero--promo .hero-promo-carousel {
+  display: block;
+  width: 100%;
+  margin-bottom: 2.25rem;
+}
+
+body.page-home .home-resin-hero--promo .hero-promo-carousel__frame {
+  position: relative;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  line-height: 0;
+}
+
+body.page-home .home-resin-hero--promo .hero-promo-carousel__img {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
 }
 
 body.page-home .hero-atelier__builtin-wrap {

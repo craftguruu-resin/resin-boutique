@@ -227,6 +227,7 @@ body.guest-site:not(.page-home) {
 body.guest-site .band-shop.band-shop--flush {
   margin-top: 0;
   padding-top: 0;
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
   padding-inline: clamp(1rem, 3vw, 2rem);
 }
 
@@ -727,6 +728,11 @@ body.page-home .hero-atelier__shell--exact-ref .hero-atelier__exact-art {
     max-width: 100% !important;
   }
 
+  body.page-home .home-landing-hero__exact-art,
+  body.page-home .hero-atelier__exact-art {
+    max-height: var(--cg-home-hero-max-h-mobile) !important;
+  }
+
   body.guest-site .home-landing-hero--exact,
   body.guest-site .rm-landing-hero--exact,
   body.guest-site .pf-landing-hero--exact,
@@ -1068,4 +1074,40 @@ body.guest-site:not(.page-home) .band-shop:not(.band-shop--home) {
     width: 100%;
     min-width: 0;
   }
+}
+
+/* ================================================================== */
+/* Resin Home — same shop shell as Raw Materials (RM is source of truth) */
+/* ================================================================== */
+
+body.page-home .rm-shop-layout,
+body.page-home .home-shop-layout {
+  align-items: start;
+}
+
+body.page-home .rm-shop-layout__main,
+body.page-home .home-shop-layout__main {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 0;
+}
+
+body.page-home .home-resin-hero.rm-landing-hero--exact {
+  width: 100%;
+  margin-bottom: 2.25rem;
+}
+
+body.page-home .band-shop--home {
+  padding-top: 0;
+  margin-top: 0;
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
+}
+
+body.page-home .home-cat-hub.rm-cat-hub {
+  margin-top: 0;
+}
+
+body.page-home #shop .craft-cat-section__head {
+  margin-bottom: clamp(1rem, 2.5vw, 1.35rem);
 }

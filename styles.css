@@ -34,7 +34,7 @@ html {
 
 @media (prefers-reduced-motion: no-preference) {
   html:focus-within {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
   }
 }
 
@@ -309,10 +309,14 @@ body:not(.vendor-saas) .hero-atelier__kicker::before {
 
 @media (min-width: 900px) and (prefers-reduced-motion: no-preference) {
   .site-top--fx.is-scrolled {
-    background: rgba(255, 255, 255, 0.78);
-    backdrop-filter: blur(22px);
-    -webkit-backdrop-filter: blur(22px);
+    background: rgba(255, 255, 255, 0.96);
   }
+}
+
+body.guest-site .site-top--fx.is-scrolled {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.96);
 }
 
 .brand__text {
@@ -1184,7 +1188,7 @@ main {
   aspect-ratio: 4 / 3;
   overflow: hidden;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0;
-  background: linear-gradient(160deg, #5a6a82, #3d4658);
+  background: #f8fafb;
 }
 
 .product-badge {
@@ -2327,7 +2331,7 @@ body.product-page--oos .btn-add-lg {
   position: relative;
   z-index: 1;
   padding-top: 1rem;
-  min-height: 60vh;
+  min-height: 0;
 }
 
 .band-shop--flush {
@@ -7058,7 +7062,8 @@ a.home-auth-btn {
 
 /* Homepage only — tighter hero → featured flow, modern band header */
 .page-home .hero.hero--landing {
-  padding-bottom: 2rem;
+  padding-top: 0.85rem;
+  padding-bottom: 1rem;
   min-height: auto;
 }
 
@@ -7066,7 +7071,7 @@ a.home-auth-btn {
 .home-shop-layout {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: var(--cg-shop-layout-gap, clamp(1rem, 3vw, 2.5rem));
   width: 100%;
   max-width: none;
   margin-inline: 0;
@@ -7095,9 +7100,9 @@ a.home-auth-btn {
   .home-landing-layout,
   .home-shop-layout {
     display: grid;
-    grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
+    grid-template-columns: var(--cg-shop-sidebar-col, var(--cg-sidebar-col, minmax(13rem, 17rem))) minmax(0, 1fr);
     align-items: start;
-    column-gap: clamp(1rem, 2.5vw, 1.85rem);
+    column-gap: var(--cg-shop-layout-gap, clamp(1rem, 3vw, 2.5rem));
     row-gap: 0;
   }
 
@@ -7107,19 +7112,20 @@ a.home-auth-btn {
     flex-direction: column;
     gap: 1rem;
     min-width: 0;
-    min-height: 100%;
+    min-height: 0;
   }
 
   .page-home .home-landing-main .hero-atelier {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     display: flex;
     flex-direction: column;
     min-height: 0;
   }
 
   .page-home .home-landing-main .hero-atelier__shell {
-    flex: 1 1 auto;
-    min-height: min(64vh, 640px);
+    flex: 0 0 auto;
+    min-height: 0;
+    height: auto;
   }
 
   .page-home .home-landing-main .hero-atelier__shell.home-landing-hero--exact,
@@ -7139,15 +7145,13 @@ a.home-auth-btn {
 
   .page-home .home-landing-main .hero-atelier--promo .hero-promo-carousel__frame {
     flex: 0 0 auto;
-    height: min(64vh, 640px);
-    min-height: min(64vh, 640px);
-    max-height: min(64vh, 640px);
+    height: auto;
+    min-height: 0;
+    max-height: none;
   }
 
   .page-home .home-landing-main .hero-spotlight {
-    max-width: 100%;
-    margin-inline: 0;
-    flex-shrink: 0;
+    display: none !important;
   }
 
   /* Hero photo sits in a narrower column — keep it visually centered without drifting off-column */
@@ -7177,8 +7181,14 @@ a.home-auth-btn {
 }
 
 @media (min-width: 960px) {
+  .page-home .home-category-rail--split {
+    align-self: start;
+    min-height: 0;
+  }
+
   .home-category-rail--split {
-    min-height: 100%;
+    min-height: 0;
+    align-self: start;
   }
 
   .home-category-rail--split .category-grid--rail {
@@ -7587,9 +7597,9 @@ a.home-category-rail__title-link:focus-visible {
 }
 
 .page-home .band-shop--home {
-  margin-top: 0.5rem;
-  padding-top: clamp(2.5rem, 5vw, 3.75rem);
-  padding-bottom: clamp(3rem, 6vw, 4.5rem);
+  margin-top: 0;
+  padding-top: 0;
+  padding-bottom: clamp(1.5rem, 3vw, 2.5rem);
   background: linear-gradient(180deg, #fafbfd 0%, #f3f5f9 42%, #eceff5 100%);
   border-radius: clamp(1.25rem, 3vw, 2rem) clamp(1.25rem, 3vw, 2rem) 0 0;
   box-shadow: 0 -1px 0 rgba(255, 255, 255, 0.9);

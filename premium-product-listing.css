@@ -207,13 +207,6 @@ body:not(.vendor-saas) .band-shop-inner:has(.plp-shell) {
 }
 
 /* ── Product card ── */
-body:not(.vendor-saas) .plp-card,
-body:not(.vendor-saas) .craft-cat-card,
-body:not(.vendor-saas) .featured-cat-card {
-  content-visibility: auto;
-  contain-intrinsic-size: auto 320px;
-}
-
 .plp-card {
   position: relative;
   display: flex;
@@ -237,6 +230,12 @@ body:not(.vendor-saas) .featured-cat-card {
   overflow: hidden;
   border-radius: var(--plp-card-radius) var(--plp-card-radius) 0 0;
   background: #f8fafb;
+}
+
+.plp-card__media-empty {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(145deg, #f0f4f8 0%, #e8eef3 100%);
 }
 
 .plp-card__media {

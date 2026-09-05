@@ -63,7 +63,7 @@ var SIZE_DEFAULT = {
    * otherwise any variant with price &gt; 0.
    */
   function getOfferedSizeKeysForProduct(product) {
-    if (!product || !product.prices) return ["m"];
+    if (!product || !product.prices) return [];
     var prices = product.prices;
     var labels = product.sizeLabels && typeof product.sizeLabels === "object" ? product.sizeLabels : null;
     var keys = [];
@@ -85,7 +85,26 @@ var SIZE_DEFAULT = {
         if (Number.isFinite(pr) && pr > 0) keys.push(k);
       });
     }
-    return keys.length ? keys : ["m"];
+    return keys;
+  }
+
+  /** Vendor-defined size rows with a positive price — never invent Compact/Classic tiers. */
+  function getOfferedOptionSizes(opt) {
+    if (!opt || !Array.isArray(opt.sizes)) return [];
+    return opt.sizes.filter(function (s) {
+      if (!s || typeof s !== "object") return false;
+      var pr = Number(s.priceInr);
+      return Number.isFinite(pr) && pr > 0;
+    });
+  }
+
+  function sanitizeOptionSizes(opt) {
+    if (!opt || typeof opt !== "object") return opt;
+    if (Array.isArray(opt.sizes)) {
+      opt.sizes = getOfferedOptionSizes(opt);
+      if (!opt.sizes.length) opt.useSize = false;
+    }
+    return opt;
   }
 
   function countOfferedSizesForProduct(product) {
@@ -119,11 +138,11 @@ var SIZE_DEFAULT = {
 
     var opt = product.options;
     if (opt && typeof opt === "object") {
-      var useSize = !!(opt.useSize && Array.isArray(opt.sizes) && opt.sizes.length);
+      var useSize = !!(opt.useSize && getOfferedOptionSizes(opt).length);
       var useQty = !!(opt.useQty && Array.isArray(opt.qtyOptions) && opt.qtyOptions.length);
       var base = vals.length ? Math.min.apply(null, vals) : 0;
       if (useSize || useQty) {
-        var sizes = useSize ? opt.sizes : [{ id: "", priceInr: null }];
+        var sizes = useSize ? getOfferedOptionSizes(opt) : [{ id: "", priceInr: null }];
         var qtys = useQty ? opt.qtyOptions : [{ id: "", priceInr: null }];
         sizes.forEach(function (s) {
           qtys.forEach(function (q) {
@@ -140,8 +159,8 @@ var SIZE_DEFAULT = {
             if (Number.isFinite(p) && p > 0) vals.push(p);
           });
         });
-      } else if (Array.isArray(opt.sizes) && opt.sizes.length) {
-        opt.sizes.forEach(function (s) {
+      } else if (getOfferedOptionSizes(opt).length) {
+        getOfferedOptionSizes(opt).forEach(function (s) {
           var ps = Number(s && s.priceInr);
           if (Number.isFinite(ps) && ps > 0) vals.push(ps);
         });
@@ -694,7 +713,7 @@ var SIZE_DEFAULT = {
       }
     }
     if (typeof raw !== "object" || Array.isArray(raw)) return null;
-    return raw;
+    return sanitizeOptionSizes(raw);
   }
 
   function catalogOptionsHasPayload(opt) {
@@ -1241,6 +1260,8 @@ var SIZE_DEFAULT = {
     productSearchHaystack: productSearchHaystack,
     catalogOptionsHasPayload: catalogOptionsHasPayload,
     normalizeOptionsOverride: normalizeOptionsOverride,
+    getOfferedOptionSizes: getOfferedOptionSizes,
+    sanitizeOptionSizes: sanitizeOptionSizes,
     getProductCoverImageFit: getProductCoverImageFit,
     getCategoryPreviewImageFit: getCategoryPreviewImageFit,
     getCategoryCardPreview: getCategoryCardPreview,

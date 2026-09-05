@@ -487,17 +487,17 @@
       { key: "m", priceId: "vpmPriceM", lblId: "vpmLblM", fallback: "Classic" },
       { key: "l", priceId: "vpmPriceL", lblId: "vpmLblL", fallback: "Grand" },
     ];
-    rows.forEach(function (r, i) {
+    rows.forEach(function (r) {
       var priceEl = document.getElementById(r.priceId);
       var lblEl = document.getElementById(r.lblId);
       var price = Number(priceEl && priceEl.value);
-      if (!Number.isFinite(price) || price < 0) price = 0;
+      if (!Number.isFinite(price) || price <= 0) return;
       var label = String((lblEl && lblEl.value) || "").trim() || r.fallback;
       sizes.push({
         id: "sz-" + r.key,
         label: label.slice(0, 120),
         priceInr: price,
-        sort: i,
+        sort: sizes.length,
       });
     });
     return sizes;
@@ -537,17 +537,29 @@
     var descTxt = String((document.getElementById("vpmDescription") && document.getElementById("vpmDescription").value) || "").trim();
     opt.detailBody = descTxt;
 
-    /* First-time migration: seed modern size rows from classic S/M/L so the new PDP has variants. */
+    /* First-time migration: seed modern size rows only from S/M/L tiers the vendor actually priced. */
     if (!editingHadOptionsPayload && !opt.useSize && !opt.useQty && !opt.useColor) {
-      opt.useSize = true;
-      opt.sizes = classicSizesFromForm();
+      var migratedSizes = classicSizesFromForm();
+      if (migratedSizes.length) {
+        opt.useSize = true;
+        opt.sizes = migratedSizes;
+      }
       opt.useQty = false;
       opt.qtyOptions = [];
     }
 
-    if (!String(opt.heroImage || "").trim() && !(opt.galleryImages && opt.galleryImages.length) && !opt.useSize && !opt.useQty && !opt.useColor) {
-      opt.useSize = true;
-      opt.sizes = classicSizesFromForm();
+    if (
+      !String(opt.heroImage || "").trim() &&
+      !(opt.galleryImages && opt.galleryImages.length) &&
+      !opt.useSize &&
+      !opt.useQty &&
+      !opt.useColor
+    ) {
+      var fallbackSizes = classicSizesFromForm();
+      if (fallbackSizes.length) {
+        opt.useSize = true;
+        opt.sizes = fallbackSizes;
+      }
     }
 
     var coverLabel = String((document.getElementById("vpmCoverColorLabel") && document.getElementById("vpmCoverColorLabel").value) || "").trim();

@@ -605,9 +605,15 @@ body.page-home .home-landing-main .hero-atelier__shell--exact-ref {
 .pf-landing-hero__exact-art {
   width: 100% !important;
   height: auto !important;
-  max-height: none !important;
   object-fit: contain !important;
   object-position: center center !important;
   aspect-ratio: auto !important;
   transform: none !important;
+}
+
+/* RM / PF: natural artwork height. Home uses the same exact-panel sizing. */
+.rm-landing-hero__exact-art,
+.pf-landing-hero__exact-art,
+.home-landing-hero__exact-art {
+  max-height: none !important;
 }

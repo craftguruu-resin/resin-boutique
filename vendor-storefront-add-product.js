@@ -220,7 +220,9 @@
         priceInr: prices.l,
         mrpInr: mrps.l,
       },
-    ];
+    ].filter(function (sz) {
+      return Number.isFinite(Number(sz.priceInr)) && Number(sz.priceInr) > 0;
+    });
     sizes.forEach(function (sz) {
       if (sz.mrpInr == null) delete sz.mrpInr;
     });
@@ -236,7 +238,7 @@
     var stockQty =
       stockQtyRaw != null && Number.isFinite(stockQtyRaw) && stockQtyRaw >= 0 ? Math.floor(stockQtyRaw) : null;
     return {
-      useSize: true,
+      useSize: sizes.length > 0,
       useQty: false,
       useColor: colors.length > 0,
       badge: readField("viApBadge").slice(0, 80),
