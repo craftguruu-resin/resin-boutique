@@ -29,3 +29,136 @@ body.page-home .site-top.reveal.is-inview {
 }
 
 /* Aspect ratio lives on .craft-cat-card__media — do not duplicate on <img> (breaks contain presentation). */
+
+/* --------------------------------------------------------------------------
+   Home = Raw Materials layout contract
+   The Raw Materials page is the visual reference. Keep Home on the same
+   two-column geometry and let the hero artwork define its own height.
+   -------------------------------------------------------------------------- */
+@media (min-width: 960px) {
+  body.page-home .home-shop-layout {
+    grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) !important;
+    gap: var(--cg-shop-layout-gap, clamp(1rem, 3vw, 2.5rem)) !important;
+    align-items: start !important;
+  }
+}
+
+body.page-home .home-shop-layout__main {
+  min-width: 0 !important;
+  width: 100% !important;
+}
+
+/* The Home hero wraps its artwork in <picture>. Without an explicit block width,
+   the picture can shrink-wrap and leave a giant empty hero area on some layouts. */
+body.page-home .home-resin-hero,
+body.page-home #heroAtelierBuiltin,
+body.page-home #heroAtelierBuiltin picture {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+
+body.page-home .home-resin-hero {
+  position: relative !important;
+  overflow: hidden !important;
+  flex: 0 0 auto !important;
+  align-self: start !important;
+}
+
+body.page-home #heroAtelierBuiltin img.rm-landing-hero__exact-art,
+body.page-home #heroAtelierBuiltin img.home-landing-hero__exact-art {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+}
+
+/* No hidden spacer below the Home hero. */
+body.page-home .home-resin-hero > .rm-landing-hero__copy {
+  min-height: 0 !important;
+}
+
+/* --------------------------------------------------------------------------
+   High-refresh-rate scrolling: keep scrolling on the compositor and move only
+   cheap transform/opacity layers. Do not introduce JS smooth scrolling.
+   -------------------------------------------------------------------------- */
+html {
+  scroll-behavior: auto !important;
+}
+
+body.guest-site {
+  overscroll-behavior-x: none;
+}
+
+body.guest-site .page-atmosphere,
+body.guest-site .mesh-gradient,
+body.guest-site .tone-shift,
+body.guest-site .animated-backdrop,
+body.guest-site .grid-lines {
+  pointer-events: none;
+  contain: paint;
+}
+
+body.guest-site .page-atmosphere {
+  will-change: auto;
+}
+
+body.guest-site .animated-backdrop .orb {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Below-the-fold storefront sections should not consume paint/layout time until
+   the user approaches them. Intrinsic sizes prevent scroll-jump/CLS. */
+body.guest-site .testimonials,
+body.guest-site .connect-premium,
+body.guest-site .site-footer,
+body.guest-site .cg-category-section__trust {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
+
+body.guest-site .featured-collections-grid,
+body.guest-site .testimonial-grid,
+body.guest-site .connect-premium__grid {
+  contain: layout paint;
+}
+
+/* Keep expensive glass effects away from the scroll path. The visual design is
+   preserved with translucent surfaces and shadows, while backdrop blur is used
+   only where it materially contributes to the UI. */
+@media (min-width: 900px) {
+  body.guest-site .glass-panel,
+  body.guest-site .site-top--fx,
+  body.guest-site .nav-dock,
+  body.guest-site .home-category-rail,
+  body.guest-site .rm-category-rail {
+    backface-visibility: hidden;
+  }
+}
+
+/* During active scroll, existing scroll-perf.css pauses infinite decorative FX.
+   This selector adds a compositor-friendly transform hint without changing the
+   normal idle appearance. */
+html.cg-scroll-active body.guest-site .page-atmosphere,
+html.cg-scroll-active body.guest-site .animated-backdrop {
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.guest-site *,
+  body.guest-site *::before,
+  body.guest-site *::after {
+    scroll-behavior: auto !important;
+  }
+}
