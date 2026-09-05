@@ -19,24 +19,12 @@ body.guest-site .product-grid {
   min-height: 0;
 }
 
-/* Prevent header reveal animation from shifting perceived layout on first paint */
-body.page-home .site-top.reveal {
-  opacity: 1;
-  transform: none;
-}
-
+body.page-home .site-top.reveal,
 body.page-home .site-top.reveal.is-inview {
   opacity: 1;
   transform: none;
 }
 
-/* Aspect ratio lives on .craft-cat-card__media — do not duplicate on <img> (breaks contain presentation). */
-
-/* --------------------------------------------------------------------------
-   Home = Raw Materials layout contract
-   The Raw Materials page is the visual reference. Keep Home on the same
-   two-column geometry and let the hero artwork define its own height.
-   -------------------------------------------------------------------------- */
 @media (min-width: 960px) {
   body.page-home .home-shop-layout {
     grid-template-columns: minmax(200px, 240px) minmax(0, 1fr) !important;
@@ -50,8 +38,6 @@ body.page-home .home-shop-layout__main {
   width: 100% !important;
 }
 
-/* The Home hero wraps its artwork in <picture>. Without an explicit block width,
-   the picture can shrink-wrap and leave a giant empty hero area on some layouts. */
 body.page-home .home-resin-hero,
 body.page-home #heroAtelierBuiltin,
 body.page-home #heroAtelierBuiltin picture {
@@ -59,69 +45,84 @@ body.page-home #heroAtelierBuiltin picture {
   width: 100% !important;
   max-width: 100% !important;
   min-width: 0 !important;
+}
+
+/* Home now follows the Raw Materials 1672:941 footprint instead of the old tall 3:2 hero. */
+body.page-home .home-resin-hero {
+  position: relative !important;
+  aspect-ratio: 1672 / 941 !important;
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-}
-
-body.page-home .home-resin-hero {
-  position: relative !important;
   overflow: hidden !important;
   flex: 0 0 auto !important;
   align-self: start !important;
+  border-radius: clamp(1.15rem, 2.2vw, 1.8rem);
+  box-shadow: 0 18px 44px rgba(20, 65, 78, 0.1), 0 3px 12px rgba(20, 65, 78, 0.06);
+  background: #edf8f5;
+  isolation: isolate;
+}
+
+body.page-home #heroAtelierBuiltin,
+body.page-home #heroAtelierBuiltin picture,
+body.page-home #heroAtelierBuiltin img.rm-landing-hero__exact-art,
+body.page-home #heroAtelierBuiltin img.home-landing-hero__exact-art {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
 }
 
 body.page-home #heroAtelierBuiltin img.rm-landing-hero__exact-art,
 body.page-home #heroAtelierBuiltin img.home-landing-hero__exact-art {
-  display: block !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  object-fit: contain !important;
+  object-fit: cover !important;
   object-position: center center !important;
   aspect-ratio: auto !important;
 }
 
-/* No hidden spacer below the Home hero. */
+/* The artwork is already editorially composed; don't stack another copy layer on it. */
+body.page-home .home-resin-hero > .home-landing-hero__copy,
 body.page-home .home-resin-hero > .rm-landing-hero__copy {
-  min-height: 0 !important;
+  display: none !important;
+}
+
+body.page-home .home-resin-hero .home-landing-hero__fx {
+  pointer-events: none;
+  opacity: 0.34;
+}
+
+body.page-home .home-cat-hub {
+  margin-top: clamp(0.8rem, 1.5vw, 1.25rem);
+  padding: clamp(1rem, 2vw, 1.4rem);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  border-radius: clamp(1.15rem, 2.2vw, 1.75rem);
+  background:
+    radial-gradient(circle at 8% 0%, rgba(125, 211, 199, 0.2), transparent 35%),
+    radial-gradient(circle at 100% 100%, rgba(255, 220, 230, 0.16), transparent 38%),
+    rgba(255, 255, 255, 0.68);
+  box-shadow: 0 18px 44px rgba(20, 65, 78, 0.1), 0 3px 12px rgba(20, 65, 78, 0.06);
 }
 
 /* --------------------------------------------------------------------------
-   High-refresh-rate scrolling: keep scrolling on the compositor and move only
-   cheap transform/opacity layers. Do not introduce JS smooth scrolling.
+   High-refresh-rate scrolling: native document scroll, no smooth-scroll JS.
    -------------------------------------------------------------------------- */
-html {
-  scroll-behavior: auto !important;
-}
-
-body.guest-site {
-  overscroll-behavior-x: none;
-}
-
+html { scroll-behavior: auto !important; }
+body.guest-site { overscroll-behavior-x: none; }
 body.guest-site .page-atmosphere,
 body.guest-site .mesh-gradient,
 body.guest-site .tone-shift,
 body.guest-site .animated-backdrop,
-body.guest-site .grid-lines {
-  pointer-events: none;
-  contain: paint;
-}
-
-body.guest-site .page-atmosphere {
-  will-change: auto;
-}
-
+body.guest-site .grid-lines { pointer-events: none; contain: paint; }
+body.guest-site .page-atmosphere { will-change: auto; }
 body.guest-site .animated-backdrop .orb {
   will-change: transform, opacity;
   backface-visibility: hidden;
-  transform: translate3d(0, 0, 0);
+  transform: translate3d(0,0,0);
 }
-
-/* Below-the-fold storefront sections should not consume paint/layout time until
-   the user approaches them. Intrinsic sizes prevent scroll-jump/CLS. */
 body.guest-site .testimonials,
 body.guest-site .connect-premium,
 body.guest-site .site-footer,
@@ -129,38 +130,103 @@ body.guest-site .cg-category-section__trust {
   content-visibility: auto;
   contain-intrinsic-size: auto 420px;
 }
-
 body.guest-site .featured-collections-grid,
 body.guest-site .testimonial-grid,
-body.guest-site .connect-premium__grid {
-  contain: layout paint;
-}
-
-/* Keep expensive glass effects away from the scroll path. The visual design is
-   preserved with translucent surfaces and shadows, while backdrop blur is used
-   only where it materially contributes to the UI. */
+body.guest-site .connect-premium__grid { contain: layout paint; }
 @media (min-width: 900px) {
   body.guest-site .glass-panel,
   body.guest-site .site-top--fx,
   body.guest-site .nav-dock,
   body.guest-site .home-category-rail,
-  body.guest-site .rm-category-rail {
-    backface-visibility: hidden;
-  }
+  body.guest-site .rm-category-rail { backface-visibility: hidden; }
 }
-
-/* During active scroll, existing scroll-perf.css pauses infinite decorative FX.
-   This selector adds a compositor-friendly transform hint without changing the
-   normal idle appearance. */
 html.cg-scroll-active body.guest-site .page-atmosphere,
-html.cg-scroll-active body.guest-site .animated-backdrop {
-  will-change: auto;
-}
+html.cg-scroll-active body.guest-site .animated-backdrop { will-change: auto; }
 
-@media (prefers-reduced-motion: reduce) {
-  body.guest-site *,
-  body.guest-site *::before,
-  body.guest-site *::after {
-    scroll-behavior: auto !important;
-  }
+/* --------------------------------------------------------------------------
+   Futuristic glass PLP/category layer.
+   -------------------------------------------------------------------------- */
+body.page-category .band-shop-inner:has(.plp-shell) { width: 100%; max-width: none; margin: 0; }
+body.page-category .sub-main,
+body.page-category .band-shop,
+body.page-category .band-shop-inner,
+body.page-category .guest-main-with-rail-inner,
+body.page-category .plp-shell,
+body.page-category .plp-header,
+body.page-category .plp-trust-bar,
+body.page-category .plp-grid { min-height: 0 !important; }
+body.page-category .plp-grid[hidden],
+body.page-category #subcategoryGrid[hidden],
+body.page-category #productGrid[hidden] { display: none !important; }
+body.page-category .plp-shell { display: flex; flex-direction: column; gap: .85rem; margin-top: 0 !important; }
+body.page-category .plp-header {
+  margin: 0 !important;
+  padding: clamp(1.15rem, 2.2vw, 1.65rem) clamp(1.2rem, 2.4vw, 1.8rem);
+  border-radius: clamp(1.25rem, 2.1vw, 1.75rem);
+  border: 1px solid rgba(255,255,255,.92);
+  background: radial-gradient(circle at 8% 0%, rgba(125,211,199,.14), transparent 38%), rgba(255,255,255,.72);
+  box-shadow: 0 18px 44px rgba(20,65,78,.1), 0 3px 12px rgba(20,65,78,.06);
+  backdrop-filter: blur(10px) saturate(1.06);
+  -webkit-backdrop-filter: blur(10px) saturate(1.06);
 }
+body.page-category .plp-title { font-size: clamp(2rem,4vw,3rem); letter-spacing: -.035em; }
+body.page-category .plp-trust-bar {
+  margin: 0 !important;
+  border: 1px solid rgba(255,255,255,.92);
+  border-radius: clamp(1rem,1.7vw,1.4rem);
+  background: rgba(255,255,255,.62);
+  box-shadow: 0 12px 34px rgba(20,65,78,.08);
+  backdrop-filter: blur(9px) saturate(1.04);
+  -webkit-backdrop-filter: blur(9px) saturate(1.04);
+}
+body.page-category .plp-grid { margin: 0 !important; gap: clamp(.7rem,1vw,1rem) !important; }
+body.page-category .plp-card {
+  min-width: 0;
+  border-radius: clamp(1rem,1.6vw,1.35rem);
+  border: 1px solid rgba(255,255,255,.92);
+  background: linear-gradient(180deg,rgba(255,255,255,.92),rgba(246,253,251,.78));
+  box-shadow: 0 18px 44px rgba(20,65,78,.1), 0 3px 12px rgba(20,65,78,.06);
+  contain: layout paint style;
+  transform: translateZ(0);
+  transition: transform 220ms cubic-bezier(.22,1,.36,1), box-shadow 220ms ease, border-color 220ms ease;
+}
+body.page-category .plp-card::before {
+  content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(circle at 18% 0%,rgba(255,255,255,.88),transparent 32%),radial-gradient(circle at 100% 100%,rgba(125,211,199,.12),transparent 38%); opacity: .72;
+}
+body.page-category .plp-card::after {
+  content: ""; position: absolute; top: -30%; left: -70%; width: 42%; height: 160%; z-index: 5; pointer-events: none;
+  transform: rotate(16deg) translateX(0); background: linear-gradient(90deg,transparent,rgba(255,255,255,.48),transparent); opacity: 0;
+  transition: transform 500ms cubic-bezier(.22,1,.36,1), opacity 220ms ease;
+}
+body.page-category .plp-card:hover { transform: translate3d(0,-5px,0); border-color: rgba(38,166,154,.34); box-shadow: 0 26px 58px rgba(20,65,78,.16),0 8px 22px rgba(38,166,154,.1); }
+body.page-category .plp-card:hover::after { opacity: .8; transform: rotate(16deg) translateX(520%); }
+body.page-category .plp-card__media-wrap {
+  position: relative; z-index: 1; margin: .35rem; border-radius: calc(clamp(1rem,1.6vw,1.35rem) - .35rem);
+  background: radial-gradient(circle at 50% 0%,rgba(255,255,255,.96),transparent 55%),linear-gradient(145deg,#f6fffd,#edf8f6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.96);
+}
+body.page-category .plp-card__media { padding: clamp(.35rem,.8vw,.6rem); }
+body.page-category .plp-card__media img { border-radius: clamp(.75rem,1vw,1rem); transform: translateZ(0); transition: transform 360ms cubic-bezier(.22,1,.36,1); }
+body.page-category .plp-card:hover .plp-card__media img { transform: scale(1.025) translateZ(0); }
+body.page-category .plp-card__body,body.page-category .plp-card__actions { position: relative; z-index: 6; }
+body.page-category .plp-card__body { padding: .7rem .85rem .2rem; }
+body.page-category .plp-card__name { font-family: var(--font-ui,"Plus Jakarta Sans",system-ui,sans-serif); font-size: clamp(.86rem,1.1vw,1rem); font-weight: 700; line-height: 1.32; }
+body.page-category .plp-card__actions { padding: .5rem .85rem .85rem; }
+body.page-category .plp-card__cta {
+  min-height: 2.55rem; border-radius: 999px; background: linear-gradient(135deg,#26a69a,#148f7f 60%,#0f766e);
+  box-shadow: 0 8px 20px rgba(38,166,154,.18),inset 0 1px 0 rgba(255,255,255,.22);
+  transition: transform 180ms ease,box-shadow 180ms ease,filter 180ms ease;
+}
+body.page-category .plp-card__cta:hover { transform: translateY(-1px); filter: brightness(1.04); box-shadow: 0 12px 26px rgba(38,166,154,.24); }
+body.page-category .plp-card__wish { background: rgba(255,255,255,.82); border: 1px solid rgba(255,255,255,.95); box-shadow: 0 8px 20px rgba(20,65,78,.12); backdrop-filter: blur(7px); -webkit-backdrop-filter: blur(7px); }
+body.page-category .plp-card__badge { border-radius: 999px; background: linear-gradient(135deg,#26a69a,#0f766e); box-shadow: 0 6px 16px rgba(38,166,154,.22); }
+body.page-category .guest-page-category-rail {
+  border: 1px solid rgba(255,255,255,.88); border-radius: 1.35rem; padding: 1rem .65rem; background: rgba(255,255,255,.62);
+  box-shadow: 0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06); backdrop-filter: blur(10px) saturate(1.04); -webkit-backdrop-filter: blur(10px) saturate(1.04);
+}
+body.page-category .guest-page-category-rail .category-pill--rail { border-color: rgba(255,255,255,.84); background: rgba(255,255,255,.55); box-shadow: 0 5px 16px rgba(20,65,78,.045); transition: transform 180ms ease,background 180ms ease,border-color 180ms ease,box-shadow 180ms ease; }
+body.page-category .guest-page-category-rail .category-pill--rail:hover,body.page-category .guest-page-category-rail .category-pill--rail:focus-visible,body.page-category .guest-page-category-rail .category-pill--rail.is-active { transform: translateX(2px); border-color: rgba(38,166,154,.34); background: linear-gradient(135deg,rgba(216,243,239,.82),rgba(255,255,255,.74)); box-shadow: 0 10px 22px rgba(38,166,154,.09); }
+@media (min-width:900px){body.page-category .plp-grid .plp-card:nth-child(n+9){content-visibility:auto;contain-intrinsic-size:360px}}
+@media (max-width:899px){body.page-category .plp-header,body.page-category .plp-trust-bar,body.page-category .guest-page-category-rail{backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}body.page-category .plp-card:hover{transform:none;box-shadow:0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06)}body.page-category .plp-card:hover::after{opacity:0}}
+@media (prefers-reduced-motion:reduce){body.page-category .plp-card,body.page-category .plp-card::after,body.page-category .plp-card__media img,body.page-category .plp-card__cta,body.page-category .guest-page-category-rail .category-pill--rail{transition:none!important}}
