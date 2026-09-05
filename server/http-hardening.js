@@ -29,7 +29,7 @@ function applyHttpHardening(app) {
 
   app.use(
     helmet({
-      contentSecurityPolicy: false, // storefront loads many inline scripts + third parties
+      contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: "cross-origin" },
       referrerPolicy: { policy: "strict-origin-when-cross-origin" },
@@ -115,6 +115,15 @@ function normalizeStaticFilePath(filePath) {
   return p;
 }
 
+function setHtmlNoStoreHeaders(res) {
+  res.setHeader("Cache-Control", CACHE.html);
+  // Explicit CDN/proxy directives prevent an intermediary from retaining the
+  // HTML even when the load balancer/CDN is configured more aggressively.
+  res.setHeader("CDN-Cache-Control", "no-store");
+  res.setHeader("Surrogate-Control", "no-store");
+  res.setHeader("Pragma", "no-cache");
+}
+
 /**
  * Set Cache-Control for a file served by express.static.
  * @param {import("express").Response} res
@@ -126,7 +135,7 @@ function setStaticFileCacheHeaders(res, filePath, profile) {
   var versioned = Boolean(res.locals && res.locals.staticCacheVersioned);
 
   if (/\.html$/.test(p)) {
-    res.setHeader("Cache-Control", CACHE.html);
+    setHtmlNoStoreHeaders(res);
     return;
   }
   if (STYLE_SCRIPT_EXT_RE.test(p)) {
@@ -174,7 +183,7 @@ function staticCacheHeaders(req, res, next) {
     var versioned = Boolean(res.locals && res.locals.staticCacheVersioned);
 
     if (/\.html$/.test(p)) {
-      res.setHeader("Cache-Control", CACHE.html);
+      setHtmlNoStoreHeaders(res);
     } else if (IMAGE_EXT_RE.test(p)) {
       if (
         p.indexOf("/media/catalog/") === 0 ||
@@ -213,7 +222,7 @@ function staticCacheHeaders(req, res, next) {
  * @param {() => void} next
  */
 function htmlCacheHeaders(_req, res, next) {
-  res.setHeader("Cache-Control", CACHE.html);
+  setHtmlNoStoreHeaders(res);
   next();
 }
 
