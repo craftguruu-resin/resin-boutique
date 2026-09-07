@@ -1,5 +1,6 @@
 @import url("homepage-glossy.css");
 @import url("home-raw-parity.css");
+@import url("home-raw-hero-recovery.css");
 
 /* Keep the existing storefront performance safeguards for category/listing pages. */
 html{scroll-behavior:auto!important}
