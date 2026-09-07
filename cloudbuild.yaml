@@ -71,6 +71,28 @@ steps:
       - --liveness-probe=httpGet.path=/health,httpGet.port=8080,timeoutSeconds=3,periodSeconds=30,failureThreshold=3
       - --env-vars-file=infra/gcp/env.cloudrun.yaml
       - --set-secrets=DATABASE_URL=craftguru-database-url:latest,GOOGLE_CLIENT_ID=craftguru-google-client-id:latest,GMAIL_APP_PASSWORD=craftguru-smtp-pass:latest,VENDOR_PORTAL_PASSWORD=craftguru-vendor-portal-password:latest,BIGSHIP_USERNAME=craftguru-bigship-username:latest,BIGSHIP_PASSWORD=craftguru-bigship-password:latest,BIGSHIP_ACCESS_KEY=craftguru-bigship-access-key:latest
+
+  # The origin sends no-store for HTML and versioned immutable URLs for assets.
+  # Purge any already-warm Cloud CDN objects after a deployment so the first
+  # browser request cannot receive a pre-deployment storefront shell.
+  - id: invalidate-storefront-cdn
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    entrypoint: bash
+    args:
+      - -c
+      - |
+        set -u
+        if gcloud compute url-maps describe craftguru-url-map --global --project="$PROJECT_ID" >/dev/null 2>&1; then
+          echo "Invalidating Cloud CDN storefront cache..."
+          gcloud compute url-maps invalidate-cdn-cache craftguru-url-map \
+            --global \
+            --path="/*" \
+            --project="$PROJECT_ID" \
+            --async || echo "WARNING: CDN invalidation was not accepted; verify IAM for compute.urlMaps.invalidateCache."
+        else
+          echo "WARNING: craftguru-url-map was not found; skipping CDN invalidation."
+        fi
+
 images:
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
   - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
