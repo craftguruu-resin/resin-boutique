@@ -29,6 +29,8 @@ COPY --from=deps /app/server/node_modules ./server/node_modules
 # App source (filtered by .dockerignore)
 COPY . .
 
+# The supplied 1672×941 Home hero is committed as an optimized WebP asset.
+
 ENV NODE_ENV=production \
     PORT=8080 \
     HOST=0.0.0.0 \
