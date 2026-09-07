@@ -227,3 +227,159 @@ body.guest-site .guest-page-category-rail.home-category-rail--icons .category-pi
 .rm-nav-tree__link.is-active {
   background: linear-gradient(135deg, rgba(216, 243, 239, 0.38), rgba(125, 211, 199, 0.22));
 }
+
+/* ================================================================
+   FINAL HERO VISIBILITY / PAGE ISOLATION
+   This stylesheet is loaded by BOTH Home and Resin Raw Materials.
+   Raw Materials must always show the real panel image above categories.
+   Home must never paint a second/overlapping hero layer.
+   ================================================================ */
+
+/* ---------- Resin Raw Materials: one real hero image ---------- */
+html body.rm-theme--materials #rm-hero,
+html body.rm-theme--materials .rm-landing-hero--exact.rm-hero {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 1672 / 941 !important;
+  margin: 0 0 2.25rem !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  line-height: 0 !important;
+  isolation: isolate !important;
+  animation: none !important;
+}
+
+/* Override any generic [hidden] rule that may have been applied by an older
+   render/state script. The Raw Materials hero is never intentionally hidden. */
+html body.rm-theme--materials #rm-hero[hidden],
+html body.rm-theme--materials .rm-landing-hero--exact[hidden] {
+  display: block !important;
+  visibility: visible !important;
+}
+
+html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art,
+html body.rm-theme--materials .rm-landing-hero--exact > .rm-landing-hero__exact-art {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  animation: none !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260907c") !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+}
+
+/* Nothing should sit over the baked artwork on Raw Materials. */
+html body.rm-theme--materials #rm-hero::before,
+html body.rm-theme--materials #rm-hero::after,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__fx,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__hits,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__copy {
+  display: none !important;
+  animation: none !important;
+}
+
+/* ---------- Resin Home: one hero surface, no overlap ---------- */
+html body.page-home .home-resin-hero,
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after {
+  position: relative !important;
+  transform: none !important;
+  opacity: 1 !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+html body.page-home .home-resin-hero {
+  display: block !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 1672 / 941 !important;
+  padding: 0 !important;
+  margin: 0 0 2.25rem !important;
+  overflow: hidden !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  isolation: isolate !important;
+  line-height: 0 !important;
+}
+
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero #heroAtelierBuiltin::before,
+html body.page-home .home-resin-hero #heroAtelierBuiltin::after,
+html body.page-home .home-resin-hero picture,
+html body.page-home .home-resin-hero .home-landing-hero__copy,
+html body.page-home .home-resin-hero .home-landing-hero__fx,
+html body.page-home .home-resin-hero .home-landing-hero__hits,
+html body.page-home .home-resin-hero .hero-promo-carousel {
+  animation: none !important;
+}
+
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.page-home .home-resin-hero .home-landing-hero__copy,
+html body.page-home .home-resin-hero .home-landing-hero__fx,
+html body.page-home .home-resin-hero .home-landing-hero__hits,
+html body.page-home .home-resin-hero .hero-promo-carousel {
+  display: none !important;
+}
+
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero #heroAtelierBuiltin picture {
+  display: block !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 0 !important;
+}
+
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  transform: none !important;
+  animation: none !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260907c") !important;
+  border-radius: inherit !important;
+  pointer-events: none !important;
+}
