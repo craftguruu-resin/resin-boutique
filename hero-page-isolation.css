@@ -1,0 +1,60 @@
+/*
+ * Final hero page isolation.
+ * Raw Materials is the visual source of truth, but its hero enhancement
+ * stylesheet must never paint a second layer over the Home hero.
+ */
+
+/* Home owns one hero surface: the actual image only. */
+html body.page-home .home-resin-hero,
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.page-home .home-resin-hero .rm-landing-hero__fx,
+html body.page-home .home-resin-hero .rm-landing-hero__hits,
+html body.page-home .home-resin-hero .rm-landing-hero__copy,
+html body.page-home .home-resin-hero .hero-promo-carousel {
+  animation: none !important;
+}
+
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.page-home .home-resin-hero .rm-landing-hero__fx,
+html body.page-home .home-resin-hero .rm-landing-hero__hits,
+html body.page-home .home-resin-hero .rm-landing-hero__copy,
+html body.page-home .home-resin-hero .hero-promo-carousel {
+  display: none !important;
+}
+
+html body.page-home .home-resin-hero {
+  background: transparent !important;
+  isolation: isolate !important;
+}
+
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero #heroAtelierBuiltin picture,
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  position: relative !important;
+  inset: auto !important;
+}
+
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260907a") !important;
+}
+
+/* Raw Materials also uses one image surface; no reconstructed overlay. */
+html body.rm-theme--materials .rm-landing-hero--exact::before,
+html body.rm-theme--materials .rm-landing-hero--exact::after,
+html body.rm-theme--materials .rm-landing-hero__fx,
+html body.rm-theme--materials .rm-landing-hero__copy {
+  display: none !important;
+  animation: none !important;
+}
+
+html body.rm-theme--materials .rm-landing-hero__exact-art {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260907a") !important;
+}
