@@ -1,0 +1,113 @@
+/*
+ * FINAL HERO SAFETY LAYER
+ * Loaded last on Home + Resin Raw Materials.
+ * These two pages use baked artwork as the visual source of truth.
+ * No reconstructed hero layer is allowed to hide, resize, or duplicate it.
+ */
+
+html body.page-home .home-resin-hero,
+html body.rm-theme--materials #rm-hero {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: auto !important;
+  padding: 0 !important;
+  margin: 0 0 2.25rem !important;
+  overflow: hidden !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  background: transparent !important;
+  background-image: none !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  isolation: isolate !important;
+  transform: none !important;
+  animation: none !important;
+  line-height: 0 !important;
+}
+
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero #heroAtelierBuiltin picture,
+html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
+  display: block !important;
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  line-height: 0 !important;
+}
+
+html body.page-home .home-resin-hero .home-landing-hero__exact-art,
+html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-width: 100% !important;
+  max-height: none !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  position: relative !important;
+  inset: auto !important;
+  transform: none !important;
+  animation: none !important;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  content: normal !important;
+  pointer-events: none !important;
+}
+
+/* Home must use the newly supplied 1672×941 artwork. */
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260908a") !important;
+}
+
+/* Raw Materials keeps its supplied reference artwork. */
+html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260908a") !important;
+}
+
+/* Remove every legacy visual layer that can create a second/blank storefront. */
+html body.page-home .home-resin-hero > .rm-hero__inner,
+html body.page-home .home-resin-hero .home-landing-hero__copy,
+html body.page-home .home-resin-hero .home-landing-hero__fx,
+html body.page-home .home-resin-hero .home-landing-hero__hits,
+html body.page-home .home-resin-hero .hero-promo-carousel,
+html body.rm-theme--materials #rm-hero > .rm-hero__inner,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__copy,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__fx,
+html body.rm-theme--materials #rm-hero .rm-landing-hero__hits {
+  display: none !important;
+}
+
+/* Never let a legacy pseudo-element paint another hero surface. */
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.rm-theme--materials #rm-hero::before,
+html body.rm-theme--materials #rm-hero::after {
+  display: none !important;
+  content: none !important;
+}
+
+@media (max-width: 899px) {
+  html body.page-home .home-resin-hero,
+  html body.rm-theme--materials #rm-hero {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-bottom: 1.25rem !important;
+  }
+}
