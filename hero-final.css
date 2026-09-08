@@ -71,16 +71,6 @@ html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
   pointer-events: none !important;
 }
 
-/* Home must use the newly supplied 1672×941 artwork. */
-html body.page-home .home-resin-hero .home-landing-hero__exact-art {
-  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260908a") !important;
-}
-
-/* Raw Materials keeps its supplied reference artwork. */
-html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
-  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260908a") !important;
-}
-
 /* Remove every legacy visual layer that can create a second/blank storefront. */
 html body.page-home .home-resin-hero > .rm-hero__inner,
 html body.page-home .home-resin-hero .home-landing-hero__copy,
