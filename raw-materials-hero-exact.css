@@ -198,20 +198,20 @@ body.rm-theme--materials .rm-landing-hero__exact-art, body.page-home .rm-landing
 }
 
 /* Hide any leftover reconstructed FX layers */
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__glow,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__marble,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__aurora,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__blob,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__veins,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__geo,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__particles,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__spark,
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact > .rm-hero__visual {
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__glow, body.page-home .rm-landing-hero--exact > .rm-hero__glow,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__marble, body.page-home .rm-landing-hero--exact > .rm-hero__marble,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__aurora, body.page-home .rm-landing-hero--exact > .rm-hero__aurora,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__blob, body.page-home .rm-landing-hero--exact > .rm-hero__blob,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__veins, body.page-home .rm-landing-hero--exact > .rm-hero__veins,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__geo, body.page-home .rm-landing-hero--exact > .rm-hero__geo,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__particles, body.page-home .rm-landing-hero--exact > .rm-hero__particles,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__spark, body.page-home .rm-landing-hero--exact > .rm-hero__spark,
+body.rm-theme--materials .rm-landing-hero--exact > .rm-hero__visual, body.page-home .rm-landing-hero--exact > .rm-hero__visual {
   display: none !important;
 }
 
 /* Live copy: screen-reader / SEO only — panel already paints the design */
-body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact .rm-landing-hero__copy {
+body.rm-theme--materials .rm-landing-hero--exact .rm-landing-hero__copy, body.page-home .rm-landing-hero--exact .rm-landing-hero__copy {
   position: absolute !important;
   width: 1px !important;
   height: 1px !important;
@@ -607,7 +607,7 @@ body.rm-theme--materials .rm-landing-hero__glass, body.page-home .rm-landing-her
     border-radius: inherit;
   }
 
-  body.rm-theme--materials .rm-landing-hero--exact, body.page-home .rm-landing-hero--exact .rm-landing-hero__copy {
+  body.rm-theme--materials .rm-landing-hero--exact .rm-landing-hero__copy, body.page-home .rm-landing-hero--exact .rm-landing-hero__copy {
     position: absolute !important;
     width: 1px !important;
     height: 1px !important;
