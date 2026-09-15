@@ -1,0 +1,34 @@
+/* Home first-paint guard.
+ * The Home hero is baked artwork. It must never start hidden and wait for
+ * a later stylesheet/animation state before becoming visible.
+ */
+html body.page-home .home-resin-hero,
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero picture,
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+html body.page-home .home-resin-hero {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  position: relative !important;
+  inset: auto !important;
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  min-height: 0 !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  content: normal !important;
+}
