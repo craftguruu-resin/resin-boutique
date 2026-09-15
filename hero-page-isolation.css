@@ -1,10 +1,5 @@
-/*
- * Final hero page isolation.
- * Raw Materials is the visual source of truth, but its hero enhancement
- * stylesheet must never paint a second layer over the Home hero.
- */
+/* Home/Raw hero isolation — one deterministic image surface per page. */
 
-/* Home owns one hero surface: the actual image only. */
 html body.page-home .home-resin-hero,
 html body.page-home .home-resin-hero::before,
 html body.page-home .home-resin-hero::after,
@@ -13,18 +8,11 @@ html body.page-home .home-resin-hero .rm-landing-hero__hits,
 html body.page-home .home-resin-hero .rm-landing-hero__copy,
 html body.page-home .home-resin-hero .hero-promo-carousel {
   animation: none !important;
-}
-
-html body.page-home .home-resin-hero::before,
-html body.page-home .home-resin-hero::after,
-html body.page-home .home-resin-hero .rm-landing-hero__fx,
-html body.page-home .home-resin-hero .rm-landing-hero__hits,
-html body.page-home .home-resin-hero .rm-landing-hero__copy,
-html body.page-home .home-resin-hero .hero-promo-carousel {
   display: none !important;
 }
 
 html body.page-home .home-resin-hero {
+  display: block !important;
   background: transparent !important;
   isolation: isolate !important;
 }
@@ -40,10 +28,9 @@ html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  content: url("media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a") !important;
+  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260915a") !important;
 }
 
-/* Raw Materials also uses one image surface; no reconstructed overlay. */
 html body.rm-theme--materials .rm-landing-hero--exact::before,
 html body.rm-theme--materials .rm-landing-hero--exact::after,
 html body.rm-theme--materials .rm-landing-hero__fx,
@@ -56,5 +43,5 @@ html body.rm-theme--materials .rm-landing-hero__exact-art {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260907a") !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260915a") !important;
 }
