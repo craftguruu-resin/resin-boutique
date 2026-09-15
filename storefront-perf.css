@@ -36,7 +36,8 @@ body.page-category .guest-page-category-rail{border:1px solid rgba(255,255,255,.
  * the cascade and overrides everything upstream. Replacing it here with a
  * normal wrapping grid (2 / 3 / 4 columns) and a real frosted-glass card.
  */
-body.page-home .home-cat-hub .featured-collections-grid {
+body.page-home .home-cat-hub .featured-collections-grid ,
+.rm-cat-hub .featured-collections-grid {
   display: grid !important;
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   gap: 1.1rem !important;
@@ -48,25 +49,29 @@ body.page-home .home-cat-hub .featured-collections-grid {
 }
 
 @media (min-width: 620px) {
-  body.page-home .home-cat-hub .featured-collections-grid {
+  body.page-home .home-cat-hub .featured-collections-grid ,
+.rm-cat-hub .featured-collections-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
     gap: 1.3rem !important;
   }
 }
 
 @media (min-width: 980px) {
-  body.page-home .home-cat-hub .featured-collections-grid {
+  body.page-home .home-cat-hub .featured-collections-grid ,
+.rm-cat-hub .featured-collections-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
     gap: 1.6rem !important;
   }
 }
 
-body.page-home .home-cat-hub .craft-cat-card {
+body.page-home .home-cat-hub .craft-cat-card ,
+.rm-cat-hub .craft-cat-card {
   min-width: 0 !important;
   scroll-snap-align: none !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__shell {
+body.page-home .home-cat-hub .craft-cat-card__shell ,
+.rm-cat-hub .craft-cat-card__shell {
   position: relative !important;
   min-height: 0 !important;
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
@@ -84,7 +89,8 @@ body.page-home .home-cat-hub .craft-cat-card__shell {
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 320ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.page-home .home-cat-hub .craft-cat-card__shell::before {
+body.page-home .home-cat-hub .craft-cat-card__shell::before ,
+.rm-cat-hub .craft-cat-card__shell::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -95,7 +101,8 @@ body.page-home .home-cat-hub .craft-cat-card__shell::before {
   transition: opacity 320ms ease;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__shell::after {
+body.page-home .home-cat-hub .craft-cat-card__shell::after ,
+.rm-cat-hub .craft-cat-card__shell::after {
   content: "";
   position: absolute;
   top: 0;
@@ -109,7 +116,8 @@ body.page-home .home-cat-hub .craft-cat-card__shell::after {
   transition: left 620ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell {
+body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell ,
+.rm-cat-hub .craft-cat-card:hover .craft-cat-card__shell {
   transform: translateY(-7px) scale(1.015);
   box-shadow:
     0 30px 60px rgba(18, 91, 103, 0.2),
@@ -118,23 +126,28 @@ body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell {
     inset 0 -1px 0 rgba(18, 91, 103, 0.1) !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell::after {
+body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell::after ,
+.rm-cat-hub .craft-cat-card:hover .craft-cat-card__shell::after {
   left: 130%;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__media {
+body.page-home .home-cat-hub .craft-cat-card__media ,
+.rm-cat-hub .craft-cat-card__media {
   overflow: hidden;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__media img {
+body.page-home .home-cat-hub .craft-cat-card__media img ,
+.rm-cat-hub .craft-cat-card__media img {
   transition: transform 420ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__media img {
+body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__media img ,
+.rm-cat-hub .craft-cat-card:hover .craft-cat-card__media img {
   transform: scale(1.07) !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__media {
+body.page-home .home-cat-hub .craft-cat-card__media ,
+.rm-cat-hub .craft-cat-card__media {
   height: auto !important;
   min-height: 0 !important;
   aspect-ratio: 4 / 3.1 !important;
@@ -144,7 +157,8 @@ body.page-home .home-cat-hub .craft-cat-card__media {
     rgba(255, 255, 255, 0.28) !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__media img {
+body.page-home .home-cat-hub .craft-cat-card__media img ,
+.rm-cat-hub .craft-cat-card__media img {
   width: 100% !important;
   height: 100% !important;
   object-fit: contain !important;
@@ -152,12 +166,14 @@ body.page-home .home-cat-hub .craft-cat-card__media img {
   transform: none !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__body {
+body.page-home .home-cat-hub .craft-cat-card__body ,
+.rm-cat-hub .craft-cat-card__body {
   padding: 1.1rem 1.15rem 1.25rem !important;
   background: transparent !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__name {
+body.page-home .home-cat-hub .craft-cat-card__name ,
+.rm-cat-hub .craft-cat-card__name {
   min-height: 0 !important;
   font-size: clamp(0.95rem, 1.4vw, 1.05rem) !important;
   font-weight: 700 !important;
@@ -165,7 +181,8 @@ body.page-home .home-cat-hub .craft-cat-card__name {
   color: var(--cg-gloss-deep, #123554) !important;
 }
 
-body.page-home .home-cat-hub .craft-cat-card__count {
+body.page-home .home-cat-hub .craft-cat-card__count ,
+.rm-cat-hub .craft-cat-card__count {
   margin: 0.4rem 0 0 !important;
   font-size: 0.82rem !important;
   color: rgba(16, 47, 67, 0.62) !important;
