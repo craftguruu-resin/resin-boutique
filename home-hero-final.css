@@ -7,7 +7,7 @@ html body.page-home .home-resin-hero {
   height: auto !important;
   min-height: 0 !important;
   max-height: none !important;
-  aspect-ratio: 1672 / 941 !important;
+  aspect-ratio: 1536 / 1024 !important;
   padding: 0 !important;
   margin: 0 0 2.25rem !important;
   overflow: hidden !important;
@@ -53,7 +53,7 @@ html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   object-position: center !important;
   transform: none !important;
   animation: none !important;
-  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260907e") !important;
+  content: url("media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a") !important;
   border: 0 !important;
   border-radius: inherit !important;
   background: transparent !important;

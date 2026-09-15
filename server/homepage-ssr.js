@@ -278,6 +278,35 @@ function injectHomepage(html, injections) {
   return out;
 }
 
+// Neon can be slow to wake from autosuspend on the first query after idle time.
+// Cap how long the homepage route will wait on each DB-backed step before
+// falling back to the plain static template, so a cold database never turns
+// into a hung/blank first response — a refresh should never be necessary.
+var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 2500;
+var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 1500;
+
+function withTimeout(fn, ms, cb) {
+  var done = false;
+  var timer = setTimeout(function () {
+    if (done) return;
+    done = true;
+    cb(new Error("timed out after " + ms + "ms"));
+  }, ms);
+  try {
+    fn(function (err, result) {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      cb(err, result);
+    });
+  } catch (syncErr) {
+    if (done) return;
+    done = true;
+    clearTimeout(timer);
+    cb(syncErr);
+  }
+}
+
 function serveHomepage(req, res, next) {
   var p = String(req.path || "");
   if (p !== "/" && p !== "/index.html") return next();
@@ -285,15 +314,20 @@ function serveHomepage(req, res, next) {
   var template = readIndexTemplate();
   if (!template) return next();
 
-  storefrontBootstrap.loadStorefrontBootstrap(function (bootErr, bootstrap) {
+  function serveStaticFallback(reason, err) {
+    if (err) console.error("[homepage-ssr] " + reason + ":", err.message || err);
+    else console.warn("[homepage-ssr] " + reason);
+    res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
+    res.setHeader("Pragma", "no-cache");
+    return res.type("html").send(template);
+  }
+
+  withTimeout(storefrontBootstrap.loadStorefrontBootstrap, BOOTSTRAP_TIMEOUT_MS, function (bootErr, bootstrap) {
     if (bootErr) {
-      console.error("[homepage-ssr] bootstrap failed:", bootErr.message || bootErr);
-      res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
-      res.setHeader("Pragma", "no-cache");
-      return res.type("html").send(template);
+      return serveStaticFallback("bootstrap failed or timed out, serving static shell", bootErr);
     }
 
-    storefrontHeroDb.listSlidesWithSettings(function (heroErr, heroPack) {
+    withTimeout(storefrontHeroDb.listSlidesWithSettings, HERO_TIMEOUT_MS, function (heroErr, heroPack) {
       if (heroErr) heroPack = { slides: [], heroSettings: { customHeroEnabled: false } };
 
       var staticData = storefrontBootstrap.getStaticCatalog();
