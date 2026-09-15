@@ -2,65 +2,14 @@
 @import url("home-raw-hero-recovery.css");
 @import url("hero-page-isolation.css");
 @import url("home-hero-final.css");
+@import url("home-shop-category-final.css");
 
 /* Keep the existing storefront performance safeguards for category/listing pages. */
 html{scroll-behavior:auto!important}
 body.guest-site{overscroll-behavior-x:none}
-body.guest-site .page-atmosphere,body.guest-site .mesh-gradient,body.guest-site .tone-shift,body.guest-site .animated-backdrop,body.guest-site .grid-lines{contain:paint}
-body.guest-site .animated-backdrop .orb{will-change:transform,opacity;backface-visibility:hidden;transform:translate3d(0,0,0)}
-body.guest-site .testimonials,body.guest-site .connect-premium,body.guest-site .site-footer{content-visibility:auto;contain-intrinsic-size:auto 420px}
-body.page-category .band-shop-inner:has(.plp-shell){width:100%;max-width:none;margin:0}
-body.page-category .sub-main,body.page-category .band-shop,body.page-category .band-shop-inner,body.page-category .guest-main-with-rail-inner,body.page-category .plp-shell,body.page-category .plp-header,body.page-category .plp-trust-bar,body.page-category .plp-grid{min-height:0!important}
-body.page-category .plp-grid[hidden],body.page-category #subcategoryGrid[hidden],body.page-category #productGrid[hidden]{display:none!important}
-body.page-category .plp-shell{display:flex;flex-direction:column;gap:.85rem;margin-top:0!important}
-body.page-category .plp-header{margin:0!important;padding:clamp(1.15rem,2.2vw,1.65rem) clamp(1.2rem,2.4vw,1.8rem);border-radius:1.5rem;border:1px solid rgba(255,255,255,.92);background:radial-gradient(circle at 8% 0%,rgba(125,211,199,.14),transparent 38%),rgba(255,255,255,.72);box-shadow:0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06);backdrop-filter:blur(10px) saturate(1.06);-webkit-backdrop-filter:blur(10px) saturate(1.06)}
-body.page-category .plp-title{font-size:clamp(2rem,4vw,3rem);letter-spacing:-.035em}
-body.page-category .plp-trust-bar{margin:0!important;border:1px solid rgba(255,255,255,.92);border-radius:1.4rem;background:rgba(255,255,255,.62);box-shadow:0 12px 34px rgba(20,65,78,.08);backdrop-filter:blur(9px) saturate(1.04);-webkit-backdrop-filter:blur(9px) saturate(1.04)}
-body.page-category .plp-grid{margin:0!important;gap:clamp(.7rem,1vw,1rem)!important}
-body.page-category .plp-card{min-width:0;border-radius:1.35rem;border:1px solid rgba(255,255,255,.92);background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(246,253,251,.78));box-shadow:0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06);contain:layout paint style;transform:translateZ(0);transition:transform 220ms cubic-bezier(.22,1,.36,1),box-shadow 220ms ease,border-color 220ms ease}
-body.page-category .plp-card:hover{transform:translate3d(0,-5px,0);border-color:rgba(38,166,154,.34);box-shadow:0 26px 58px rgba(20,65,78,.16),0 8px 22px rgba(38,166,154,.1)}
-body.page-category .plp-card__media-wrap{position:relative;z-index:1;margin:.35rem;border-radius:1rem;background:radial-gradient(circle at 50% 0%,rgba(255,255,255,.96),transparent 55%),linear-gradient(145deg,#f6fffd,#edf8f6);box-shadow:inset 0 1px 0 rgba(255,255,255,.96)}
-body.page-category .plp-card__media{padding:clamp(.35rem,.8vw,.6rem)}
-body.page-category .plp-card__media img{border-radius:1rem;transform:translateZ(0);transition:transform 360ms cubic-bezier(.22,1,.36,1)}
-body.page-category .plp-card:hover .plp-card__media img{transform:scale(1.025) translateZ(0)}
-body.page-category .plp-card__body,body.page-category .plp-card__actions{position:relative;z-index:6}
-body.page-category .plp-card__cta{min-height:2.55rem;border-radius:999px;background:linear-gradient(135deg,#26a69a,#148f7f 60%,#0f766e);box-shadow:0 8px 20px rgba(38,166,154,.18),inset 0 1px 0 rgba(255,255,255,.22)}
-body.page-category .plp-card__wish{background:rgba(255,255,255,.82);border:1px solid rgba(255,255,255,.95);box-shadow:0 8px 20px rgba(20,65,78,.12);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px)}
-body.page-category .plp-card__badge{border-radius:999px;background:linear-gradient(135deg,#26a69a,#0f766e);box-shadow:0 6px 16px rgba(38,166,154,.22)}
-body.page-category .guest-page-category-rail{border:1px solid rgba(255,255,255,.88);border-radius:1.35rem;padding:1rem .65rem;background:rgba(255,255,255,.62);box-shadow:0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06);backdrop-filter:blur(10px) saturate(1.04);-webkit-backdrop-filter:blur(10px) saturate(1.04)}
-@media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-/* Homepage "Shop by category": larger equal tiles matching the Raw Materials visual scale. */
-body.page-home .home-cat-hub .featured-collections-grid,
-body.page-home .rm-cat-hub .featured-collections-grid,
-body.page-home .home-shop-category .featured-collections-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(1rem,1.5vw,1.5rem)!important;overflow:visible!important;padding:.15rem .05rem!important;scroll-snap-type:none!important;align-items:stretch!important}
-body.page-home .home-cat-hub .craft-cat-card,
-body.page-home .rm-cat-hub .craft-cat-card,
-body.page-home .home-shop-category .craft-cat-card{min-width:0!important;width:100%!important;height:100%!important;scroll-snap-align:none!important}
-body.page-home .home-cat-hub .craft-cat-card__shell,
-body.page-home .rm-cat-hub .craft-cat-card__shell,
-body.page-home .home-shop-category .craft-cat-card__shell{position:relative!important;min-height:0!important;height:100%!important;border:1px solid rgba(255,255,255,.6)!important;border-radius:1.5rem!important;background:linear-gradient(155deg,rgba(255,255,255,.58),rgba(255,255,255,.28) 45%,rgba(210,240,235,.22))!important;backdrop-filter:blur(20px) saturate(1.7)!important;-webkit-backdrop-filter:blur(20px) saturate(1.7)!important;box-shadow:0 22px 46px rgba(18,91,103,.14),0 6px 16px rgba(18,91,103,.07),inset 0 1.5px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(18,91,103,.08)!important;transform:translateY(0) scale(1);transition:transform 320ms cubic-bezier(.22,1,.36,1),box-shadow 320ms cubic-bezier(.22,1,.36,1)}
-body.page-home .home-cat-hub .craft-cat-card__media,
-body.page-home .rm-cat-hub .craft-cat-card__media,
-body.page-home .home-shop-category .craft-cat-card__media{height:auto!important;min-height:0!important;aspect-ratio:4/3.1!important;overflow:hidden!important;border-radius:1.5rem 1.5rem 0 0!important;background:radial-gradient(circle at 22% 18%,rgba(255,255,255,.7),transparent 46%),rgba(255,255,255,.28)!important}
-body.page-home .home-cat-hub .craft-cat-card__media img,
-body.page-home .rm-cat-hub .craft-cat-card__media img,
-body.page-home .home-shop-category .craft-cat-card__media img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;transform:none!important;transition:transform 420ms cubic-bezier(.22,1,.36,1)!important}
-body.page-home .home-cat-hub .craft-cat-card__body,
-body.page-home .rm-cat-hub .craft-cat-card__body,
-body.page-home .home-shop-category .craft-cat-card__body{padding:1.1rem 1.15rem 1.25rem!important;background:transparent!important}
-body.page-home .home-cat-hub .craft-cat-card__name,
-body.page-home .rm-cat-hub .craft-cat-card__name,
-body.page-home .home-shop-category .craft-cat-card__name{min-height:0!important;font-size:clamp(.95rem,1.4vw,1.05rem)!important;font-weight:700!important;line-height:1.28!important;color:var(--cg-gloss-deep,#123554)!important}
-body.page-home .home-cat-hub .craft-cat-card__count,
-body.page-home .rm-cat-hub .craft-cat-card__count,
-body.page-home .home-shop-category .craft-cat-card__count{margin:.4rem 0 0!important;font-size:.82rem!important;color:rgba(16,47,67,.62)!important}
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell,
-body.page-home .rm-cat-hub .craft-cat-card:hover .craft-cat-card__shell,
-body.page-home .home-shop-category .craft-cat-card:hover .craft-cat-card__shell{transform:translateY(-7px) scale(1.015);box-shadow:0 30px 60px rgba(18,91,103,.2),0 10px 22px rgba(18,91,103,.1),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(18,91,103,.1)!important}
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__media img,
-body.page-home .rm-cat-hub .craft-cat-card:hover .craft-cat-card__media img,
-body.page-home .home-shop-category .craft-cat-card:hover .craft-cat-card__media img{transform:scale(1.07)!important}
-@media (max-width:1100px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
-@media (max-width:760px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.9rem!important}body.page-home .home-cat-hub .craft-cat-card__body,body.page-home .rm-cat-hub .craft-cat-card__body,body.page-home .home-shop-category .craft-cat-card__body{padding:.85rem .85rem 1rem!important}}
-@media (max-width:480px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:1fr!important}}
+/* Home/Raw landing pages use deterministic baked artwork and the final Home category geometry. */
+html body.page-home .home-resin-hero,
+html body.rm-theme--materials #rm-hero {
+  content-visibility: visible !important;
+}
