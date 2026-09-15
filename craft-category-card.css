@@ -305,18 +305,23 @@ body.page-home .cg-category-grid .craft-cat-card__body {
   padding: 1.2rem 1.3rem 1.4rem;
 }
 
-@media (min-width: 1100px) {
+/* ── Home category geometry: match the larger Raw Materials presentation ──
+ * The Home content column is narrower because of the category rail. Four equal
+ * cards give each tile substantially more visual weight than the old five-column
+ * desktop grid, while keeping the same clean single-surface treatment.
+ */
+@media (min-width: 900px) {
   body.page-home .featured-collections-grid,
   body.page-home .cg-category-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
-    gap: 1.4rem !important;
+    gap: clamp(1.1rem, 1.8vw, 1.5rem) !important;
   }
 }
 
 @media (min-width: 1400px) {
   body.page-home .featured-collections-grid,
   body.page-home .cg-category-grid {
-    gap: 1.55rem !important;
+    gap: 1.6rem !important;
   }
 }
 
