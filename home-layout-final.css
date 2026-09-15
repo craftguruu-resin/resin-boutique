@@ -1,0 +1,41 @@
+/* Home layout final guard.
+ * The Home page must enter at the top of the document with one real hero
+ * surface. Do not let legacy landing-page min-heights, offsets, or reveal
+ * transforms reserve a blank viewport above the hero.
+ */
+html body.page-home .site-top,
+html body.page-home .sub-main,
+html body.page-home .band-shop--home,
+html body.page-home .band-shop-inner--home,
+html body.page-home .home-shop-layout,
+html body.page-home .home-shop-layout__main,
+html body.page-home .home-resin-hero {
+  min-height: 0 !important;
+  height: auto !important;
+}
+
+html body.page-home .site-top {
+  visibility: visible !important;
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+html body.page-home .sub-main,
+html body.page-home .band-shop--home,
+html body.page-home .band-shop-inner--home,
+html body.page-home .home-shop-layout,
+html body.page-home .home-shop-layout__main {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  align-self: flex-start !important;
+}
+
+html body.page-home .home-shop-layout {
+  align-items: flex-start !important;
+}
+
+html body.page-home .home-resin-hero {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
+  align-self: flex-start !important;
+}
