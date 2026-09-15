@@ -30,57 +30,37 @@ body.page-category .plp-card__badge{border-radius:999px;background:linear-gradie
 body.page-category .guest-page-category-rail{border:1px solid rgba(255,255,255,.88);border-radius:1.35rem;padding:1rem .65rem;background:rgba(255,255,255,.62);box-shadow:0 18px 44px rgba(20,65,78,.1),0 3px 12px rgba(20,65,78,.06);backdrop-filter:blur(10px) saturate(1.04);-webkit-backdrop-filter:blur(10px) saturate(1.04)}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-/* Homepage "Shop by category": keep the cards large and equal to the Raw Materials scale. */
+/* Homepage "Shop by category": larger equal tiles matching the Raw Materials visual scale. */
 body.page-home .home-cat-hub .featured-collections-grid,
 body.page-home .rm-cat-hub .featured-collections-grid,
-body.page-home .home-shop-category .featured-collections-grid {
-  display:grid!important;
-  grid-template-columns:repeat(5,minmax(0,1fr))!important;
-  gap:clamp(1rem,1.5vw,1.5rem)!important;
-  overflow:visible!important;
-  padding:.15rem .05rem!important;
-  scroll-snap-type:none!important;
-  align-items:stretch!important;
-}
-
+body.page-home .home-shop-category .featured-collections-grid{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:clamp(1rem,1.5vw,1.5rem)!important;overflow:visible!important;padding:.15rem .05rem!important;scroll-snap-type:none!important;align-items:stretch!important}
 body.page-home .home-cat-hub .craft-cat-card,
 body.page-home .rm-cat-hub .craft-cat-card,
 body.page-home .home-shop-category .craft-cat-card{min-width:0!important;width:100%!important;height:100%!important;scroll-snap-align:none!important}
-
 body.page-home .home-cat-hub .craft-cat-card__shell,
 body.page-home .rm-cat-hub .craft-cat-card__shell,
 body.page-home .home-shop-category .craft-cat-card__shell{position:relative!important;min-height:0!important;height:100%!important;border:1px solid rgba(255,255,255,.6)!important;border-radius:1.5rem!important;background:linear-gradient(155deg,rgba(255,255,255,.58),rgba(255,255,255,.28) 45%,rgba(210,240,235,.22))!important;backdrop-filter:blur(20px) saturate(1.7)!important;-webkit-backdrop-filter:blur(20px) saturate(1.7)!important;box-shadow:0 22px 46px rgba(18,91,103,.14),0 6px 16px rgba(18,91,103,.07),inset 0 1.5px 0 rgba(255,255,255,.85),inset 0 -1px 0 rgba(18,91,103,.08)!important;transform:translateY(0) scale(1);transition:transform 320ms cubic-bezier(.22,1,.36,1),box-shadow 320ms cubic-bezier(.22,1,.36,1)}
-
 body.page-home .home-cat-hub .craft-cat-card__media,
 body.page-home .rm-cat-hub .craft-cat-card__media,
 body.page-home .home-shop-category .craft-cat-card__media{height:auto!important;min-height:0!important;aspect-ratio:4/3.1!important;overflow:hidden!important;border-radius:1.5rem 1.5rem 0 0!important;background:radial-gradient(circle at 22% 18%,rgba(255,255,255,.7),transparent 46%),rgba(255,255,255,.28)!important}
-
 body.page-home .home-cat-hub .craft-cat-card__media img,
 body.page-home .rm-cat-hub .craft-cat-card__media img,
 body.page-home .home-shop-category .craft-cat-card__media img{width:100%!important;height:100%!important;object-fit:contain!important;object-position:center!important;transform:none!important;transition:transform 420ms cubic-bezier(.22,1,.36,1)!important}
-
 body.page-home .home-cat-hub .craft-cat-card__body,
 body.page-home .rm-cat-hub .craft-cat-card__body,
 body.page-home .home-shop-category .craft-cat-card__body{padding:1.1rem 1.15rem 1.25rem!important;background:transparent!important}
-
 body.page-home .home-cat-hub .craft-cat-card__name,
 body.page-home .rm-cat-hub .craft-cat-card__name,
 body.page-home .home-shop-category .craft-cat-card__name{min-height:0!important;font-size:clamp(.95rem,1.4vw,1.05rem)!important;font-weight:700!important;line-height:1.28!important;color:var(--cg-gloss-deep,#123554)!important}
-
 body.page-home .home-cat-hub .craft-cat-card__count,
 body.page-home .rm-cat-hub .craft-cat-card__count,
 body.page-home .home-shop-category .craft-cat-card__count{margin:.4rem 0 0!important;font-size:.82rem!important;color:rgba(16,47,67,.62)!important}
-
 body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell,
 body.page-home .rm-cat-hub .craft-cat-card:hover .craft-cat-card__shell,
 body.page-home .home-shop-category .craft-cat-card:hover .craft-cat-card__shell{transform:translateY(-7px) scale(1.015);box-shadow:0 30px 60px rgba(18,91,103,.2),0 10px 22px rgba(18,91,103,.1),inset 0 1.5px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(18,91,103,.1)!important}
-
 body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__media img,
 body.page-home .rm-cat-hub .craft-cat-card:hover .craft-cat-card__media img,
 body.page-home .home-shop-category .craft-cat-card:hover .craft-cat-card__media img{transform:scale(1.07)!important}
-
 @media (max-width:1100px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}}
 @media (max-width:760px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:.9rem!important}body.page-home .home-cat-hub .craft-cat-card__body,body.page-home .rm-cat-hub .craft-cat-card__body,body.page-home .home-shop-category .craft-cat-card__body{padding:.85rem .85rem 1rem!important}}
 @media (max-width:480px){body.page-home .home-cat-hub .featured-collections-grid,body.page-home .rm-cat-hub .featured-collections-grid,body.page-home .home-shop-category .featured-collections-grid{grid-template-columns:1fr!important}}
-
-@import url("home-shop-category-final.css");
