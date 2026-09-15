@@ -29,25 +29,14 @@ COPY --from=deps /app/server/node_modules ./server/node_modules
 # App source (filtered by .dockerignore)
 COPY . .
 
-# The hero must be deterministic at build time. Do not rely on CSS content:
-# replacement, old preload URLs, or browser cache to select the artwork.
-# Inject one final, cache-busted stylesheet after every other stylesheet and
-# point both page HTML files directly at their intended baked hero assets.
-RUN sed -i \
-      '/<\\/head>/i\  <link rel="stylesheet" href="hero-final.css?v=20260908a" />' \
-      index.html raw-material-shop.html \
-  && sed -i \
-      's#media/home-showcase/home-ethereal-hero-clock1.webp?v=20260815b 1280w#media/home-showcase/home-hero-craftguru.webp?v=20260908a 1672w#g' \
-      index.html \
-  && sed -i \
-      's#media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343#media/home-showcase/home-hero-craftguru.webp?v=20260908a#g' \
-      index.html \
-  && sed -i \
-      's/width="1536" height="1024"/width="1672" height="941"/g' \
-      index.html \
-  && sed -i \
-      's#media/raw-material-showcase/rm-hero-panel.png?v=1785349343#media/raw-material-showcase/rm-hero-panel.png?v=20260908a#g' \
-      raw-material-shop.html
+# Keep the hero fix deterministic without using the broken multi-line sed
+# insert command. The stylesheet is injected before </head> using a simple
+# substitution, which is supported by GNU sed in the Node Debian image.
+RUN sed -i 's#</head>#<link rel="stylesheet" href="hero-final.css?v=20260908a" /></head>#' index.html raw-material-shop.html \
+  && sed -i 's#media/home-showcase/home-ethereal-hero-clock1.webp?v=20260815b 1280w#media/home-showcase/home-hero-craftguru.webp?v=20260908a 1672w#g' index.html \
+  && sed -i 's#media/home-showcase/home-ethereal-hero-clock1.png?v=1785349343#media/home-showcase/home-hero-craftguru.webp?v=20260908a#g' index.html \
+  && sed -i 's/width="1536" height="1024"/width="1672" height="941"/g' index.html \
+  && sed -i 's#media/raw-material-showcase/rm-hero-panel.png?v=1785349343#media/raw-material-showcase/rm-hero-panel.png?v=20260908a#g' raw-material-shop.html
 
 ENV NODE_ENV=production \
     PORT=8080 \
