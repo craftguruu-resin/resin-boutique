@@ -1,0 +1,91 @@
+/* Craftguru Home — Shop by Category final geometry.
+   Match the spacious Raw Materials card scale while preserving the existing
+   category data, links, imagery and glass visual language. */
+
+html body.page-home .rm-cat-hub,
+html body.page-home .home-shop-category,
+html body.page-home .craft-category-grid {
+  width: 100% !important;
+}
+
+/* Desktop/tablet: use the available width instead of undersized Home tiles. */
+html body.page-home .rm-cat-hub .craft-category-grid,
+html body.page-home .home-shop-category .craft-category-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: clamp(1rem, 1.5vw, 1.5rem) !important;
+  align-items: stretch !important;
+}
+
+html body.page-home .rm-cat-hub .craft-cat-card,
+html body.page-home .home-shop-category .craft-cat-card {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 100% !important;
+}
+
+/* Keep the same generous visual proportions as the Raw Materials cards. */
+html body.page-home .rm-cat-hub .craft-cat-card__shell,
+html body.page-home .home-shop-category .craft-cat-card__shell {
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+html body.page-home .rm-cat-hub .craft-cat-card__media,
+html body.page-home .home-shop-category .craft-cat-card__media {
+  aspect-ratio: 4 / 3 !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+html body.page-home .rm-cat-hub .craft-cat-card__media img,
+html body.page-home .home-shop-category .craft-cat-card__media img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  object-position: center !important;
+}
+
+html body.page-home .rm-cat-hub .craft-cat-card__body,
+html body.page-home .home-shop-category .craft-cat-card__body {
+  min-height: 7.25rem !important;
+  padding: 1rem 1.05rem 1.15rem !important;
+}
+
+html body.page-home .rm-cat-hub .craft-cat-card__title,
+html body.page-home .home-shop-category .craft-cat-card__title {
+  min-height: 2.8em !important;
+}
+
+/* Preserve the full card width on the final Home row rather than shrinking it. */
+html body.page-home .rm-cat-hub .craft-category-grid > * {
+  min-width: 0 !important;
+}
+
+/* Responsive: 3 → 2 → 1 columns, keeping the cards comfortably large. */
+@media (max-width: 1100px) {
+  html body.page-home .rm-cat-hub .craft-category-grid,
+  html body.page-home .home-shop-category .craft-category-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 760px) {
+  html body.page-home .rm-cat-hub .craft-category-grid,
+  html body.page-home .home-shop-category .craft-category-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: .9rem !important;
+  }
+
+  html body.page-home .rm-cat-hub .craft-cat-card__body,
+  html body.page-home .home-shop-category .craft-cat-card__body {
+    min-height: 6.5rem !important;
+    padding: .85rem .85rem 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  html body.page-home .rm-cat-hub .craft-category-grid,
+  html body.page-home .home-shop-category .craft-category-grid {
+    grid-template-columns: 1fr !important;
+  }
+}
