@@ -28,9 +28,9 @@ COPY --from=deps /app/server/node_modules ./server/node_modules
 COPY . .
 
 # Critical storefront fixes are applied after bump-html-assets.js so the
-# build-generated cache-busting query string is preserved. Match the asset
-# path, not an old hard-coded version, because the build step changes ?v=.
-RUN sed -i 's#</head>#<link rel="stylesheet" href="hero-final.css?v=20260908a" /><link rel="stylesheet" href="home-shop-category-final.css?v=20260915a" /></head>#' index.html raw-material-shop.html \
+# build-generated cache-busting query string is preserved. Match asset paths,
+# not old hard-coded versions, because the build step changes ?v=.
+RUN sed -i 's#</head>#<link rel="stylesheet" href="hero-final.css?v=20260908a" /><link rel="stylesheet" href="home-shop-category-final.css?v=20260915a" /><link rel="stylesheet" href="home-first-paint.css?v=20260916a" /></head>#' index.html raw-material-shop.html \
   && sed -i -E 's#media/home-showcase/home-ethereal-hero-clock1.webp\?v=[^" ]+#media/home-showcase/home-hero-craftguru.webp?v=20260915a#g' index.html \
   && sed -i -E 's#media/home-showcase/home-ethereal-hero-clock1\.png\?v=[^" ]+#media/home-showcase/home-hero-craftguru.webp?v=20260915a#g' index.html \
   && sed -i -E 's/width="1536" height="1024"/width="1672" height="941"/g' index.html \
