@@ -1,9 +1,4 @@
-/*
- * FINAL HERO SAFETY LAYER
- * Loaded last on Home + Resin Raw Materials.
- * These two pages use baked artwork as the visual source of truth.
- * No reconstructed hero layer is allowed to hide, resize, or duplicate it.
- */
+/* FINAL HERO SAFETY LAYER — one deterministic baked image per landing page. */
 
 html body.page-home .home-resin-hero,
 html body.rm-theme--materials #rm-hero {
@@ -67,8 +62,16 @@ html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
   border-radius: inherit !important;
   background: transparent !important;
   box-shadow: none !important;
-  content: normal !important;
   pointer-events: none !important;
+}
+
+/* Critical: force the lightweight supplied WebP instead of waiting for the 2.2 MB PNG. */
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260915a") !important;
+}
+
+html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260915a") !important;
 }
 
 /* Remove every legacy visual layer that can create a second/blank storefront. */
@@ -84,7 +87,6 @@ html body.rm-theme--materials #rm-hero .rm-landing-hero__hits {
   display: none !important;
 }
 
-/* Never let a legacy pseudo-element paint another hero surface. */
 html body.page-home .home-resin-hero::before,
 html body.page-home .home-resin-hero::after,
 html body.rm-theme--materials #rm-hero::before,
