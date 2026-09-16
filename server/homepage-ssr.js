@@ -282,8 +282,8 @@ function injectHomepage(html, injections) {
 // Cap how long the homepage route will wait on each DB-backed step before
 // falling back to the plain static template, so a cold database never turns
 // into a hung/blank first response — a refresh should never be necessary.
-var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 2500;
-var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 1500;
+var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 900;
+var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 500;
 
 function withTimeout(fn, ms, cb) {
   var done = false;
