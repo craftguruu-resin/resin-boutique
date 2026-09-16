@@ -2,7 +2,7 @@
 
 body.page-home .home-cat-hub .featured-collections-grid {
   display: grid !important;
-  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
   gap: clamp(1rem, 1.5vw, 1.5rem) !important;
   width: 100% !important;
   min-width: 0 !important;
