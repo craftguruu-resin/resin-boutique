@@ -7709,6 +7709,24 @@ a.home-category-rail__title-link:focus-visible {
   transition: none !important;
 }
 
+/* Failsafe: if the IntersectionObserver reveal never fires for any reason
+   (slow/failed script load, an element added after the observer already ran,
+   or any other timing edge case), force full visibility after a short delay
+   instead of leaving content permanently hidden until the user reloads. */
+.reveal:not(.is-inview),
+.reveal-tile:not(.is-inview),
+.reveal-pill:not(.is-inview),
+.hero-title .reveal-line:not(.is-inview) {
+  animation: cgRevealFailsafe 0.01s 2.5s forwards;
+}
+
+@keyframes cgRevealFailsafe {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* Homepage featured — category hub (light cards; matches storefront band-shop) */
 .featured-cat-grid {
   display: grid;
