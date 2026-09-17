@@ -1161,11 +1161,21 @@
     gSort.value = sortOk[bootSort] ? bootSort : DEFAULT_HOME_SORT;
   }
 
-  renderCategories();
-  renderFeatured();
-  paintHeroFloatCatalog();
-  bootConfigurableHero();
-  renderHeroSpotlight();
+  function bootStep(name, fn) {
+    try {
+      fn();
+    } catch (err) {
+      if (window.console && console.error) {
+        console.error("[app] boot step failed: " + name, err);
+      }
+    }
+  }
+
+  bootStep("renderCategories", renderCategories);
+  bootStep("renderFeatured", renderFeatured);
+  bootStep("paintHeroFloatCatalog", paintHeroFloatCatalog);
+  bootStep("bootConfigurableHero", bootConfigurableHero);
+  bootStep("renderHeroSpotlight", renderHeroSpotlight);
   if (gq) {
     gq.addEventListener("input", scheduleHomeCatalogFilter);
   }
@@ -1275,24 +1285,30 @@
   }
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
-    if (!patchHomeCategoriesFromMerge()) renderCategories();
-    paintHeroFloatCatalog();
-    renderHeroSpotlight();
+    bootStep("patchHomeCategoriesFromMerge", function () {
+      if (!patchHomeCategoriesFromMerge()) renderCategories();
+    });
+    bootStep("paintHeroFloatCatalog", paintHeroFloatCatalog);
+    bootStep("renderHeroSpotlight", renderHeroSpotlight);
   });
 
   var storefrontMergeTimer = null;
   function onStorefrontCatalogMerged() {
     clearTimeout(storefrontMergeTimer);
     storefrontMergeTimer = setTimeout(function () {
-      if (!patchHomeCategoriesFromMerge()) renderCategories();
-      if (!patchFeaturedCardImages() && !patchFeaturedCardPrices()) renderFeatured();
-      else {
-        patchFeaturedCardImages();
-        patchFeaturedCardPrices();
-      }
-      paintHeroFloatCatalog();
-      bootConfigurableHero();
-      renderHeroSpotlight();
+      bootStep("patchHomeCategoriesFromMerge", function () {
+        if (!patchHomeCategoriesFromMerge()) renderCategories();
+      });
+      bootStep("patchFeaturedCardImages/Prices", function () {
+        if (!patchFeaturedCardImages() && !patchFeaturedCardPrices()) renderFeatured();
+        else {
+          patchFeaturedCardImages();
+          patchFeaturedCardPrices();
+        }
+      });
+      bootStep("paintHeroFloatCatalog", paintHeroFloatCatalog);
+      bootStep("bootConfigurableHero", bootConfigurableHero);
+      bootStep("renderHeroSpotlight", renderHeroSpotlight);
     }, 40);
   }
 
