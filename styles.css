@@ -6476,9 +6476,9 @@ a.home-auth-btn {
   box-sizing: border-box;
   isolation: isolate;
   /* Locked max height + width; image uses object-fit: contain so uploads are never cropped */
-  height: min(72vh, 640px);
-  min-height: min(72vh, 640px);
-  max-height: min(72vh, 640px);
+  height: min(52vh, 520px);
+  min-height: min(52vh, 520px);
+  max-height: min(52vh, 520px);
   border-radius: var(--hero-exact-radius, clamp(1.5rem, 4vw, 2.75rem));
   overflow: hidden;
   background: transparent;
@@ -6488,9 +6488,9 @@ a.home-auth-btn {
 
 @media (min-width: 900px) {
   .hero-promo-carousel__frame {
-    height: min(68vh, 600px);
-    min-height: min(68vh, 600px);
-    max-height: min(68vh, 600px);
+    height: min(48vh, 480px);
+    min-height: min(48vh, 480px);
+    max-height: min(48vh, 480px);
   }
 }
 
