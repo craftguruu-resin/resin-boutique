@@ -14,8 +14,11 @@
 .guest-top-cluster {
   display: flex;
   align-items: center;
+  justify-self: start;
   gap: 0.65rem;
   min-width: 0;
+  max-width: 100%;
+  flex-wrap: nowrap;
 }
 
 @media (min-width: 901px) {
@@ -51,9 +54,9 @@
   flex-direction: row;
   align-items: center;
   gap: 0.35rem;
-  flex: 1 1 12rem;
+  flex: 0 1 11rem;
   min-width: 0;
-  max-width: min(22rem, 46vw);
+  max-width: min(13rem, 30vw);
   border: 1px solid rgba(15, 18, 24, 0.1);
   border-radius: 999px;
   padding: 0.12rem 0.2rem 0.12rem 0.1rem;
@@ -114,7 +117,8 @@
   position: absolute;
   top: calc(100% + 0.35rem);
   left: 0;
-  right: 0;
+  right: auto;
+  width: max(100%, 20rem);
   z-index: 80;
   max-height: min(70vh, 22rem);
   overflow: auto;
