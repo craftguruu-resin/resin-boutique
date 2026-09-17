@@ -188,9 +188,21 @@
   }
 
   function catalogFetch(base, path) {
-    return fetch(base + path, { credentials: "same-origin" }).then(function (res) {
-      return res.json();
-    });
+    var controller = window.AbortController ? new AbortController() : null;
+    var timer = window.setTimeout(function () {
+      if (controller) controller.abort();
+    }, 4000);
+    var opts = { credentials: "same-origin" };
+    if (controller) opts.signal = controller.signal;
+    return fetch(base + path, opts)
+      .then(function (res) {
+        window.clearTimeout(timer);
+        return res.json();
+      })
+      .catch(function (err) {
+        window.clearTimeout(timer);
+        throw err;
+      });
   }
 
   function runMerge(forceFresh) {

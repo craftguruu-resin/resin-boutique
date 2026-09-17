@@ -176,8 +176,15 @@
       hidePromoHero();
       return;
     }
-    fetch(base + "/api/catalog/hero-slides")
+    var heroFetchController = window.AbortController ? new AbortController() : null;
+    var heroFetchTimedOut = false;
+    var heroFetchTimer = window.setTimeout(function () {
+      heroFetchTimedOut = true;
+      if (heroFetchController) heroFetchController.abort();
+    }, 3000);
+    fetch(base + "/api/catalog/hero-slides", heroFetchController ? { signal: heroFetchController.signal } : undefined)
       .then(function (res) {
+        window.clearTimeout(heroFetchTimer);
         return res.json();
       })
       .then(function (j) {
@@ -335,7 +342,11 @@
           cgHeroTimer = setInterval(applySlide, intervalMs);
         }
       })
-      .catch(function () {
+      .catch(function (err) {
+        window.clearTimeout(heroFetchTimer);
+        if (heroFetchTimedOut && window.console && console.warn) {
+          console.warn("[app] hero-slides fetch timed out after 3s, falling back to static hero");
+        }
         hidePromoHero();
       });
   }
