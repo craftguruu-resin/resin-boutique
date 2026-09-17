@@ -313,7 +313,7 @@ body.page-home .cg-category-grid .craft-cat-card__body {
 @media (min-width: 900px) {
   body.page-home .featured-collections-grid,
   body.page-home .cg-category-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
     gap: clamp(1.1rem, 1.8vw, 1.5rem) !important;
   }
 }
