@@ -1,8 +1,8 @@
-@import url("homepage-glossy.css?v=20260917c");
-@import url("home-raw-hero-recovery.css?v=20260917c");
-@import url("hero-page-isolation.css?v=20260917c");
-@import url("home-hero-final.css?v=20260917c");
-@import url("home-shop-category-final.css?v=20260917c");
+@import url("homepage-glossy.css?v=20260917d");
+@import url("home-raw-hero-recovery.css?v=20260917d");
+@import url("hero-page-isolation.css?v=20260917d");
+@import url("home-hero-final.css?v=20260917d");
+@import url("home-shop-category-final.css?v=20260917d");
 
 /* Keep the existing storefront performance safeguards for category/listing pages. */
 html{scroll-behavior:auto!important}
