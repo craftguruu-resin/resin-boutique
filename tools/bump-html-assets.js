@@ -8,11 +8,11 @@ if (!NEW_V) {
   NEW_V = String(Date.now());
 }
 
-var files = fs.readdirSync(".").filter(function (f) {
+var htmlFiles = fs.readdirSync(".").filter(function (f) {
   return f.endsWith(".html");
 });
 
-files.forEach(function (f) {
+htmlFiles.forEach(function (f) {
   var s = fs.readFileSync(f, "utf8");
 
   // Never bake the Cloud Run URL into the storefront. The browser should use the
@@ -40,4 +40,45 @@ files.forEach(function (f) {
   fs.writeFileSync(f, s);
 });
 
-console.log("updated", files.length, "html files to v=" + NEW_V);
+// CSS @import statements are a separate, easy-to-miss cache-busting gap: a file
+// only ever pulled in via @import (never a direct HTML <link>) is invisible to
+// the HTML-rewriting pass above, so it can stay cached across every future
+// deploy once any browser/CDN has fetched its un-versioned or stale-versioned
+// URL even once. Bump every @import's own ?v= too, every deploy, automatically.
+var cssFiles = fs.readdirSync(".").filter(function (f) {
+  return f.endsWith(".css");
+});
+
+var cssBumped = 0;
+cssFiles.forEach(function (f) {
+  var s = fs.readFileSync(f, "utf8");
+  var next = s.replace(
+    /(@import\s+url\(["'][^"')]+?)(\?[^"')]*)?(["']\))/g,
+    function (whole, prefix, existingQuery, suffix) {
+      return prefix + "?v=" + NEW_V + suffix;
+    }
+  );
+  if (next !== s) {
+    fs.writeFileSync(f, next);
+    cssBumped++;
+  }
+});
+
+console.log("updated", htmlFiles.length, "html files and", cssBumped, "css files (with @import) to v=" + NEW_V);
+
+// Service worker cache name: bump automatically so a fresh deploy always
+// forces returning visitors' service workers to purge whatever they had
+// cached under the previous name, instead of relying on remembering to
+// bump this by hand.
+var SW_FILE = "sw-storefront.js";
+if (fs.existsSync(SW_FILE)) {
+  var swSrc = fs.readFileSync(SW_FILE, "utf8");
+  var swNext = swSrc.replace(
+    /var CACHE_NAME = "cg-storefront-static-[^"]*";/,
+    'var CACHE_NAME = "cg-storefront-static-' + NEW_V + '";'
+  );
+  if (swNext !== swSrc) {
+    fs.writeFileSync(SW_FILE, swNext);
+    console.log("updated sw-storefront.js CACHE_NAME to cg-storefront-static-" + NEW_V);
+  }
+}
