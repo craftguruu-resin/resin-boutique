@@ -3,6 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="color-scheme" content="light" />
+  <style>
+    /* Critical, inline, dependency-free: guarantees a branded loading state
+       instead of blank content on first paint, regardless of whether any
+       external CSS/JS has loaded yet. Removed by home-self-heal.js once the
+       hero and category grid are confirmed populated. */
+    .cg-home-skeleton {
+      position: absolute;
+      inset: 0;
+      z-index: 40;
+      background: #fdfefe;
+      padding: 0;
+      overflow: hidden;
+      border-radius: inherit;
+    }
+    .cg-home-skeleton__hero {
+      width: 100%;
+      aspect-ratio: 3 / 2;
+      border-radius: clamp(1.5rem, 4vw, 2.75rem);
+      margin-bottom: 2.25rem;
+    }
+    .cg-home-skeleton__label {
+      width: 11rem;
+      height: 1.6rem;
+      border-radius: 0.4rem;
+      margin-bottom: 1.25rem;
+    }
+    .cg-home-skeleton__grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 1.1rem;
+    }
+    .cg-home-skeleton__card {
+      aspect-ratio: 4 / 3.6;
+      border-radius: 1.5rem;
+    }
+    .cg-home-skeleton__hero,
+    .cg-home-skeleton__label,
+    .cg-home-skeleton__card {
+      background: linear-gradient(100deg, #eef6f4 30%, #f7fbfa 45%, #eef6f4 60%);
+      background-size: 250% 100%;
+      animation: cgSkeletonShimmer 1.6s ease-in-out infinite;
+    }
+    @keyframes cgSkeletonShimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -50% 0; }
+    }
+    @media (max-width: 900px) {
+      .cg-home-skeleton__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .cg-home-skeleton__hero,
+      .cg-home-skeleton__label,
+      .cg-home-skeleton__card {
+        animation: none;
+        background: #eef6f4;
+      }
+    }
+  </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preload" href="styles.css?v=20260917c" as="style" />
   <link rel="preload" href="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a" as="image" type="image/webp" fetchpriority="high" />
@@ -133,7 +191,20 @@
             <p class="home-category-rail__label" id="cat-heading">Shop by category</p>
             <nav class="category-grid category-grid--rail" id="categoryGrid" aria-label="Product categories"></nav>
           </aside>
-          <div class="rm-shop-layout__main home-shop-layout__main">
+          <div class="rm-shop-layout__main home-shop-layout__main" id="homeMainCol" style="position: relative;">
+            <div id="cgHomeSkeleton" class="cg-home-skeleton" aria-hidden="true">
+              <div class="cg-home-skeleton__hero"></div>
+              <div class="cg-home-skeleton__row">
+                <div class="cg-home-skeleton__label"></div>
+              </div>
+              <div class="cg-home-skeleton__grid">
+                <div class="cg-home-skeleton__card"></div>
+                <div class="cg-home-skeleton__card"></div>
+                <div class="cg-home-skeleton__card"></div>
+                <div class="cg-home-skeleton__card"></div>
+                <div class="cg-home-skeleton__card"></div>
+              </div>
+            </div>
             <h1 id="hero-heading" class="visually-hidden">
               Craftguru handmade resin — wall clocks, spiritual frames, coasters, and personalized gifts
             </h1>
@@ -592,7 +663,7 @@
   <script src="craft-category-card.js?v=20260815b"></script>
   <script src="premium-category-cards.js?v=20260815b"></script>
   <script src="app.js?v=20260917e"></script>
-  <script defer src="home-self-heal.js?v=20260917f"></script>
+  <script defer src="home-self-heal.js?v=20260917h"></script>
   <script defer src="guest-layout.js?v=20260815b"></script>
   <script defer src="header.js?v=20260815b"></script>
   <script defer src="global-find.js?v=20260815b"></script>
