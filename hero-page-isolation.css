@@ -1,7 +1,44 @@
-/* Superseded — consolidated into home-hero-final.css.
- * This file previously forced the hero image via a separate
- * content:url() rule, which conflicted with (and was ultimately
- * overridden by) home-first-paint.css resetting content:normal to defer
- * to the real <img src>. Kept as an empty file (rather than removed from
- * the @import chain in storefront-perf.css) to avoid touching the Docker
- * build step that references it. */
+/* Home/Raw hero isolation — one deterministic image surface per page. */
+
+html body.page-home .home-resin-hero,
+html body.rm-theme--materials .rm-landing-hero--exact {
+  animation: none !important;
+  background: transparent !important;
+  isolation: isolate !important;
+}
+
+html body.page-home .home-resin-hero::before,
+html body.page-home .home-resin-hero::after,
+html body.page-home .home-resin-hero .rm-landing-hero__fx,
+html body.page-home .home-resin-hero .rm-landing-hero__hits,
+html body.page-home .home-resin-hero .rm-landing-hero__copy,
+html body.page-home .home-resin-hero .hero-promo-carousel,
+html body.rm-theme--materials .rm-landing-hero--exact::before,
+html body.rm-theme--materials .rm-landing-hero--exact::after,
+html body.rm-theme--materials .rm-landing-hero__fx,
+html body.rm-theme--materials .rm-landing-hero__copy {
+  display: none !important;
+  animation: none !important;
+}
+
+html body.page-home .home-resin-hero #heroAtelierBuiltin,
+html body.page-home .home-resin-hero #heroAtelierBuiltin picture,
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  position: relative !important;
+  inset: auto !important;
+}
+
+/* Use the tiny supplied WebP directly. This removes the first-load wait on the 2.2 MB PNG. */
+html body.page-home .home-resin-hero .home-landing-hero__exact-art {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260915a") !important;
+}
+
+html body.rm-theme--materials .rm-landing-hero__exact-art {
+  display: block !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  content: url("media/raw-material-showcase/rm-hero-panel.png?v=20260915a") !important;
+}

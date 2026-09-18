@@ -1,14 +1,5 @@
-/* Home hero — single consolidated source of truth.
- * Replaces what used to be split across home-hero-final.css,
- * hero-final.css, hero-page-isolation.css and home-raw-hero-recovery.css,
- * which had drifted into three separate places independently forcing
- * (and un-forcing) which image shows via content:url(), causing repeated
- * confusion. The actual <img src>/<picture><source> in index.html is the
- * single source of truth for which image shows; this file only controls
- * visibility, sizing and animation state — matching the same
- * aspect-ratio:auto policy hero-exact-shared.css already uses for every
- * other page's hero (Raw Materials, Photo Frames, Corporate Gifting).
- */
+/* Final Home hero — single source of truth.
+   Uses the supplied 1672x941 artwork and removes legacy parity/background layers. */
 html body.page-home .home-resin-hero {
   display: block !important;
   position: relative !important;
@@ -29,22 +20,14 @@ html body.page-home .home-resin-hero {
   animation: none !important;
   line-height: 0 !important;
 }
-
-/* The vendor-configurable promo carousel is intentionally not used on
- * Home — the hero is fixed, curated artwork. Hidden here once; nothing
- * else needs to repeat this rule. */
-html body.page-home .home-resin-hero .hero-promo-carousel {
-  display: none !important;
-}
-
 html body.page-home .home-resin-hero::before,
 html body.page-home .home-resin-hero::after,
 html body.page-home .home-resin-hero .home-landing-hero__copy,
 html body.page-home .home-resin-hero .home-landing-hero__fx,
-html body.page-home .home-resin-hero .home-landing-hero__hits {
+html body.page-home .home-resin-hero .home-landing-hero__hits,
+html body.page-home .home-resin-hero .hero-promo-carousel {
   display: none !important;
 }
-
 html body.page-home .home-resin-hero #heroAtelierBuiltin,
 html body.page-home .home-resin-hero #heroAtelierBuiltin picture {
   display: block !important;
@@ -56,7 +39,6 @@ html body.page-home .home-resin-hero #heroAtelierBuiltin picture {
   padding: 0 !important;
   line-height: 0 !important;
 }
-
 html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   display: block !important;
   visibility: visible !important;
@@ -66,8 +48,23 @@ html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   height: auto !important;
   min-height: 0 !important;
   max-width: 100% !important;
+  max-height: none !important;
   object-fit: contain !important;
-  object-position: center center !important;
+  object-position: center !important;
   transform: none !important;
   animation: none !important;
+  content: url("media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a") !important;
+  border: 0 !important;
+  border-radius: inherit !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  pointer-events: none !important;
+}
+
+/* Never allow the old parity stylesheet to reserve a second hero surface. */
+html body.page-home .home-shop-layout__main {
+  min-height: 0 !important;
+}
+html body.page-home .home-resin-hero + .rm-cat-hub {
+  margin-top: 0 !important;
 }
