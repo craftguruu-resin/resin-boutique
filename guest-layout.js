@@ -1104,6 +1104,10 @@
   function wireScrollPerf() {
     if (window.__cgScrollPerfWired) return;
     window.__cgScrollPerfWired = 1;
+    var reduce = false;
+    try {
+      reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    } catch (_) {}
     if (reduce) return;
 
     var header = document.querySelector(".site-top--fx");
