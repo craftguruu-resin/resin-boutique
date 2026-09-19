@@ -122,17 +122,15 @@ body.page-home .site-top-end.site-top-end--home {
   min-width: 0;
 }
 
-/* The existing hidden search control becomes a real glossy search field. */
-body.page-home .home-catalog-find-offscreen {
-  position: relative !important;
-  display: block !important;
-  width: clamp(13rem, 20vw, 20rem);
-  height: 2.45rem;
-  overflow: visible !important;
-  clip: auto !important;
-  clip-path: none !important;
-  opacity: 1 !important;
-}
+/* Superseded by guest-layout.js's .guest-header-search (a JS-injected,
+ * properly-sized search field next to the logo). This element is left in
+ * its original visually-hidden state -- unhiding it here caused it to
+ * render as a second, independent search box mid-header, overlapping the
+ * nav-dock, once the unrelated guest-layout.js crash that had been
+ * silently preventing .guest-header-search from ever being created was
+ * fixed. Two competing search boxes is strictly worse than one correct
+ * one; keeping this in its accessible offscreen state (styles.css) is the
+ * fix, not tuning its size. */
 
 body.page-home .home-catalog-find-offscreen::before {
   content: "⌕";
