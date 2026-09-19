@@ -84,6 +84,9 @@
           { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
         ]
       }
+    ],
+    "rewrites": [
+      { "source": "/", "destination": "/index.html" }
     ]
   }
 }
