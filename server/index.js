@@ -4287,7 +4287,15 @@ app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
 });
 
 /** Server-rendered homepage — categories + featured grid in initial HTML (hydrate client-side). */
-app.get("/", homepageSsr.serveHomepage);
+app.get("/", function (req, res) {
+  // Always enter the storefront through the canonical index document.
+  var q = "";
+  try {
+    var ix = String(req.url || "").indexOf("?");
+    if (ix >= 0) q = String(req.url).slice(ix);
+  } catch (_) {}
+  return res.redirect(302, "/index.html" + q);
+});
 app.get("/index.html", homepageSsr.serveHomepage);
 
 app.use("/media/catalog", versionedStaticCache, express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
