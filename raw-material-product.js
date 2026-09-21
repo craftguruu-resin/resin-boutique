@@ -952,7 +952,8 @@
       patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
       if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: m.name });
     }
-    wirePdpRootOnce(root);\n    bindPdpCartButtons(root);
+    wirePdpRootOnce(root);
+    bindPdpCartButtons(root);
     mountRmPdpShare(root);
     mountRmBulkBuy(root);
     fadeHeroImageIn(root);
