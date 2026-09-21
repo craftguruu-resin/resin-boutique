@@ -1172,6 +1172,28 @@
     }, true);
   }
 
+  function enforceHeaderAccountLabel() {
+    var user = document.getElementById("homeAuthUser");
+    var signup = document.getElementById("homeAuthSignup");
+    var login = document.getElementById("homeAuthLogin");
+    var orders = document.getElementById("homeAuthOrders");
+    var logout = document.getElementById("homeAuthLogout");
+    var signedIn = false;
+    try {
+      signedIn = !!String(localStorage.getItem("cg_session_email") || "").trim() ||
+        !!String(localStorage.getItem("craftguruGuestToken") || "").trim();
+    } catch (_) {}
+    if (user) {
+      user.textContent = signedIn ? "My Account" : "";
+      user.title = "My Account";
+      user.classList.toggle("is-hidden", !signedIn);
+    }
+    if (signup) signup.classList.toggle("is-hidden", signedIn);
+    if (login) login.classList.toggle("is-hidden", signedIn);
+    if (orders) orders.classList.add("is-hidden");
+    if (logout) logout.classList.add("is-hidden");
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
     ensureScrollPerfStyles();
@@ -1199,6 +1221,8 @@
     /* Header/auth injection is non-critical UI. A DOM mismatch here must never
        prevent product/cart scripts from completing their own initialization. */
     try { injectStorefrontAuthChrome(); } catch (_) {}
+    enforceHeaderAccountLabel();
+    window.addEventListener("craftguruAuthChanged", enforceHeaderAccountLabel);
     try { wireHeaderWishlistLink(); } catch (_) {}
     try { injectSocialFloatWidgets(); } catch (_) {}
     try { injectFooterMainMenu(); } catch (_) {}
