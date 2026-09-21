@@ -159,7 +159,8 @@
 
   function getSavedAddressesList() {
     var fsEl = document.getElementById("checkoutSavedAddrFieldset");
-    var raw = fsEl && fsEl.dataset.addressesJson;
+    var cardEl = document.getElementById("checkoutSavedAddrCards");
+    var raw = (cardEl && cardEl.dataset.addressesJson) || (fsEl && fsEl.dataset.addressesJson);
     if (!raw) return [];
     try {
       return JSON.parse(raw) || [];
@@ -173,6 +174,7 @@
     if (!container) return;
     var list = addresses || [];
     container.innerHTML = "";
+    container.dataset.addressesJson = JSON.stringify(list);
     if (!list.length) {
       container.hidden = true;
       return;
@@ -500,6 +502,10 @@
         if (bar) {
           bar.hidden = false;
         }
+        var authDetails = document.getElementById("checkoutAuthOptional");
+        if (authDetails) authDetails.hidden = true;
+        var signInLink = document.getElementById("checkoutSignInLink");
+        if (signInLink) signInLink.hidden = true;
         if (txt) {
           txt.textContent = "Signed in as " + me.email + ".";
         }
@@ -534,6 +540,10 @@
           if (addLink2) addLink2.hidden = true;
         }
       } else {
+        var authDetailsOut = document.getElementById("checkoutAuthOptional");
+        if (authDetailsOut) authDetailsOut.hidden = false;
+        var signInLinkOut = document.getElementById("checkoutSignInLink");
+        if (signInLinkOut) signInLinkOut.hidden = false;
         if (bar) {
           bar.hidden = true;
         }
@@ -630,6 +640,14 @@
         authDet.open = false;
       } catch (_) {}
     }
+  }
+
+  function bindCheckoutAuthStateSync() {
+    if (window.__cgCheckoutAuthSyncBound) return;
+    window.__cgCheckoutAuthSyncBound = true;
+    window.addEventListener("craftguruAuthChanged", function () {
+      refreshGuestCheckoutUi();
+    });
   }
 
   function bindCheckoutAuth() {
@@ -1935,6 +1953,7 @@
     refreshCheckout();
 
     bindCheckoutAuth();
+    bindCheckoutAuthStateSync();
 
     var signOutBtn = document.getElementById("checkoutGuestSignOutBtn");
     if (signOutBtn) {
