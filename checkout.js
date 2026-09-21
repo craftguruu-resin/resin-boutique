@@ -1041,7 +1041,7 @@
     return {
       name: val("guestName"),
       email: val("guestEmail"),
-      phone: val("guestPhone"),
+      phone: normalizeIndiaMobile10(val("guestPhone")),
       addrLine1: val("addrLine1"),
       addrLine2: val("addrLine2"),
       city: val("city"),
@@ -1721,6 +1721,18 @@
 
     bindRemoveDelegation();
     bindSavedAddressCards();
+
+    var phoneInput = document.getElementById("guestPhone");
+    if (phoneInput && !phoneInput.dataset.cgPhoneSanitized) {
+      phoneInput.dataset.cgPhoneSanitized = "1";
+      phoneInput.inputMode = "numeric";
+      phoneInput.addEventListener("input", function () {
+        var d = digitsOnly(this.value);
+        if (d.length === 12 && d.indexOf("91") === 0) d = d.slice(2);
+        if (d.length === 11 && d.charAt(0) === "0") d = d.slice(1);
+        this.value = d.slice(0, 10);
+      });
+    }
 
     goToDetailsStep();
 
