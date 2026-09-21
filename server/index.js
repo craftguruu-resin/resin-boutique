@@ -705,7 +705,7 @@ function validateGuestParcel(g) {
   if (!g || typeof g !== "object") return "Invalid guest";
   if (typeof g.name !== "string" || g.name.trim().length < 1 || g.name.length > 200) return "Invalid name";
   if (typeof g.email !== "string" || g.email.indexOf("@") < 1 || g.email.length > 200) return "Invalid email";
-  if (typeof g.phone !== "string" || g.phone.trim().length < 5 || g.phone.length > 60) return "Invalid phone";
+  if (normalizeIndia10(g.phone).length !== 10) return "Invalid 10-digit Indian mobile number";
   if (typeof g.addrLine1 !== "string" || g.addrLine1.trim().length < 1 || g.addrLine1.length > 300) {
     return "Invalid street address";
   }
@@ -724,7 +724,7 @@ function normalizeGuestParcel(g) {
   return {
     name: String(g.name || "").trim().slice(0, 200),
     email: String(g.email || "").trim().slice(0, 200),
-    phone: String(g.phone || "").trim().slice(0, 60),
+    phone: normalizeIndia10(g.phone),
     addrLine1: String(g.addrLine1 || "").trim().slice(0, 300),
     addrLine2: String(g.addrLine2 || "").trim().slice(0, 200),
     city: String(g.city || "").trim().slice(0, 120),
