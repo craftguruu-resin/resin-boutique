@@ -1223,6 +1223,8 @@
     try { injectStorefrontAuthChrome(); } catch (_) {}
     enforceHeaderAccountLabel();
     window.addEventListener("craftguruAuthChanged", enforceHeaderAccountLabel);
+    window.setTimeout(enforceHeaderAccountLabel, 0);
+    window.setTimeout(enforceHeaderAccountLabel, 150);
     try { wireHeaderWishlistLink(); } catch (_) {}
     try { injectSocialFloatWidgets(); } catch (_) {}
     try { injectFooterMainMenu(); } catch (_) {}
