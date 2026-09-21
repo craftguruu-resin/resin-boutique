@@ -373,85 +373,11 @@ body.page-home .home-cat-hub .craft-cat-section__all-link {
   font-weight: 800 !important;
 }
 
-body.page-home .home-cat-hub .featured-collections-grid {
-  display: grid !important;
-  grid-template-columns: repeat(7, minmax(8.5rem, 1fr)) !important;
-  gap: clamp(0.55rem, 1vw, 0.8rem) !important;
-  overflow-x: auto !important;
-  overflow-y: hidden !important;
-  padding: 0.1rem 0.05rem 0.45rem;
-  scrollbar-width: none;
-  scroll-snap-type: x proximity;
-}
-
-body.page-home .home-cat-hub .featured-collections-grid::-webkit-scrollbar {
-  display: none;
-}
-
-body.page-home .home-cat-hub .craft-cat-card {
-  min-width: 0;
-  scroll-snap-align: start;
-  contain: layout paint;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__shell {
-  min-height: 11.1rem;
-  border: 1px solid rgba(255,255,255,.88) !important;
-  border-radius: 1.25rem !important;
-  background: linear-gradient(145deg, rgba(255,255,255,.78), rgba(232,249,247,.52)) !important;
-  box-shadow: 0 8px 24px rgba(18, 91, 103, .08), inset 0 1px 0 rgba(255,255,255,.8) !important;
-  overflow: hidden;
-  transition: transform 150ms ease, box-shadow 150ms ease;
-}
-
-body.page-home .home-cat-hub .craft-cat-card:hover {
-  transform: translateY(-2px);
-}
-
-body.page-home .home-cat-hub .craft-cat-card:hover .craft-cat-card__shell {
-  box-shadow: 0 12px 28px rgba(18, 91, 103, .11), inset 0 1px 0 rgba(255,255,255,.9) !important;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__media {
-  height: 7.6rem !important;
-  min-height: 7.6rem !important;
-  aspect-ratio: auto !important;
-  border-radius: 1.25rem 1.25rem 0 0 !important;
-  background:
-    radial-gradient(circle at 22% 18%, rgba(255,255,255,.88), transparent 42%),
-    linear-gradient(145deg, rgba(194, 238, 233, .72), rgba(235, 249, 247, .62)) !important;
-  overflow: hidden;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__media img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: contain !important;
-  object-position: center !important;
-  transform: none !important;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__body {
-  padding: 0.62rem 0.72rem 0.7rem !important;
-  background: transparent !important;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__name {
-  min-height: 2.35em;
-  font-size: 0.78rem !important;
-  line-height: 1.18 !important;
-  color: var(--cg-gloss-deep) !important;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__count {
-  margin: 0.25rem 0 0 !important;
-  font-size: 0.64rem !important;
-  color: rgba(16, 47, 67, .56) !important;
-}
-
-body.page-home .home-cat-hub .craft-cat-card__cta {
-  display: none !important;
-}
+/* Home 'Shop by category' now intentionally uses the same base card
+ * rules as every other page (craft-category-card.css) instead of a
+ * separate, cramped 7-column override -- this was the actual cause of
+ * the tiny cards, 7-per-row layout, and hidden "Explore collection"
+ * link. Removed so Home renders identically to Raw Materials. */
 
 /* ---------- trust strip: glossy, compact, no expensive blur ---------- */
 body.page-home .home-cat-hub .cg-category-section__trust {
@@ -545,8 +471,8 @@ html.cg-scroll-active body.page-home .animated-backdrop {
     overflow: visible;
   }
 
-  body.page-home .home-cat-hub .featured-collections-grid {
-    grid-template-columns: repeat(7, minmax(9rem, 1fr)) !important;
+  body.page-home .home-cat-hub {
+    /* featured-collections-grid column count inherited from craft-category-card.css, same as Raw Materials */
   }
 }
 
@@ -587,10 +513,7 @@ html.cg-scroll-active body.page-home .animated-backdrop {
     flex-direction: column;
   }
 
-  body.page-home .home-cat-hub .featured-collections-grid {
-    grid-template-columns: repeat(7, minmax(8.2rem, 1fr)) !important;
-    gap: 0.5rem !important;
-  }
+  /* featured-collections-grid column count inherited from craft-category-card.css, same as Raw Materials */
 
   body.page-home .home-cat-hub .cg-category-section__trust {
     grid-template-columns: repeat(2, minmax(0, 1fr));
