@@ -793,7 +793,9 @@
     if (document.querySelector('link[href*="' + href + '"]')) return;
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = href;
+    var versionedHref =
+      href === "mobile-quality.css" ? href + "?v=20260921m2" : href;
+    link.href = versionedHref;
     document.head.appendChild(link);
   }
 
