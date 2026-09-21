@@ -149,6 +149,7 @@
       if (email) localStorage.setItem(SESSION_KEY, normalizeEmail(email));
       else localStorage.removeItem(SESSION_KEY);
     } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent("craftguruAuthChanged")); } catch (_) {}
   }
 
   function setGuestToken(token) {
@@ -253,7 +254,10 @@
     } catch (_) {}
     var inAuth = !!email || hasToken;
     if (els.userLabel) {
-      els.userLabel.textContent = email ? email : hasToken ? "Signed in" : "";
+      var label = email ? email : hasToken ? "Signed in" : "";
+      els.userLabel.textContent = label;
+      els.userLabel.title = email || "";
+      els.userLabel.setAttribute("aria-label", email ? "Signed in as " + email : label);
       els.userLabel.classList.toggle("is-hidden", !inAuth);
     }
     if (els.signupBtn) els.signupBtn.classList.toggle("is-hidden", inAuth);
@@ -501,6 +505,10 @@
     getApiBase: getApiBase,
     openAuth: openAuth,
   };
+
+  /* Keep account chrome correct after bfcache restores and auth changes. */
+  window.addEventListener("pageshow", renderAuthBar);
+  window.addEventListener("craftguruAuthChanged", renderAuthBar);
 
   /* Wait for DOMContentLoaded so guest-layout.js can inject #authModal on catalog pages first. */
   if (document.readyState === "loading" || document.readyState === "interactive") {
