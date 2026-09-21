@@ -3,6 +3,17 @@
   "private": true,
   "description": "Storefront + tools; API lives in server/",
   "scripts": {
-    "pages:patch-api": "node tools/set-bill-api-base.js"
+    "pages:patch-api": "node tools/set-bill-api-base.js",
+    "mobile:sync": "npx cap sync android",
+    "mobile:android": "npx cap open android",
+    "mobile:run": "npx cap run android",
+    "mobile:build": "cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/android": "^7.4.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.3"
   }
 }
