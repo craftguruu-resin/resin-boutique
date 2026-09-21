@@ -584,16 +584,20 @@ html.guest-responsive-root body *::after {
 
 @media (max-width: 360px) {
   html.guest-responsive-root body .home-auth-user {
-    display: none;
+    display: inline-flex;
+    max-width: 92px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   html.guest-responsive-root body .home-auth-bar {
-    max-width: 31vw;
+    max-width: 43vw;
   }
 
   html.guest-responsive-root body .home-auth-btn {
-    font-size: 0.54rem;
-    padding-inline: 0.32rem;
+    font-size: 0.58rem;
+    padding-inline: 0.34rem;
   }
 
   body.page-home .home-resin-hero,
