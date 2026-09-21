@@ -256,7 +256,7 @@
     if (els.userLabel) {
       var label = inAuth ? "My Account" : "";
       els.userLabel.textContent = label;
-      els.userLabel.title = email ? email : "My Account";
+      els.userLabel.title = "My Account";
       els.userLabel.setAttribute("aria-label", inAuth ? "My Account" : "");
       els.userLabel.classList.toggle("is-hidden", !inAuth);
     }
