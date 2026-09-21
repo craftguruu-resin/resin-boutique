@@ -4040,6 +4040,7 @@ body.product-page--oos .btn-add-lg {
   display: flex;
   align-items: center;
   gap: 0.35rem;
+  flex: 1 1 auto;
   flex-wrap: nowrap;
   justify-content: flex-end;
   min-width: 0;
@@ -6175,14 +6176,22 @@ a.home-auth-btn {
 }
 
 .home-auth-user {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
   font-size: 0.72rem;
-  font-weight: 600;
-  color: rgba(26, 32, 44, 0.65);
-  padding-right: 0.25rem;
-  max-width: 10rem;
+  font-weight: 650;
+  color: rgba(26, 32, 44, 0.78);
+  padding: 0.42rem 0.65rem;
+  max-width: min(22rem, 28vw);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius-pill);
+  box-sizing: border-box;
 }
 
 .is-hidden {
