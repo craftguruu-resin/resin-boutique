@@ -221,7 +221,10 @@
   /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
   function applyPdpHtml(root, html, title) {
     root.innerHTML = html;
-    if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: title || "" });
+    var premiumPdp = window.CraftguruPremiumPdp;
+    if (premiumPdp && premiumPdp.wirePdpHeader) {
+      premiumPdp.wirePdpHeader(root, { title: title || "" });
+    }
   }
 
   function nextGalleryIndexFrom(entries, cur, dir) {
