@@ -458,9 +458,13 @@
           image: lineImageFor(m, state.sel),
           qty: state.lineQty,
         });
-        try {
-          if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
-        } catch (_) {}
+        if (buyNow) {
+          window.location.href = "checkout.html";
+        } else {
+          try {
+            if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
+          } catch (_) {}
+        }
       }
     });
 
