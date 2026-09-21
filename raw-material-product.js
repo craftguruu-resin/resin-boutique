@@ -313,6 +313,64 @@
     }
   }
 
+  function bindPdpCartButtons(root) {
+    if (!root) return;
+    var m = state.material;
+    if (!m) return;
+
+    function handleCartAction(isBuyNow, ev) {
+      if (ev) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+      var activeCart = window.RESIN_CART || CART;
+      if (!activeCart || typeof activeCart.addItem !== "function") {
+        window.alert("Cart is still loading. Please try again.");
+        return false;
+      }
+      var item = {
+        id: m.id,
+        size: variantSlot(state.sel),
+        variantLabel: variantLabelFrom(m, state.sel),
+        name: m.name,
+        price: effectivePriceInr(m, state.sel),
+        image: lineImageFor(m, state.sel),
+        qty: state.lineQty,
+      };
+      var result = activeCart.addItem(item);
+      if (!result || !Array.isArray(result)) {
+        window.alert("Unable to add this product to cart. Please try again.");
+        return false;
+      }
+      if (isBuyNow) {
+        window.location.href = "checkout.html";
+      } else {
+        try {
+          if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
+            window.RESIN_SHELL.openDrawer();
+          }
+        } catch (_) {}
+      }
+      return true;
+    }
+
+    var addBtn = root.querySelector("#rmAddCart");
+    if (addBtn && !addBtn._cgDirectCartBound) {
+      addBtn._cgDirectCartBound = true;
+      addBtn.addEventListener("click", function (ev) {
+        handleCartAction(false, ev);
+      });
+    }
+
+    var buyBtn = root.querySelector("#rmBuyNow");
+    if (buyBtn && !buyBtn._cgDirectCartBound) {
+      buyBtn._cgDirectCartBound = true;
+      buyBtn.addEventListener("click", function (ev) {
+        handleCartAction(true, ev);
+      });
+    }
+  }
+
   function wirePdpRootOnce(root) {
     if (!root || root._rmPdpDelegated) return;
     root._rmPdpDelegated = true;
@@ -891,7 +949,7 @@
       patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
       if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: m.name });
     }
-    wirePdpRootOnce(root);
+    wirePdpRootOnce(root);\n    bindPdpCartButtons(root);
     mountRmPdpShare(root);
     mountRmBulkBuy(root);
     fadeHeroImageIn(root);
