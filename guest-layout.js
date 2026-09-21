@@ -588,7 +588,8 @@
       actions = document.createElement("div");
       actions.className = "site-top-actions";
       var cartEl = document.getElementById("cartToggle");
-      if (cartEl) {
+      /* cartEl is not guaranteed to be a direct child of host. */
+      if (cartEl && cartEl.parentElement === host) {
         host.insertBefore(actions, cartEl);
       } else {
         host.appendChild(actions);
@@ -607,7 +608,13 @@
       if (topEndExisting && wishExisting && cartExisting) {
         var actionsExisting = ensureSiteTopActions(topEndExisting);
         if (actionsExisting && wishExisting.parentElement !== actionsExisting) {
-          actionsExisting.insertBefore(wishExisting, cartExisting);
+          /* cartExisting may live outside actionsExisting on older/newer header layouts.
+             Never pass a non-child reference to insertBefore(). */
+          if (cartExisting && cartExisting.parentElement === actionsExisting) {
+            actionsExisting.insertBefore(wishExisting, cartExisting);
+          } else {
+            actionsExisting.appendChild(wishExisting);
+          }
         }
       }
       wireHeaderWishlistLink();
@@ -1172,10 +1179,12 @@
     });
     wireMobileSidebarDrawers();
     injectHeaderSearch();
-    injectStorefrontAuthChrome();
-    wireHeaderWishlistLink();
-    injectSocialFloatWidgets();
-    injectFooterMainMenu();
+    /* Header/auth injection is non-critical UI. A DOM mismatch here must never
+       prevent product/cart scripts from completing their own initialization. */
+    try { injectStorefrontAuthChrome(); } catch (_) {}
+    try { wireHeaderWishlistLink(); } catch (_) {}
+    try { injectSocialFloatWidgets(); } catch (_) {}
+    try { injectFooterMainMenu(); } catch (_) {}
   }
 
   window.addEventListener("craftguruCatalogCategoriesMerged", function () {
