@@ -613,3 +613,418 @@ html.guest-responsive-root body *::after {
     backdrop-filter: none;
   }
 }
+
+
+/* -------------------------------------------------------------------------
+   Mobile hardening pass
+   -------------------------------------------------------------------------
+   These rules are intentionally last in the mobile layer. They normalize
+   legacy desktop constraints, prevent horizontal bleed/overlap, and keep
+   interactive content readable without changing desktop behavior.
+------------------------------------------------------------------------- */
+
+@media (max-width: 899px) {
+  html.guest-responsive-root,
+  html.guest-responsive-root body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  html.guest-responsive-root body main,
+  html.guest-responsive-root body section,
+  html.guest-responsive-root body article,
+  html.guest-responsive-root body aside,
+  html.guest-responsive-root body .sub-main,
+  html.guest-responsive-root body .band-shop,
+  html.guest-responsive-root body .band-shop-inner {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body img,
+  html.guest-responsive-root body video,
+  html.guest-responsive-root body iframe,
+  html.guest-responsive-root body svg,
+  html.guest-responsive-root body canvas {
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body pre,
+  html.guest-responsive-root body code {
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body pre {
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  html.guest-responsive-root body table {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body .site-top > *,
+  html.guest-responsive-root body .site-top .guest-top-cluster > *,
+  html.guest-responsive-root body .site-top-end > *,
+  html.guest-responsive-root body .site-top-actions > *,
+  html.guest-responsive-root body .home-auth-bar > * {
+    min-width: 0;
+  }
+
+  /* Never let a flex/grid child force the viewport wider than the parent. */
+  html.guest-responsive-root body .rm-shop-layout > *,
+  html.guest-responsive-root body .rm-pdp-grid > *,
+  html.guest-responsive-root body .checkout-layout > *,
+  html.guest-responsive-root body .home-shop-layout > *,
+  html.guest-responsive-root body .featured-collections-grid > *,
+  html.guest-responsive-root body .product-grid > *,
+  html.guest-responsive-root body .rm-grid-cards > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Long product/category names must wrap instead of pushing controls out. */
+  html.guest-responsive-root body h1,
+  html.guest-responsive-root body h2,
+  html.guest-responsive-root body h3,
+  html.guest-responsive-root body h4,
+  html.guest-responsive-root body p,
+  html.guest-responsive-root body a,
+  html.guest-responsive-root body button,
+  html.guest-responsive-root body label,
+  html.guest-responsive-root body .product-card__title,
+  html.guest-responsive-root body .rm-product-card__title,
+  html.guest-responsive-root body .rm-card-shop__name,
+  html.guest-responsive-root body .rm-pdp__title,
+  html.guest-responsive-root body .rm-pdp__description {
+    overflow-wrap: anywhere;
+  }
+
+  /* PDP: every section owns its width; no desktop absolute/sticky geometry
+     is allowed to overlap another mobile section. */
+  html.guest-responsive-root body .rm-pdp-grid,
+  html.guest-responsive-root body .rm-pdp--modern {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch;
+    gap: clamp(0.85rem, 3vw, 1.15rem);
+    overflow: visible;
+  }
+
+  html.guest-responsive-root body .rm-pdp__gallery,
+  html.guest-responsive-root body .rm-pdp__purchase,
+  html.guest-responsive-root body .rm-pdp__details,
+  html.guest-responsive-root body .rm-pdp__description,
+  html.guest-responsive-root body .rm-pdp__info,
+  html.guest-responsive-root body .rm-pdp__buy-panel,
+  html.guest-responsive-root body .rm-pdp__side,
+  html.guest-responsive-root body .rm-pdp__feature-grid,
+  html.guest-responsive-root body .rm-pdp__delivery-grid {
+    position: relative !important;
+    inset: auto !important;
+    float: none !important;
+    transform: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    max-height: none !important;
+  }
+
+  html.guest-responsive-root body .rm-pdp__purchase,
+  html.guest-responsive-root body .rm-pdp__buy-panel,
+  html.guest-responsive-root body .rm-pdp__side {
+    overflow: visible;
+  }
+
+  html.guest-responsive-root body .rm-pdp__description,
+  html.guest-responsive-root body .rm-pdp__description > *,
+  html.guest-responsive-root body .rm-pdp__details > *,
+  html.guest-responsive-root body .rm-pdp__info > * {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .rm-pdp__cart-row,
+  html.guest-responsive-root body .rm-pdp__buy-row,
+  html.guest-responsive-root body .rm-pdp__buy-actions,
+  html.guest-responsive-root body .rm-pdp__trust-bar,
+  html.guest-responsive-root body .rm-pdp__trust,
+  html.guest-responsive-root body .rm-pdp__bulk-row {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+
+  /* Gallery controls stay inside the gallery instead of covering content. */
+  html.guest-responsive-root body .product-catalog-gallery__track {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  html.guest-responsive-root body .product-catalog-gallery__thumb {
+    flex: 0 0 3.35rem;
+  }
+
+  /* Cards: media and content are independent boxes. */
+  html.guest-responsive-root body .product-card,
+  html.guest-responsive-root body .rm-product-card,
+  html.guest-responsive-root body .rm-card-shop {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  html.guest-responsive-root body .product-card__body,
+  html.guest-responsive-root body .rm-product-card__body,
+  html.guest-responsive-root body .rm-card-shop__body,
+  html.guest-responsive-root body .product-meta,
+  html.guest-responsive-root body .rm-card-shop__cta {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Product-card overlays are allowed only inside the media box. */
+  html.guest-responsive-root body .product-card__media,
+  html.guest-responsive-root body .product-card-image {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  html.guest-responsive-root body .product-card-share,
+  html.guest-responsive-root body .product-card-wish {
+    max-width: calc(100% - 0.75rem);
+  }
+
+  /* Floating UI must remain tappable and clear of content. */
+  html.guest-responsive-root body .cg-social-float-stack {
+    max-width: calc(100vw - 1rem);
+  }
+
+  /* Search/dropdowns/popovers must never create a second horizontal page. */
+  html.guest-responsive-root body .guest-header-search__results,
+  html.guest-responsive-root body .global-find__popover,
+  html.guest-responsive-root body .product-share-bar__dropdown,
+  html.guest-responsive-root body .product-card-share__pop {
+    max-width: calc(100vw - 1rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  /* Modals fit short phone screens and scroll internally. */
+  html.guest-responsive-root body .auth-modal,
+  html.guest-responsive-root body .checkout-auth-modal,
+  html.guest-responsive-root body .checkout-pay-modal,
+  html.guest-responsive-root body .vendor-gate-modal {
+    max-height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  html.guest-responsive-root body .auth-modal__sheet,
+  html.guest-responsive-root body .checkout-auth-sheet,
+  html.guest-responsive-root body .checkout-pay-modal__panel,
+  html.guest-responsive-root body .vendor-gate-modal__card {
+    width: min(100%, calc(100vw - 1rem));
+    max-width: 100%;
+    max-height: calc(100dvh - 1rem);
+    overflow-y: auto;
+  }
+
+  /* Tables/receipt-like content scroll horizontally rather than overlap. */
+  html.guest-responsive-root body .vendor-inline-bill,
+  html.guest-responsive-root body .checkout-summary,
+  html.guest-responsive-root body .checkout-panel {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  html.guest-responsive-root body .vendor-inline-bill__table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  /* Mobile header: use explicit stacked rows. This eliminates the common
+     logo/account/cart/nav collision on narrow phones. */
+  html.guest-responsive-root body .site-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto auto;
+    width: 100%;
+    max-width: 100%;
+    gap: 0.45rem;
+    align-items: center;
+  }
+
+  html.guest-responsive-root body .site-top > .brand,
+  html.guest-responsive-root body .site-top .guest-top-cluster > .brand {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    max-width: 52vw;
+  }
+
+  html.guest-responsive-root body .site-top > .nav-dock {
+    grid-column: 1;
+    grid-row: 4;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .site-top-end,
+  html.guest-responsive-root body .site-top-end--home {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.35rem;
+  }
+
+  html.guest-responsive-root body .home-auth-bar {
+    flex: 1 1 auto;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  html.guest-responsive-root body .home-auth-user {
+    flex: 1 1 auto;
+    max-width: 42vw;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .site-top-actions {
+    flex: 0 0 auto;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .guest-header-search {
+    grid-column: 1;
+    grid-row: 3;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body .nav-dock {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .nav-dock-link {
+    flex: 0 0 auto;
+  }
+
+  html.guest-responsive-root body .home-auth-btn {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  html.guest-responsive-root body .home-header-wish,
+  html.guest-responsive-root body .btn-cart {
+    flex: 0 0 auto;
+  }
+
+  html.guest-responsive-root body .sub-main {
+    padding-inline: 0.75rem;
+  }
+
+  /* Two-column product cards remain readable down to small phones. */
+  html.guest-responsive-root body .product-grid,
+  html.guest-responsive-root body .featured-collections-grid,
+  html.guest-responsive-root body .rm-grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  html.guest-responsive-root body .product-card__title,
+  html.guest-responsive-root body .rm-product-card__title,
+  html.guest-responsive-root body .rm-card-shop__name {
+    font-size: clamp(0.72rem, 3.1vw, 0.88rem);
+    line-height: 1.3;
+  }
+
+  html.guest-responsive-root body .product-meta,
+  html.guest-responsive-root body .rm-card-shop__meta {
+    min-width: 0;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 380px) {
+  /* At very narrow widths, one card per row is more readable than squeezed
+     controls/text. */
+  html.guest-responsive-root body .product-grid,
+  html.guest-responsive-root body .featured-collections-grid,
+  html.guest-responsive-root body .rm-grid-cards {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  html.guest-responsive-root body .home-auth-user {
+    max-width: 35vw;
+  }
+
+  html.guest-responsive-root body .site-top-actions {
+    gap: 0.2rem;
+  }
+}
+
+@media (max-width: 480px) {
+  html.guest-responsive-root body .rm-pdp__add,
+  html.guest-responsive-root body .rm-pdp__buy-row > *,
+  html.guest-responsive-root body .rm-pdp__buy-actions > * {
+    width: 100%;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body .rm-pdp__qty {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  html.guest-responsive-root body .rm-pdp__size-row,
+  html.guest-responsive-root body .rm-pdp__color-row,
+  html.guest-responsive-root body .rm-pdp__colour-row,
+  html.guest-responsive-root body .rm-pdp__variant-row {
+    display: flex;
+    gap: 0.45rem;
+  }
+
+  html.guest-responsive-root body .rm-pdp__size-row > *,
+  html.guest-responsive-root body .rm-pdp__color-row > *,
+  html.guest-responsive-root body .rm-pdp__colour-row > *,
+  html.guest-responsive-root body .rm-pdp__variant-row > * {
+    max-width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.guest-responsive-root body *,
+  html.guest-responsive-root body *::before,
+  html.guest-responsive-root body *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
