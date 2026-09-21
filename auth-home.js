@@ -254,16 +254,17 @@
     } catch (_) {}
     var inAuth = !!email || hasToken;
     if (els.userLabel) {
-      var label = email ? email : hasToken ? "Signed in" : "";
+      var label = inAuth ? "My Account" : "";
       els.userLabel.textContent = label;
-      els.userLabel.title = email || "";
-      els.userLabel.setAttribute("aria-label", email ? "Signed in as " + email : label);
+      els.userLabel.title = email ? email : "My Account";
+      els.userLabel.setAttribute("aria-label", inAuth ? "My Account" : "");
       els.userLabel.classList.toggle("is-hidden", !inAuth);
     }
     if (els.signupBtn) els.signupBtn.classList.toggle("is-hidden", inAuth);
     if (els.loginBtn) els.loginBtn.classList.toggle("is-hidden", inAuth);
     if (els.logoutBtn) els.logoutBtn.classList.toggle("is-hidden", !inAuth);
-    if (els.ordersLink) els.ordersLink.classList.toggle("is-hidden", !inAuth);
+    if (els.ordersLink) els.ordersLink.classList.add("is-hidden");
+    if (els.logoutBtn) els.logoutBtn.classList.add("is-hidden");
   }
 
   function boot() {
