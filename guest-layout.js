@@ -841,6 +841,7 @@
 
   function ensureLayoutResponsiveStyles() {
     ensureStylesheet("layout-responsive.css");
+    ensureStylesheet("mobile-quality.css");
     try {
       document.documentElement.classList.add("guest-responsive-root");
     } catch (_) {}
