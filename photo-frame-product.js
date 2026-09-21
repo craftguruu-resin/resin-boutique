@@ -446,10 +446,13 @@
 
       var add = t.closest("#rmAddCart");
       var buyNow = t.closest("#rmBuyNow");
-      if ((add || buyNow) && CART) {
+      /* Resolve the cart at click time. cart.js can load after this PDP script,
+         so a stale script-load snapshot must never disable the buttons. */
+      var activeCart = window.RESIN_CART || CART;
+      if ((add || buyNow) && activeCart && typeof activeCart.addItem === "function") {
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
-        CART.addItem({
+        activeCart.addItem({
           id: m.id,
           size: slot,
           variantLabel: vlabel,
