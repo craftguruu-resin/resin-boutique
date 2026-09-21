@@ -8,6 +8,7 @@
   /** Browser-only cart when not signed in (per device / profile). */
   var ANON_CART_KEY = "resin_craftguru_cart_inr_v1";
   var ANON_SAVE_LATER_KEY = "craftguru_save_later_v1";
+  var WISH_ANON_KEY = "craftguru_wishlist_v1";
 
   function sessionEmailLower() {
     try {
@@ -167,6 +168,7 @@
   function onAccountLogin() {
     var em = sessionEmailLower();
     if (!em) return;
+    wishHydrated = false;
     var anon = loadFromKey(ANON_CART_KEY);
     var userKey = "resin_craftguru_cart_inr_v1__acct__" + em;
     var existing = loadFromKey(userKey);
@@ -189,6 +191,10 @@
   }
 
   function onAccountLogout() {
+    wishHydrated = false;
+    wishCache = Object.create(null);
+    applyWishCache(loadWishlistLocal());
+    notifyWishlist();
     notify();
   }
 
@@ -537,7 +543,27 @@
   var wishHydrated = false;
 
   function wishStorageKey() {
-    return WISH_KEY;
+    var em = sessionEmailLower();
+    return em ? WISH_ANON_KEY + "__acct__" + em : WISH_ANON_KEY;
+  }
+
+  function parseWishlistLocal(raw) {
+    if (!raw) return [];
+    try {
+      var parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      var out = [];
+      parsed.forEach(function (row) {
+        var pid = typeof row === "string" ? String(row || "").trim() : String((row && (row.productId || row.id)) || "").trim();
+        if (!pid) return;
+        out.push({ productId: pid, kind: typeof row === "string" ? "catalog" : normWishKind(row.kind) });
+      });
+      return out;
+    } catch (_) { return []; }
+  }
+
+  function loadWishlistLocalFromKey(key) {
+    try { return parseWishlistLocal(global.localStorage.getItem(key)); } catch (_) { return []; }
   }
 
   function wishApiBase() {
@@ -583,27 +609,7 @@
   }
 
   function loadWishlistLocal() {
-    try {
-      var raw = global.localStorage.getItem(wishStorageKey());
-      if (!raw) return [];
-      var parsed = JSON.parse(raw);
-      if (!Array.isArray(parsed)) return [];
-      var out = [];
-      parsed.forEach(function (row) {
-        if (typeof row === "string") {
-          var sid = String(row || "").trim();
-          if (sid) out.push({ productId: sid, kind: "catalog" });
-          return;
-        }
-        if (!row || typeof row !== "object") return;
-        var pid = String(row.productId || row.id || "").trim();
-        if (!pid) return;
-        out.push({ productId: pid, kind: normWishKind(row.kind) });
-      });
-      return out;
-    } catch (_) {
-      return [];
-    }
+    return loadWishlistLocalFromKey(wishStorageKey());
   }
 
   function saveWishlistLocal(items) {
@@ -679,34 +685,30 @@
   function mergeWishlistOnLogin() {
     var tok = guestBearer();
     var base = wishApiBase();
-    var local = loadWishlistLocal();
+    var local = loadWishlistLocalFromKey(WISH_ANON_KEY);
+    wishHydrated = false;
     if (!tok || !base || !local.length) {
       refreshWishlistFromServer();
       return;
     }
     fetch(base + "/api/guest/wishlist/merge", {
       method: "POST",
-      headers: {
-        Authorization: "Bearer " + tok,
-        "Content-Type": "application/json",
-      },
+      headers: { Authorization: "Bearer " + tok, "Content-Type": "application/json" },
       body: JSON.stringify({ items: local }),
       cache: "no-store",
     })
-      .then(function (res) {
-        return res.json();
-      })
+      .then(function (res) { return res.json(); })
       .then(function (j) {
         if (j && j.ok && Array.isArray(j.items)) {
           applyWishCache(j.items);
           saveWishlistLocal(j.items);
+          try { global.localStorage.removeItem(WISH_ANON_KEY); } catch (_) {}
+          notifyWishlist();
         } else {
           refreshWishlistFromServer();
         }
       })
-      .catch(function () {
-        refreshWishlistFromServer();
-      });
+      .catch(function () { refreshWishlistFromServer(); });
   }
 
   function toggleWishlist(id, kind, done) {
@@ -719,17 +721,15 @@
 
     var tok = guestBearer();
     if (!tok) {
-      try {
-        if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.openAuth === "function") {
-          window.CRAFT_AUTH_HOME.openAuth("login");
-        } else {
-          window.location.href = "account.html";
-        }
-      } catch (_) {
-        window.location.href = "account.html";
-      }
-      if (done) done(new Error("login required"));
-      return false;
+      if (!wishHydrated) applyWishCache(loadWishlistLocal());
+      var guestKey = wishEntryKey(pid, pk);
+      var guestOn = !wishCache[guestKey];
+      if (guestOn) wishCache[guestKey] = true; else delete wishCache[guestKey];
+      setLocalWishlistFromCache();
+      notifyWishlist();
+      try { if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.openAuth === "function") window.CRAFT_AUTH_HOME.openAuth("login"); } catch (_) {}
+      if (done) done(null, guestOn);
+      return guestOn;
     }
 
     if (!wishHydrated) applyWishCache(loadWishlistLocal());
