@@ -632,7 +632,7 @@
     bar.className = "home-auth-bar";
     bar.id = "homeAuthBar";
     bar.innerHTML =
-      '<span class="home-auth-user is-hidden" id="homeAuthUser"></span>' +
+      '<a href="account.html" class="home-auth-user home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthUser">My Account</a>' +
       '<button type="button" class="home-auth-btn" id="homeAuthSignup">Sign up</button>' +
       '<button type="button" class="home-auth-btn" id="homeAuthLogin">Log in</button>' +
       '<a href="account.html" class="home-auth-btn home-auth-btn--soft is-hidden" id="homeAuthOrders">My orders</a>' +
@@ -1159,11 +1159,25 @@
     document.head.appendChild(link);
   }
 
+  function wireGlobalCartRoute() {
+    if (window.__cgGlobalCartRouteBound) return;
+    window.__cgGlobalCartRouteBound = true;
+    document.addEventListener("click", function (ev) {
+      var btn = ev.target && ev.target.closest ? ev.target.closest("#cartToggle, .btn-cart") : null;
+      if (!btn) return;
+      if (String(window.location.pathname || "").toLowerCase().indexOf("checkout.html") !== -1) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      window.location.href = "checkout.html";
+    }, true);
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
     ensureScrollPerfStyles();
     wireScrollPerf();
     ensureCloudinaryPreconnect();
+    wireGlobalCartRoute();
     registerStorefrontServiceWorker();
     removeLegacyCatalogSyncButton();
     if (window.CraftguruCategoryScroll && window.CraftguruCategoryScroll.resetPageScroll) {
