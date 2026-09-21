@@ -102,6 +102,10 @@
         if (o.status === 401 || (j && j.code === "NO_SESSION")) {
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
+            localStorage.removeItem(GUEST_SESSION_EMAIL_KEY);
+          } catch (_) {}
+          try {
+            window.dispatchEvent(new CustomEvent("craftguruAuthChanged"));
           } catch (_) {}
         }
         return null;
