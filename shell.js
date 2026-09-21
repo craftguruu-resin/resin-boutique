@@ -227,12 +227,15 @@
       });
     }
 
-    toggle.addEventListener("click", function () {
-      if (drawer.classList.contains("is-open")) {
-        closeDrawer();
-      } else {
-        openDrawer();
+    toggle.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (String(window.location.pathname || "").toLowerCase().indexOf("checkout.html") !== -1) {
+        if (drawer.classList.contains("is-open")) closeDrawer();
+        else openDrawer();
+        return;
       }
+      window.location.href = "checkout.html";
     });
 
     if (close) {
