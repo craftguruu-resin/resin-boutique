@@ -474,8 +474,8 @@ function markOrderPaymentReceived(orderId, cb) {
       if (String(row.payment_status) === "paid") {
         return { orderId: id, paymentStatus: "paid", alreadyPaid: true };
       }
-      if (String(row.payment_status) !== "pending_payment") {
-        throw new Error("Only pending orders can be marked paid");
+      if (String(row.payment_status) !== "pending_payment" && String(row.payment_status) !== "cod_advance_paid") {
+        throw new Error("Only pending or COD-advance orders can be marked paid");
       }
       return pool.query(
         "UPDATE orders SET payment_status = 'paid', paid_at = COALESCE(paid_at, now()), gateway_fee = 0 WHERE id = $1 RETURNING id, payment_status, payment_method, paid_at",
