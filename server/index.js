@@ -1084,41 +1084,92 @@ app.post("/api/razorpay-verify", function (req, res) {
   res.json({ ok: true, orderCreated: false });
 });
 
-/** Cash on delivery — creates pending order, decrements stock, no sales until admin marks paid. */
-app.post("/api/checkout-cod", function (req, res) {
+/** Create the Razorpay payment order for the COD ₹200 courier/packing advance. */
+app.post("/api/cod-advance-order", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
-  if (!rateOk(ip)) {
-    return res.status(429).json({ ok: false, error: "Too many requests." });
-  }
+  if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
   if (!billSecretOk(req)) return rejectBillApiSecret(res);
 
+  var rz = getRazorpayClient();
+  if (!rz) return res.status(503).json({ ok: false, error: "Razorpay is not configured." });
+
   var b = req.body || {};
+  var itemsErr = validateItems(b.items);
+  if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
+  var items = b.items.map(sanitizeBillItem);
+  var productValue = items.reduce(function (sum, it) {
+    return sum + Math.max(0, Number(it.unitPrice) || 0) * Math.max(1, Math.floor(Number(it.qty) || 1));
+  }, 0);
+  productValue = orderPricing.round2(productValue);
+  if (productValue < 500) {
+    return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
+  }
+
+  var advancePaise = 20000;
+  var receipt = ("cgcod" + Date.now()).replace(/\D/g, "").slice(0, 40);
+  rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
+    .then(function (order) {
+      res.json({
+        ok: true,
+        keyId: RAZORPAY_KEY_ID,
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        advance: 200,
+        productValue: productValue,
+      });
+    })
+    .catch(function (err) {
+      var desc = err && err.error && (err.error.description || err.error.reason || err.error.code);
+      res.status(502).json({ ok: false, error: String(desc || err.message || err || "Razorpay order failed") });
+    });
+});
+
+/** Verify the COD ₹200 advance and create the COD order with the remaining balance due on delivery. */
+app.post("/api/cod-advance-verify", function (req, res) {
+  var ip = req.ip || req.connection.remoteAddress || "unknown";
+  if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
+  if (!billSecretOk(req)) return rejectBillApiSecret(res);
+  if (!RAZORPAY_KEY_SECRET) return res.status(503).json({ ok: false, error: "Razorpay is not configured on the server." });
+
+  var b = req.body || {};
+  if (!verifyRazorpaySignature(b.razorpay_order_id, b.razorpay_payment_id, b.razorpay_signature)) {
+    return res.status(400).json({ ok: false, error: "Invalid payment signature" });
+  }
   var guest = b.guest;
   var rawItems = b.items;
   if (!guest || !Array.isArray(rawItems) || !rawItems.length) {
-    return res.status(400).json({ ok: false, error: "Guest and items required for COD checkout." });
+    return res.status(400).json({ ok: false, error: "Guest and items are required." });
   }
-  var gErr0 = validateGuestParcel(guest);
-  if (gErr0) {
-    return res.status(400).json({ ok: false, error: gErr0 });
-  }
-  var itemsErr0 = validateItems(rawItems);
-  if (itemsErr0) {
-    return res.status(400).json({ ok: false, error: itemsErr0 });
-  }
-  var items0 = rawItems.map(sanitizeBillItem);
-  var totals0 = computeTotals(items0, { paymentMethod: "cod" });
-  var g0 = normalizeGuestParcel(guest);
+  var gErr = validateGuestParcel(guest);
+  if (gErr) return res.status(400).json({ ok: false, error: gErr });
+  var itemsErr = validateItems(rawItems);
+  if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
 
-  runCheckoutWithOptionalSession(req, res, g0, function () {
+  var items = rawItems.map(sanitizeBillItem);
+  var totals = computeTotals(items, { paymentMethod: "cod" });
+  if (Number(totals.productValue || 0) < 500) {
+    return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
+  }
+  var guestNorm = normalizeGuestParcel(guest);
+  totals.codAdvance = 200;
+  totals.codBalanceDue = orderPricing.round2(Math.max(0, Number(totals.total || 0) - 200));
+  totals.codAdvanceRazorpayPaymentId = String(b.razorpay_payment_id || "").slice(0, 120);
+
+  runCheckoutWithOptionalSession(req, res, guestNorm, function () {
     finishCheckoutOrder(req, res, {
-      guest: g0,
-      items: items0,
-      totals: totals0,
+      guest: guestNorm,
+      items: items,
+      totals: totals,
       orderType: "Checkout · COD",
       tagRef: makeTagRef(),
-      paymentStatus: "pending_payment",
+      paymentStatus: "cod_advance_paid",
       paymentMethod: "cod",
+      extraJson: {
+        codAdvancePaid: 200,
+        codBalanceDue: totals.codBalanceDue,
+        razorpayPaymentId: String(b.razorpay_payment_id || ""),
+      },
     });
   });
 });
