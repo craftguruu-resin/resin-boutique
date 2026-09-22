@@ -1194,7 +1194,7 @@
 
   function computeCheckoutTotals(subtotalVal, paymentMethod) {
     var productValue = Math.round(Number(subtotalVal) * 100) / 100;
-    var shipping = productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
+    var shipping = paymentMethod === "cod" ? 200 : productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
     var prepaidDiscount =
       paymentMethod === "razorpay" ? Math.round(productValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
     var afterDiscount = Math.round(Math.max(0, productValue - prepaidDiscount) * 100) / 100;
@@ -1211,18 +1211,50 @@
     };
   }
 
-  function postCheckoutCod(guest, items) {
+  function postCodAdvanceOrder(items) {
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
-    return fetch(base + "/api/checkout-cod", {
+    var headers = { "Content-Type": "application/json" };
+    var sec = billApiSecret();
+    if (sec) headers["x-bill-api-secret"] = sec;
+    return fetch(base + "/api/cod-advance-order", {
       method: "POST",
-      headers: guestAuthHeaders(),
-      body: JSON.stringify({ guest: guest, items: items }),
+      headers: headers,
+      body: JSON.stringify({ items: items }),
     }).then(function (res) {
       return parseApiJson(res).then(function (x) {
         var j = x.json;
         if (!x.okHttp || !j.ok) {
-          throw new Error((j && j.error) || res.statusText || "Could not place COD order");
+          var err = new Error((j && j.error) || res.statusText || "Could not start COD advance payment");
+          if (j && j.code) err.code = j.code;
+          throw err;
+        }
+        return j;
+      });
+    });
+  }
+
+  function postCodAdvanceVerify(paymentResponse, guest, items) {
+    var base = billApiBase();
+    if (!base) return Promise.reject(new Error("missing bill API base"));
+    var headers = guestAuthHeaders();
+    var sec = billApiSecret();
+    if (sec) headers["x-bill-api-secret"] = sec;
+    return fetch(base + "/api/cod-advance-verify", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        razorpay_order_id: paymentResponse.razorpay_order_id,
+        razorpay_payment_id: paymentResponse.razorpay_payment_id,
+        razorpay_signature: paymentResponse.razorpay_signature,
+        guest: guest,
+        items: items,
+      }),
+    }).then(function (res) {
+      return parseApiJson(res).then(function (x) {
+        var j = x.json;
+        if (!x.okHttp || !j.ok) {
+          throw new Error((j && j.error) || res.statusText || "COD advance verification failed");
         }
         return j;
       });
@@ -1245,8 +1277,15 @@
     if (hint && checkoutPhase === "payment") {
       hint.textContent =
         method === "cod"
-          ? "Place your COD order after you fill shipping above. Pay when your parcel arrives."
+          ? "COD requires ₹500+ in products. Pay ₹200 courier & packing advance by Razorpay; the remaining balance is collected on delivery."
           : "Open Pay now to complete Razorpay checkout — 5% instant discount applied.";
+    }
+    if (els.btnCodCheckout) {
+      var eligible = method === "cod" && Number(CART.subtotal()) >= 500;
+      els.btnCodCheckout.disabled = !eligible;
+      els.btnCodCheckout.title = eligible
+        ? "Pay ₹200 advance to confirm COD"
+        : "COD requires a minimum product value of ₹500";
     }
   }
 
@@ -1650,7 +1689,7 @@
       label.textContent = "Checkout";
       if (getCheckoutPaymentMethod() === "cod") {
         msg.innerHTML =
-          "Review the amount on the left, then tap <strong>Place order · Cash on Delivery</strong>. Pay cash when your parcel is delivered.";
+          "COD is available for product value ₹500+. Pay <strong>₹200 advance via Razorpay</strong> for courier &amp; packing confirmation; the remaining balance is collected on delivery.";
       } else {
         msg.innerHTML =
           "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 5% prepaid discount).";
@@ -1853,7 +1892,7 @@
     if (els.btnCodCheckout) {
       els.btnCodCheckout.addEventListener("click", function () {
         if (!els.form || !els.form.checkValidity()) {
-          window.alert("Please fill guest name, email, phone, and full shipping address before placing your order.");
+          window.alert("Please fill guest name, email, phone, and full shipping address before paying the COD advance.");
           try {
             els.form.reportValidity();
           } catch (_) {}
@@ -1864,17 +1903,58 @@
           window.alert("Your cart is empty.");
           return;
         }
+        var subtotal = CART.subtotal();
+        if (Number(subtotal) < 500) {
+          window.alert("Cash on Delivery is available only when your product total is ₹500 or more.");
+          return;
+        }
+        if (typeof window.Razorpay !== "function") {
+          window.alert("Razorpay Checkout did not load. Check your network or disable script blocking.");
+          return;
+        }
         var guest = buildGuestPayloadFromForm();
         els.btnCodCheckout.disabled = true;
-        postCheckoutCod(guest, items)
-          .then(function (j) {
-            if (!j || !j.orderCreated) {
-              throw new Error("Order was not saved. Check DATABASE_URL on the server.");
-            }
-            afterPaidCheckoutNavigate(j, { cod: true });
+        postCodAdvanceOrder(items)
+          .then(function (order) {
+            var guestEmail = document.getElementById("guestEmail");
+            var guestPhone = document.getElementById("guestPhone");
+            var email = guestEmail && guestEmail.value ? guestEmail.value.trim() : "";
+            var phoneDigits = guestPhone ? normalizeIndiaMobile10(guestPhone.value) : "";
+            var options = {
+              key: order.keyId,
+              amount: order.amount,
+              currency: order.currency || "INR",
+              order_id: order.orderId,
+              name: "Craftguru",
+              description: "COD courier & packing advance",
+              theme: { color: "#26a69a" },
+              prefill: {
+                email: email,
+                contact: phoneDigits ? "+91" + phoneDigits : "",
+              },
+              handler: function (response) {
+                var freshGuest = buildGuestPayloadFromForm();
+                var freshItems = buildBillItemsForApi();
+                postCodAdvanceVerify(response, freshGuest, freshItems)
+                  .then(function (j) {
+                    if (!j || !j.orderCreated) {
+                      throw new Error("COD advance was paid but the order was not saved. Please contact Craftguru support.");
+                    }
+                    afterPaidCheckoutNavigate(j, { cod: true });
+                  })
+                  .catch(function (err) {
+                    window.alert(String((err && err.message) || "Could not verify the COD advance."));
+                  });
+              },
+            };
+            var rzp = new window.Razorpay(options);
+            rzp.on("payment.failed", function () {
+              setPaymentUi("fail");
+            });
+            rzp.open();
           })
           .catch(function (err) {
-            window.alert(String((err && err.message) || "Could not place COD order."));
+            window.alert(String((err && err.message) || "Could not start COD advance payment."));
           })
           .then(function () {
             els.btnCodCheckout.disabled = false;
