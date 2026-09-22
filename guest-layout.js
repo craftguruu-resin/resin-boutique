@@ -1165,10 +1165,17 @@
     document.addEventListener("click", function (ev) {
       var btn = ev.target && ev.target.closest ? ev.target.closest("#cartToggle, .btn-cart") : null;
       if (!btn) return;
-      if (String(window.location.pathname || "").toLowerCase().indexOf("checkout.html") !== -1) return;
       ev.preventDefault();
       ev.stopPropagation();
-      window.location.href = "checkout.html";
+      if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
+        window.RESIN_SHELL.openDrawer();
+        return;
+      }
+      window.setTimeout(function () {
+        if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
+          window.RESIN_SHELL.openDrawer();
+        }
+      }, 0);
     }, true);
   }
 
