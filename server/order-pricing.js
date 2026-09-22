@@ -34,7 +34,7 @@ function computeTotals(items, opts) {
     sub += u * q;
   });
   var productValue = round2(sub);
-  var ship = productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
+  var ship = paymentMethod === "cod" ? 200 : productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
   var prepaidDiscount = paymentMethod === "razorpay" ? round2(productValue * PREPAID_DISCOUNT_RATE) : 0;
   var afterDiscount = round2(Math.max(0, productValue - prepaidDiscount));
   var taxable = round2(afterDiscount / (1 + GST));
@@ -53,6 +53,8 @@ function computeTotals(items, opts) {
     total: grand,
     gatewayFee: gatewayFee,
     paymentMethod: paymentMethod,
+    codAdvance: paymentMethod === "cod" ? 200 : 0,
+    codBalanceDue: paymentMethod === "cod" ? round2(Math.max(0, grand - 200)) : 0,
   };
 }
 
