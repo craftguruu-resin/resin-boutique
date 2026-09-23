@@ -192,6 +192,7 @@
        "<div>Product value " +
        money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
+       (Number(totals.prepaidDiscount) > 0 ? "<div>Online discount −" + money(totals.prepaidDiscount) + "</div>" : "") +
       "<div>Shipping " +
       money(totals.shipping) +
       "</div>" +
@@ -270,6 +271,7 @@
       "<div><strong>Product value</strong> " +
        money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
+       (Number(totals.prepaidDiscount) > 0 ? "<div><strong>Online discount</strong> −" + money(totals.prepaidDiscount) + "</div>" : "") +
       "<div><strong>Shipping</strong> " +
       money(totals.shipping) +
       "</div>" +
