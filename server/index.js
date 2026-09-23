@@ -87,6 +87,7 @@ var mediaOptimizer = require("./media-optimizer.js");
 var homepageSsr = require("./homepage-ssr.js");
 var apiResponseCache = require("./api-response-cache.js");
 var orderPricing = require("./order-pricing.js");
+var inventoryDecrement = require("./inventory-decrement.js");
 var shipmentSync = require("./shipment/shipment-sync.js");
 var shipmentDb = require("./shipment/shipment-db.js");
 var delhiveryCourier = require("./shipment/courier-delhivery.js");
@@ -220,6 +221,27 @@ function makeTagRef() {
     "-" +
     crypto.randomBytes(3).toString("hex").toUpperCase()
   );
+}
+
+
+function checkInventoryBeforePayment(items, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) return cb(new Error("Inventory database is not configured."));
+  pool.connect().then(function (client) {
+    return client.query("BEGIN").then(function () {
+      return inventoryDecrement.decrementOrderItems(client, items);
+    }).then(function () {
+      return client.query("ROLLBACK");
+    }).then(function () {
+      client.release();
+      cb(null);
+    }).catch(function (err) {
+      return client.query("ROLLBACK").catch(function () {}).then(function () {
+        client.release();
+        cb(err);
+      });
+    });
+  }).catch(cb);
 }
 
 function finishCheckoutOrder(req, res, opts) {
@@ -1021,8 +1043,12 @@ app.post("/api/razorpay-order", function (req, res) {
 
   var receipt = ("cg" + Date.now()).replace(/\D/g, "").slice(0, 40);
 
-  rz.orders
-    .create({ amount: amountPaise, currency: "INR", receipt: receipt })
+  checkInventoryBeforePayment(items, function (invErr) {
+    if (invErr) {
+      return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
+    }
+    rz.orders
+      .create({ amount: amountPaise, currency: "INR", receipt: receipt })
     .then(function (order) {
       res.json({
         ok: true,
@@ -1043,6 +1069,7 @@ app.post("/api/razorpay-order", function (req, res) {
         error: String(desc || err.message || err || "Razorpay order failed"),
       });
     });
+  });
 });
 
 /** Verify payment signature after Razorpay Checkout success. When guest + items are included, creates a paid order (DB) and applies catalog stock rules. */
@@ -1127,7 +1154,11 @@ app.post("/api/cod-advance-order", function (req, res) {
 
   var advancePaise = 20000;
   var receipt = ("cgcod" + Date.now()).replace(/\D/g, "").slice(0, 40);
-  rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
+  checkInventoryBeforePayment(items, function (invErr) {
+    if (invErr) {
+      return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
+    }
+    rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
     .then(function (order) {
       res.json({
         ok: true,
@@ -1143,6 +1174,7 @@ app.post("/api/cod-advance-order", function (req, res) {
       var desc = err && err.error && (err.error.description || err.error.reason || err.error.code);
       res.status(502).json({ ok: false, error: String(desc || err.message || err || "Razorpay order failed") });
     });
+  });
 });
 
 /** Verify the COD ₹200 advance and create the COD order with the remaining balance due on delivery. */
