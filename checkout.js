@@ -1282,12 +1282,28 @@
           ? "COD requires ₹500+ in products. Pay ₹200 advance by Razorpay to confirm the order; the remaining product balance is collected on delivery."
           : "Open Pay now to complete Razorpay checkout — 10% instant online discount applied.";
     }
+    var codEligible = method === "cod" && Number(CART.subtotal()) >= 500;
+    document.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(function (inp) {
+      var isCod = String(inp.value || "").toLowerCase() === "cod";
+      inp.disabled = isCod ? !codEligible : false;
+      var card = inp.closest ? inp.closest(".checkout-payment-option, label, .ck-payment-option") : null;
+      if (card) {
+        card.classList.toggle("is-disabled", isCod && !codEligible);
+        card.setAttribute("aria-disabled", isCod && !codEligible ? "true" : "false");
+      }
+    });
     if (els.btnCodCheckout) {
-      var eligible = method === "cod" && Number(CART.subtotal()) >= 500;
-      els.btnCodCheckout.disabled = !eligible;
-      els.btnCodCheckout.title = eligible
+      els.btnCodCheckout.disabled = !codEligible;
+      els.btnCodCheckout.title = codEligible
         ? "Pay ₹200 advance to confirm COD"
         : "COD requires a minimum product value of ₹500";
+    }
+    if (!codEligible && method === "cod") {
+      var online = document.querySelector('input[name="checkoutPaymentMethod"][value="razorpay"]');
+      if (online) {
+        online.checked = true;
+        updatePaymentPanelVisibility();
+      }
     }
   }
 
