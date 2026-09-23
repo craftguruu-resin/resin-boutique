@@ -193,6 +193,10 @@
        money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
        (Number(totals.prepaidDiscount) > 0 ? "<div>Online discount −" + money(totals.prepaidDiscount) + "</div>" : "") +
+      (String(order.paymentMethod || "").toLowerCase() === "cod"
+        ? "<div>Advance paid now " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +
+          "<div>Balance on delivery " + money(totals.codBalanceDue != null ? totals.codBalanceDue : Math.max(0, Number(totals.total || 0) - 200)) + "</div>"
+        : "") +
       "<div>Shipping " +
       money(totals.shipping) +
       "</div>" +
@@ -272,6 +276,10 @@
        money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
        (Number(totals.prepaidDiscount) > 0 ? "<div><strong>Online discount</strong> −" + money(totals.prepaidDiscount) + "</div>" : "") +
+       (String(order.paymentMethod || "").toLowerCase() === "cod"
+         ? "<div><strong>Advance paid now</strong> " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +
+           "<div><strong>Balance on delivery</strong> " + money(totals.codBalanceDue != null ? totals.codBalanceDue : Math.max(0, Number(totals.total || 0) - 200)) + "</div>"
+         : "") +
       "<div><strong>Shipping</strong> " +
       money(totals.shipping) +
       "</div>" +
