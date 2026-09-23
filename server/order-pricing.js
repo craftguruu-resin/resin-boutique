@@ -4,7 +4,7 @@
 var GST = 0.18;
 var SHIP_FLAT = 10;
 var FREE_SHIP_MIN = 150;
-var PREPAID_DISCOUNT_RATE = 0.05;
+var PREPAID_DISCOUNT_RATE = 0.10;
 var RAZORPAY_FEE_RATE = 0.025;
 
 function round2(n) {
