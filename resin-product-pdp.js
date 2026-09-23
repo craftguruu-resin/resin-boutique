@@ -860,8 +860,7 @@
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
       CART.formatMoney(Math.round(Number(eff) * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100) +
       "</span>" +
-      (effM != null && Number(effM) > Number(eff)
-        ? '<span class="rm-pdp__mrp" id="resinPdpMrp">' + CART.formatMoney(effM) + "</span>"
+      '<span class="rm-pdp__save" id="resinPdpSave">10% online discount</span>' +
         : "") +
       (pct != null
         ? '<span class="rm-pdp__save" id="resinPdpSave">' + pct + "% off</span>"
