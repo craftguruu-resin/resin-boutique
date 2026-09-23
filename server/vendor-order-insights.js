@@ -38,7 +38,7 @@ function getVendorOrderInsights(period, cb) {
   var qYearPaid =
     "SELECT COUNT(*)::int AS c, COALESCE(SUM(o.total), 0)::numeric AS s FROM orders o WHERE o.payment_status = 'paid' AND " +
     istYear;
-  var qPending = "SELECT COUNT(*)::int AS c FROM orders o WHERE o.payment_status = 'pending_payment'";
+  var qPending = "SELECT COUNT(*)::int AS c FROM orders o WHERE o.payment_status IN ('pending_payment', 'cod_advance_paid')";
 
   var qCat =
     "SELECT COALESCE(NULLIF(TRIM(p.category_id), ''), '') AS cid, " +
