@@ -109,7 +109,12 @@
     }
     rows.push(["Shipping", money(totals.shipping)]);
     rows.push(["GST", money(totals.tax)]);
-    rows.push(["Total due", money(totals.total)]);
+    if (String(order.paymentMethod || "").toLowerCase() === "cod") {
+      rows.push(["COD advance paid", money(totals.codAdvance != null ? totals.codAdvance : 200)]);
+      rows.push(["Balance on delivery", money(totals.codBalanceDue != null ? totals.codBalanceDue : Math.max(0, Number(totals.total || 0) - 200))]);
+    } else {
+      rows.push(["Total paid", money(totals.total)]);
+    }
     var net =
       Number(totals.productValue != null ? totals.productValue : totals.subtotal) -
       (Number(totals.prepaidDiscount) || 0) -
@@ -186,9 +191,13 @@
       money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
       (Number(totals.prepaidDiscount) > 0
-        ? "<div>Prepaid discount − " + money(totals.prepaidDiscount) + "</div>"
+        ? "<div>Online discount − " + money(totals.prepaidDiscount) + "</div>"
         : "") +
-      "<div>Shipping " +
+      (String(order.paymentMethod || "").toLowerCase() === "cod"
+        ? "<div>Advance paid now " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +
+          "<div>Balance on delivery " + money(totals.codBalanceDue != null ? totals.codBalanceDue : Math.max(0, Number(totals.total || 0) - 200)) + "</div>"
+        : "") +
+      "<div>Shipping  +
       money(totals.shipping) +
       "</div>" +
       "<div>Tax (GST) " +
