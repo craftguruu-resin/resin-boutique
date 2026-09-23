@@ -223,7 +223,10 @@ function decrementOneLine(client, it) {
       }
       return decrementCatalogVariantStock(client, pid, sizeKey, qty, name).then(function (ok) {
         if (ok) return;
-        return decrementCatalogSlot(client, pid, sk, qty, name);
+        return decrementCatalogSlot(client, pid, sk, qty, name).then(function (slotOk) {
+          if (slotOk) return;
+          throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
+        });
       });
     });
   });
