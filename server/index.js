@@ -1084,21 +1084,21 @@ app.post("/api/razorpay-verify", function (req, res) {
     verifyRazorpayOrderAmount(rz0, oid, Math.round(Number(totals0.total) * 100))
       .then(function () {
         runCheckoutWithOptionalSession(req, res, g0, function () {
-      finishCheckoutOrder(req, res, {
-        guest: g0,
-        items: items0,
-        totals: totals0,
-        orderType: "Checkout · Razorpay",
-        tagRef: makeTagRef(),
-        paymentStatus: "paid",
-        paymentMethod: "razorpay",
-        extraJson: { razorpayPaymentId: String(payId || "") },
+          finishCheckoutOrder(req, res, {
+            guest: g0,
+            items: items0,
+            totals: totals0,
+            orderType: "Checkout · Razorpay",
+            tagRef: makeTagRef(),
+            paymentStatus: "paid",
+            paymentMethod: "razorpay",
+            extraJson: { razorpayPaymentId: String(payId || "") },
+          });
         });
       })
       .catch(function (err) {
         res.status(400).json({ ok: false, error: String(err.message || err || "Razorpay order verification failed") });
-      });
-    return;
+      });    return;
   }
 
   res.json({ ok: true, orderCreated: false });
@@ -1181,20 +1181,24 @@ app.post("/api/cod-advance-verify", function (req, res) {
     .then(function () {
       runCheckoutWithOptionalSession(req, res, guestNorm, function () {
         finishCheckoutOrder(req, res, {
-      guest: guestNorm,
-      items: items,
-      totals: totals,
-      orderType: "Checkout · COD",
-      tagRef: makeTagRef(),
-      paymentStatus: "cod_advance_paid",
-      paymentMethod: "cod",
-      extraJson: {
-        codAdvancePaid: 200,
-        codBalanceDue: totals.codBalanceDue,
-        razorpayPaymentId: String(b.razorpay_payment_id || ""),
-      },
-    });
-  });
+          guest: guestNorm,
+          items: items,
+          totals: totals,
+          orderType: "Checkout · COD",
+          tagRef: makeTagRef(),
+          paymentStatus: "cod_advance_paid",
+          paymentMethod: "cod",
+          extraJson: {
+            codAdvancePaid: 200,
+            codBalanceDue: totals.codBalanceDue,
+            razorpayPaymentId: String(b.razorpay_payment_id || ""),
+          },
+        });
+      });
+    })
+    .catch(function (err) {
+      res.status(400).json({ ok: false, error: String(err.message || err || "COD advance verification failed") });
+    })
 });
 
 /** Guest + shipping address only (no order). Persists when DATABASE_URL is set. With Bearer: email must match session. Without Bearer: saves from form (creates/links guest by phone+email for later OTP login). */
