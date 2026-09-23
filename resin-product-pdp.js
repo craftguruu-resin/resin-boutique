@@ -544,7 +544,7 @@
       }
     });
     var pr = root.querySelector("#resinPdpPrice");
-    if (pr) pr.textContent = CART.formatMoney(Math.round(Number(effPrice) * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100);
+    if (pr) pr.textContent = CART.formatMoney(Number(effPrice));
     var mrpEl = root.querySelector("#resinPdpMrp");
     var saveEl = root.querySelector("#resinPdpSave");
     var showMrp = false;
@@ -558,13 +558,8 @@
       }
     }
     if (saveEl) {
-      if (pct != null) {
-        saveEl.textContent = pct + "% off";
-        saveEl.removeAttribute("hidden");
-      } else {
-        saveEl.textContent = "";
-        saveEl.setAttribute("hidden", "");
-      }
+      saveEl.textContent = "10% off on online payment";
+      saveEl.removeAttribute("hidden");
     }
     root.querySelectorAll(".rm-pdp__thumb").forEach(function (btn) {
       btn.classList.toggle("is-active", Number(btn.getAttribute("data-img-idx")) === idx);
@@ -858,13 +853,9 @@
       headerHtml +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
-      CART.formatMoney(Math.round(Number(eff) * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100) +
+      CART.formatMoney(Number(eff)) +
       "</span>" +
-      '<span class="rm-pdp__save" id="resinPdpSave">10% online discount</span>' +
-        : "") +
-      (pct != null
-        ? '<span class="rm-pdp__save" id="resinPdpSave">' + pct + "% off</span>"
-        : "") +
+      '<span class="rm-pdp__save" id="resinPdpSave">10% off on online payment</span>' +
       "</div>" +
       taxNote +
       discBanner +
