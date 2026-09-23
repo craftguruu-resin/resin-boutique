@@ -5,7 +5,7 @@
 (function (global) {
   "use strict";
 
-  var PREPAID_DISCOUNT_PCT = 5;
+  var PREPAID_DISCOUNT_PCT = 10;
   var MAX_VISIBLE_THUMBS = 5;
 
   function esc(s) {
