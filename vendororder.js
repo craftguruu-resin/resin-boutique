@@ -189,8 +189,8 @@
       rows +
       "</tbody></table>" +
       "<div class='vendor-inline-bill__sum'>" +
-      "<div>Subtotal " +
-      money(totals.subtotal) +
+       "<div>Product value " +
+       money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
       "<div>Shipping " +
       money(totals.shipping) +
@@ -268,7 +268,7 @@
       "</tbody></table>" +
       "<div class='sum'>" +
       "<div><strong>Product value</strong> " +
-      money(totals.subtotal) +
+       money(totals.productValue != null ? totals.productValue : totals.subtotal)
       "</div>" +
       "<div><strong>Shipping</strong> " +
       money(totals.shipping) +
