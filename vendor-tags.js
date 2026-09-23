@@ -104,6 +104,7 @@
     var s = String(st || "").toLowerCase();
     if (s === "paid") return "<span class='vs-badge vs-badge--paid'>Paid</span>";
     if (s === "pending_payment") return "<span class='vs-badge vs-badge--pending'>Pending</span>";
+    if (s === "cod_advance_paid") return "<span class='vs-badge vs-badge--pending'>COD · ₹200 advance paid</span>";
     if (s === "failed") return "<span class='vs-badge vs-badge--err'>Failed</span>";
     if (s === "refunded") return "<span class='vs-badge'>Refunded</span>";
     return "<span class='vs-badge vs-badge--pending'>" + esc(st || "—") + "</span>";
@@ -402,7 +403,7 @@
         if (istYmFromIso(o.createdAt) !== istYmNow()) return false;
       }
       if (filter === "paid" && o.paymentStatus !== "paid") return false;
-      if (filter === "pending" && o.paymentStatus !== "pending_payment") return false;
+      if (filter === "pending" && o.paymentStatus !== "pending_payment" && o.paymentStatus !== "cod_advance_paid") return false;
       var fs = o.fulfillmentStatus || "new";
       if (ffFilter === "open") {
         if (fs === "delivered" || fs === "cancelled") return false;
@@ -666,7 +667,8 @@
           String(order.paymentMethod || "")
             .trim()
             .toLowerCase() === "cod" &&
-          String(order.paymentStatus || "").toLowerCase() === "pending_payment"
+          (String(order.paymentStatus || "").toLowerCase() === "pending_payment" ||
+          String(order.paymentStatus || "").toLowerCase() === "cod_advance_paid")
         ) {
           markHtml =
             '<p style="margin:0 0 0.75rem"><button type="button" class="vs-btn vs-btn--primary" id="vtMarkPaidBtn" data-oid="' +
