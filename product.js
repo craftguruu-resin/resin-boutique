@@ -922,12 +922,12 @@
     var total = Math.round(unit * q * 100) / 100;
     var onlineTotal = Math.round(total * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100;
 
-    els.price.textContent = fmt(onlineTotal);
+    els.price.textContent = fmt(total);
     if (els.priceBreakdown) {
       if (q === 1) {
-        els.priceBreakdown.textContent = "Online price after 10% discount";
+        els.priceBreakdown.textContent = "Pay online and save 10% · online price " + fmt(onlineTotal);
       } else {
-        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit * (1 - ONLINE_DISCOUNT_RATE)) + " each · 10% online discount";
+        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " each · pay online and save 10%";
       }
     }
     var stockHint = document.getElementById("productStockHint");
