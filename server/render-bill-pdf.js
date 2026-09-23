@@ -234,7 +234,7 @@ function renderOrderBillPdf(p) {
       doc.fillColor(INK).text(fmtInr(p.tax), margin, ty, { width: contentW, align: "right" });
       ty += 22;
       if (Number(p.prepaidDiscount) > 0) {
-        doc.fillColor(MUTED).text("Prepaid discount (5%)", margin, ty);
+        doc.fillColor(MUTED).text("Online discount (10%)", margin, ty);
         doc.fillColor(INK).text("− " + fmtInr(p.prepaidDiscount), margin, ty, { width: contentW, align: "right" });
         ty += 22;
       }
@@ -256,6 +256,14 @@ function renderOrderBillPdf(p) {
       doc.restore();
       ty += 16;
 
+      if (String(p.paymentMethod || "").toLowerCase() === "cod") {
+        doc.font("Helvetica").fontSize(11).fillColor(MUTED).text("COD advance paid", margin, ty);
+        doc.fillColor(INK).text(fmtInr(p.codAdvance != null ? p.codAdvance : 200), margin, ty, { width: contentW, align: "right" });
+        ty += 22;
+        doc.font("Helvetica").fontSize(11).fillColor(MUTED).text("Balance on delivery", margin, ty);
+        doc.fillColor(INK).text(fmtInr(p.codBalanceDue != null ? p.codBalanceDue : Math.max(0, Number(p.total || 0) - 200)), margin, ty, { width: contentW, align: "right" });
+        ty += 24;
+      }
       doc.font("Helvetica-Bold").fontSize(12).fillColor(INK).text("Total due", margin, ty);
       doc.font("Helvetica-Bold").fontSize(20).fillColor(ACCENT).text(fmtInr(p.total), margin, ty - 2, {
         width: contentW,
