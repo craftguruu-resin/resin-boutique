@@ -198,7 +198,7 @@
         ? "<div>Advance paid now " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +
           "<div>Balance on delivery " + money(totals.codBalanceDue != null ? totals.codBalanceDue : Math.max(0, Number(totals.total || 0) - 200)) + "</div>"
         : "") +
-      "<div>Shipping  +
+      "<div>Shipping " +
       money(totals.shipping) +
       "</div>" +
       "<div>Tax (GST) " +
