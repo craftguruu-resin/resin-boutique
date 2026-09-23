@@ -30,9 +30,13 @@ function decrementCatalogSlot(client, pid, sk, qty, name) {
   return client
     .query("SELECT stock_s, stock_m, stock_l FROM catalog_price_overrides WHERE product_id = $1", [pid])
     .then(function (r) {
-      if (!r.rows.length) return false;
+      if (!r.rows.length) {
+        throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
+      }
       var v = r.rows[0][col];
-      if (v == null) return false;
+      if (v == null) {
+        throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
+      }
       var num = Number(v);
       if (!Number.isFinite(num)) return false;
       if (num < qty) {
@@ -74,9 +78,11 @@ function decrementVariantStock(client, table, pid, sizeKey, qty, name) {
   var key = String(sizeKey || "").trim();
   if (!key || key === "s" || key === "m" || key === "l") return Promise.resolve(false);
   return client.query("SELECT options_json FROM " + table + " WHERE id = $1", [pid]).then(function (r) {
-    if (!r.rows.length) return false;
+    if (!r.rows.length) {
+      throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
+    }
     var opt = parseOptionsCell(r.rows[0].options_json);
-    if (!opt) return false;
+    if (!opt) throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
     var vi = opt.vendorInventory && typeof opt.vendorInventory === "object" ? opt.vendorInventory : {};
     var variants = vi.variants && typeof vi.variants === "object" ? vi.variants : null;
     if (!variants || !Object.prototype.hasOwnProperty.call(variants, key)) return false;
@@ -142,9 +148,11 @@ function decrementCatalogVariantStock(client, pid, sizeKey, qty, name) {
 
 function decrementJsonQtyOnHand(client, table, pid, qty, name) {
   return client.query("SELECT options_json FROM " + table + " WHERE id = $1", [pid]).then(function (r) {
-    if (!r.rows.length) return false;
+    if (!r.rows.length) {
+      throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
+    }
     var opt = r.rows[0].options_json;
-    if (opt == null) return false;
+    if (opt == null) throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
     if (typeof opt === "string") {
       try {
         opt = JSON.parse(opt);
@@ -152,9 +160,9 @@ function decrementJsonQtyOnHand(client, table, pid, qty, name) {
         return false;
       }
     }
-    if (!opt || typeof opt !== "object") return false;
+    if (!opt || typeof opt !== "object") throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
     var vi = opt.vendorInventory && typeof opt.vendorInventory === "object" ? opt.vendorInventory : {};
-    if (vi.qtyOnHand == null) return false;
+    if (vi.qtyOnHand == null) throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
     var num = Number(vi.qtyOnHand);
     if (!Number.isFinite(num)) return false;
     if (num < qty) {
