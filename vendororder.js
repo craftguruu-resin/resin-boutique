@@ -195,7 +195,7 @@
       "<div>Shipping " +
       money(totals.shipping) +
       "</div>" +
-      "<div>Tax (8%) " +
+      "<div>GST (included) " +
       money(totals.tax) +
       "</div>" +
       "<div><strong>Total " +
@@ -267,13 +267,13 @@
       rows +
       "</tbody></table>" +
       "<div class='sum'>" +
-      "<div><strong>Subtotal</strong> " +
+      "<div><strong>Product value</strong> " +
       money(totals.subtotal) +
       "</div>" +
       "<div><strong>Shipping</strong> " +
       money(totals.shipping) +
       "</div>" +
-      "<div><strong>Tax (8%)</strong> " +
+      "<div><strong>GST (included)</strong> " +
       money(totals.tax) +
       "</div>" +
       "<div><strong>Total</strong> " +
