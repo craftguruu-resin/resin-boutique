@@ -1194,7 +1194,9 @@
 
   function computeCheckoutTotals(subtotalVal, paymentMethod) {
     var productValue = Math.round(Number(subtotalVal) * 100) / 100;
-    var shipping = paymentMethod === "cod" ? 200 : productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
+    var shipping = paymentMethod === "razorpay"
+      ? (productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT)
+      : 0;
     var prepaidDiscount =
       paymentMethod === "razorpay" ? Math.round(productValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
     var afterDiscount = Math.round(Math.max(0, productValue - prepaidDiscount) * 100) / 100;
@@ -1277,7 +1279,7 @@
     if (hint && checkoutPhase === "payment") {
       hint.textContent =
         method === "cod"
-          ? "COD requires ₹500+ in products. Pay ₹200 courier & packing advance by Razorpay; the remaining balance is collected on delivery."
+          ? "COD requires ₹500+ in products. Pay ₹200 advance by Razorpay to confirm the order; the remaining product balance is collected on delivery."
           : "Open Pay now to complete Razorpay checkout — 10% instant online discount applied.";
     }
     if (els.btnCodCheckout) {
@@ -1689,7 +1691,7 @@
       label.textContent = "Checkout";
       if (getCheckoutPaymentMethod() === "cod") {
         msg.innerHTML =
-          "COD is available for product value ₹500+. Pay <strong>₹200 advance via Razorpay</strong> for courier &amp; packing confirmation; the remaining balance is collected on delivery.";
+          "COD is available for product value ₹500+. Pay <strong>₹200 advance via Razorpay</strong> to confirm the order; the remaining product balance is collected on delivery.";
       } else {
         msg.innerHTML =
           "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 10% prepaid discount).";
