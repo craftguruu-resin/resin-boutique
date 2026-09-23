@@ -92,15 +92,22 @@ function normalizeSizeKey(it) {
 }
 
 function mapOrderTotalsRow(o) {
-  return {
+  var total = Number(o.total) || 0;
+  var isCod = String(o.payment_method || "").trim().toLowerCase() === "cod";
+  var out = {
     productValue: Number(o.product_value != null ? o.product_value : o.subtotal),
     subtotal: Number(o.subtotal),
     prepaidDiscount: Number(o.prepaid_discount != null ? o.prepaid_discount : 0),
     shipping: Number(o.shipping),
     tax: Number(o.tax),
-    total: Number(o.total),
+    total: total,
     gatewayFee: Number(o.gateway_fee != null ? o.gateway_fee : 0),
   };
+  if (isCod) {
+    out.codAdvance = 200;
+    out.codBalanceDue = Math.max(0, Math.round((total - 200) * 100) / 100);
+  }
+  return out;
 }
 
 function guestSnapshotObj(guest) {
