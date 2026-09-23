@@ -9,6 +9,7 @@
 
   var D = window.RESIN_DATA;
   var CART = window.RESIN_CART;
+  var ONLINE_DISCOUNT_RATE = 0.10;
   if (!D || !CART) return;
 
   var state = {
@@ -549,8 +550,8 @@
     var showMrp = effM != null && Number(effM) > Number(eff);
     if (mrpEl) {
       if (showMrp) {
-        mrpEl.textContent = CART.formatMoney(effM);
-        mrpEl.removeAttribute("hidden");
+        mrpEl.textContent = "";
+        mrpEl.setAttribute("hidden", "");
       } else {
         mrpEl.textContent = "";
         mrpEl.setAttribute("hidden", "");
@@ -857,7 +858,7 @@
       headerHtml +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="resinPdpPrice">' +
-      CART.formatMoney(eff) +
+      CART.formatMoney(Math.round(Number(eff) * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100) +
       "</span>" +
       (effM != null && Number(effM) > Number(eff)
         ? '<span class="rm-pdp__mrp" id="resinPdpMrp">' + CART.formatMoney(effM) + "</span>"
