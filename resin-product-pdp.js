@@ -401,6 +401,7 @@
     return {
       id: p.id,
       name: p.name,
+      stock: p.stock && typeof p.stock === "object" ? Object.assign({}, p.stock) : null,
       image: p.image,
       priceInr: minP,
       mrpInr: opt.mrpInr != null ? Number(opt.mrpInr) : null,
@@ -1065,6 +1066,22 @@
         t.id === "resinPdpBuyNow" ||
         (t.closest && (t.closest("#resinPdpAdd") || t.closest("#resinPdpBuyNow")))
       ) {
+        var stockSlot = stockSlotFromSel(state.sel, m);
+        var stockValue = state.product && state.product.stock && state.product.stock[stockSlot] != null
+          ? Number(state.product.stock[stockSlot])
+          : null;
+        if (Number.isFinite(stockValue) && stockValue <= 0) {
+          window.alert("This product is currently out of stock.");
+          return;
+        }
+        if (Number.isFinite(stockValue) && stockValue < Number(state.lineQty || 1)) {
+          window.alert("Only " + stockValue + " left in stock for this product.");
+          return;
+        }
+        if (!Number.isFinite(stockValue)) {
+          window.alert("Inventory is currently unavailable for this product. Please try again later.");
+          return;
+        }
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
         var ex = customLineExtra();
@@ -1080,6 +1097,10 @@
           qty: state.lineQty,
           lineExtra: ex || undefined,
         });
+        if (t.id === "resinPdpBuyNow" || (t.closest && t.closest("#resinPdpBuyNow"))) {
+          window.location.href = "checkout.html";
+          return;
+        }
         if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
         return;
       }
