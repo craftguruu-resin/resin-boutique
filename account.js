@@ -618,7 +618,11 @@
       "</div>" +
       '<div class="account-order-bill__totals">' +
       totalRow("Items total", T.productValue != null ? T.productValue : T.subtotal) +
-      (Number(T.prepaidDiscount) > 0 ? totalRow("Prepaid discount (5%)", "− " + fmtMoney(T.prepaidDiscount)) : "") +
+      (Number(T.prepaidDiscount) > 0 ? totalRow("Online discount (10%)", "− " + fmtMoney(T.prepaidDiscount)) : "") +
+      (String(o.paymentMethod || "").toLowerCase() === "cod"
+        ? totalRow("COD advance paid", T.codAdvance != null ? T.codAdvance : 200) +
+          totalRow("Balance on delivery", T.codBalanceDue != null ? T.codBalanceDue : Math.max(0, Number(grand || 0) - 200))
+        : "") +
       totalRow("Shipping", T.shipping) +
       totalRow("Tax (GST)", T.tax) +
       (Number(T.gatewayFee) > 0 ? totalRow("Gateway fee", T.gatewayFee) : "") +
@@ -744,6 +748,7 @@
     var s = String(ps || "").toLowerCase();
     if (s === "paid") return "Paid";
     if (s === "pending_payment") return "Pending";
+    if (s === "cod_advance_paid") return "COD · ₹200 advance paid";
     if (s === "failed") return "Failed";
     if (s === "refunded") return "Refunded";
     return ps || "—";
@@ -763,9 +768,9 @@
     var ps = String(o.paymentStatus || "").toLowerCase();
     if (tab === "all") return true;
     if (fs === "cancelled") return false;
-    if (tab === "unpaid") return ps === "pending_payment";
+    if (tab === "unpaid") return ps === "pending_payment" || ps === "cod_advance_paid";
     /* current — open orders (awaiting pay or in flight, not delivered) */
-    if (ps === "pending_payment") return true;
+    if (ps === "pending_payment" || ps === "cod_advance_paid") return true;
     if (ps === "paid" && fs !== "delivered") return true;
     return false;
   }
