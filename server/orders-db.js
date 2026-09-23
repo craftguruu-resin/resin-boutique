@@ -645,7 +645,7 @@ function getVendorDashboardSummary(cb) {
   var qPaidMonth =
     "SELECT COALESCE(SUM(o.total), 0)::numeric AS s, COUNT(*)::int AS c FROM orders o WHERE o.payment_status = 'paid' AND " +
     istMonth;
-  var qPending = "SELECT COUNT(*)::int AS c FROM orders o WHERE o.payment_status = 'pending_payment'";
+  var qPending = "SELECT COUNT(*)::int AS c FROM orders o WHERE o.payment_status IN ('pending_payment', 'cod_advance_paid')";
   var qSpark =
     "WITH days AS ( " +
     "SELECT to_char(d, 'YYYY-MM-DD') AS d_key FROM generate_series( " +
