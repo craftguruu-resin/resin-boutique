@@ -268,16 +268,26 @@
 
   function applyOutOfStockUi() {
     var ban = document.getElementById("productOosBanner");
-    if (ban) ban.hidden = true;
-    document.body.classList.remove("product-page--oos");
+    var stk = product && product.stock && selected && product.stock[selected] != null
+      ? Number(product.stock[selected])
+      : null;
+    var out = Number.isFinite(stk) && stk <= 0;
+    if (ban) {
+      ban.hidden = !out;
+      if (out) ban.textContent = "Out of stock";
+    }
+    document.body.classList.toggle("product-page--oos", out);
     if (els.addBtn) {
-      els.addBtn.disabled = false;
-      els.addBtn.setAttribute("aria-disabled", "false");
+      els.addBtn.disabled = out;
+      els.addBtn.setAttribute("aria-disabled", out ? "true" : "false");
     }
     if (els.sizes) {
       els.sizes.querySelectorAll(".size-pick").forEach(function (b) {
-        b.disabled = false;
-        b.setAttribute("aria-disabled", "false");
+        var key = String(b.getAttribute("data-size") || "");
+        var sv = product && product.stock && product.stock[key] != null ? Number(product.stock[key]) : null;
+        var disabled = Number.isFinite(sv) && sv <= 0;
+        b.disabled = disabled;
+        b.setAttribute("aria-disabled", disabled ? "true" : "false");
       });
     }
     var qm = document.getElementById("productQtyMinus");
@@ -1123,7 +1133,12 @@
       btn.dataset.cgAddBound = "1";
       btn.addEventListener("click", function () {
         var stk = product.stock && product.stock[selected];
-        if (stk != null && Number.isFinite(Number(stk)) && Number(stk) < selectedQty) {
+        if (stk == null || !Number.isFinite(Number(stk)) || Number(stk) <= 0) {
+          window.alert("This product is currently out of stock.");
+          applyOutOfStockUi();
+          return;
+        }
+        if (Number(stk) < selectedQty) {
           window.alert("Only " + stk + " left in stock for this size. Lower the quantity or pick another size.");
           return;
         }
@@ -1158,6 +1173,12 @@
           window.RESIN_SHELL.updateBadge();
           window.RESIN_SHELL.renderDrawer();
         }
+        var buyNow = document.getElementById("buyNowBtn");
+        if (buyNow && buyNow.dataset.cgBuyNow === "1") {
+          delete buyNow.dataset.cgBuyNow;
+          window.location.href = "checkout.html";
+          return;
+        }
         if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) {
           window.RESIN_SHELL.openDrawer();
         } else {
@@ -1189,6 +1210,7 @@
     if (buyNowBtn && els.addBtn && !buyNowBtn.dataset.wired) {
       buyNowBtn.dataset.wired = "1";
       buyNowBtn.addEventListener("click", function () {
+        buyNowBtn.dataset.cgBuyNow = "1";
         els.addBtn.click();
       });
     }
