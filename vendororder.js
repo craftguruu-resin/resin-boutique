@@ -190,7 +190,7 @@
       "</tbody></table>" +
       "<div class='vendor-inline-bill__sum'>" +
        "<div>Product value " +
-       money(totals.productValue != null ? totals.productValue : totals.subtotal)
+       money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
        (Number(totals.prepaidDiscount) > 0 ? "<div>Online discount −" + money(totals.prepaidDiscount) + "</div>" : "") +
       (String(order.paymentMethod || "").toLowerCase() === "cod"
@@ -273,7 +273,7 @@
       "</tbody></table>" +
       "<div class='sum'>" +
       "<div><strong>Product value</strong> " +
-       money(totals.productValue != null ? totals.productValue : totals.subtotal)
+       money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
        (Number(totals.prepaidDiscount) > 0 ? "<div><strong>Online discount</strong> −" + money(totals.prepaidDiscount) + "</div>" : "") +
        (String(order.paymentMethod || "").toLowerCase() === "cod"
