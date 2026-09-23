@@ -9,7 +9,7 @@
   var GST_INCLUSIVE_RATE = 0.18;
   var SHIP_FLAT = 10;
   var FREE_SHIP_MIN = 150;
-  var PREPAID_DISCOUNT_RATE = 0.05;
+  var PREPAID_DISCOUNT_RATE = 0.10;
 
   function splitGstFromInclusive(inclTotal) {
     var t = Math.round(Number(inclTotal) * 100) / 100;
@@ -1278,7 +1278,7 @@
       hint.textContent =
         method === "cod"
           ? "COD requires ₹500+ in products. Pay ₹200 courier & packing advance by Razorpay; the remaining balance is collected on delivery."
-          : "Open Pay now to complete Razorpay checkout — 5% instant discount applied.";
+          : "Open Pay now to complete Razorpay checkout — 10% instant online discount applied.";
     }
     if (els.btnCodCheckout) {
       var eligible = method === "cod" && Number(CART.subtotal()) >= 500;
@@ -1681,7 +1681,7 @@
       msg.textContent =
         getCheckoutPaymentMethod() === "cod"
           ? "Tap Pay now, choose Cash on delivery, then place your order. Payment is collected when your parcel arrives."
-          : "Tap Pay now to see your total here, then use Pay securely now — 5% instant discount on online payment.";
+          : "Tap Pay now to see your total here, then use Pay securely now — 10% instant discount on online payment.";
       return;
     }
     if (mode === "ready") {
@@ -1692,7 +1692,7 @@
           "COD is available for product value ₹500+. Pay <strong>₹200 advance via Razorpay</strong> for courier &amp; packing confirmation; the remaining balance is collected on delivery.";
       } else {
         msg.innerHTML =
-          "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 5% prepaid discount).";
+          "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 10% prepaid discount).";
       }
       return;
     }
