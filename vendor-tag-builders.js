@@ -102,7 +102,7 @@
       ["Product value", money(totals.productValue != null ? totals.productValue : totals.subtotal)],
     ];
     if (Number(totals.prepaidDiscount) > 0) {
-      rows.push(["Prepaid discount (5%)", "− " + money(totals.prepaidDiscount)]);
+      rows.push(["Online discount (10%)", "− " + money(totals.prepaidDiscount)]);
     }
     if (Number(totals.gatewayFee) > 0) {
       rows.push(["Gateway fee", money(totals.gatewayFee)]);
@@ -272,7 +272,7 @@
       "<div><strong>Shipping</strong> " +
       money(totals.shipping) +
       "</div>" +
-      "<div><strong>Tax (8%)</strong> " +
+      "<div><strong>GST (included)</strong> " +
       money(totals.tax) +
       "</div>" +
       "<div><strong>Total</strong> " +
