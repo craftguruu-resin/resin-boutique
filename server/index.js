@@ -167,6 +167,20 @@ function verifyRazorpaySignature(orderId, paymentId, signature) {
   }
 }
 
+function verifyRazorpayOrderAmount(rz, orderId, expectedPaise) {
+  if (!rz || !orderId || !Number.isFinite(Number(expectedPaise))) {
+    return Promise.reject(new Error("Invalid Razorpay order verification request"));
+  }
+  return rz.orders.fetch(String(orderId)).then(function (order) {
+    var actual = Number(order && order.amount);
+    var currency = String((order && order.currency) || "").toUpperCase();
+    if (actual !== Number(expectedPaise) || currency !== "INR") {
+      throw new Error("Razorpay order amount mismatch");
+    }
+    return order;
+  });
+}
+
 var rateBucket = {};
 var RATE_WINDOW_MS = 60 * 60 * 1000;
 var RATE_MAX = 40;
@@ -1065,8 +1079,11 @@ app.post("/api/razorpay-verify", function (req, res) {
     var items0 = rawItems.map(sanitizeBillItem);
     var totals0 = computeTotals(items0, { paymentMethod: "razorpay" });
     var g0 = normalizeGuestParcel(guest);
+    var rz0 = getRazorpayClient();
 
-    runCheckoutWithOptionalSession(req, res, g0, function () {
+    verifyRazorpayOrderAmount(rz0, oid, Math.round(Number(totals0.total) * 100))
+      .then(function () {
+        runCheckoutWithOptionalSession(req, res, g0, function () {
       finishCheckoutOrder(req, res, {
         guest: g0,
         items: items0,
@@ -1076,8 +1093,11 @@ app.post("/api/razorpay-verify", function (req, res) {
         paymentStatus: "paid",
         paymentMethod: "razorpay",
         extraJson: { razorpayPaymentId: String(payId || "") },
+        });
+      })
+      .catch(function (err) {
+        res.status(400).json({ ok: false, error: String(err.message || err || "Razorpay order verification failed") });
       });
-    });
     return;
   }
 
@@ -1152,12 +1172,15 @@ app.post("/api/cod-advance-verify", function (req, res) {
     return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
   }
   var guestNorm = normalizeGuestParcel(guest);
+  var rzCod = getRazorpayClient();
   totals.codAdvance = 200;
   totals.codBalanceDue = orderPricing.round2(Math.max(0, Number(totals.total || 0) - 200));
   totals.codAdvanceRazorpayPaymentId = String(b.razorpay_payment_id || "").slice(0, 120);
 
-  runCheckoutWithOptionalSession(req, res, guestNorm, function () {
-    finishCheckoutOrder(req, res, {
+  verifyRazorpayOrderAmount(rzCod, b.razorpay_order_id, 20000)
+    .then(function () {
+      runCheckoutWithOptionalSession(req, res, guestNorm, function () {
+        finishCheckoutOrder(req, res, {
       guest: guestNorm,
       items: items,
       totals: totals,
