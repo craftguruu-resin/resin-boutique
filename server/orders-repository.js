@@ -369,7 +369,7 @@ function buildVendorDashboardSummaryFromFileRows(rows) {
   (rows || []).forEach(function (o) {
     if (!o) return;
     var ps = o.paymentStatus || "pending_payment";
-    if (ps === "pending_payment") pendingPaymentOrders += 1;
+    if (ps === "pending_payment" || ps === "cod_advance_paid") pendingPaymentOrders += 1;
 
     var dKey = istYmdKeyFromIso(o.createdAt);
     if (dKey && dKey === todayIst) {
