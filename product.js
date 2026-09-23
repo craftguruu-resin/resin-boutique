@@ -8,6 +8,7 @@
   var params = new URLSearchParams(window.location.search);
   var id = params.get("id");
   var product = id ? D.getProduct(id) : null;
+  var ONLINE_DISCOUNT_RATE = 0.10;
 
   function refreshProductRef() {
     product = id ? D.getProduct(id) : null;
@@ -919,13 +920,14 @@
     var q = selectedQty;
     var unit = Math.round(Number(base) * 100) / 100;
     var total = Math.round(unit * q * 100) / 100;
+    var onlineTotal = Math.round(total * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100;
 
-    els.price.textContent = fmt(total);
+    els.price.textContent = fmt(onlineTotal);
     if (els.priceBreakdown) {
       if (q === 1) {
-        els.priceBreakdown.textContent = "1 × " + fmt(unit) + " · MRP per piece";
+        els.priceBreakdown.textContent = "Online price after 10% discount";
       } else {
-        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit) + " each · same MRP per piece";
+        els.priceBreakdown.textContent = String(q) + " × " + fmt(unit * (1 - ONLINE_DISCOUNT_RATE)) + " each · 10% online discount";
       }
     }
     var stockHint = document.getElementById("productStockHint");
