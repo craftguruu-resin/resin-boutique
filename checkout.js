@@ -1682,7 +1682,7 @@
       label.textContent = "Ready";
       msg.textContent =
         getCheckoutPaymentMethod() === "cod"
-          ? "Tap Pay now, choose Cash on delivery, then place your order. Payment is collected when your parcel arrives."
+          ? "Tap Pay now, choose Cash on delivery, pay the ₹200 advance via Razorpay, then the remaining balance is collected when your parcel arrives."
           : "Tap Pay now to see your total here, then use Pay securely now — 10% instant discount on online payment.";
       return;
     }
