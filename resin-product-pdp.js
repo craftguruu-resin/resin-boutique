@@ -544,10 +544,10 @@
       }
     });
     var pr = root.querySelector("#resinPdpPrice");
-    if (pr) pr.textContent = CART.formatMoney(eff);
+    if (pr) pr.textContent = CART.formatMoney(Math.round(Number(effPrice) * (1 - ONLINE_DISCOUNT_RATE) * 100) / 100);
     var mrpEl = root.querySelector("#resinPdpMrp");
     var saveEl = root.querySelector("#resinPdpSave");
-    var showMrp = effM != null && Number(effM) > Number(eff);
+    var showMrp = false;
     if (mrpEl) {
       if (showMrp) {
         mrpEl.textContent = "";
