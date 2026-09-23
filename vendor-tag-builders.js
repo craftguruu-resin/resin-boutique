@@ -89,6 +89,7 @@
     var s = String(st || "").trim().toLowerCase();
     if (s === "paid") return "Paid";
     if (s === "pending_payment") return "Pending";
+    if (s === "cod_advance_paid") return "COD · ₹200 advance paid";
     if (s === "failed") return "Failed";
     if (s === "refunded") return "Refunded";
     return st || "—";
