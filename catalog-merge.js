@@ -342,10 +342,10 @@
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", function () {
-      runMerge(false);
+      runMerge(true);
     });
   } else {
-    runMerge(false);
+    runMerge(true);
   }
 
   window.CraftguruCatalogMerge = {
