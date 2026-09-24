@@ -326,23 +326,14 @@ function serveHomepage(req, res, next) {
     else console.warn("[homepage-ssr] " + reason);
 
     /*
-     * Fail closed: if the Vendor Panel allowlist cannot be loaded, do not send
-     * the old bundled homepage product/category cards from the HTML template.
-     * The client catalog merge will remain hidden until the allowlist is known.
+     * Do not blank the storefront when Neon/API is temporarily slow or unavailable.
+     * The bundled catalog remains renderable as the immediate fallback; once the
+     * client receives the Vendor Panel activeProductIds allowlist it replaces this
+     * fallback and hides every inactive/deleted product.
      */
-    var safeTemplate = template
-      .replace(
-        /(<nav class="category-grid category-grid--rail" id="categoryGrid"[^>]*>)[\s\S]*?(<\/nav>)/,
-        "$1$2"
-      )
-      .replace(
-        /(<div class="featured-collections-grid" id="productGrid"[^>]*>)[\s\S]*?(<\/div>)/,
-        "$1$2"
-      );
-
     res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
-    return res.type("html").send(safeTemplate);
+    return res.type("html").send(template);
   }
 
   withTimeout(storefrontBootstrap.loadStorefrontBootstrap, BOOTSTRAP_TIMEOUT_MS, function (bootErr, bootstrap) {
