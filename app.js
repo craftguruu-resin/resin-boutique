@@ -633,6 +633,7 @@
     var rail = els.categoryGrid.classList && els.categoryGrid.classList.contains("category-grid--rail");
     var railApi = window.CRAFT_RAIL_ICONS;
     D.categories.forEach(function (cat, i) {
+      if (!cat || String(cat.id || "").trim() === "craftguru-details") return;
       var a = document.createElement("a");
       /* Rail sits in a narrow column: reveal-pill starts at opacity 0 and often never gets is-inview — keep links always visible. */
       a.className = rail ? "category-pill category-pill--rail" : "category-pill reveal-pill";
