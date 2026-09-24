@@ -209,7 +209,7 @@
     var controller = window.AbortController ? new AbortController() : null;
     var timer = window.setTimeout(function () {
       if (controller) controller.abort();
-    }, 4000);
+    }, 10000);
     var opts = { credentials: "same-origin" };
     if (controller) opts.signal = controller.signal;
     return fetch(base + path, opts)
