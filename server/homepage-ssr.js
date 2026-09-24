@@ -120,6 +120,7 @@ function categoryPreviewFit(cat) {
 function renderCategoryRail(categories) {
   var parts = [];
   categories.forEach(function (cat) {
+    if (!cat || String(cat.id || "").trim() === "craftguru-details") return;
     var id = String(cat.id || "");
     if (!id) return;
     parts.push(
