@@ -101,13 +101,20 @@ function mergeCategoriesDbWithCatalog(dbRows) {
     .map(function (k) {
       return map[k];
     })
+    .filter(function (row) {
+      return row && row.id && String(row.id).trim() !== "craftguru-details";
+    })
     .sort(function (a, b) {
       return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
     });
 }
 
 function categoriesFromDataJsOnly() {
-  return catalogFromData.getCategoriesList().map(function (c) {
+  return catalogFromData.getCategoriesList()
+    .filter(function (c) {
+      return c && String(c.id || "").trim() !== "craftguru-details";
+    })
+    .map(function (c) {
     return {
       id: c.id,
       label: c.label,
