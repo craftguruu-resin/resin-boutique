@@ -410,10 +410,6 @@ function mapRowToClient(row) {
 function listExtraProductsForStorefront(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
-    /*
-     * The Vendor Panel state is authoritative. If it cannot be read, do not
-     * guess that Git/data.js products are active.
-     */
     return process.nextTick(function () {
       cb(null, []);
     });
@@ -455,76 +451,6 @@ function listExtraProductsForStorefront(cb) {
  * @param {{ name: string, categoryId: string, priceS: number, priceM: number, priceL: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, imageUrl?: string }} opts
  * @param {(err: Error|null, row?: object) => void} cb
  */
-/**
- * Return the exact product allowlist that the customer storefront is permitted to show.
- * This is derived from the same active/listed state used by the Vendor Panel.
- *
- * Bundled data.js products follow the Vendor Panel's existing listing state:
- * explicit listed:false is inactive; otherwise they remain Active. Permanent
- * tombstones always win. Vendor-created products must have products.is_active=true
- * and must not be explicitly delisted.
- * If the database is unavailable, fail closed with an empty allowlist.
- */
-function listActiveProductIdsForStorefront(cb) {
-  var pool = poolMod.getPool();
-  if (!pool) {
-    return process.nextTick(function () {
-      cb(null, []);
-    });
-  }
-
-  vendorCatalogDb.listOverridesMap(function (e1, omap) {
-    if (e1) return cb(e1);
-    omap = omap || {};
-    vendorCatalogDb.listSuppressedProductIds(function (e2, suppressed) {
-      if (e2) return cb(e2);
-
-      var supSet = Object.create(null);
-      (suppressed || []).forEach(function (sid) {
-        var id = String(sid || "").trim();
-        if (id) supSet[id] = 1;
-      });
-
-      var staticIds;
-      try {
-        staticIds = staticCatalogProductIds();
-      } catch (e3) {
-        return cb(e3);
-      }
-
-      var active = Object.create(null);
-      staticIds.forEach(function (id) {
-        if (!id || supSet[id]) return;
-        var ov = omap[id];
-        /*
-         * Vendor Panel catalog state is authoritative:
-         * explicit listed:false means inactive; otherwise preserve the
-         * existing catalog default of Active. Git/source presence alone
-         * does not override an explicit inactive state or tombstone.
-         */
-        if (ov && ov.listed === false) return;
-        active[id] = 1;
-      });
-
-      pool
-        .query("SELECT id, category_id, is_active FROM products")
-        .then(function (r) {
-          r.rows.forEach(function (row) {
-            var id = String(row.id || "").trim();
-            if (!id || staticIds.has(id) || supSet[id]) return;
-            if (hiddenResinCatalog.isHiddenResinCategoryId(row.category_id)) return;
-            if (row.is_active !== true) return;
-            var ov = omap[id];
-            if (ov && ov.listed === false) return;
-            active[id] = 1;
-          });
-          cb(null, Object.keys(active));
-        })
-        .catch(cb);
-    });
-  });
-}
-
 function createVendorProduct(opts, cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -755,19 +681,6 @@ function manageRowHaystack(p) {
 
 function pushStaticManageRow(p, omap, skuMap, out) {
   var ov = omap[p.id] || {};
-  /*
-   * A bundled product is inactive until the Vendor Panel explicitly marks it
-   * Active. This keeps the admin status and storefront allowlist identical.
-   */
-  /*
-   * Keep the Vendor Panel's existing catalog semantics:
-   * - explicit listed:false = inactive
-   * - missing listed flag = active (legacy/catalog default)
-   *
-   * This preserves the products that were already Active before the
-   * visibility allowlist was introduced. A Git product is never allowed
-   * to bypass an explicit inactive/deleted state.
-   */
   var listed = ov.listed !== false;
   var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
   var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
