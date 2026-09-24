@@ -252,7 +252,9 @@ var SIZE_DEFAULT = {
     PRODUCTS.forEach(function (p) {
       if (!p || !p.id) return;
       if (_activeCatalogProductIds[p.id]) {
-        if (!isProductSuppressed(p.id)) delete p.listed;
+        /* Active Vendor Panel state is authoritative; a prior temporary delist must not linger. */
+        delete _suppressedCatalogIds[p.id];
+        delete p.listed;
       } else {
         p.listed = false;
       }
