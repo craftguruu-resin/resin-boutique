@@ -63,8 +63,25 @@ function run() {
 
       return q
         .then(function () {
-          var q2 = Promise.resolve();
-          RD.allProducts.forEach(function (p) {
+          // Enforce permanent deletions on every seed as well as skipping their inserts.
+          // This protects against any older database row being recreated before a deploy/re-seed.
+          var suppressedIds = Object.keys(suppressed);
+          var cleanup = Promise.resolve();
+          suppressedIds.forEach(function (pid) {
+            cleanup = cleanup
+              .then(function () {
+                return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [pid]);
+              })
+              .then(function () {
+                return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [pid]);
+              })
+              .then(function () {
+                return client.query("DELETE FROM products WHERE id = $1", [pid]);
+              });
+          });
+          return cleanup.then(function () {
+            var q2 = Promise.resolve();
+            RD.allProducts.forEach(function (p) {
             var pid = String(p.id || "");
             if (!pid || suppressed[pid]) return;
             q2 = q2.then(function () {
@@ -85,7 +102,8 @@ function run() {
               );
             });
           });
-          return q2;
+            return q2;
+          });
         })
         .then(function () {
           return client.query("COMMIT");
