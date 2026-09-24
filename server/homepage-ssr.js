@@ -326,10 +326,10 @@ function serveHomepage(req, res, next) {
     else console.warn("[homepage-ssr] " + reason);
 
     /*
-     * Fail closed for products: when the Vendor Panel allowlist cannot be loaded,
-     * strip Git/data.js product/category cards from the SSR HTML. The hero and
-     * the rest of the homepage shell remain visible. The client also stays hidden
-     * until the authoritative activeProductIds response arrives.
+     * Do not render an unfiltered Git/data.js catalog when the Vendor Panel
+     * manifest cannot be loaded. The hero/shell remain visible and the client
+     * keeps its last known active manifest instead of treating a failed read
+     * as "all products active".
      */
     var safeTemplate = template
       .replace(
