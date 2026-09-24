@@ -222,7 +222,7 @@
     var railApi = window.CRAFT_RAIL_ICONS;
 
     D.categories.forEach(function (c) {
-      if (!c) return;
+      if (!c || String(c.id || "").trim() === "craftguru-details") return;
       var a = document.createElement("a");
       a.className = "category-pill category-pill--rail";
       a.setAttribute("data-cat-id", String(c.id));
