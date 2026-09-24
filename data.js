@@ -185,6 +185,11 @@
       };
     }).filter(function (c) { return c.id; });
     rebuildCategoryProductIndex();
+    if (global.RESIN_DATA) {
+      global.RESIN_DATA.categories = CATEGORIES;
+      global.RESIN_DATA.byCategory = BY_CAT;
+      global.RESIN_DATA.allProducts = PRODUCTS;
+    }
     return CATEGORIES.length;
   }
 
