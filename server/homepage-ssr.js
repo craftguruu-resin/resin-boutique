@@ -63,21 +63,15 @@ function buildProductIndex(staticData, bootstrap) {
   var byId = Object.create(null);
   var byCat = Object.create(null);
   var suppressed = Object.create(null);
-  var active = Object.create(null);
   (bootstrap.suppressedProductIds || []).forEach(function (id) {
     suppressed[String(id)] = 1;
-  });
-  (bootstrap.activeProductIds || []).forEach(function (id) {
-    active[String(id)] = 1;
   });
 
   function addProduct(p) {
     if (!p || !p.id) return;
-    /* SSR uses the same Vendor Panel active-product allowlist as the client. */
-    if (!active[p.id]) return;
     if (suppressed[p.id]) return;
     var ov = bootstrap.overrides && bootstrap.overrides[p.id];
-    if (ov && (ov.delisted || ov.listed === false)) return;
+    if (ov && ov.delisted) return;
     byId[p.id] = p;
     var cat = String(p.category || "");
     if (!byCat[cat]) byCat[cat] = [];
@@ -126,7 +120,6 @@ function categoryPreviewFit(cat) {
 function renderCategoryRail(categories) {
   var parts = [];
   categories.forEach(function (cat) {
-    if (!cat || String(cat.id || "").trim() === "craftguru-details") return;
     var id = String(cat.id || "");
     if (!id) return;
     parts.push(
@@ -289,8 +282,8 @@ function injectHomepage(html, injections) {
 // Cap how long the homepage route will wait on each DB-backed step before
 // falling back to the plain static template, so a cold database never turns
 // into a hung/blank first response — a refresh should never be necessary.
-var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 5000;
-var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 2000;
+var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 900;
+var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 500;
 
 function withTimeout(fn, ms, cb) {
   var done = false;
@@ -324,26 +317,9 @@ function serveHomepage(req, res, next) {
   function serveStaticFallback(reason, err) {
     if (err) console.error("[homepage-ssr] " + reason + ":", err.message || err);
     else console.warn("[homepage-ssr] " + reason);
-
-    /*
-     * Do not render an unfiltered Git/data.js catalog when the Vendor Panel
-     * manifest cannot be loaded. The hero/shell remain visible and the client
-     * keeps its last known active manifest instead of treating a failed read
-     * as "all products active".
-     */
-    var safeTemplate = template
-      .replace(
-        /(<nav class="category-grid category-grid--rail" id="categoryGrid"[^>]*>)[\s\S]*?(<\/nav>)/,
-        "$1$2"
-      )
-      .replace(
-        /(<div class="featured-collections-grid" id="productGrid"[^>]*>)[\s\S]*?(<\/div>)/,
-        "$1$2"
-      );
-
     res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
     res.setHeader("Pragma", "no-cache");
-    return res.type("html").send(safeTemplate);
+    return res.type("html").send(template);
   }
 
   withTimeout(storefrontBootstrap.loadStorefrontBootstrap, BOOTSTRAP_TIMEOUT_MS, function (bootErr, bootstrap) {
