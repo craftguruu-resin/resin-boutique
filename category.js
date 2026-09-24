@@ -700,5 +700,25 @@
     }
   });
 
-  render();
+  /*
+   * Category pages are a direct catalog view. Do not paint from the shared
+   * session cache first: a product can be deleted in Vendor Panel/backend
+   * while this browser tab still has an older vendor-product snapshot.
+   *
+   * Force one authoritative backend refresh before the first category render.
+   * catalog-merge.js queues this forced refresh behind any request already in
+   * flight, so stale cached products cannot become the visible final list.
+   */
+  if (window.CraftguruCatalogMerge && typeof window.CraftguruCatalogMerge.refresh === "function") {
+    window.CraftguruCatalogMerge.refresh().then(
+      function () {
+        render();
+      },
+      function () {
+        render();
+      }
+    );
+  } else {
+    render();
+  }
 })();
