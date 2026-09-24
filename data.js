@@ -229,52 +229,6 @@ var SIZE_DEFAULT = {
     return !!_suppressedCatalogIds[String(id || "").trim()];
   }
 
-  /*
-   * Customer storefront visibility is fail-closed until the server confirms the
-   * product is active in the Vendor Panel. This prevents tracked/static data.js
-   * products from leaking back into the public catalog after deletion/delisting.
-   */
-  var _activeCatalogProductIds = Object.create(null);
-  /*
-   * Vendor Panel listing state is authoritative once the server manifest loads.
-   * The manifest preserves the existing catalog default (Active unless an
-   * explicit listed:false override exists). Git/data.js is only product data;
-   * it cannot override a persisted inactive state or deletion tombstone.
-   */
-  var _activeCatalogVisibilityReady = false;
-
-  function applyCatalogVisibilityAllowlist(ids) {
-    var next = Object.create(null);
-    if (Array.isArray(ids)) {
-      ids.forEach(function (raw) {
-        var id = String(raw || "").trim();
-        if (id) next[id] = 1;
-      });
-    }
-
-    _activeCatalogProductIds = next;
-    _activeCatalogVisibilityReady = true;
-
-    PRODUCTS.forEach(function (p) {
-      if (!p || !p.id) return;
-      if (_activeCatalogProductIds[p.id]) {
-        /* Active Vendor Panel state is authoritative; a prior temporary delist must not linger. */
-        delete _suppressedCatalogIds[p.id];
-        delete p.listed;
-      } else {
-        p.listed = false;
-      }
-    });
-
-    rebuildCategoryProductIndex();
-    return Object.keys(next).length;
-  }
-
-  function isActiveCatalogProductAllowed(id) {
-    var key = String(id || "").trim();
-    return !!(_activeCatalogVisibilityReady && key && _activeCatalogProductIds[key]);
-  }
-
   function applyCatalogSuppressions(ids) {
     if (!ids || !ids.length) return 0;
     var n = 0;
@@ -392,9 +346,6 @@ var SIZE_DEFAULT = {
 
   function isListedProduct(p) {
     if (!p || p.listed === false) return false;
-    /* Never render a product until the Vendor Panel allowlist has loaded. */
-    if (!isActiveCatalogProductAllowed(p.id)) return false;
-    if (isProductSuppressed(p.id)) return false;
     if (isDroppedResinCategory(p.category)) return false;
     return true;
   }
@@ -858,8 +809,6 @@ var SIZE_DEFAULT = {
         if (o.listed === false) {
           p.listed = false;
           _suppressedCatalogIds[p.id] = 1;
-        } else if (_activeCatalogVisibilityReady && !isActiveCatalogProductAllowed(p.id)) {
-          p.listed = false;
         } else {
           delete p.listed;
         }
@@ -1124,7 +1073,6 @@ var SIZE_DEFAULT = {
       if (row && row.listed === false) return;
       var id = String(row.id || "").trim();
       if (!id || isProductSuppressed(id)) return;
-      if (_activeCatalogVisibilityReady && !isActiveCatalogProductAllowed(id)) return;
       if (BY_ID[id] && !BY_ID[id].vendorCatalogRow) return;
       var p = vendorRowToProduct(row);
       if (!p) return;
@@ -1301,8 +1249,6 @@ var SIZE_DEFAULT = {
     imageSizes: imageSizes,
     applyPriceOverrides: applyPriceOverrides,
     applyCatalogSuppressions: applyCatalogSuppressions,
-    applyCatalogVisibilityAllowlist: applyCatalogVisibilityAllowlist,
-    isActiveCatalogProductAllowed: isActiveCatalogProductAllowed,
     isProductSuppressed: isProductSuppressed,
     applyVendorProductsMerge: applyVendorProductsMerge,
     rebuildCategoryProductIndex: rebuildCategoryProductIndex,
