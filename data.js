@@ -393,7 +393,12 @@ var SIZE_DEFAULT = {
 
   function isListedProduct(p) {
     if (!p || p.listed === false) return false;
-    if (!_activeCatalogVisibilityReady) return false;
+    /* Render the bundled catalog while the authoritative active list is loading. */
+    if (!_activeCatalogVisibilityReady) {
+      if (isProductSuppressed(p.id)) return false;
+      if (isDroppedResinCategory(p.category)) return false;
+      return true;
+    }
     if (!isActiveCatalogProductAllowed(p.id)) return false;
     if (isProductSuppressed(p.id)) return false;
     if (isDroppedResinCategory(p.category)) return false;
