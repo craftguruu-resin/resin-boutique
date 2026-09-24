@@ -960,62 +960,88 @@ function listVendorManagedProducts(cb) {
  * @param {(err: Error|null) => void} cb
  */
 /**
- * Permanently remove a vendor-created product (not in bundled data.js catalog).
- * Clears storefront overrides and unlinks studio inventory rows.
+ * Permanently remove a product from the vendor catalog manager.
+ *
+ * Works for both:
+ *   - vendor-created products: deletes DB product/override data and unlinks studio inventory rows
+ *   - bundled data.js products: removes DB overrides/inventory rows and persists a suppression tombstone
+ *
+ * The suppression tombstone is the important part for bundled products: the source row in data.js
+ * remains in the deployment, but the storefront merge will continue to exclude the product after
+ * cache invalidation and future deployments.
+ *
  * @param {string} productId
  * @param {(err: Error|null) => void} cb
  */
-function deleteVendorManagedProduct(productId, cb) {
-  assertVendorManagedProductId(productId, function (e0, id) {
-    if (e0) return cb(e0);
-    var pool = poolMod.getPool();
-    if (!pool) {
-      return process.nextTick(function () {
-        cb(new Error("Database not configured"));
-      });
-    }
-    pool
-      .connect()
-      .then(function (client) {
-        return client
-          .query("BEGIN")
-          .then(function () {
-            return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
-          })
-          .then(function () {
-            return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
-          })
-          .then(function () {
-            return client.query("DELETE FROM products WHERE id = $1", [id]);
-          })
-          .then(function (r) {
-            if (!r.rowCount) {
-              throw new Error("Product not found");
-            }
-            return client.query("COMMIT");
-          })
-          .then(function () {
-            return vendorCatalogDb.addSuppressedProductIds([id]);
-          })
-          .then(function () {
-            client.release();
-            try {
-              catalogFromData.invalidateCache();
-            } catch (_) {}
-            cb(null);
-          })
-          .catch(function (err) {
-            return client
-              .query("ROLLBACK")
-              .catch(function () {})
-              .then(function () {
-                client.release();
-                cb(err);
-              });
-          });
-      })
-      .catch(cb);
-  });
+function deleteProductPermanently(productId, cb) {
+  var id = String(productId || "").trim().slice(0, 220);
+  if (!id) {
+    return process.nextTick(function () {
+      cb(new Error("Product id required"));
+    });
+  }
+
+  var staticIds;
+  try {
+    staticIds = staticCatalogProductIds();
+  } catch (e) {
+    return process.nextTick(function () {
+      cb(e);
+    });
+  }
+  var isBundled = staticIds.has(id);
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+
+  pool
+    .connect()
+    .then(function (client) {
+      var deletedProduct = false;
+      return client
+        .query("BEGIN")
+        .then(function () {
+          return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
+        })
+        .then(function () {
+          return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
+        })
+        .then(function () {
+          return client.query("DELETE FROM products WHERE id = $1", [id]);
+        })
+        .then(function (r) {
+          deletedProduct = !!r.rowCount;
+          if (!isBundled && !deletedProduct) {
+            throw new Error("Product not found");
+          }
+          return client.query("COMMIT");
+        })
+        .then(function () {
+          client.release();
+          // Always persist the tombstone. For bundled products this is what makes deletion survive
+          // future deploys because data.js itself is immutable from the vendor panel.
+          return vendorCatalogDb.addSuppressedProductIds([id]);
+        })
+        .then(function () {
+          try {
+            catalogFromData.invalidateCache();
+          } catch (_) {}
+          cb(null);
+        })
+        .catch(function (err) {
+          return client
+            .query("ROLLBACK")
+            .catch(function () {})
+            .then(function () {
+              client.release();
+              cb(err);
+            });
+        });
+    })
+    .catch(cb);
 }
 
 function setVendorProductActive(productId, isActive, cb) {
@@ -1259,5 +1285,7 @@ module.exports = {
   listAllProductsForManage: listAllProductsForManage,
   updateVendorProductById: updateVendorProductById,
   setVendorProductActive: setVendorProductActive,
-  deleteVendorManagedProduct: deleteVendorManagedProduct,
+  deleteProductPermanently: deleteProductPermanently,
+  // Backward-compatible export for any older internal callers.
+  deleteVendorManagedProduct: deleteProductPermanently,
 };
