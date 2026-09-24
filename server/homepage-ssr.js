@@ -334,7 +334,8 @@ function serveHomepage(req, res, next) {
       var index = buildProductIndex(staticData, bootstrap);
       var categoryRail = renderCategoryRail(bootstrap.categories || []);
       var featuredGrid = renderFeaturedGrid(req, bootstrap.categories || [], index);
-      var hero = renderHeroPromo(req, heroPack);
+      // Keep the built-in homepage hero authoritative. Custom DB promo slides must not hide it.
+      var hero = { html: "", showPromo: false };
 
       var html = injectHomepage(template, {
         categoryRail: categoryRail,
