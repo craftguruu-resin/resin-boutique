@@ -962,13 +962,9 @@ function listVendorManagedProducts(cb) {
 /**
  * Permanently remove a product from the vendor catalog manager.
  *
- * Works for both:
- *   - vendor-created products: deletes DB product/override data and unlinks studio inventory rows
- *   - bundled data.js products: removes DB overrides/inventory rows and persists a suppression tombstone
- *
- * The suppression tombstone is the important part for bundled products: the source row in data.js
- * remains in the deployment, but the storefront merge will continue to exclude the product after
- * cache invalidation and future deployments.
+ * Works for both vendor-created and bundled data.js products. A suppression tombstone is
+ * persisted before the destructive DB work so a bundled product cannot reappear if a later
+ * database operation fails or a future deployment restores the bundled source row.
  *
  * @param {string} productId
  * @param {(err: Error|null) => void} cb
@@ -997,51 +993,50 @@ function deleteProductPermanently(productId, cb) {
     });
   }
 
-  pool
-    .connect()
-    .then(function (client) {
-      var deletedProduct = false;
-      return client
-        .query("BEGIN")
-        .then(function () {
-          return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
-        })
-        .then(function () {
-          return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
-        })
-        .then(function () {
-          return client.query("DELETE FROM products WHERE id = $1", [id]);
-        })
-        .then(function (r) {
-          deletedProduct = !!r.rowCount;
-          if (!isBundled && !deletedProduct) {
-            throw new Error("Product not found");
-          }
-          return client.query("COMMIT");
-        })
-        .then(function () {
-          client.release();
-          // Always persist the tombstone. For bundled products this is what makes deletion survive
-          // future deploys because data.js itself is immutable from the vendor panel.
-          return vendorCatalogDb.addSuppressedProductIds([id]);
-        })
-        .then(function () {
-          try {
-            catalogFromData.invalidateCache();
-          } catch (_) {}
-          cb(null);
-        })
-        .catch(function (err) {
-          return client
-            .query("ROLLBACK")
-            .catch(function () {})
-            .then(function () {
-              client.release();
-              cb(err);
-            });
-        });
-    })
-    .catch(cb);
+  // Create the durable tombstone first. This is harmless for vendor-created products and is
+  // what guarantees a bundled data.js product stays hidden across restarts/deployments.
+  vendorCatalogDb.addSuppressedProductIds([id], function (eSup) {
+    if (eSup) return cb(eSup);
+
+    pool
+      .connect()
+      .then(function (client) {
+        return client
+          .query("BEGIN")
+          .then(function () {
+            return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
+          })
+          .then(function () {
+            return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
+          })
+          .then(function () {
+            return client.query("DELETE FROM products WHERE id = $1", [id]);
+          })
+          .then(function (r) {
+            if (!isBundled && !r.rowCount) {
+              throw new Error("Product not found");
+            }
+            return client.query("COMMIT");
+          })
+          .then(function () {
+            client.release();
+            try {
+              catalogFromData.invalidateCache();
+            } catch (_) {}
+            cb(null);
+          })
+          .catch(function (err) {
+            return client
+              .query("ROLLBACK")
+              .catch(function () {})
+              .then(function () {
+                client.release();
+                cb(err);
+              });
+          });
+      })
+      .catch(cb);
+  });
 }
 
 function setVendorProductActive(productId, isActive, cb) {
