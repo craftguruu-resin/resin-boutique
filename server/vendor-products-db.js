@@ -410,9 +410,22 @@ function mapRowToClient(row) {
 function listExtraProductsForStorefront(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
-    return process.nextTick(function () {
-      cb(null, []);
-    });
+    /*
+     * A temporary DB outage must not make the entire storefront disappear.
+     * Bundled products are active by default unless the authoritative DB has
+     * an explicit delist/tombstone. When DB is back, this function recomputes
+     * the exact Vendor Panel active allowlist.
+     */
+    try {
+      var fallbackStatic = staticCatalogProductIds();
+      return process.nextTick(function () {
+        cb(null, Array.from(fallbackStatic));
+      });
+    } catch (fallbackErr) {
+      return process.nextTick(function () {
+        cb(fallbackErr);
+      });
+    }
   }
   ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
