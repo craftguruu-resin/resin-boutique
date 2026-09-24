@@ -206,7 +206,20 @@
   }
 
   function runMerge(forceFresh) {
-    if (mergeInflight) return mergeInflight;
+    if (mergeInflight) {
+      /*
+       * A forced refresh must never silently reuse the older in-flight request.
+       * This matters on category navigation: the page can start with a cached
+       * catalog request, while the user explicitly needs the latest backend
+       * product set. Finish the current request, then perform the forced fetch.
+       */
+      if (forceFresh) {
+        return mergeInflight.then(function () {
+          return runMerge(true);
+        });
+      }
+      return mergeInflight;
+    }
 
     var base = billApiBase();
     if (!base) {
