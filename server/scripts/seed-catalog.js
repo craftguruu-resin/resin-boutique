@@ -80,29 +80,15 @@ function run() {
               });
           });
           return cleanup.then(function () {
-            var q2 = Promise.resolve();
-            RD.allProducts.forEach(function (p) {
-            var pid = String(p.id || "");
-            if (!pid || suppressed[pid]) return;
-            q2 = q2.then(function () {
-              return client.query(
-                "INSERT INTO products (id, name, category_id, subcategory_id, image_path, prices) " +
-                  "VALUES ($1, $2, $3, $4, $5, $6::jsonb) " +
-                  "ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, category_id = EXCLUDED.category_id, " +
-                  "subcategory_id = EXCLUDED.subcategory_id, image_path = EXCLUDED.image_path, " +
-                  "prices = EXCLUDED.prices, updated_at = now()",
-                [
-                  pid,
-                  String(p.name || "").slice(0, 500),
-                  String(p.category || ""),
-                  String(p.subcategory || "all"),
-                  String(p.image || ""),
-                  JSON.stringify(p.prices || {}),
-                ]
-              );
-            });
-          });
-            return q2;
+            /*
+           * IMPORTANT: Git/data.js is definition-only.
+           * This seed script MUST NEVER create or upsert rows in products.
+           * Products are created/managed through the Vendor Panel/backend only.
+           * Keeping this block intentionally empty prevents git pull/deploy/seed
+           * from recreating products that an operator removed from Postgres.
+           */
+          return Promise.resolve();
+
           });
         })
         .then(function () {
