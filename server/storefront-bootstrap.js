@@ -132,8 +132,8 @@ function categoriesFromDataJsOnly() {
  * @param {function(Error|null, object)} cb
  */
 function loadStorefrontBootstrap(cb) {
-  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [] };
-  var pending = 3;
+  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [], activeProductIds: [] };
+  var pending = 4;
   var failed = false;
 
   function finish() {
@@ -177,6 +177,13 @@ function loadStorefrontBootstrap(cb) {
         finish();
       });
   }
+
+  vendorProductsDb.listActiveProductIdsForStorefront(function (eActive, activeProductIds) {
+    if (eActive) return failOnce(eActive.message || eActive);
+    out.activeProductIds = activeProductIds || [];
+    pending -= 1;
+    finish();
+  });
 
   vendorCatalogDb.listOverridesMap(function (e4, map) {
     if (e4) return failOnce(e4.message || e4);
