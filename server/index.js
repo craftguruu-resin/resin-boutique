@@ -4144,7 +4144,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
   });
 });
 
-/** Vendor: remove saved DB overrides for a bundled catalog product (prices, labels, listed, return gift). */
+/** Vendor: legacy catalog-product delete endpoint. It now uses the same permanent deletion path as the Products manager. */
 app.delete("/api/vendor/catalog-products/:productId", function (req, res) {
   vendorAuth.tokenValid(req, function (err, ok) {
     if (err) {
@@ -4154,18 +4154,23 @@ app.delete("/api/vendor/catalog-products/:productId", function (req, res) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
     var pid = decodeURIComponent(String((req.params && req.params.productId) || "").trim());
-    vendorCatalogDb.deleteBundledCatalogOverride(pid, function (e2, result) {
+    vendorProductsDb.deleteProductPermanently(pid, function (e2) {
       if (e2) {
         var msg = String((e2 && e2.message) || e2);
         var code =
-          msg.indexOf("Only bundled") >= 0 || msg.indexOf("required") >= 0 ? 400 : msg.indexOf("not configured") >= 0 ? 503 : 500;
+          msg.indexOf("not found") >= 0 || msg.indexOf("required") >= 0
+            ? 400
+            : msg.indexOf("not configured") >= 0
+              ? 503
+              : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
       res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true, removed: !!(result && result.removed) });
+      res.json({ ok: true, removed: true });
     });
   });
 });
+
 
 /** Paid totals by month (IST) + all-order counts — vendor token. */
 app.get("/api/vendor/analytics/monthly", function (req, res) {
