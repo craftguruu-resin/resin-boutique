@@ -545,7 +545,7 @@
       }
     });
     var pr = root.querySelector("#resinPdpPrice");
-    if (pr) pr.textContent = CART.formatMoney(Number(effPrice));
+    if (pr) pr.textContent = CART.formatMoney(Number(eff));
     var mrpEl = root.querySelector("#resinPdpMrp");
     var saveEl = root.querySelector("#resinPdpSave");
     var showMrp = false;
