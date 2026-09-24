@@ -2902,7 +2902,12 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
     if (e) {
       return res.status(500).json({ ok: false, error: String(e.message || e) });
     }
-    res.json({ ok: true, products: list || [] });
+    vendorProductsDb.listActiveProductIdsForStorefront(function (e2, activeProductIds) {
+      if (e2) {
+        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+      }
+      res.json({ ok: true, products: list || [], activeProductIds: activeProductIds || [] });
+    });
   });
 });
 
