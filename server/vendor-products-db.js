@@ -459,8 +459,10 @@ function listExtraProductsForStorefront(cb) {
  * Return the exact product allowlist that the customer storefront is permitted to show.
  * This is derived from the same active/listed state used by the Vendor Panel.
  *
- * Bundled data.js products are active unless permanently suppressed or explicitly delisted.
- * Vendor-created products must have products.is_active = true and must not be delisted.
+ * Bundled data.js products follow the Vendor Panel's existing listing state:
+ * explicit listed:false is inactive; otherwise they remain Active. Permanent
+ * tombstones always win. Vendor-created products must have products.is_active=true
+ * and must not be explicitly delisted.
  * If the database is unavailable, fail closed with an empty allowlist.
  */
 function listActiveProductIdsForStorefront(cb) {
@@ -495,11 +497,12 @@ function listActiveProductIdsForStorefront(cb) {
         if (!id || supSet[id]) return;
         var ov = omap[id];
         /*
-         * Bundled/Git products are NOT active by default.
-         * A static product enters the storefront allowlist only after the
-         * Vendor Panel explicitly sets its Active state to true.
+         * Vendor Panel catalog state is authoritative:
+         * explicit listed:false means inactive; otherwise preserve the
+         * existing catalog default of Active. Git/source presence alone
+         * does not override an explicit inactive state or tombstone.
          */
-        if (!ov || ov.listed !== true) return;
+        if (ov && ov.listed === false) return;
         active[id] = 1;
       });
 
@@ -756,7 +759,16 @@ function pushStaticManageRow(p, omap, skuMap, out) {
    * A bundled product is inactive until the Vendor Panel explicitly marks it
    * Active. This keeps the admin status and storefront allowlist identical.
    */
-  var listed = ov.listed === true;
+  /*
+   * Keep the Vendor Panel's existing catalog semantics:
+   * - explicit listed:false = inactive
+   * - missing listed flag = active (legacy/catalog default)
+   *
+   * This preserves the products that were already Active before the
+   * visibility allowlist was introduced. A Git product is never allowed
+   * to bypass an explicit inactive/deleted state.
+   */
+  var listed = ov.listed !== false;
   var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
   var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
   var comb = {};
