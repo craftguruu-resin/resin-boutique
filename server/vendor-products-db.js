@@ -451,6 +451,68 @@ function listExtraProductsForStorefront(cb) {
  * @param {{ name: string, categoryId: string, priceS: number, priceM: number, priceL: number, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, imageBuffer?: Buffer, mime?: string, imageUrl?: string }} opts
  * @param {(err: Error|null, row?: object) => void} cb
  */
+/**
+ * Return the exact product allowlist that the customer storefront is permitted to show.
+ * This is derived from the same active/listed state used by the Vendor Panel.
+ *
+ * Bundled data.js products are active unless permanently suppressed or explicitly delisted.
+ * Vendor-created products must have products.is_active = true and must not be delisted.
+ * If the database is unavailable, fail closed with an empty allowlist.
+ */
+function listActiveProductIdsForStorefront(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null, []);
+    });
+  }
+
+  vendorCatalogDb.listOverridesMap(function (e1, omap) {
+    if (e1) return cb(e1);
+    omap = omap || {};
+    vendorCatalogDb.listSuppressedProductIds(function (e2, suppressed) {
+      if (e2) return cb(e2);
+
+      var supSet = Object.create(null);
+      (suppressed || []).forEach(function (sid) {
+        var id = String(sid || "").trim();
+        if (id) supSet[id] = 1;
+      });
+
+      var staticIds;
+      try {
+        staticIds = staticCatalogProductIds();
+      } catch (e3) {
+        return cb(e3);
+      }
+
+      var active = Object.create(null);
+      staticIds.forEach(function (id) {
+        if (!id || supSet[id]) return;
+        var ov = omap[id];
+        if (ov && ov.listed === false) return;
+        active[id] = 1;
+      });
+
+      pool
+        .query("SELECT id, category_id, is_active FROM products")
+        .then(function (r) {
+          r.rows.forEach(function (row) {
+            var id = String(row.id || "").trim();
+            if (!id || staticIds.has(id) || supSet[id]) return;
+            if (hiddenResinCatalog.isHiddenResinCategoryId(row.category_id)) return;
+            if (row.is_active !== true) return;
+            var ov = omap[id];
+            if (ov && ov.listed === false) return;
+            active[id] = 1;
+          });
+          cb(null, Object.keys(active));
+        })
+        .catch(cb);
+    });
+  });
+}
+
 function createVendorProduct(opts, cb) {
   var pool = poolMod.getPool();
   if (!pool) {
