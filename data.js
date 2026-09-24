@@ -236,9 +236,10 @@ var SIZE_DEFAULT = {
    */
   var _activeCatalogProductIds = Object.create(null);
   /*
-   * Vendor Panel active state is authoritative.
-   * Until the server sends that state, nothing is considered storefront-active.
-   * This prevents Git/data.js products from leaking into the customer UI.
+   * Vendor Panel listing state is authoritative once the server manifest loads.
+   * The manifest preserves the existing catalog default (Active unless an
+   * explicit listed:false override exists). Git/data.js is only product data;
+   * it cannot override a persisted inactive state or deletion tombstone.
    */
   var _activeCatalogVisibilityReady = false;
 
