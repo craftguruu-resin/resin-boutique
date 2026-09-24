@@ -2926,8 +2926,8 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
  * Reduces cold-session latency vs three parallel API calls.
  */
 app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
-  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [] };
-  var pending = 3;
+  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [], activeProductIds: [] };
+  var pending = 4;
   var failed = false;
 
   function finish() {
