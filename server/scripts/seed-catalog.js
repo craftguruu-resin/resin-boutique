@@ -48,10 +48,8 @@ function run() {
     .then(function (state) {
       var client = state.client;
       var suppressed = state.suppressed;
-      return client
-        .then(function () {
-          var q = Promise.resolve();
-        (RD.categories || []).forEach(function (c) {
+      var q = Promise.resolve();
+      (RD.categories || []).forEach(function (c) {
           q = q.then(function () {
             return client.query(
                 "INSERT INTO categories (id, label, folder, subcategories) VALUES ($1, $2, $3, $4::jsonb) " +
