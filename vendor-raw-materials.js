@@ -7,6 +7,18 @@
   var rawList = [];
   var vrmTaxonomy = null;
 
+  /* Raw-material products have a separate public API from the Resin Home
+     catalog. Notify open guest tabs after every successful mutation so they
+     immediately refetch that API instead of showing an old list. */
+  function notifyGuestRawMaterialsRefresh() {
+    try {
+      localStorage.setItem("craftguruRawMaterialsChangedAt", Date.now() + ":" + Math.random());
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent("craftguruRawMaterialsChanged"));
+    } catch (_) {}
+  }
+
   function taxonomyCategories() {
     return (vrmTaxonomy && vrmTaxonomy.categories) || [];
   }
@@ -1149,6 +1161,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Update failed");
         }
+        notifyGuestRawMaterialsRefresh();
       });
     });
   }
@@ -1168,6 +1181,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Save failed");
         }
+        notifyGuestRawMaterialsRefresh();
         return j;
       });
     });
@@ -1190,6 +1204,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Save failed");
         }
+        notifyGuestRawMaterialsRefresh();
         return j;
       });
     });
@@ -1211,6 +1226,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Delete failed");
         }
+        notifyGuestRawMaterialsRefresh();
       });
     });
   }

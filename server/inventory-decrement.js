@@ -193,7 +193,10 @@ function decrementOneLine(client, it) {
       if (ok) return;
       return decrementJsonQtyOnHand(client, "raw_materials", pid, qty, name).then(function (ok2) {
         if (ok2) return;
-        return decrementCatalogSlot(client, pid, sk || "m", qty, name);
+        /* Qty on hand is optional for vendor-managed raw materials. When it
+           is intentionally left blank, the item is sellable but untracked;
+           a configured zero or a configured variant still blocks checkout. */
+        return;
       });
     });
   }
@@ -202,7 +205,8 @@ function decrementOneLine(client, it) {
       if (ok) return;
       return decrementJsonQtyOnHand(client, "photo_frame_products", pid, qty, name).then(function (ok2) {
         if (ok2) return;
-        return decrementCatalogSlot(client, pid, sk || "m", qty, name);
+        /* Photo-frame stock uses the same optional managed-stock model. */
+        return;
       });
     });
   }

@@ -131,6 +131,61 @@
     }
   }
 
+  function addExtraSizeRow(prefill) {
+    var host = document.getElementById("viApExtraSizes");
+    if (!host) return;
+    var row = document.createElement("div");
+    row.className = "vi-ap-extra-size-row vrm-opt-row";
+    row.style.cssText =
+      "display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;padding:0.5rem;border:1px solid rgba(15,23,42,0.08);border-radius:8px;background:#fff";
+    row.innerHTML =
+      '<div class="vs-field" style="margin:0"><label>Size label</label>' +
+      '<input type="text" class="vs-input vi-ap-size-label" maxlength="120" placeholder="e.g. 12 inch" value="' +
+      String((prefill && prefill.label) || "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div class="vs-field" style="margin:0"><label>Price (₹)</label>' +
+      '<input type="number" class="vs-input vi-ap-size-price" min="0" step="0.01" value="' +
+      String((prefill && prefill.priceInr) != null ? prefill.priceInr : "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div class="vs-field" style="margin:0"><label>MRP (optional)</label>' +
+      '<input type="number" class="vs-input vi-ap-size-mrp" min="0" step="0.01" value="' +
+      String((prefill && prefill.mrpInr) != null ? prefill.mrpInr : "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div class="vs-field" style="margin:0;grid-column:1/-1"><label>Image URL (optional, HTTPS)</label>' +
+      '<input type="url" class="vs-input vi-ap-size-image" maxlength="2000" placeholder="https://…" value="' +
+      String((prefill && prefill.image) || "").replace(/"/g, "&quot;") +
+      '" /></div>' +
+      '<div style="grid-column:1/-1"><button type="button" class="vs-btn vs-btn--ghost vi-ap-size-rm">Remove size</button></div>';
+    host.appendChild(row);
+    var rm = row.querySelector(".vi-ap-size-rm");
+    if (rm) rm.addEventListener("click", function () { row.remove(); });
+  }
+
+  function readExtraSizes() {
+    var host = document.getElementById("viApExtraSizes");
+    if (!host) return [];
+    var out = [];
+    host.querySelectorAll(".vi-ap-extra-size-row").forEach(function (row) {
+      var label = String((row.querySelector(".vi-ap-size-label") || {}).value || "").trim();
+      if (!label) return;
+      var priceRaw = String((row.querySelector(".vi-ap-size-price") || {}).value || "").trim();
+      var mrpRaw = String((row.querySelector(".vi-ap-size-mrp") || {}).value || "").trim();
+      var image = String((row.querySelector(".vi-ap-size-image") || {}).value || "").trim();
+      var price = priceRaw === "" ? null : Number(priceRaw);
+      var mrp = mrpRaw === "" ? null : Number(mrpRaw);
+      if (image && !/^https:\/\//i.test(image)) return;
+      var item = {
+        id: "sz-extra-" + (out.length + 1),
+        label: label.slice(0, 120),
+        priceInr: Number.isFinite(price) && price >= 0 ? Math.round(price * 100) / 100 : null,
+        image: image.slice(0, 2000),
+      };
+      if (Number.isFinite(mrp) && mrp >= 0) item.mrpInr = Math.round(mrp * 100) / 100;
+      out.push(item);
+    });
+    return out;
+  }
+
   function readExtraColors() {
     var host = document.getElementById("viApExtraColors");
     if (!host) return [];
@@ -223,6 +278,7 @@
     ].filter(function (sz) {
       return Number.isFinite(Number(sz.priceInr)) && Number(sz.priceInr) > 0;
     });
+    sizes = sizes.concat(readExtraSizes());
     sizes.forEach(function (sz) {
       if (sz.mrpInr == null) delete sz.mrpInr;
     });
@@ -263,6 +319,10 @@
       var el = document.getElementById(id);
       if (el) el.value = "";
     });
+    ["viApPriceS", "viApPriceM", "viApPriceL"].forEach(function (id) {
+      var priceEl = document.getElementById(id);
+      if (priceEl) priceEl.value = "0";
+    });
     if (fileInp) fileInp.value = "";
     if (urlEl) urlEl.value = "";
     var gal = document.getElementById("viApGallery");
@@ -284,6 +344,10 @@
     syncCoverColorReadout();
     var extra = document.getElementById("viApExtraColors");
     if (extra) extra.innerHTML = "";
+    var extraSizes = document.getElementById("viApExtraSizes");
+    if (extraSizes) extraSizes.innerHTML = "";
+    var galleryFiles = document.getElementById("viApGalleryFiles");
+    if (galleryFiles) galleryFiles.value = "";
   }
 
   /**
@@ -309,6 +373,12 @@
       if (addColorBtn) {
         addColorBtn.addEventListener("click", function () {
           addExtraColorRow(null);
+        });
+      }
+      var addSizeBtn = document.getElementById("viApAddSize");
+      if (addSizeBtn) {
+        addSizeBtn.addEventListener("click", function () {
+          addExtraSizeRow(null);
         });
       }
       var catSel = document.getElementById("viApCategory");
@@ -371,6 +441,16 @@
     fd.append("sizeLabelL", String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim());
     if (imageUrl) fd.append("imageUrl", imageUrl);
     if (file) fd.append("image", file, file.name);
+    var galleryFiles = document.getElementById("viApGalleryFiles");
+    if (galleryFiles && galleryFiles.files) {
+      if (galleryFiles.files.length > 12) {
+        window.alert("Choose up to 12 gallery photos.");
+        return;
+      }
+      Array.prototype.forEach.call(galleryFiles.files, function (galleryFile) {
+        fd.append("galleryImages", galleryFile, galleryFile.name);
+      });
+    }
     var galEl = document.getElementById("viApGallery");
     if (galEl) fd.append("gallery", String(galEl.value || ""));
     var descEl = document.getElementById("viApDescription");
@@ -400,9 +480,12 @@
           method: "PUT",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
           body: JSON.stringify({
-            priceS: options.sizes[0] && options.sizes[0].priceInr,
-            priceM: options.sizes[1] && options.sizes[1].priceInr,
-            priceL: options.sizes[2] && options.sizes[2].priceInr,
+            /* The option list intentionally omits tiers with a zero price.
+               Do not use its array indexes here: if a vendor only sets the
+               Classic price, that value used to be written into Small. */
+            priceS: Number(document.getElementById("viApPriceS") && document.getElementById("viApPriceS").value) || 0,
+            priceM: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
+            priceL: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
             description: options.detailBody || "",
             returnGift: returnGift,
             options: options,
@@ -418,6 +501,9 @@
         });
       })
       .then(function (p) {
+        try {
+          localStorage.setItem("craftguruCatalogChangedAt", Date.now() + ":" + Math.random());
+        } catch (_) {}
         if (msg) {
           msg.textContent =
             opts.successMessage ||

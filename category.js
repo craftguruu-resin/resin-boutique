@@ -646,19 +646,14 @@
     });
   }
 
+  var catalogMergeRenderTimer = null;
   function onCatalogDataMerged() {
-    labelForList = D.getCategoryLabel(cat);
-    if (els.heading) els.heading.textContent = labelForList;
-    if (els.crumbCat) els.crumbCat.textContent = labelForList;
-    document.title = labelForList + " — Craft guru";
-    if (els.productGrid && els.productGrid.querySelectorAll(".plp-card[data-product-id], .product-card[data-product-id]").length) {
-      patchProductGridPrices();
-      patchProductGridNames();
-      patchProductGridImageFit();
-      applyCatalogFilters(false);
-    } else {
-      applyCatalogFilters(false);
-    }
+    /* The merged data may contain a newly created product. Patching existing
+       cards cannot show it, so coalesce the merge events into one full render. */
+    clearTimeout(catalogMergeRenderTimer);
+    catalogMergeRenderTimer = setTimeout(function () {
+      render();
+    }, 40);
   }
 
   function patchProductGridNames() {

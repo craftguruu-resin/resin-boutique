@@ -92,6 +92,7 @@
   var OVERRIDES_CACHE_KEY = "__cgCatalogOverridesCache";
   var CACHE_TTL_MS = 5 * 60 * 1000;
   var VISIBILITY_REFRESH_MIN_MS = 2 * 60 * 1000;
+  var CATALOG_CHANGE_KEY = "craftguruCatalogChangedAt";
 
   function readSessionJson(key) {
     try {
@@ -192,7 +193,12 @@
     var timer = window.setTimeout(function () {
       if (controller) controller.abort();
     }, 4000);
-    var opts = { credentials: "same-origin" };
+    /* Session storage above is the deliberate short-lived catalog cache.
+       Do not let the browser's HTTP cache override it: a category page can
+       otherwise receive an older /storefront-bootstrap response for up to a
+       minute just after Vendor Panel creates a product. That made the home
+       category card visible while its destination page stayed empty. */
+    var opts = { credentials: "same-origin", cache: "no-store" };
     if (controller) opts.signal = controller.signal;
     return fetch(base + path, opts)
       .then(function (res) {
@@ -366,6 +372,19 @@
       visibilityRefreshTimer = null;
       runMerge(false);
     }, 400);
+  });
+
+  /* A save in the vendor panel can happen in another tab. Refresh the
+     public catalog immediately instead of waiting for the session cache TTL. */
+  window.addEventListener("storage", function (ev) {
+    if (ev.key !== CATALOG_CHANGE_KEY || !ev.newValue) return;
+    runMerge(true);
+  });
+
+  /* Returning from the vendor panel via the browser Back button restores a
+     cached page. Fetch once so the returned storefront includes that save. */
+  window.addEventListener("pageshow", function (ev) {
+    if (ev.persisted) runMerge(true);
   });
 
   function removeLegacyCatalogSyncButton() {

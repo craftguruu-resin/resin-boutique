@@ -938,6 +938,15 @@
       });
   }
 
+  var rawMaterialsRefreshTimer = null;
+  function refreshRawMaterialsStorefront() {
+    if (rawMaterialsRefreshTimer) clearTimeout(rawMaterialsRefreshTimer);
+    rawMaterialsRefreshTimer = setTimeout(function () {
+      rawMaterialsRefreshTimer = null;
+      load();
+    }, 80);
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", load);
   } else {
@@ -946,4 +955,13 @@
 
   window.addEventListener("craftguruShopTaxonomyRefresh", refetchTaxonomyAndHub);
   window.addEventListener("craftguruCatalogCategoriesMerged", refetchTaxonomyAndHub);
+  window.addEventListener("craftguruRawMaterialsChanged", refreshRawMaterialsStorefront);
+  window.addEventListener("storage", function (ev) {
+    if (ev && ev.key === "craftguruRawMaterialsChangedAt" && ev.newValue) {
+      refreshRawMaterialsStorefront();
+    }
+  });
+  window.addEventListener("pageshow", function (ev) {
+    if (ev && ev.persisted) refreshRawMaterialsStorefront();
+  });
 })();

@@ -290,6 +290,14 @@
                   <input type="text" id="viApSizeL" maxlength="120" placeholder="e.g. 10 inch or 44×23×34 cm" />
                 </div>
                 <div class="vs-field" style="grid-column: 1 / -1">
+                  <label>Additional size choices (optional)</label>
+                  <div id="viApExtraSizes" class="vi-ap-extra-sizes"></div>
+                  <button type="button" class="vs-btn vs-btn--ghost" id="viApAddSize" style="margin-top: 0.45rem">+ Add another size</button>
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                    Add as many size labels, prices, MRPs, and optional image URLs as needed before publishing. These become selectable choices on the guest product page.
+                  </p>
+                </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
                   <label for="viApImageUrl">Cover image URL (optional — use instead of file for Cloudinary, etc.)</label>
                   <input type="url" id="viApImageUrl" maxlength="2000" placeholder="https://res.cloudinary.com/…/image.jpg" autocomplete="off" />
                   <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
@@ -326,6 +334,13 @@
                   <label for="viApGallery">Extra gallery images (optional)</label>
                   <textarea id="viApGallery" rows="3" maxlength="12000" placeholder="One HTTPS image URL per line — non-colour gallery thumbs."></textarea>
                 </div>
+                <div class="vs-field" style="grid-column: 1 / -1">
+                  <label for="viApGalleryFiles">Upload gallery photos (optional)</label>
+                  <input type="file" id="viApGalleryFiles" accept="image/jpeg,image/png,image/webp" multiple />
+                  <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
+                    Select up to 12 photos in one go. They publish as product-gallery thumbnails alongside the cover and colour images.
+                  </p>
+                </div>
               </div>
               <button type="button" class="vs-btn vs-btn--primary" id="viApSubmit">Create product</button>
             </div>
@@ -335,7 +350,7 @@
     </div>
   </div>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-storefront-add-product.js"></script>
+  <script src="vendor-storefront-add-product.js?v=20260924catalog2"></script>
   <script src="vendor-inventory.js"></script>
 </body>
 </html>

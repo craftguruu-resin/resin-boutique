@@ -205,6 +205,15 @@
     } catch (_) {}
   }
 
+  function notifyGuestRawTaxonomyRefresh() {
+    try {
+      /* Raw material navigation is served independently of the Resin Home
+         bootstrap, so use a cross-tab signal of its own. */
+      localStorage.setItem("craftguruRawMaterialsChangedAt", Date.now() + ":" + Math.random());
+      window.dispatchEvent(new CustomEvent("craftguruShopTaxonomyRefresh"));
+    } catch (_) {}
+  }
+
   function refreshAll() {
     setMsg("Loading…");
     return loadResin()
@@ -560,6 +569,7 @@
           }
           setMsg("Raw material taxonomy updated.");
           rmTaxonomy = doc;
+          notifyGuestRawTaxonomyRefresh();
           clearCreateForm();
           return loadRm().then(onEditDomainChange);
         })
@@ -804,6 +814,7 @@
           }
           rmTaxonomy = doc;
           setMsg("Saved.");
+          notifyGuestRawTaxonomyRefresh();
           notifyGuestCatalogRefresh();
           return loadRm().then(onEditDomainChange);
         })
@@ -931,6 +942,7 @@
             }
             rmTaxonomy = docRm;
             setMsg("Base category and linked materials removed.");
+            notifyGuestRawTaxonomyRefresh();
             return loadRm().then(onEditDomainChange);
           })
           .catch(function (e) {
@@ -959,6 +971,7 @@
           }
           rmTaxonomy = docRm;
           setMsg("Subcategory and linked materials removed.");
+          notifyGuestRawTaxonomyRefresh();
           return loadRm().then(onEditDomainChange);
         })
         .catch(function (e) {

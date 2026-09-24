@@ -1127,14 +1127,14 @@
     clearTimeout(storefrontMergeTimer);
     storefrontMergeTimer = setTimeout(function () {
       bootStep("patchHomeCategoriesFromMerge", function () {
-        if (!patchHomeCategoriesFromMerge()) renderCategories();
+        /* A backend update can add a category as well as a product. Rebuild
+           the rail so the left-hand selector stays complete and current. */
+        renderCategories();
       });
-      bootStep("patchFeaturedCardImages/Prices", function () {
-        if (!patchFeaturedCardImages() && !patchFeaturedCardPrices()) renderFeatured();
-        else {
-          patchFeaturedCardImages();
-          patchFeaturedCardPrices();
-        }
+      bootStep("renderFeatured", function () {
+        /* Rebuilding, rather than only replacing images/prices, refreshes
+           category counts and includes a newly populated category. */
+        renderFeatured();
       });
       bootStep("paintHeroFloatCatalog", paintHeroFloatCatalog);
       bootStep("bootConfigurableHero", bootConfigurableHero);

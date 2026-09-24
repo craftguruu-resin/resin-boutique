@@ -3,7 +3,7 @@
  */
 "use strict";
 
-var CACHE_NAME = "cg-storefront-static-v9";
+var CACHE_NAME = "cg-storefront-static-v13";
 var STATIC_RE = /\.(js|css|woff2?|png|jpe?g|webp|gif|svg|ico)(\?|$)/i;
 
 self.addEventListener("install", function (ev) {

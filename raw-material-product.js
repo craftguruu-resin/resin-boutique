@@ -1035,9 +1035,28 @@
       });
   }
 
+  var rawMaterialRefreshTimer = null;
+  function refreshCurrentMaterial() {
+    if (rawMaterialRefreshTimer) clearTimeout(rawMaterialRefreshTimer);
+    rawMaterialRefreshTimer = setTimeout(function () {
+      rawMaterialRefreshTimer = null;
+      productFetchInflight = null;
+      load();
+    }, 80);
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", load);
   } else {
     load();
   }
+  window.addEventListener("craftguruRawMaterialsChanged", refreshCurrentMaterial);
+  window.addEventListener("storage", function (ev) {
+    if (ev && ev.key === "craftguruRawMaterialsChangedAt" && ev.newValue) {
+      refreshCurrentMaterial();
+    }
+  });
+  window.addEventListener("pageshow", function (ev) {
+    if (ev && ev.persisted) refreshCurrentMaterial();
+  });
 })();

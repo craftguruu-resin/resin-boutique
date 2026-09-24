@@ -1,5 +1,5 @@
 /* Final Home hero — single source of truth.
-   Uses the supplied 1672x941 artwork and removes legacy parity/background layers. */
+   The eagerly preloaded <img> in index.html owns the WebP source. */
 html body.page-home .home-resin-hero {
   display: block !important;
   position: relative !important;
@@ -53,7 +53,7 @@ html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   object-position: center !important;
   transform: none !important;
   animation: none !important;
-  content: url("media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a") !important;
+  content: normal !important;
   border: 0 !important;
   border-radius: inherit !important;
   background: transparent !important;

@@ -17,6 +17,12 @@
       overflow: hidden;
       border-radius: inherit;
     }
+    /* The skeleton may wait for catalogue data, but it must never mask the
+       independently loaded, eagerly requested hero artwork. */
+    body.page-home #heroStage {
+      position: relative;
+      z-index: 41;
+    }
     .cg-home-skeleton__hero {
       width: 100%;
       aspect-ratio: 3 / 2;
@@ -63,7 +69,7 @@
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preload" href="styles.css?v=20260917c" as="style" />
-  <link rel="preload" href="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260914a" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3" as="image" type="image/webp" fetchpriority="high" />
   <link rel="preload" href="media/brand-craftguru.png?v=20260730" as="image" />
   <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
@@ -100,7 +106,7 @@
   <link rel="stylesheet" href="connect-section.css?v=20260815b" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="craftguru-theme.css?v=20260815b" />
   <link rel="stylesheet" href="layout-responsive.css?v=20260815b" />
-  <link rel="stylesheet" href="storefront-perf.css?v=20260918b" />
+  <link rel="stylesheet" href="storefront-perf.css?v=20260924hero3" />
 </head>
 <body id="top" class="page-home">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -214,12 +220,12 @@
                 <picture>
                   <source
                     type="image/webp"
-                    srcset="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260924hero2 1280w"
+                    srcset="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3 1536w"
                     sizes="(max-width: 899px) 100vw, min(1200px, 72vw)"
                   />
                   <img
                     class="rm-landing-hero__exact-art home-landing-hero__exact-art"
-                    src="media/home-showcase/home-ethereal-hero-clock1.webp?v=20260924hero2"
+                    src="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3"
                     width="1536"
                     height="1024"
                     fetchpriority="high"
@@ -657,15 +663,15 @@
   <script src="cloudinary-delivery.js?v=20260815b"></script>
   <script src="image-fit.js?v=20260815b"></script>
   <script src="craftguru-api-base.js"></script>
-  <script src="data.js?v=20260815b"></script>
-  <script src="catalog-merge.js?v=20260917e"></script>
+  <script src="data.js?v=20260924catalog3"></script>
+  <script src="catalog-merge.js?v=20260924catalog2"></script>
   <script src="cart.js?v=20260815b"></script>
   <script src="category-rail-icons.js?v=20260815b"></script>
   <script src="craft-category-card.js?v=20260815b"></script>
   <script src="premium-category-cards.js?v=20260815b"></script>
-  <script src="app.js?v=20260924hero1"></script>
+  <script src="app.js?v=20260924catalog1"></script>
   <script defer src="home-self-heal.js?v=20260917h"></script>
-  <script defer src="guest-layout.js?v=20260922cart2"></script>
+  <script defer src="guest-layout.js?v=20260924hero3"></script>
   <script defer src="shell.js?v=20260922cart2"></script>
   <script defer src="header.js?v=20260815b"></script>
   <script defer src="global-find.js?v=20260815b"></script>

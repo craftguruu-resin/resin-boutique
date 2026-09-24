@@ -38,6 +38,13 @@ var productImageUpload = multer({
   limits: { fileSize: 12 * 1024 * 1024, files: 1 },
 });
 
+/* Product creation accepts one cover plus up to twelve gallery photos in the
+   same vendor-panel save. Other upload routes intentionally remain single-file. */
+var productCreateUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 12 * 1024 * 1024, files: 13 },
+});
+
 var heroBatchUpload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 12 * 1024 * 1024, files: 20 },
@@ -3195,7 +3202,10 @@ app.get("/api/catalog/photo-frame-products/:id", function (req, res) {
 /** Vendor: create storefront product — image file under media/catalog/ or optional HTTPS imageUrl (CDN). */
 app.post(
   "/api/vendor/products",
-  productImageUpload.single("image"),
+  productCreateUpload.fields([
+    { name: "image", maxCount: 1 },
+    { name: "galleryImages", maxCount: 12 },
+  ]),
   function (req, res) {
     vendorAuth.tokenValid(req, function (err, ok) {
       if (err) {
@@ -3205,6 +3215,8 @@ app.post(
         return res.status(401).json({ ok: false, error: "Unauthorized" });
       }
       var b = req.body || {};
+      var coverFile = req.files && req.files.image && req.files.image[0];
+      var galleryFiles = req.files && Array.isArray(req.files.galleryImages) ? req.files.galleryImages : [];
       function firstField(v) {
         if (v == null) return null;
         return Array.isArray(v) ? v[0] : v;
@@ -3218,8 +3230,11 @@ app.post(
         sizeLabelS: firstField(b.sizeLabelS),
         sizeLabelM: firstField(b.sizeLabelM),
         sizeLabelL: firstField(b.sizeLabelL),
-        imageBuffer: req.file && req.file.buffer,
-        mime: req.file && req.file.mimetype,
+        imageBuffer: coverFile && coverFile.buffer,
+        mime: coverFile && coverFile.mimetype,
+        galleryFiles: galleryFiles.map(function (file) {
+          return { buffer: file && file.buffer, mime: file && file.mimetype, name: file && file.originalname };
+        }),
         imageUrl: firstField(b.imageUrl),
         description: firstField(b.description),
       };

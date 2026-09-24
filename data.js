@@ -105,6 +105,14 @@
   function getStartingPriceInr(p) {
     if (!p) return 0;
     var vals = ["s","m","l"].map(function (k) { return Number(p.prices && p.prices[k]); }).filter(function (n) { return Number.isFinite(n) && n > 0; });
+    /* Vendor-created products can have more than the legacy S/M/L tiers.
+       Include those custom size prices so homepage/category "From" pricing
+       matches the selectable options on the product page. */
+    var sizes = p.options && p.options.useSize && Array.isArray(p.options.sizes) ? p.options.sizes : [];
+    sizes.forEach(function (size) {
+      var n = Number(size && size.priceInr);
+      if (Number.isFinite(n) && n > 0) vals.push(n);
+    });
     return vals.length ? Math.min.apply(null, vals) : 0;
   }
 
@@ -136,6 +144,29 @@
       ["s","m","l"].forEach(function (k) {
         if (o[k] != null && Number.isFinite(Number(o[k]))) { p.prices[k] = Number(o[k]); n++; }
       });
+
+      /* The public override payload owns all vendor-managed storefront
+         fields, not only prices. This is what makes saved size/colour rows
+         available to product.html for both bundled and vendor-added pieces. */
+      if (o.name != null && String(o.name).trim()) p.name = String(o.name).trim();
+      p.returnGift = o.returnGift === true;
+      p.listed = o.listed !== false;
+      if (o.sizeLabels && typeof o.sizeLabels === "object") {
+        p.sizeLabels = o.sizeLabels;
+      }
+      if (o.options && typeof o.options === "object") {
+        if (!p._catalogImage) p._catalogImage = p.image;
+        p.options = normalizeOptionsOverride(o.options);
+        p._vendorOptionsApplied = true;
+        /* Use the vendor's configured cover in listings as well as the PDP. */
+        if (p.options && String(p.options.heroImage || "").trim()) {
+          p.image = String(p.options.heroImage).trim();
+        }
+      } else if (p.vendorCatalogRow || p._vendorOptionsApplied) {
+        delete p.options;
+        if (p._catalogImage) p.image = p._catalogImage;
+        delete p._vendorOptionsApplied;
+      }
     });
     rebuildCategoryProductIndex();
     return n;
@@ -151,6 +182,19 @@
   function isProductSuppressed(id) { return !!SUPPRESSED[String(id || "").trim()]; }
 
   function applyVendorProductsMerge(rows) {
+    var incoming = Object.create(null);
+    (rows || []).forEach(function (row) {
+      if (row && row.id && row.isActive !== false && row.listed !== false) {
+        incoming[String(row.id)] = 1;
+      }
+    });
+
+    /* This endpoint is an authoritative snapshot of vendor-only products.
+       Drop a previously merged row when the vendor deactivates or deletes it. */
+    PRODUCTS = PRODUCTS.filter(function (p) {
+      return !p || !p.vendorCatalogRow || !!incoming[String(p.id || "")];
+    });
+
     (rows || []).forEach(function (row) {
       if (!row || !row.id || row.isActive === false || row.listed === false || SUPPRESSED[row.id]) return;
       var p = {
@@ -171,6 +215,10 @@
       if (idx >= 0) PRODUCTS[idx] = p; else PRODUCTS.push(p);
     });
     rebuildCategoryProductIndex();
+    if (global.RESIN_DATA) {
+      global.RESIN_DATA.allProducts = PRODUCTS;
+      global.RESIN_DATA.byCategory = BY_CAT;
+    }
     return (rows || []).length;
   }
 

@@ -201,6 +201,52 @@ function galleryJsonFromOpts(opts) {
   return normalizeGalleryLines(String((opts && opts.galleryText) != null ? opts.galleryText : ""));
 }
 
+function uploadedGalleryFiles(opts) {
+  return ((opts && opts.galleryFiles) || [])
+    .filter(function (file) {
+      return file && Buffer.isBuffer(file.buffer) && file.buffer.length >= 32 && file.buffer.length <= 12 * 1024 * 1024;
+    })
+    .slice(0, 12);
+}
+
+function writeUploadedGalleryFiles(files, catalogDir, folderLabel, fileStem, cb) {
+  if (!files.length) return process.nextTick(function () { cb(null, [], []); });
+  fs.mkdir(catalogDir, { recursive: true }, function (mkErr) {
+    if (mkErr) return cb(mkErr);
+    var relPaths = [];
+    var absPaths = [];
+    var index = 0;
+    function cleanUp() {
+      absPaths.forEach(function (abs) {
+        try { fs.unlinkSync(abs); } catch (_) {}
+      });
+    }
+    function next(err) {
+      if (err) {
+        cleanUp();
+        return cb(err);
+      }
+      if (index >= files.length) return cb(null, relPaths, absPaths);
+      var file = files[index];
+      var mime = String(file.mime || "").toLowerCase();
+      var ext = mime.indexOf("png") !== -1 ? "png" : "jpg";
+      var name = fileStem + "-gallery-" + (index + 1) + "-" + crypto.randomBytes(3).toString("hex") + "." + ext;
+      var rel = "media/catalog/" + folderLabel + "/" + name;
+      var abs = path.join(catalogDir, name);
+      index += 1;
+      var image = sharp(file.buffer).rotate();
+      var chain = ext === "png" ? image.png({ compressionLevel: 9 }) : image.jpeg({ quality: 88, mozjpeg: true });
+      chain.resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true }).toFile(abs, function (writeErr) {
+        if (writeErr) return next(writeErr);
+        relPaths.push(rel);
+        absPaths.push(abs);
+        next();
+      });
+    }
+    next();
+  });
+}
+
 function slugify(s) {
   return String(s || "")
     .trim()
@@ -530,9 +576,10 @@ function createVendorProductAfterSchema(opts, cb) {
     var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
     var sizeLabelsJson = JSON.stringify(buildSizeLabelsObject(opts));
     var galleryPathsJson = galleryJsonFromOpts(opts);
+    var galleryFiles = uploadedGalleryFiles(opts);
     var longDescription = normalizeProductDescription(opts && opts.description);
 
-    function commitInsert(imagePathVal, absImageForRollback, cbOut) {
+    function commitInsert(imagePathVal, rollbackPaths, cbOut) {
       pool
         .connect()
         .then(function (client) {
@@ -596,11 +643,9 @@ function createVendorProductAfterSchema(opts, cb) {
                 .catch(function () {})
                 .then(function () {
                   client.release();
-                  if (absImageForRollback) {
-                    try {
-                      fs.unlinkSync(absImageForRollback);
-                    } catch (_) {}
-                  }
+                  (Array.isArray(rollbackPaths) ? rollbackPaths : [rollbackPaths]).filter(Boolean).forEach(function (abs) {
+                    try { fs.unlinkSync(abs); } catch (_) {}
+                  });
                   cbOut(err);
                 });
             });
@@ -608,8 +653,24 @@ function createVendorProductAfterSchema(opts, cb) {
         .catch(cbOut);
     }
 
+    var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
+    function commitWithGallery(imagePathVal, rollbackPaths) {
+      if (!galleryFiles.length) return commitInsert(imagePathVal, rollbackPaths, cb);
+      writeUploadedGalleryFiles(galleryFiles, catalogDir, folderLabel, fileStem, function (galleryErr, relPaths, absPaths) {
+        if (galleryErr) {
+          (rollbackPaths || []).forEach(function (abs) {
+            try { fs.unlinkSync(abs); } catch (_) {}
+          });
+          return cb(galleryErr);
+        }
+        var existingGallery = [];
+        try { existingGallery = JSON.parse(galleryPathsJson); } catch (_) {}
+        galleryPathsJson = normalizeGalleryLines(existingGallery.concat(relPaths || []).join("\n"));
+        commitInsert(imagePathVal, (rollbackPaths || []).concat(absPaths || []), cb);
+      });
+    }
+
     if (hasFile) {
-      var catalogDir = path.join(catalogMediaPath.catalogMediaFsRoot(), folderLabel);
       var mime = String((opts && opts.mime) || "").toLowerCase();
       var usePng = mime.indexOf("png") !== -1;
       var ext = usePng ? "png" : "jpg";
@@ -624,13 +685,13 @@ function createVendorProductAfterSchema(opts, cb) {
           .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
           .toFile(absImage, function (wErr) {
             if (wErr) return cb(wErr);
-            commitInsert(relImage, absImage, cb);
+            commitWithGallery(relImage, [absImage]);
           });
       });
       return;
     }
 
-    commitInsert(extUrl, null, cb);
+    commitWithGallery(extUrl, []);
   });
 }
 

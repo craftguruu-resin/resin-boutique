@@ -39,6 +39,11 @@
   }
 
   function refreshGuestCatalogMerge() {
+    /* Tell any open guest storefront tab that the vendor catalog may have
+       changed. The storefront listens for this key and bypasses its cache. */
+    try {
+      localStorage.setItem("craftguruCatalogChangedAt", Date.now() + ":" + Math.random());
+    } catch (_) {}
     try {
       if (window.CraftguruCatalogMerge && typeof window.CraftguruCatalogMerge.refresh === "function") {
         window.CraftguruCatalogMerge.refresh();
