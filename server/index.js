@@ -2891,7 +2891,17 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (eSup) {
         return res.status(500).json({ ok: false, error: String(eSup.message || eSup) });
       }
-      res.json({ ok: true, overrides: out, suppressedProductIds: suppressed || [] });
+      vendorProductsDb.listActiveProductIdsForStorefront(function (eActive, activeProductIds) {
+        if (eActive) {
+          return res.status(500).json({ ok: false, error: String(eActive.message || eActive) });
+        }
+        res.json({
+          ok: true,
+          overrides: out,
+          suppressedProductIds: suppressed || [],
+          activeProductIds: activeProductIds || [],
+        });
+      });
     });
   });
 });
