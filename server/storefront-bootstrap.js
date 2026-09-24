@@ -101,20 +101,13 @@ function mergeCategoriesDbWithCatalog(dbRows) {
     .map(function (k) {
       return map[k];
     })
-    .filter(function (row) {
-      return row && row.id && String(row.id).trim() !== "craftguru-details";
-    })
     .sort(function (a, b) {
       return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
     });
 }
 
 function categoriesFromDataJsOnly() {
-  return catalogFromData.getCategoriesList()
-    .filter(function (c) {
-      return c && String(c.id || "").trim() !== "craftguru-details";
-    })
-    .map(function (c) {
+  return catalogFromData.getCategoriesList().map(function (c) {
     return {
       id: c.id,
       label: c.label,
@@ -132,8 +125,8 @@ function categoriesFromDataJsOnly() {
  * @param {function(Error|null, object)} cb
  */
 function loadStorefrontBootstrap(cb) {
-  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [], activeProductIds: [] };
-  var pending = 4;
+  var out = { ok: true, products: [], categories: [], overrides: {}, suppressedProductIds: [] };
+  var pending = 3;
   var failed = false;
 
   function finish() {
@@ -177,13 +170,6 @@ function loadStorefrontBootstrap(cb) {
         finish();
       });
   }
-
-  vendorProductsDb.listActiveProductIdsForStorefront(function (eActive, activeProductIds) {
-    if (eActive) return failOnce(eActive.message || eActive);
-    out.activeProductIds = activeProductIds || [];
-    pending -= 1;
-    finish();
-  });
 
   vendorCatalogDb.listOverridesMap(function (e4, map) {
     if (e4) return failOnce(e4.message || e4);
