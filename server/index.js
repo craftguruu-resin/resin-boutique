@@ -3333,11 +3333,11 @@ app.delete("/api/vendor/products/:productId", function (req, res) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
     var productId = decodeURIComponent(String(req.params.productId || "").trim());
-    vendorProductsDb.deleteVendorManagedProduct(productId, function (e2) {
+    vendorProductsDb.deleteProductPermanently(productId, function (e2) {
       if (e2) {
         var msg = String((e2 && e2.message) || e2);
         var code =
-          msg.indexOf("Built-in") >= 0 || msg.indexOf("not found") >= 0 || msg.indexOf("required") >= 0 ? 400 : 500;
+          msg.indexOf("not found") >= 0 || msg.indexOf("required") >= 0 ? 400 : msg.indexOf("not configured") >= 0 ? 503 : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
       res.setHeader("Cache-Control", "no-store");
