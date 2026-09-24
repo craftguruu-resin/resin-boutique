@@ -2997,6 +2997,13 @@ app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
       });
   }
 
+  vendorProductsDb.listActiveProductIdsForStorefront(function (eActive, activeProductIds) {
+    if (eActive) return failOnce(eActive.message || eActive);
+    out.activeProductIds = activeProductIds || [];
+    pending -= 1;
+    finish();
+  });
+
   vendorCatalogDb.listOverridesMap(function (e4, map) {
     if (e4) return failOnce(e4.message || e4);
     var overridesOut = {};
