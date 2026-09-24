@@ -452,7 +452,15 @@ function mapRowToClient(row) {
   return out;
 }
 
-/** Products in Postgres that are not present in the static data.js catalog (vendor-added). */
+/**
+ * Active products owned by Postgres for the public storefront.
+ *
+ * data.js is definition-only after the catalog/media cleanup, so filtering
+ * database rows against that file makes a database-backed catalog disappear
+ * from the storefront. Keep this query authoritative: every active DB row is
+ * returned, and the browser applies the price/listing/options overlays after
+ * it receives the snapshot.
+ */
 function listExtraProductsForStorefront(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
@@ -462,16 +470,6 @@ function listExtraProductsForStorefront(cb) {
   }
   ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
-    var staticIds;
-    try {
-      staticIds = new Set(catalogFromData.getProductsSummary().map(function (p) {
-        return p.id;
-      }));
-    } catch (e) {
-      return process.nextTick(function () {
-        cb(e, []);
-      });
-    }
     pool
       .query(
         "SELECT p.id, p.name, p.category_id, p.subcategory_id, p.image_path, p.gallery_paths, p.prices, p.size_labels, p.long_description, p.is_active, p.updated_at, " +
@@ -485,9 +483,37 @@ function listExtraProductsForStorefront(cb) {
         var out = [];
         r.rows.forEach(function (row) {
           if (hiddenResinCatalog.isHiddenResinCategoryId(row.category_id)) return;
-          if (!staticIds.has(row.id)) out.push(mapRowToClient(row));
+          out.push(mapRowToClient(row));
         });
         cb(null, out);
+      })
+      .catch(cb);
+  });
+}
+
+/**
+ * Public ids that are currently eligible for the storefront. The bootstrap
+ * payload carries this small visibility index for consumers that need it;
+ * importantly, it must succeed in file-mode too so a missing Postgres setup
+ * cannot break the entire public catalog response.
+ * @param {(err: Error|null, ids?: string[]) => void} cb
+ */
+function listActiveProductIdsForStorefront(cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(null, []);
+    });
+  }
+  ensureProductSchema(function (e0) {
+    if (e0) return cb(e0);
+    pool
+      .query(
+        "SELECT p.id FROM products p LEFT JOIN catalog_price_overrides co ON co.product_id = p.id " +
+          "WHERE p.is_active = true AND COALESCE(co.listed, true) = true ORDER BY p.updated_at DESC"
+      )
+      .then(function (r) {
+        cb(null, r.rows.map(function (row) { return String(row.id || "").trim(); }).filter(Boolean));
       })
       .catch(cb);
   });
@@ -599,9 +625,13 @@ function createVendorProductAfterSchema(opts, cb) {
             .then(function (insRes) {
               return client
                 .query(
-                  "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, out_of_stock) VALUES ($1, $2, $3, $4, false) " +
-                    "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
-                    "price_l = EXCLUDED.price_l, updated_at = now()",
+                  /* A product created through Add Product is immediately public.
+                     Do not depend on an older database's column default here:
+                     an inherited `listed = false` override made a newly-added
+                     Resin Clock appear absent from the public category page. */
+                  "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, out_of_stock, listed) VALUES ($1, $2, $3, $4, false, true) " +
+                  "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
+                    "price_l = EXCLUDED.price_l, listed = true, updated_at = now()",
                   [productId, priceS, priceM, priceL]
                 )
                 .then(function () {
@@ -1287,9 +1317,13 @@ function updateVendorProductById(productId, opts, cb) {
                     .then(function (upd) {
                       return client
                         .query(
-                          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, out_of_stock) VALUES ($1, $2, $3, $4, false) " +
+                          /* The vendor-facing Product Manager has no separate unlist control
+                             for vendor-created products. Saving an active product is therefore
+                             also a repair/publish action for legacy rows that were left with a
+                             false listing override. */
+                          "INSERT INTO catalog_price_overrides (product_id, price_s, price_m, price_l, out_of_stock, listed) VALUES ($1, $2, $3, $4, false, true) " +
                             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
-                            "price_l = EXCLUDED.price_l, updated_at = now()",
+                            "price_l = EXCLUDED.price_l, listed = true, updated_at = now()",
                           [id, priceS, priceM, priceL]
                         )
                         .then(function () {
@@ -1336,6 +1370,7 @@ function updateVendorProductById(productId, opts, cb) {
 
 module.exports = {
   listExtraProductsForStorefront: listExtraProductsForStorefront,
+  listActiveProductIdsForStorefront: listActiveProductIdsForStorefront,
   createVendorProduct: createVendorProduct,
   listVendorManagedProducts: listVendorManagedProducts,
   listAllProductsForManage: listAllProductsForManage,

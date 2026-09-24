@@ -326,6 +326,11 @@
         .filter(Boolean)
         .slice(0, 12);
     }
+    /* Inventory is stored with the product options.  Retaining it here makes
+       the PDP use the exact size/colour key that the vendor just saved. */
+    if (parsed.vendorInventory && typeof parsed.vendorInventory === "object") {
+      opt.vendorInventory = JSON.parse(JSON.stringify(parsed.vendorInventory));
+    }
     return opt;
   }
 
@@ -424,6 +429,23 @@
       }
     }
     return "m";
+  }
+
+  function variantStockForSelection(product, material, sel) {
+    var opt = material && material.options && typeof material.options === "object" ? material.options : {};
+    var vi = opt.vendorInventory && typeof opt.vendorInventory === "object" ? opt.vendorInventory : null;
+    var variants = vi && vi.variants && typeof vi.variants === "object" ? vi.variants : null;
+    var key = variantSlot(sel || {});
+    if (variants && Object.keys(variants).length) {
+      var row = variants[key];
+      if (!row || row.stock == null) return null;
+      var n = Number(row.stock);
+      return Number.isFinite(n) ? n : null;
+    }
+    var legacySlot = stockSlotFromSel(sel || {}, material);
+    return product && product.stock && product.stock[legacySlot] != null && Number.isFinite(Number(product.stock[legacySlot]))
+      ? Number(product.stock[legacySlot])
+      : null;
   }
 
   function customLineExtra() {
@@ -1067,9 +1089,7 @@
         (t.closest && (t.closest("#resinPdpAdd") || t.closest("#resinPdpBuyNow")))
       ) {
         var stockSlot = stockSlotFromSel(state.sel, m);
-        var stockValue = state.product && state.product.stock && state.product.stock[stockSlot] != null
-          ? Number(state.product.stock[stockSlot])
-          : null;
+        var stockValue = variantStockForSelection(state.product, m, state.sel);
         if (Number.isFinite(stockValue) && stockValue <= 0) {
           window.alert("This product is currently out of stock.");
           return;
@@ -1095,7 +1115,7 @@
           price: effectivePriceInr(m, state.sel),
           image: lineImageFor(m, state.sel) || prod.image,
           qty: state.lineQty,
-          lineExtra: ex || undefined,
+          lineExtra: Object.assign({ productKind: "catalog" }, ex || {}),
         });
         if (t.id === "resinPdpBuyNow" || (t.closest && t.closest("#resinPdpBuyNow"))) {
           window.location.href = "checkout.html";

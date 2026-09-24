@@ -758,32 +758,6 @@
       .then(renderRows);
   }
 
-  function catalogTierCell(pid, letter, priceVal, costVal) {
-    var p =
-      priceVal != null && Number.isFinite(Number(priceVal)) ? esc(String(priceVal)) : "";
-    var c = costVal != null && Number.isFinite(Number(costVal)) ? esc(String(costVal)) : "";
-    return (
-      "<td class='vi-cat-tier-cell'><div class='vi-cat-tier-stack'>" +
-      "<span class='vi-cat-tier-stack__lbl'>Sell</span>" +
-      "<input class='vi-cat-price' data-k='" +
-      letter +
-      "' data-pid='" +
-      pid +
-      "' type='number' min='0' step='1' value='" +
-      p +
-      "' />" +
-      "<span class='vi-cat-tier-stack__lbl vi-cat-tier-stack__lbl--cost'>Cost</span>" +
-      "<input class='vi-cat-cost' data-k='" +
-      letter +
-      "' data-pid='" +
-      pid +
-      "' type='number' min='0' step='0.01' value='" +
-      c +
-      "' placeholder='0' />" +
-      "</div></td>"
-    );
-  }
-
   function catalogStockSummary(it) {
     var st = it.effectiveStock || {};
     var parts = [];
@@ -794,12 +768,63 @@
   }
 
   function catalogVariantSummary(it) {
-    if (!it.hasExtendedOptions) return "";
+    if (!usesVariantInventory(it)) return "";
     var bits = [];
+    if (it.useSize) bits.push("size");
     if (it.useColor) bits.push("colour");
     if (it.useQty) bits.push("pack");
     if (it.hasVariants) bits.push("variants");
     return bits.length ? bits.join(", ") : "options";
+  }
+
+  /* Keep this key format identical to server/variant-inventory.js and the
+     customer product pages: each configured size/pack/colour gets its own
+     independently tracked stock number. */
+  function inventoryVariantSlot(sel) {
+    var parts = [];
+    if (sel.sid) parts.push("s:" + String(sel.sid));
+    if (sel.qid) parts.push("q:" + String(sel.qid));
+    if (sel.cid) parts.push("c:" + String(sel.cid));
+    return parts.join("|") || "std";
+  }
+
+  function catalogVariantStockRows(it) {
+    var opt = (it && it.options && typeof it.options === "object") ? it.options : {};
+    var vi = (opt.vendorInventory && typeof opt.vendorInventory === "object") ? opt.vendorInventory : {};
+    var saved = (vi.variants && typeof vi.variants === "object") ? vi.variants : {};
+    var sizes = opt.useSize && Array.isArray(opt.sizes) && opt.sizes.length ? opt.sizes : [{ id: "", label: "Standard" }];
+    var qtys = opt.useQty && Array.isArray(opt.qtyOptions) && opt.qtyOptions.length ? opt.qtyOptions : [{ id: "", label: "" }];
+    var colors = opt.useColor && Array.isArray(opt.colors) && opt.colors.length ? opt.colors : [{ id: "", label: "" }];
+    var rows = [];
+    var seen = Object.create(null);
+    sizes.forEach(function (size) {
+      qtys.forEach(function (qty) {
+        colors.forEach(function (color) {
+          var slot = inventoryVariantSlot({ sid: size && size.id || "", qid: qty && qty.id || "", cid: color && color.id || "" });
+          var labels = [];
+          if (size && size.label) labels.push(size.label);
+          if (qty && qty.label) labels.push(qty.label);
+          if (color && color.label) labels.push(color.label);
+          rows.push({ slot: slot, label: labels.join(" · ") || "Standard" });
+          seen[slot] = true;
+        });
+      });
+    });
+    Object.keys(saved).forEach(function (slot) {
+      if (!seen[slot]) rows.push({ slot: slot, label: "Saved variant · " + slot });
+    });
+    return rows.map(function (row) {
+      var rec = saved[row.slot] && typeof saved[row.slot] === "object" ? saved[row.slot] : {};
+      var val = rec.stock != null && Number.isFinite(Number(rec.stock)) ? stockCellVal(rec.stock) : "";
+      return "<label class='vi-variant-stock-card' title='" + esc(row.label) + "'><span class='vi-variant-stock-card__name'>" +
+        esc(row.label) + "</span><span class='vi-variant-stock-card__field'><input class='vi-variant-stock' data-slot='" +
+        esc(row.slot) + "' type='number' min='0' step='0.01' value='" + esc(val) +
+        "' placeholder='—' aria-label='Stock for " + esc(row.label) + "' /></span></label>";
+    }).join("");
+  }
+
+  function usesVariantInventory(it) {
+    return !!(it && (it.useSize || it.useColor || it.useQty || it.hasVariants || it.hasExtendedOptions));
   }
 
   function saveInventoryState() {
@@ -868,17 +893,6 @@
     return loadCatalogPage(true).then(step);
   }
 
-  function catalogMoreOptionsBtn(pid, it) {
-    if (!it.hasExtendedOptions && !it.useColor && !it.useQty && !it.hasVariants) return "";
-    var href =
-      "vendor-inventory-options.html?productId=" + encodeURIComponent(pid) + "&view=" + encodeURIComponent(catalogListView);
-    return (
-      " <a class='vs-btn vs-btn--ghost vi-cat-more' href='" +
-      esc(href) +
-      "' data-vi-save-state='1' style='margin-top:0.35rem;display:inline-block'>More options</a>"
-    );
-  }
-
   function setCatalogListView(view) {
     catalogListView = view === "color" ? "color" : "size";
     document.querySelectorAll(".vi-opt-view-btn").forEach(function (btn) {
@@ -891,40 +905,14 @@
   function renderCatalogRows(rows, tb, reset) {
     if (reset) tb.innerHTML = "";
     if (reset && !rows.length) {
-      tb.innerHTML = "<tr><td colspan='10' class='vs-muted'>No matches.</td></tr>";
+      tb.innerHTML = "<tr><td colspan='6' class='vs-muted'>No matches.</td></tr>";
       return;
     }
     if (reset && tb.querySelector(".vs-muted")) tb.innerHTML = "";
-    if (catalogListView === "color") {
-      var ext = rows.filter(function (it) {
-        return it.hasExtendedOptions || it.useColor || it.useQty || it.hasVariants;
-      });
-      var plain = rows.filter(function (it) {
-        return !(it.hasExtendedOptions || it.useColor || it.useQty || it.hasVariants);
-      });
-      ext.forEach(function (it) {
-        tb.innerHTML +=
-          "<tr class='vi-cat-group-row'><td colspan='10'><strong>" +
-          esc(it.name) +
-          "</strong> <span class='vs-muted'>· " +
-          esc(categoryLabelForItem(it)) +
-          " · " +
-          esc(catalogVariantSummary(it)) +
-          "</span>" +
-          catalogMoreOptionsBtn(it.id, it) +
-          "</td></tr>";
-      });
-      plain.forEach(function (it) {
-        tb.innerHTML += renderCatalogDataRow(it);
-      });
-      return;
-    }
     tb.innerHTML += rows.map(renderCatalogDataRow).join("");
   }
 
   function renderCatalogDataRow(it) {
-    var e = it.effectivePrices || {};
-    var cst = it.effectiveCosts || {};
     var st = it.effectiveStock || {};
     var bid = esc(it.id);
     var imgUrl = resolveMediaUrl(it.image || "");
@@ -942,14 +930,8 @@
           ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
           : "";
     var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
-    var optLine = catalogVariantSummary(it)
-      ? "<br/><span class='vs-muted'>" + esc(catalogVariantSummary(it)) + "</span>"
-      : "";
-    var moreBtn = catalogMoreOptionsBtn(it.id, it);
-    return (
-      "<tr data-pid='" +
-      bid +
-      "'><td><div class=\"vi-cat-product-cell\">" +
+    var productCell =
+      "<td><div class=\"vi-cat-product-cell\">" +
       imgTag +
       "<div class=\"vi-cat-product-cell__txt\"><strong>" +
       esc(it.name) +
@@ -957,15 +939,30 @@
       bid +
       "</span>" +
       skuLine +
-      optLine +
       (it.hasOverride || it.hasStockOverride ? " <span class='vs-badge vs-badge--paid'>Live</span>" : "") +
       kindBadge +
       "</div></div></td><td>" +
       esc(categoryLabelForItem(it)) +
-      "</td>" +
-      catalogTierCell(bid, "s", e.s, cst.s) +
-      catalogTierCell(bid, "m", e.m, cst.m) +
-      catalogTierCell(bid, "l", e.l, cst.l) +
+      "</td>";
+    if (usesVariantInventory(it)) {
+      return (
+        "<tr data-pid='" +
+        bid +
+        "'>" +
+        productCell +
+        "<td colspan='3'><div class='vi-variant-stock-grid' aria-label='Variant stock'>" +
+        catalogVariantStockRows(it) +
+        "</div></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
+        bid +
+        "'>Save stock</button>" +
+        "</div></td></tr>"
+      );
+    }
+    return (
+      "<tr data-pid='" +
+      bid +
+      "'>" +
+      productCell +
       "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
       bid +
       "' type='number' min='0' step='0.01' value='" +
@@ -981,7 +978,6 @@
       "' style='width:4.5rem'/></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
       bid +
       "'>Save</button>" +
-      moreBtn +
       "</div></td></tr>"
     );
   }
@@ -1357,6 +1353,48 @@
       var pid = btn.getAttribute("data-pid");
       var tr = btn.closest("tr");
       if (!tr || !pid) return;
+      var variantInputs = tr.querySelectorAll(".vi-variant-stock");
+      if (variantInputs.length) {
+        var variants = {};
+        var invalidVariant = false;
+        variantInputs.forEach(function (inp) {
+          var slot = String(inp.getAttribute("data-slot") || "").trim();
+          var raw = String(inp.value || "").trim();
+          if (!slot || raw === "") return;
+          var n = Number(raw);
+          if (!Number.isFinite(n) || n < 0) {
+            invalidVariant = true;
+            return;
+          }
+          variants[slot] = { stock: Math.round(n * 100) / 100 };
+        });
+        if (invalidVariant) {
+          window.alert("Enter a valid stock quantity (zero or higher) for every filled variant.");
+          return;
+        }
+        btn.disabled = true;
+        vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(pid) + "/variants"), {
+          method: "PATCH",
+          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+          body: JSON.stringify({ variants: variants }),
+        })
+          .then(function (res) {
+            return V.parseApiJson(res).then(function (x) {
+              if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Save failed");
+            });
+          })
+          .then(function () {
+            btn.textContent = "Saved";
+            return loadCatalogPage(true);
+          })
+          .catch(function (e) {
+            window.alert(String((e && e.message) || e));
+          })
+          .finally(function () {
+            btn.disabled = false;
+          });
+        return;
+      }
       var body = {};
       tr.querySelectorAll(".vi-cat-price").forEach(function (inp) {
         var k = inp.getAttribute("data-k");

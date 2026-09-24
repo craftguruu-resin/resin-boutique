@@ -177,6 +177,24 @@ function normalizeOptions(o) {
     qtyOnHand: Number.isFinite(qtyHand) && qtyHand >= 0 ? Math.min(99999999, Math.round(qtyHand)) : null,
     note: String(viSrc.note || "").trim().slice(0, 500),
   };
+  /* Preserve option-combination stock across product saves. */
+  var variantSrc = viSrc.variants && typeof viSrc.variants === "object" && !Array.isArray(viSrc.variants)
+    ? viSrc.variants
+    : {};
+  var variants = {};
+  Object.keys(variantSrc).forEach(function (key) {
+    var slot = String(key || "").trim().slice(0, 200);
+    var row = variantSrc[key];
+    if (!slot || !row || typeof row !== "object") return;
+    var next = {};
+    ["stock", "priceInr", "costInr"].forEach(function (field) {
+      if (!Object.prototype.hasOwnProperty.call(row, field)) return;
+      var value = parseOptionalMoney(row[field]);
+      if (value != null) next[field] = value;
+    });
+    variants[slot] = next;
+  });
+  vendorInventory.variants = variants;
   var galSrc = Array.isArray(src.galleryImages) ? src.galleryImages : [];
   var galleryImages = galSrc
     .map(function (u) {

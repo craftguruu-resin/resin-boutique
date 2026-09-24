@@ -28,7 +28,15 @@ Pushing commits to **GitHub / `main`** updates **code** on Render. It does **not
      ```env
      DATABASE_URL=postgresql://craftguru:craftguru_local_dev@127.0.0.1:5432/craftguru
      ```
-   - **Option B — Neon “dev”** (separate branch or project): paste that connection string as `DATABASE_URL` in `server/.env` so local work does not touch production data unless you intend to.
+   - **Option B — macOS Homebrew PostgreSQL**:
+     ```bash
+     brew install postgresql@16
+     brew services start postgresql@16
+     /opt/homebrew/opt/postgresql@16/bin/psql -d postgres -c "CREATE ROLE craftguru LOGIN PASSWORD 'craftguru_local_dev';"
+     /opt/homebrew/opt/postgresql@16/bin/psql -d postgres -c "CREATE DATABASE craftguru OWNER craftguru;"
+     ```
+     Then use the same `DATABASE_URL` above. If the role or database already exists, skip those two `psql` creation commands.
+   - **Option C — Neon “dev”** (separate branch or project): paste that connection string as `DATABASE_URL` in `server/.env` so local work does not touch production data unless you intend to.
 3. **Install & migrate** (same commands you would run against any Postgres):
    ```bash
    npm install

@@ -122,16 +122,12 @@
       } catch (_) {}
       D.applyPriceOverrides(j.overrides);
     }
-    var suppressed = [];
-    if (j.suppressedProductIds && j.suppressedProductIds.length) {
-      suppressed = suppressed.concat(j.suppressedProductIds);
-    }
-    if (j.overrides && typeof j.overrides === "object") {
-      Object.keys(j.overrides).forEach(function (k) {
-        if (j.overrides[k] && j.overrides[k].listed === false) suppressed.push(k);
-      });
-    }
-    if (suppressed.length && typeof D.applyCatalogSuppressions === "function") {
+    /* `listed: false` means temporarily inactive, not deleted. Only the
+       server's explicit tombstones may permanently suppress a product id.
+       Mixing the two meant an Active Resin Clock could stay invisible in a
+       browser session after it had once been inactive. */
+    var suppressed = Array.isArray(j.suppressedProductIds) ? j.suppressedProductIds : [];
+    if (typeof D.applyCatalogSuppressions === "function") {
       try {
         window.__cgCatalogSuppressions = suppressed;
       } catch (_) {}
@@ -163,11 +159,11 @@
       try {
         window.__cgCatalogOverrides = ovWrap.overrides;
       } catch (_) {}
-      if (ovWrap.suppressed && ovWrap.suppressed.length && typeof D.applyCatalogSuppressions === "function") {
+      if (typeof D.applyCatalogSuppressions === "function") {
         try {
-          window.__cgCatalogSuppressions = ovWrap.suppressed;
+          window.__cgCatalogSuppressions = Array.isArray(ovWrap.suppressed) ? ovWrap.suppressed : [];
         } catch (_) {}
-        D.applyCatalogSuppressions(ovWrap.suppressed);
+        D.applyCatalogSuppressions(Array.isArray(ovWrap.suppressed) ? ovWrap.suppressed : []);
       }
       if (typeof D.applyPriceOverrides === "function") {
         D.applyPriceOverrides(ovWrap.overrides);

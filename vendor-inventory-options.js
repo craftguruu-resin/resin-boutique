@@ -139,11 +139,6 @@
     var key = variantSlot(sel);
     var vi = (opt.vendorInventory && opt.vendorInventory.variants) || {};
     var row = vi[key] || {};
-    var sz = (opt.sizes || []).find(function (s) {
-      return String(s.id) === String(sel.sid);
-    });
-    var price = row.priceInr != null ? row.priceInr : sz && sz.priceInr != null ? sz.priceInr : "";
-    var cost = row.costInr != null ? row.costInr : sz && sz.costInr != null ? sz.costInr : "";
     var stock = row.stock != null ? row.stock : "";
     var labelParts = [];
     if (sel.sizeLabel) labelParts.push(sel.sizeLabel);
@@ -153,11 +148,7 @@
       esc(key) +
       "'><td>" +
       esc(labelParts.join(" · ") || sel.sid || "Standard") +
-      "</td><td><input type='number' class='vs-input vio-price' min='0' step='1' value='" +
-      esc(price !== "" ? String(price) : "") +
-      "' /></td><td><input type='number' class='vs-input vio-cost' min='0' step='0.01' value='" +
-      esc(cost !== "" ? String(cost) : "") +
-      "' /></td><td><input type='number' class='vs-input vio-stock' min='0' step='0.01' value='" +
+      "</td><td><input type='number' class='vs-input vio-stock' min='0' step='1' value='" +
       esc(stock !== "" ? String(stock) : "") +
       "' /></td></tr>"
     );
@@ -201,7 +192,7 @@
       "</span>" +
       (fitBtn ? "<div class='vio-color-card__fit'>" + fitBtn + "</div>" : "") +
       "</div></div>" +
-      "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Size / pack</th><th>Sell ₹</th><th>Cost ₹</th><th>Stock</th></tr></thead><tbody>" +
+      "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Size / pack</th><th>Stock</th></tr></thead><tbody>" +
       rows +
       "</tbody></table></div></div>"
     );
@@ -242,7 +233,7 @@
       "<h3 class='vs-login__title' style='margin-top:0'>" +
       esc(size.label || size.id) +
       "</h3>" +
-      "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Colour / pack</th><th>Sell ₹</th><th>Cost ₹</th><th>Stock</th></tr></thead><tbody>" +
+      "<div class='vs-table-wrap'><table class='vs-table vio-variant-table'><thead><tr><th>Colour / pack</th><th>Stock</th></tr></thead><tbody>" +
       rows +
       "</tbody></table></div></div>"
     );
@@ -251,33 +242,10 @@
   function renderPackSection(opt) {
     var host = document.getElementById("vioPackSection");
     if (!host) return;
-    if (!opt.useQty || !(opt.qtyOptions && opt.qtyOptions.length)) {
-      host.hidden = true;
-      host.innerHTML = "";
-      return;
-    }
-    host.hidden = false;
-    var rows = (opt.qtyOptions || [])
-      .map(function (pk) {
-        return (
-          "<tr data-pack-id='" +
-          esc(pk.id) +
-          "'><td>" +
-          esc(pk.label || pk.id) +
-          "</td><td><input type='number' class='vs-input vio-pack-price' min='0' step='1' value='" +
-          esc(pk.priceInr != null ? String(pk.priceInr) : "") +
-          "' /></td><td><input type='number' class='vs-input vio-pack-cost' min='0' step='0.01' value='" +
-          esc(pk.costInr != null ? String(pk.costInr) : "") +
-          "' /></td></tr>"
-        );
-      })
-      .join("");
-    host.innerHTML =
-      "<div class='vs-card'><h2 class='vs-login__title' style='margin-top:0'>Pack / quantity defaults</h2>" +
-      "<p class='vs-muted'>Base price add-ons per pack row (combined with size/colour variant rows above).</p>" +
-      "<div class='vs-table-wrap'><table class='vs-table'><thead><tr><th>Pack</th><th>Sell add-on ₹</th><th>Cost add-on ₹</th></tr></thead><tbody>" +
-      rows +
-      "</tbody></table></div></div>";
+    /* Packs are already represented in each stock combination above. Their
+       pricing belongs in Product editing, so Inventory stays stock-only. */
+    host.hidden = true;
+    host.innerHTML = "";
   }
 
   function renderEditor() {
@@ -313,18 +281,8 @@
     document.querySelectorAll("[data-vio-key]").forEach(function (tr) {
       var key = tr.getAttribute("data-vio-key");
       if (!key) return;
-      var prEl = tr.querySelector(".vio-price");
-      var coEl = tr.querySelector(".vio-cost");
       var stEl = tr.querySelector(".vio-stock");
       var row = {};
-      if (prEl && String(prEl.value || "").trim() !== "") {
-        var pr = Number(prEl.value);
-        if (Number.isFinite(pr) && pr >= 0) row.priceInr = Math.round(pr);
-      }
-      if (coEl && String(coEl.value || "").trim() !== "") {
-        var co = Number(coEl.value);
-        if (Number.isFinite(co) && co >= 0) row.costInr = Math.round(co * 100) / 100;
-      }
       if (stEl && String(stEl.value || "").trim() !== "") {
         var st = Number(stEl.value);
         if (Number.isFinite(st) && st >= 0) row.stock = Math.round(st * 100) / 100;
@@ -332,27 +290,6 @@
       if (Object.keys(row).length) variants[key] = row;
     });
     return variants;
-  }
-
-  function readPackPatches() {
-    var out = [];
-    document.querySelectorAll("[data-pack-id]").forEach(function (tr) {
-      var id = tr.getAttribute("data-pack-id");
-      if (!id) return;
-      var prEl = tr.querySelector(".vio-pack-price");
-      var coEl = tr.querySelector(".vio-pack-cost");
-      var row = { id: id };
-      if (prEl && String(prEl.value || "").trim() !== "") {
-        var pr = Number(prEl.value);
-        if (Number.isFinite(pr) && pr >= 0) row.priceInr = Math.round(pr);
-      }
-      if (coEl && String(coEl.value || "").trim() !== "") {
-        var co = Number(coEl.value);
-        if (Number.isFinite(co) && co >= 0) row.costInr = Math.round(co * 100) / 100;
-      }
-      if (Object.keys(row).length > 1) out.push(row);
-    });
-    return out;
   }
 
   function loadProduct() {
@@ -393,8 +330,6 @@
     showMsg("vioErr", "");
     showMsg("vioOk", "");
     var body = { variants: readVariantsFromDom() };
-    var packs = readPackPatches();
-    if (packs.length) body.qtyOptions = packs;
     var fitPatches = readImageFitPatches();
     if (fitPatches.colors.length) body.colors = fitPatches.colors;
     if (fitPatches.sizes.length) body.sizes = fitPatches.sizes;

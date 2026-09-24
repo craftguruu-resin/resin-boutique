@@ -80,6 +80,12 @@
 
   function imageUrl(relPath) {
     relPath = String(relPath || "").trim();
+    /* Cloudinary/CDN URLs are already complete URLs. Encoding their protocol
+       turns `https://…` into `https%3A//…`, which works nowhere outside the
+       PDP's special gallery resolver. Keep external media intact so product
+       cards, category listings, search, and product detail all use the same
+       image source. */
+    if (/^https?:\/\//i.test(relPath) || /^\/\//.test(relPath)) return relPath;
     return relPath ? relPath.split("/").map(encodeURIComponent).join("/") : "";
   }
 
@@ -173,8 +179,12 @@
   }
 
   function applyCatalogSuppressions(ids) {
+    /* This list is the server's authoritative set of permanently deleted
+       catalog rows. Replace, rather than append to, the old browser state so
+       an item that was merely inactive can return as soon as it is made
+       active again. */
+    SUPPRESSED = Object.create(null);
     (ids || []).forEach(function (id) { id = String(id || "").trim(); if (id) SUPPRESSED[id] = 1; });
-    PRODUCTS = PRODUCTS.filter(function (p) { return !SUPPRESSED[p.id]; });
     rebuildCategoryProductIndex();
     return ids ? ids.length : 0;
   }
@@ -196,7 +206,7 @@
     });
 
     (rows || []).forEach(function (row) {
-      if (!row || !row.id || row.isActive === false || row.listed === false || SUPPRESSED[row.id]) return;
+      if (!row || !row.id || row.isActive === false || row.listed === false) return;
       var p = {
         id: String(row.id),
         name: String(row.name || row.id),

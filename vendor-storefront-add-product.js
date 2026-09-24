@@ -486,6 +486,9 @@
             priceS: Number(document.getElementById("viApPriceS") && document.getElementById("viApPriceS").value) || 0,
             priceM: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
             priceL: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
+            /* Add Product is a publish action. A vendor can deliberately
+               unlist the product later from Products management. */
+            listed: true,
             description: options.detailBody || "",
             returnGift: returnGift,
             options: options,

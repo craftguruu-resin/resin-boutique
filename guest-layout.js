@@ -1095,7 +1095,7 @@
     if (!document.querySelector("link[data-cg-storefront-perf]")) {
       var perf = document.createElement("link");
       perf.rel = "stylesheet";
-      perf.href = "storefront-perf.css?v=20260924hero3";
+      perf.href = "storefront-perf.css?v=20260925hero5";
       perf.setAttribute("data-cg-storefront-perf", "1");
       document.head.appendChild(perf);
     }

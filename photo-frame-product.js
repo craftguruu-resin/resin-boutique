@@ -111,6 +111,36 @@
     return parts.join("|") || "std";
   }
 
+  function inventoryValueForSelection(material, sel) {
+    var opt = material && material.options && typeof material.options === "object" ? material.options : {};
+    var vi = opt.vendorInventory && typeof opt.vendorInventory === "object" ? opt.vendorInventory : null;
+    var variants = vi && vi.variants && typeof vi.variants === "object" ? vi.variants : null;
+    if (variants && Object.keys(variants).length) {
+      var row = variants[variantSlot(sel || {})];
+      if (!row || row.stock == null || !Number.isFinite(Number(row.stock))) return null;
+      return Number(row.stock);
+    }
+    if (vi && vi.qtyOnHand != null && Number.isFinite(Number(vi.qtyOnHand))) return Number(vi.qtyOnHand);
+    return undefined;
+  }
+
+  function canAddSelectedQuantity(material, sel, qty) {
+    var stock = inventoryValueForSelection(material, sel);
+    if (stock === null) {
+      window.alert("Inventory is currently unavailable for this option. Please select a stocked option.");
+      return false;
+    }
+    if (Number.isFinite(stock) && stock <= 0) {
+      window.alert("This product is currently out of stock.");
+      return false;
+    }
+    if (Number.isFinite(stock) && stock < Number(qty || 1)) {
+      window.alert("Only " + stock + " left in stock for this option.");
+      return false;
+    }
+    return true;
+  }
+
   function variantLabelFrom(material, o) {
     var opt = material.options || {};
     var bits = [];
@@ -331,6 +361,7 @@
         window.alert("Cart is still loading. Please try again.");
         return false;
       }
+      if (!canAddSelectedQuantity(m, state.sel, state.lineQty)) return false;
       var item = {
         id: m.id,
         size: variantSlot(state.sel),
@@ -339,6 +370,7 @@
         price: effectivePriceInr(m, state.sel),
         image: lineImageFor(m, state.sel),
         qty: state.lineQty,
+        lineExtra: { productKind: "photo_frame" },
       };
       var result = activeCart.addItem(item);
       if (!result || !Array.isArray(result)) {
@@ -511,6 +543,7 @@
          so a stale script-load snapshot must never disable the buttons. */
       var activeCart = window.RESIN_CART || CART;
       if ((add || buyNow) && activeCart && typeof activeCart.addItem === "function") {
+        if (!canAddSelectedQuantity(m, state.sel, state.lineQty)) return;
         var slot = variantSlot(state.sel);
         var vlabel = variantLabelFrom(m, state.sel);
         activeCart.addItem({
@@ -521,6 +554,7 @@
           price: effectivePriceInr(m, state.sel),
           image: lineImageFor(m, state.sel),
           qty: state.lineQty,
+          lineExtra: { productKind: "photo_frame" },
         });
         if (buyNow) {
           window.location.href = "checkout.html";

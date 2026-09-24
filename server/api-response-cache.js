@@ -69,11 +69,15 @@ function cachePublicJson(opts) {
 
     var origJson = res.json.bind(res);
     res.json = function (body) {
-      if (res.statusCode >= 200 && res.statusCode < 300 && body && body.ok !== false) {
+      /* Route handlers can opt a response out of both this memory cache and
+         downstream caching by setting Cache-Control: no-store before json(). */
+      var responseCacheControl = String(res.getHeader("Cache-Control") || "").toLowerCase();
+      var noStore = responseCacheControl.indexOf("no-store") >= 0;
+      if (!noStore && res.statusCode >= 200 && res.statusCode < 300 && body && body.ok !== false) {
         set(key, body, ttlMs);
       }
-      res.setHeader("Cache-Control", cacheControl);
-      res.setHeader("X-Cache", "MISS");
+      if (!noStore) res.setHeader("Cache-Control", cacheControl);
+      res.setHeader("X-Cache", noStore ? "BYPASS" : "MISS");
       return origJson(body);
     };
     next();

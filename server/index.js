@@ -2902,6 +2902,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
         if (eActive) {
           return res.status(500).json({ ok: false, error: String(eActive.message || eActive) });
         }
+        res.setHeader("Cache-Control", "no-store");
         res.json({
           ok: true,
           overrides: out,
@@ -2923,6 +2924,7 @@ app.get("/api/catalog/vendor-products", function (_req, res) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
+      res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, products: list || [], activeProductIds: activeProductIds || [] });
     });
   });
@@ -2940,7 +2942,10 @@ app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
   function finish() {
     if (failed) return;
     if (pending > 0) return;
-    res.setHeader("Cache-Control", "public, max-age=60, stale-while-revalidate=120");
+    /* Vendor saves must be visible in the storefront immediately. The
+       frontend already maintains a short session cache; a public/CDN cache
+       here can otherwise serve an older category payload after a save. */
+    res.setHeader("Cache-Control", "no-store");
     res.json(out);
   }
 

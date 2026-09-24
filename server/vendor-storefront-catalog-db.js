@@ -81,6 +81,10 @@ function productOptionsFromSources(m, ov) {
 
 function attachOptionFlags(item, opt) {
   var flags = variantInventory.optionFlags(opt);
+  /* This is a vendor-authenticated inventory response.  The stock grid needs
+     the configured option IDs as well as their labels in order to use the
+     exact same composite key as the customer PDP and checkout. */
+  item.options = JSON.parse(JSON.stringify(opt && typeof opt === "object" ? opt : {}));
   item.useColor = flags.useColor;
   item.useQty = flags.useQty;
   item.useSize = flags.useSize;
@@ -758,7 +762,7 @@ function getStorefrontCatalogProduct(productId, cb) {
             useQty: item.useQty || !!opt.useQty,
             useSize: item.useSize || !!opt.useSize,
             hasVariants: variantInventory.hasVariantInventory(opt),
-            hasExtendedOptions: !!(opt.useColor || opt.useQty || variantInventory.hasVariantInventory(opt)),
+            hasExtendedOptions: !!(opt.useSize || opt.useColor || opt.useQty || variantInventory.hasVariantInventory(opt)),
           });
         });
       });

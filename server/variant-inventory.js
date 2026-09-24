@@ -89,7 +89,9 @@ function optionFlags(opt) {
     useQty: !!opt.useQty,
     useSize: !!opt.useSize,
     hasVariants: hasVariants,
-    hasExtendedOptions: !!(opt.useColor || opt.useQty || hasVariants),
+    /* Inventory must follow every option configured on the product — a
+       size-only product is still a variant product, not an S/M/L fallback. */
+    hasExtendedOptions: !!(opt.useSize || opt.useColor || opt.useQty || hasVariants),
   };
 }
 

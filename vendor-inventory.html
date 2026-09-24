@@ -17,7 +17,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="vendor-saas.css" />
+  <link rel="stylesheet" href="vendor-saas.css?v=20260925inventory6" />
   <link rel="stylesheet" href="craftguru-theme.css" />
 </head>
 <body class="vendor-saas" data-vendor-nav="inventory">
@@ -41,7 +41,7 @@
         <div id="viDeskSection">
           <div class="vi-tabbar vs-row-actions" style="margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem">
             <button type="button" class="vs-btn vs-btn--primary vi-tab" data-tab="studio">Studio materials</button>
-            <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="catalog">Storefront catalog &amp; prices</button>
+            <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="catalog">Storefront catalog inventory</button>
             <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="addproduct">Add product</button>
           </div>
 
@@ -161,10 +161,6 @@
                   <label for="viCatalogSearch">Search</label>
                   <input type="search" id="viCatalogSearch" placeholder="Name, product id, or SKU…" />
                 </div>
-                <div class="vi-opt-view-toggle vs-row-actions" role="group" aria-label="Catalog list view" style="gap: 0.35rem">
-                  <button type="button" class="vs-btn vs-btn--primary vi-opt-view-btn" data-vi-view="size">Size wise</button>
-                  <button type="button" class="vs-btn vs-btn--ghost vi-opt-view-btn" data-vi-view="color">Colour wise</button>
-                </div>
                 <button type="button" class="vs-btn vs-btn--primary" id="viCatalogSearchBtn">Search</button>
               </div>
             </div>
@@ -174,12 +170,9 @@
                   <tr>
                     <th>Product</th>
                     <th>Category</th>
-                    <th>S sell / cost</th>
-                    <th>M sell / cost</th>
-                    <th>L sell / cost</th>
-                    <th title="From studio-linked inventory">S stock</th>
-                    <th title="From studio-linked inventory">M stock</th>
-                    <th title="From studio-linked inventory">L stock</th>
+                    <th title="For legacy products without configured options">S stock</th>
+                    <th title="For legacy products without configured options">M stock</th>
+                    <th title="For legacy products without configured options">L stock</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -350,7 +343,7 @@
     </div>
   </div>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-storefront-add-product.js?v=20260924catalog2"></script>
-  <script src="vendor-inventory.js"></script>
+  <script src="vendor-storefront-add-product.js?v=20260925publish1"></script>
+  <script src="vendor-inventory.js?v=20260925inventory5"></script>
 </body>
 </html>
