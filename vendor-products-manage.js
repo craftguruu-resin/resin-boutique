@@ -809,26 +809,6 @@
     });
   }
 
-  /** Bundled catalog: removes catalog_price_overrides row only (product stays in site catalog). */
-  function deleteCatalogOverride(id) {
-    return fetch(base() + "/api/vendor/catalog-products/" + encodeURIComponent(id), {
-      method: "DELETE",
-      headers: V.authHeaders(),
-      cache: "no-store",
-    }).then(function (res) {
-      return res.text().then(function (text) {
-        var j = {};
-        try {
-          j = text ? JSON.parse(text) : {};
-        } catch (_) {}
-        if (!res.ok || !j.ok) {
-          throw new Error((j && j.error) || res.statusText || "Delete failed");
-        }
-        return j;
-      });
-    });
-  }
-
   function setActive(id, active) {
     return fetch(base() + "/api/vendor/products/" + encodeURIComponent(id) + "/active", {
       method: "POST",
@@ -1180,36 +1160,17 @@
       }
       if (btn.classList.contains("vpm-del")) {
         var src = String(btn.getAttribute("data-source") || "vendor");
-        if (src === "catalog") {
-          if (
-            !window.confirm(
-              "Remove all saved database settings for this catalog product (custom prices, size labels, corporate gifting flag, discontinued state)? The product stays in the bundled site catalog with its default prices and listing."
-            )
-          ) {
-            return;
-          }
-          deleteCatalogOverride(id)
-            .then(function (j) {
-              if (editingId === id) closeEdit();
-              if (j && j.removed === false) {
-                showMsg("No saved overrides were stored for this product.", false);
-              } else {
-                showMsg("Catalog overrides removed.", false);
-              }
-              refreshGuestCatalogMerge();
-              return loadList();
-            })
-            .catch(function (e) {
-              window.alert(String((e && e.message) || e));
-            });
-          return;
-        }
-        if (!window.confirm("Permanently delete this vendor-added product from the database? This cannot be undone.")) {
+        var message =
+          src === "catalog"
+            ? "Permanently delete this catalog product from the storefront? This removes all saved database settings and creates a permanent suppression record, so it will stay hidden even after future deployments. This cannot be undone."
+            : "Permanently delete this vendor-added product from the database and storefront? Its database record, saved overrides, and inventory link will be removed. This cannot be undone.";
+        if (!window.confirm(message)) {
           return;
         }
         deleteProduct(id)
           .then(function () {
             if (editingId === id) closeEdit();
+            refreshGuestCatalogMerge();
             return loadList();
           })
           .catch(function (e) {
