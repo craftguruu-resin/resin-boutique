@@ -235,7 +235,11 @@ var SIZE_DEFAULT = {
    * products from leaking back into the public catalog after deletion/delisting.
    */
   var _activeCatalogProductIds = Object.create(null);
+  /* Start with the bundled catalog available so a temporary API/DB delay never blanks the storefront. The server allowlist replaces this with the authoritative active set as soon as it arrives. */
   var _activeCatalogVisibilityReady = false;
+  PRODUCTS.forEach(function (p) {
+    if (p && p.id) _activeCatalogProductIds[String(p.id)] = 1;
+  });
 
   function applyCatalogVisibilityAllowlist(ids) {
     var next = Object.create(null);
@@ -266,7 +270,10 @@ var SIZE_DEFAULT = {
 
   function isActiveCatalogProductAllowed(id) {
     var key = String(id || "").trim();
-    return !!(_activeCatalogVisibilityReady && key && _activeCatalogProductIds[key]);
+    if (!key) return false;
+    /* Before the authoritative response arrives, keep the bundled catalog renderable. Once it arrives, enforce it exactly. */
+    if (!_activeCatalogVisibilityReady) return !!_activeCatalogProductIds[key];
+    return !!_activeCatalogProductIds[key];
   }
 
   function applyCatalogSuppressions(ids) {
