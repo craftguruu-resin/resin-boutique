@@ -63,15 +63,21 @@ function buildProductIndex(staticData, bootstrap) {
   var byId = Object.create(null);
   var byCat = Object.create(null);
   var suppressed = Object.create(null);
+  var active = Object.create(null);
   (bootstrap.suppressedProductIds || []).forEach(function (id) {
     suppressed[String(id)] = 1;
+  });
+  (bootstrap.activeProductIds || []).forEach(function (id) {
+    active[String(id)] = 1;
   });
 
   function addProduct(p) {
     if (!p || !p.id) return;
+    /* SSR uses the same Vendor Panel active-product allowlist as the client. */
+    if (!active[p.id]) return;
     if (suppressed[p.id]) return;
     var ov = bootstrap.overrides && bootstrap.overrides[p.id];
-    if (ov && ov.delisted) return;
+    if (ov && (ov.delisted || ov.listed === false)) return;
     byId[p.id] = p;
     var cat = String(p.category || "");
     if (!byCat[cat]) byCat[cat] = [];
