@@ -411,21 +411,12 @@ function listExtraProductsForStorefront(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
     /*
-     * A temporary DB outage must not make the entire storefront disappear.
-     * Bundled products are active by default unless the authoritative DB has
-     * an explicit delist/tombstone. When DB is back, this function recomputes
-     * the exact Vendor Panel active allowlist.
+     * The Vendor Panel state is authoritative. If it cannot be read, do not
+     * guess that Git/data.js products are active.
      */
-    try {
-      var fallbackStatic = staticCatalogProductIds();
-      return process.nextTick(function () {
-        cb(null, Array.from(fallbackStatic));
-      });
-    } catch (fallbackErr) {
-      return process.nextTick(function () {
-        cb(fallbackErr);
-      });
-    }
+    return process.nextTick(function () {
+      cb(null, []);
+    });
   }
   ensureProductSchema(function (e0) {
     if (e0) return cb(e0);
@@ -503,7 +494,12 @@ function listActiveProductIdsForStorefront(cb) {
       staticIds.forEach(function (id) {
         if (!id || supSet[id]) return;
         var ov = omap[id];
-        if (ov && ov.listed === false) return;
+        /*
+         * Bundled/Git products are NOT active by default.
+         * A static product enters the storefront allowlist only after the
+         * Vendor Panel explicitly sets its Active state to true.
+         */
+        if (!ov || ov.listed !== true) return;
         active[id] = 1;
       });
 
@@ -756,7 +752,11 @@ function manageRowHaystack(p) {
 
 function pushStaticManageRow(p, omap, skuMap, out) {
   var ov = omap[p.id] || {};
-  var listed = ov.listed !== false;
+  /*
+   * A bundled product is inactive until the Vendor Panel explicitly marks it
+   * Active. This keeps the admin status and storefront allowlist identical.
+   */
+  var listed = ov.listed === true;
   var ovSl = ov.sizeLabels && typeof ov.sizeLabels === "object" ? ov.sizeLabels : {};
   var stSl = p.sizeLabels && typeof p.sizeLabels === "object" ? p.sizeLabels : {};
   var comb = {};
