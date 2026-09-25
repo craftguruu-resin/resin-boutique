@@ -6,7 +6,7 @@
 /* Bump this whenever a shared shell/style changes. Static assets are cache
    first, so a new namespace makes the responsive shell available immediately
    after a deployment instead of waiting for an old cached script to expire. */
-var CACHE_NAME = "cg-storefront-static-v22";
+var CACHE_NAME = "cg-storefront-static-v25";
 var STATIC_RE = /\.(js|css|woff2?|png|jpe?g|webp|gif|svg|ico)(\?|$)/i;
 
 self.addEventListener("install", function (ev) {

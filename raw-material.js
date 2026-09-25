@@ -315,7 +315,10 @@
     try {
       var u = new URL(window.location.href);
       return {
-        base: (u.searchParams.get("base") || "").trim(),
+        /* Older category cards used `cat`/`category`; treating those like a
+           landing URL was what allowed the promotional hero to return above
+           product results. All three forms now enter the listing-only route. */
+        base: (u.searchParams.get("base") || u.searchParams.get("category") || u.searchParams.get("cat") || "").trim(),
         sub: (u.searchParams.get("sub") || "").trim(),
       };
     } catch (_) {
@@ -345,6 +348,7 @@
     var grid = document.getElementById("rmGrid");
     var shell = document.getElementById("rmPlpShell");
     document.body.classList.toggle("rm-category-results", !home);
+    document.documentElement.classList.toggle("storefront-category-listing", !home);
     if (hub) hub.toggleAttribute("hidden", !home);
     if (tb) tb.toggleAttribute("hidden", !home);
     if (hero) hero.toggleAttribute("hidden", !home);

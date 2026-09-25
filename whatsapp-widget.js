@@ -86,7 +86,23 @@
       setOpen(!root.classList.contains("is-open"));
     }
 
-    if (fab) fab.addEventListener("click", toggleOpen);
+    if (fab) {
+      var lastTouchToggleAt = 0;
+      /* Preserve a real tap path for Android/iOS WebViews, while suppressing
+         the compatibility click that follows the same touch interaction. */
+      fab.addEventListener("touchend", function (ev) {
+        lastTouchToggleAt = Date.now();
+        if (ev.cancelable) ev.preventDefault();
+        toggleOpen();
+      }, { passive: false });
+      fab.addEventListener("click", function (ev) {
+        if (Date.now() - lastTouchToggleAt < 700) {
+          ev.preventDefault();
+          return;
+        }
+        toggleOpen();
+      });
+    }
 
     root.querySelectorAll("[data-wa-close]").forEach(function (el) {
       el.addEventListener("click", function () {

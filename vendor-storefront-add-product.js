@@ -1,6 +1,5 @@
 /**
- * Shared "Add storefront product" flow for Inventory and Products (Resin Home).
- * Expects the same viAp* form field ids used on vendor-inventory.html.
+ * Add storefront product flow for the vendor Products page.
  */
 (function (global) {
   "use strict";
@@ -13,6 +12,52 @@
 
   var categoriesCache = [];
   var bound = false;
+
+  var COLOR_HEX_BY_NAME = {
+    black: "#111827",
+    white: "#f8fafc",
+    grey: "#6b7280",
+    gray: "#6b7280",
+    red: "#ef4444",
+    orange: "#f97316",
+    yellow: "#eab308",
+    green: "#22c55e",
+    blue: "#3b82f6",
+    purple: "#8b5cf6",
+    pink: "#ec4899",
+    brown: "#92400e",
+    gold: "#d4a017",
+    silver: "#94a3b8",
+    clear: "#f8fafc",
+    transparent: "#f8fafc",
+  };
+
+  function colourHexFromName(value) {
+    var name = String(value || "")
+      .toLowerCase()
+      .replace(/[^a-z]+/g, " ")
+      .trim();
+    if (!name || name === "default") return "";
+    if (COLOR_HEX_BY_NAME[name]) return COLOR_HEX_BY_NAME[name];
+    var words = name.split(" ");
+    for (var i = 0; i < words.length; i++) {
+      if (COLOR_HEX_BY_NAME[words[i]]) return COLOR_HEX_BY_NAME[words[i]];
+    }
+    return "";
+  }
+
+  function bindColourNameToSwatch(label, picker, readout) {
+    if (!label || !picker) return;
+    function syncFromName() {
+      var hex = colourHexFromName(label.value);
+      if (!hex) return;
+      picker.value = hex;
+      if (readout) readout.textContent = hex.toUpperCase();
+    }
+    label.addEventListener("input", syncFromName);
+    label.addEventListener("change", syncFromName);
+    syncFromName();
+  }
 
   function normalizeHex(raw) {
     var h = String(raw == null ? "" : raw)
@@ -116,6 +161,7 @@
     host.appendChild(row);
     var pick = row.querySelector(".vi-ap-color-hex");
     var read = row.querySelector(".vi-ap-color-readout");
+    var label = row.querySelector(".vi-ap-color-label");
     if (pick && read) {
       function sync() {
         read.textContent = String(pick.value || "").toUpperCase();
@@ -123,6 +169,7 @@
       pick.addEventListener("input", sync);
       pick.addEventListener("change", sync);
     }
+    bindColourNameToSwatch(label, pick, read);
     var rm = row.querySelector(".vi-ap-color-rm");
     if (rm) {
       rm.addEventListener("click", function () {
@@ -213,13 +260,6 @@
     return el ? String(el.value || "").trim() : "";
   }
 
-  function readMoney(id) {
-    var raw = readField(id);
-    if (!raw) return null;
-    var n = Number(raw);
-    return Number.isFinite(n) && n >= 0 ? Math.round(n * 100) / 100 : null;
-  }
-
   function buildCreateProductOptions(coverUrl) {
     var cover = String(coverUrl || "").trim();
     var labelEl = document.getElementById("viApCoverColorLabel");
@@ -246,97 +286,32 @@
           .filter(Boolean)
           .slice(0, 12)
       : [];
-    var prices = {
-      s: Number(document.getElementById("viApPriceS") && document.getElementById("viApPriceS").value) || 0,
-      m: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
-      l: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
-    };
-    var mrps = {
-      s: readMoney("viApMrpS"),
-      m: readMoney("viApMrpM"),
-      l: readMoney("viApMrpL"),
-    };
-    var sizes = [
-      {
-        id: "sz-s",
-        label: String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim() || "Compact",
-        priceInr: prices.s,
-        mrpInr: mrps.s,
-      },
-      {
-        id: "sz-m",
-        label: String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim() || "Classic",
-        priceInr: prices.m,
-        mrpInr: mrps.m,
-      },
-      {
-        id: "sz-l",
-        label: String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim() || "Grand",
-        priceInr: prices.l,
-        mrpInr: mrps.l,
-      },
-    ].filter(function (sz) {
-      return Number.isFinite(Number(sz.priceInr)) && Number(sz.priceInr) > 0;
-    });
-    sizes = sizes.concat(readExtraSizes());
+    var sizes = readExtraSizes();
     sizes.forEach(function (sz) {
       if (sz.mrpInr == null) delete sz.mrpInr;
     });
     var descEl = document.getElementById("viApDescription");
-    var trust = readField("viApTrust")
-      .split("\n")
-      .map(function (l) {
-        return l.trim();
-      })
-      .filter(Boolean);
-    var stockQtyEl = document.getElementById("viApStockQty");
-    var stockQtyRaw = stockQtyEl && stockQtyEl.value.trim() !== "" ? Number(stockQtyEl.value) : null;
-    var stockQty =
-      stockQtyRaw != null && Number.isFinite(stockQtyRaw) && stockQtyRaw >= 0 ? Math.floor(stockQtyRaw) : null;
     return {
       useSize: sizes.length > 0,
       useQty: false,
       useColor: colors.length > 0,
-      badge: readField("viApBadge").slice(0, 80),
-      shipNote: readField("viApNote").slice(0, 300),
-      trustBullets: trust.slice(0, 8),
       sizes: sizes,
       qtyOptions: [],
       colors: colors,
       heroImage: cover,
       galleryImages: galleryImages,
       detailBody: descEl ? String(descEl.value || "").trim().slice(0, 8000) : "",
-      vendorInventory: {
-        qtyOnHand: stockQty,
-        note: readField("viApStockNote").slice(0, 500),
-      },
     };
   }
 
   function resetForm(fileInp, urlEl) {
     if (document.getElementById("viApName")) document.getElementById("viApName").value = "";
-    ["viApSizeS", "viApSizeM", "viApSizeL"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    ["viApPriceS", "viApPriceM", "viApPriceL"].forEach(function (id) {
-      var priceEl = document.getElementById(id);
-      if (priceEl) priceEl.value = "0";
-    });
     if (fileInp) fileInp.value = "";
     if (urlEl) urlEl.value = "";
     var gal = document.getElementById("viApGallery");
     if (gal) gal.value = "";
     var desc = document.getElementById("viApDescription");
     if (desc) desc.value = "";
-    ["viApNote", "viApBadge", "viApTrust", "viApStockNote", "viApMrpS", "viApMrpM", "viApMrpL"].forEach(function (id) {
-      var el = document.getElementById(id);
-      if (el) el.value = "";
-    });
-    var stockQty = document.getElementById("viApStockQty");
-    if (stockQty) stockQty.value = "";
-    var returnGift = document.getElementById("viApReturnGift");
-    if (returnGift) returnGift.checked = false;
     var cLab = document.getElementById("viApCoverColorLabel");
     if (cLab) cLab.value = "Default";
     var cHex = document.getElementById("viApCoverColorHex");
@@ -369,6 +344,11 @@
         coverHex.addEventListener("change", syncCoverColorReadout);
         syncCoverColorReadout();
       }
+      bindColourNameToSwatch(
+        document.getElementById("viApCoverColorLabel"),
+        coverHex,
+        document.getElementById("viApCoverColorReadout")
+      );
       var addColorBtn = document.getElementById("viApAddColor");
       if (addColorBtn) {
         addColorBtn.addEventListener("click", function () {
@@ -430,15 +410,22 @@
       window.alert("Enter a colour name for the cover image (e.g. White).");
       return;
     }
+    var sizes = readExtraSizes();
+    var primarySize = sizes.filter(function (size) {
+      return size && size.priceInr != null && Number.isFinite(Number(size.priceInr));
+    })[0];
+    if (!primarySize) {
+      window.alert("Add at least one size with its price before creating the product.");
+      return;
+    }
+    var primaryPrice = Number(primarySize.priceInr);
     var fd = new FormData();
     fd.append("name", name);
     fd.append("categoryId", catId);
-    fd.append("priceS", String(document.getElementById("viApPriceS").value || "0"));
-    fd.append("priceM", String(document.getElementById("viApPriceM").value || "0"));
-    fd.append("priceL", String(document.getElementById("viApPriceL").value || "0"));
-    fd.append("sizeLabelS", String((document.getElementById("viApSizeS") && document.getElementById("viApSizeS").value) || "").trim());
-    fd.append("sizeLabelM", String((document.getElementById("viApSizeM") && document.getElementById("viApSizeM").value) || "").trim());
-    fd.append("sizeLabelL", String((document.getElementById("viApSizeL") && document.getElementById("viApSizeL").value) || "").trim());
+    fd.append("priceS", String(primaryPrice));
+    fd.append("priceM", String(primaryPrice));
+    fd.append("priceL", String(primaryPrice));
+    fd.append("sizeLabelS", String(primarySize.label || "").trim());
     if (imageUrl) fd.append("imageUrl", imageUrl);
     if (file) fd.append("image", file, file.name);
     var galleryFiles = document.getElementById("viApGalleryFiles");
@@ -474,23 +461,20 @@
       .then(function (p) {
         var cover = String((p && p.image) || imageUrl || "").trim();
         var options = buildCreateProductOptions(cover);
-        var returnGift = !!(document.getElementById("viApReturnGift") && document.getElementById("viApReturnGift").checked);
         if (!p || !p.id) return p;
         return vf(V.vendorApiUrl("/api/vendor/catalog-products/" + encodeURIComponent(p.id) + "/prices"), {
           method: "PUT",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
           body: JSON.stringify({
-            /* The option list intentionally omits tiers with a zero price.
-               Do not use its array indexes here: if a vendor only sets the
-               Classic price, that value used to be written into Small. */
-            priceS: Number(document.getElementById("viApPriceS") && document.getElementById("viApPriceS").value) || 0,
-            priceM: Number(document.getElementById("viApPriceM") && document.getElementById("viApPriceM").value) || 0,
-            priceL: Number(document.getElementById("viApPriceL") && document.getElementById("viApPriceL").value) || 0,
+            /* The legacy tiers retain the first configured size's price for
+               compatibility; the selectable website sizes come from options. */
+            priceS: primaryPrice,
+            priceM: primaryPrice,
+            priceL: primaryPrice,
             /* Add Product is a publish action. A vendor can deliberately
                unlist the product later from Products management. */
             listed: true,
             description: options.detailBody || "",
-            returnGift: returnGift,
             options: options,
           }),
           cache: "no-store",

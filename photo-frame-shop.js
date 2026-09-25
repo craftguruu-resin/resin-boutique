@@ -313,7 +313,9 @@
     try {
       var u = new URL(window.location.href);
       return {
-        base: (u.searchParams.get("base") || "").trim(),
+        /* Support legacy category URLs as listing routes too; a category
+           result must never reuse the storefront landing hero. */
+        base: (u.searchParams.get("base") || u.searchParams.get("category") || u.searchParams.get("cat") || "").trim(),
         sub: (u.searchParams.get("sub") || "").trim(),
       };
     } catch (_) {
@@ -337,6 +339,7 @@
     var heading = document.getElementById("rmCatHubHeading");
     var hero = document.getElementById("pf-hero") || document.querySelector(".pf-landing-hero");
     document.body.classList.toggle("pf-category-results", !home);
+    document.documentElement.classList.toggle("storefront-category-listing", !home);
     if (hubSection) hubSection.removeAttribute("hidden");
     if (tb) tb.removeAttribute("hidden");
     if (hero) hero.toggleAttribute("hidden", !home);

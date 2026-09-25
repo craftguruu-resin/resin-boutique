@@ -11,6 +11,18 @@ var variantInventory = require("./variant-inventory.js");
 var CAT_RAW_MATERIALS = "__raw_materials__";
 var CAT_PHOTO_FRAMES = "__photo_frames__";
 var CAT_CORPORATE_GIFTING = "__corporate_gifting__";
+var CAT_RESIN_HOME = "__resin_home__";
+
+var INVENTORY_SCOPES = {
+  resin: CAT_RESIN_HOME,
+  raw: CAT_RAW_MATERIALS,
+  photo: CAT_PHOTO_FRAMES,
+};
+
+function normalizeInventoryScope(value) {
+  var scope = String(value || "").trim().toLowerCase();
+  return Object.prototype.hasOwnProperty.call(INVENTORY_SCOPES, scope) ? scope : "";
+}
 
 var SIZE_LETTERS = ["s", "m", "l"];
 var SIZE_IDS = ["sz-s", "sz-m", "sz-l"];
@@ -239,6 +251,11 @@ function buildResinCatalogList(omap, supSet, extras) {
 function filterByCategory(list, catId, omap) {
   omap = omap || {};
   if (!catId) return list;
+  if (catId === CAT_RESIN_HOME) {
+    return list.filter(function (p) {
+      return p.productKind === "catalog";
+    });
+  }
   if (catId === CAT_RAW_MATERIALS) {
     return list.filter(function (p) {
       return p.productKind === "raw_material";
@@ -262,7 +279,7 @@ function filterByCategory(list, catId, omap) {
 }
 
 /**
- * @param {{ q?: string, categoryId?: string, limit?: number, offset?: number }} opts
+ * @param {{ q?: string, categoryId?: string, scope?: string, limit?: number, offset?: number }} opts
  * @param {(err: Error|null, payload?: object) => void} cb
  */
 function listStorefrontCatalog(opts, cb) {
@@ -271,6 +288,11 @@ function listStorefrontCatalog(opts, cb) {
     .toLowerCase()
     .trim();
   var catId = String(opts.categoryId || "").trim();
+  var scope = normalizeInventoryScope(opts.scope);
+  /* Inventory scopes are mutually exclusive product sources. Keep this
+     separate from a normal Resin category id so callers cannot accidentally
+     receive a mixed storefront response. */
+  if (scope) catId = INVENTORY_SCOPES[scope];
   var lim = Math.min(200, Math.max(1, parseInt(String(opts.limit || "80"), 10) || 80));
   var off = Math.max(0, parseInt(String(opts.offset || "0"), 10) || 0);
 
@@ -338,6 +360,7 @@ function listStorefrontCatalog(opts, cb) {
                       productCount: allItems.length,
                       overrideCount: Object.keys(omap).length,
                       materialSkuCount: matCount,
+                      scope: scope || "all",
                       total: total,
                       offset: off,
                       limit: lim,

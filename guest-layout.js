@@ -793,12 +793,14 @@
     if (document.querySelector('link[href*="' + href + '"]')) return;
     var link = document.createElement("link");
     link.rel = "stylesheet";
-    var versionedHref =
-      href === "mobile-quality.css"
-        ? href + "?v=20260925m3"
-        : href === "storefront-fluid.css"
-          ? href + "?v=20260925f9"
-          : href;
+    var versionedHref = href;
+    if (href === "mobile-quality.css") versionedHref += "?v=20260925m3";
+    if (href === "storefront-fluid.css") versionedHref += "?v=20260925f11";
+    /* Social controls must refresh together with their touch-event fixes,
+       rather than remaining behind a cache-first service worker entry. */
+    if (href === "social-float-stack.css") versionedHref += "?v=20260925social2";
+    if (href === "whatsapp-widget.css") versionedHref += "?v=20260925social2";
+    if (href === "instagram-widget.css") versionedHref += "?v=20260925social2";
     link.href = versionedHref;
     document.head.appendChild(link);
   }

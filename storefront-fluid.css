@@ -441,9 +441,11 @@ html.guest-responsive-root body.guest-site .plp-card__service span {
   }
 
   html.guest-responsive-root body.guest-site .nav-dock {
-    grid-column: 1 / -1;
-    grid-row: 2;
-    width: 100%;
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
     margin: 0;
     padding: 0.2rem;
     gap: 0.15rem;
@@ -479,12 +481,6 @@ html.guest-responsive-root body.guest-site .plp-card__service span {
   html.guest-responsive-root body.guest-site .rm-category-rail,
   html.guest-responsive-root body.guest-site .rm-nav-tree-wrap,
   html.guest-responsive-root body.guest-site .cg-rail-toggle[aria-controls] {
-    display: none !important;
-  }
-
-  /* The large category promotion belongs to the spacious desktop catalog.
-     On phones it delayed customers before they could reach products. */
-  html.guest-responsive-root body.guest-site .rm-cat-hub {
     display: none !important;
   }
 

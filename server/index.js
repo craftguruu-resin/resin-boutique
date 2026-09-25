@@ -4071,6 +4071,7 @@ app.get("/api/vendor/catalog-products", function (req, res) {
           .toLowerCase()
           .trim(),
         categoryId: String((req.query && req.query.categoryId) || "").trim(),
+        scope: String((req.query && req.query.scope) || "").trim(),
         limit: Math.min(200, Math.max(1, parseInt(String((req.query && req.query.limit) || "80"), 10) || 80)),
         offset: Math.max(0, parseInt(String((req.query && req.query.offset) || "0"), 10) || 0),
       },

@@ -4,6 +4,8 @@
   position: relative;
   z-index: 1;
   font-family: inherit;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .cg-ig-widget__fab {
@@ -20,6 +22,8 @@
   justify-content: center;
   text-decoration: none;
   -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  touch-action: manipulation;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

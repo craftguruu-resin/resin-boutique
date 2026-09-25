@@ -5,25 +5,37 @@
   if (!V) return;
   var vf = V.vendorFetch || fetch;
 
-  var activeTab = "studio";
+  var activeTab = "resin";
   var catalogOffset = 0;
   var catalogQ = "";
   var catalogLimit = 60;
   var catalogTotal = 0;
+  var catalogRequestSequence = 0;
   var viPollTimer = null;
   var studioCategoryFilter = "";
   var studioProductFilter = "";
   var studioSearchQ = "";
-  var catalogCategoryFilter = "";
+  var catalogScope = "resin";
   var catalogListView = "size";
   var viCategoriesCache = [];
   var VI_STATE_KEY = "craftguruViInventoryState";
   var viRestoreScrollY = 0;
   var viStorefrontCategories = [
+    { id: "__resin_home__", label: "Resin Home" },
     { id: "__raw_materials__", label: "Raw Materials" },
     { id: "__photo_frames__", label: "Photo Frames" },
     { id: "__corporate_gifting__", label: "Corporate Gifting" },
   ];
+
+  var inventoryTabScopes = {
+    resin: "resin",
+    raw: "raw",
+    photo: "photo",
+  };
+
+  function isInventoryTab(tab) {
+    return Object.prototype.hasOwnProperty.call(inventoryTabScopes, tab);
+  }
 
   /** API / DB may send subcategories as a JSON string or non-array; string forEach would iterate characters. */
   function coerceSubcategoriesList(raw) {
@@ -89,39 +101,6 @@
     return sf ? sf.label : cid || "—";
   }
 
-  function refillCatalogCategoryFilter() {
-    var sel = document.getElementById("viCatalogCategoryFilter");
-    if (!sel) return;
-    var prev = sel.value;
-    sel.innerHTML = "";
-    var o0 = document.createElement("option");
-    o0.value = "";
-    o0.textContent = "All storefront products";
-    sel.appendChild(o0);
-    viStorefrontCategories.forEach(function (c) {
-      var o = document.createElement("option");
-      o.value = c.id;
-      o.textContent = c.label;
-      sel.appendChild(o);
-    });
-    if (viCategoriesCache.length) {
-      var sep = document.createElement("option");
-      sep.disabled = true;
-      sep.textContent = "— Resin categories —";
-      sel.appendChild(sep);
-    }
-    viCategoriesCache.forEach(function (c) {
-      var o = document.createElement("option");
-      o.value = String(c.id != null ? c.id : "");
-      o.textContent = c.label || String(c.id != null ? c.id : "");
-      sel.appendChild(o);
-    });
-    if (prev && Array.prototype.some.call(sel.options, function (op) { return op.value === prev; })) {
-      sel.value = prev;
-    }
-    catalogCategoryFilter = String(sel.value || "").trim();
-  }
-
   function normalizeVendorCategories(cats) {
     return (cats || [])
       .map(function (c) {
@@ -180,35 +159,27 @@
     return "0";
   }
 
-  var viSkipCatalogReset = false;
-
   function setTab(tab) {
+    if (!isInventoryTab(tab)) tab = "resin";
     activeTab = tab;
+    catalogScope = inventoryTabScopes[tab];
     saveInventoryState();
-    var studio = document.getElementById("viStudioPanel");
     var cat = document.getElementById("viCatalogPanel");
-    var addP = document.getElementById("viAddProductPanel");
-    if (studio) studio.hidden = tab !== "studio";
-    if (cat) cat.hidden = tab !== "catalog";
-    if (addP) addP.hidden = tab !== "addproduct";
+    if (cat) cat.hidden = false;
+    var table = document.getElementById("viCatalogTbody");
+    if (table) {
+      table.innerHTML = "<tr><td colspan='6' class='vs-muted'>Loading " + esc(tab === "raw" ? "Raw material" : tab === "photo" ? "Photo frame" : "Resin Home") + " inventory…</td></tr>";
+    }
     document.querySelectorAll(".vi-tab").forEach(function (b) {
       var t = b.getAttribute("data-tab");
       var isAct = t === tab;
       b.classList.toggle("vs-btn--primary", isAct);
       b.classList.toggle("vs-btn--ghost", !isAct);
     });
-    if (tab === "catalog" && !viSkipCatalogReset) {
-      catalogOffset = 0;
-      loadCatalogPage(true);
-    }
-    if (tab === "addproduct") {
-      if (window.CraftguruVendorStorefrontAddProduct) {
-        window.CraftguruVendorStorefrontAddProduct.setCategories(viCategoriesCache);
-        window.CraftguruVendorStorefrontAddProduct.refillCategoryDropdowns();
-      } else {
-        refillApCategoryDropdowns();
-      }
-    }
+    /* Every tab click is a fresh request. Do not reuse saved pagination state:
+       it can otherwise leave a selected inventory tab blank until Refresh. */
+    catalogOffset = 0;
+    loadCatalogPage(true);
     if (viPollTimer) {
       clearInterval(viPollTimer);
       viPollTimer = null;
@@ -311,7 +282,6 @@
           }
         }
         refill("viCategory", "— Unsorted —");
-        refillCatalogCategoryFilter();
         if (window.CraftguruVendorStorefrontAddProduct) {
           window.CraftguruVendorStorefrontAddProduct.setCategories(viCategoriesCache);
         }
@@ -835,7 +805,7 @@
           tab: activeTab,
           catalogQ: catalogQ,
           catalogOffset: catalogOffset,
-          catalogCategoryFilter: catalogCategoryFilter,
+          catalogScope: catalogScope,
           catalogListView: catalogListView,
           studioCategoryFilter: studioCategoryFilter,
           studioProductFilter: studioProductFilter,
@@ -858,12 +828,12 @@
 
   function applyInventoryState(state) {
     if (!state || typeof state !== "object") return false;
-    if (state.tab === "catalog" || state.tab === "studio" || state.tab === "addproduct") {
+    if (isInventoryTab(state.tab)) {
       activeTab = state.tab;
     }
     catalogQ = String(state.catalogQ || "");
     catalogOffset = Math.max(0, Number(state.catalogOffset) || 0);
-    catalogCategoryFilter = String(state.catalogCategoryFilter || "");
+    catalogScope = inventoryTabScopes[activeTab] || "resin";
     catalogListView = state.catalogListView === "color" ? "color" : "size";
     studioCategoryFilter = String(state.studioCategoryFilter || "");
     studioProductFilter = String(state.studioProductFilter || "");
@@ -872,8 +842,6 @@
 
     var catSearch = document.getElementById("viCatalogSearch");
     if (catSearch) catSearch.value = catalogQ;
-    var catCat = document.getElementById("viCatalogCategoryFilter");
-    if (catCat) catCat.value = catalogCategoryFilter;
     setCatalogListView(catalogListView);
     return true;
   }
@@ -986,17 +954,19 @@
     if (reset) catalogOffset = 0;
     var base = V.apiBase();
     var q = catalogQ;
+    var requestSequence = ++catalogRequestSequence;
+    var scope = catalogScope;
+    var requestOffset = catalogOffset;
     var url = V.vendorApiUrl(
       "/api/vendor/catalog-products?q=" +
         encodeURIComponent(q) +
+        "&scope=" +
+        encodeURIComponent(scope) +
         "&limit=" +
         catalogLimit +
         "&offset=" +
-        catalogOffset
+        requestOffset
     );
-    if (catalogCategoryFilter) {
-      url += "&categoryId=" + encodeURIComponent(catalogCategoryFilter);
-    }
     return vf(url, { headers: V.authHeaders() })
       .then(function (res) {
         return V.parseApiJson(res).then(function (x) {
@@ -1008,6 +978,11 @@
         });
       })
       .then(function (j) {
+        /* A response for a tab that is no longer active must never repaint
+           the table. This prevents Resin Home rows appearing in Raw/Photo. */
+        if (requestSequence !== catalogRequestSequence || scope !== catalogScope || (j.scope && j.scope !== scope)) {
+          return;
+        }
         catalogTotal = j.total || 0;
         var st = document.getElementById("viCatalogStats");
         if (st) {
@@ -1024,7 +999,7 @@
         if (!tb) return;
         var rows = j.items || [];
         renderCatalogRows(rows, tb, reset);
-        catalogOffset += rows.length;
+        catalogOffset = requestOffset + rows.length;
         var pg = document.getElementById("viCatalogPaging");
         if (pg) {
           pg.textContent = "Showing " + Math.min(catalogOffset, catalogTotal) + " of " + catalogTotal + " (filter: “" + (q || "all") + "”).";
@@ -1035,6 +1010,7 @@
         }
       })
       .catch(function (e) {
+        if (requestSequence !== catalogRequestSequence || scope !== catalogScope) return;
         window.alert(String((e && e.message) || e));
       });
   }
@@ -1042,39 +1018,27 @@
   function boot() {
     showDesk(true);
     var saved = readInventoryState();
-    var startTab = "studio";
-    if (saved && saved.tab) startTab = saved.tab;
-    else if (window.location.hash === "#add-product") startTab = "addproduct";
-    else if (window.location.hash === "#catalog") startTab = "catalog";
+    var startTab = "resin";
+    if (saved && isInventoryTab(saved.tab)) startTab = saved.tab;
+    else if (window.location.hash === "#raw-materials") startTab = "raw";
+    else if (window.location.hash === "#photo-frames") startTab = "photo";
     if (saved) applyInventoryState(saved);
-    if (saved && startTab === "catalog" && Number(saved.catalogOffset) > 0) viSkipCatalogReset = true;
+    /* Inventory data does not depend on the optional category metadata.
+       Start loading immediately instead of making the tab wait for it. */
+    setTab(startTab);
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
       })
       .then(function () {
-        if (window.CraftguruVendorStorefrontAddProduct) {
-          window.CraftguruVendorStorefrontAddProduct.init({
-            V: V,
-            categories: viCategoriesCache,
-          });
-        } else {
-          refillApCategoryDropdowns();
-        }
-        syncListFiltersFromForm();
-        return loadList();
+        return null;
       })
       .then(function () {
-        setTab(startTab);
-        if (startTab === "catalog" && saved && saved.catalogOffset > 0) {
-          return restoreCatalogOffset(saved.catalogOffset);
-        }
         if (viRestoreScrollY > 0) {
           requestAnimationFrame(function () {
             window.scrollTo(0, viRestoreScrollY);
           });
         }
-        viSkipCatalogReset = false;
       })
       .catch(function (e) {
         window.alert(String((e && e.message) || e));
@@ -1099,13 +1063,6 @@
     loadList().catch(function (e) {
       window.alert(String((e && e.message) || e));
     });
-  });
-
-  on("viCatalogCategoryFilter", "change", function () {
-    catalogCategoryFilter = String(this.value || "").trim();
-    if (activeTab === "catalog") {
-      loadCatalogPage(true);
-    }
   });
 
   on("viRefreshBtn", "click", function () {
@@ -1299,14 +1256,14 @@
   document.querySelectorAll(".vi-opt-view-btn").forEach(function (btn) {
     btn.addEventListener("click", function () {
       setCatalogListView(btn.getAttribute("data-vi-view") || "size");
-      if (activeTab === "catalog") loadCatalogPage(true);
+      if (isInventoryTab(activeTab)) loadCatalogPage(true);
     });
   });
   setCatalogListView("size");
 
   document.querySelectorAll(".vi-tab").forEach(function (b) {
     b.addEventListener("click", function () {
-      setTab(b.getAttribute("data-tab") || "studio");
+      setTab(b.getAttribute("data-tab") || "resin");
     });
   });
 

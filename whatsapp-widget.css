@@ -4,6 +4,8 @@
   position: relative;
   z-index: 1;
   font-family: inherit;
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 
 /* Legacy fallback when stack is not injected */
@@ -29,6 +31,8 @@ body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
   align-items: center;
   justify-content: center;
   -webkit-tap-highlight-color: transparent;
+  pointer-events: auto;
+  touch-action: manipulation;
   transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 

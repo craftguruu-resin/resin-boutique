@@ -27,8 +27,19 @@
   <link rel="stylesheet" href="craft-category-card.css?v=20260917b" />
   <link rel="stylesheet" href="layout-responsive.css" />
   <link rel="stylesheet" href="storefront-perf.css?v=20260918b" />
+  <script>
+    document.documentElement.classList.add("guest-responsive-root");
+    (function () {
+      var p = new URLSearchParams(window.location.search || "");
+      if (p.get("base") || p.get("sub") || p.get("category") || p.get("cat")) {
+        document.documentElement.classList.add("storefront-category-listing");
+      }
+    })();
+  </script>
+  <style>html.storefront-category-listing #rm-hero { display: none !important; }</style>
+  <link rel="stylesheet" href="storefront-fluid.css?v=20260925f11" />
 </head>
-<body class="subpage rm-page-wide rm-theme--materials">
+<body class="subpage rm-page-wide rm-theme--materials guest-site">
   <div class="mesh-gradient" aria-hidden="true"></div>
   <div class="tone-shift" aria-hidden="true"></div>
   <div class="animated-backdrop" aria-hidden="true">
@@ -325,7 +336,7 @@
   <script defer src="catalog-merge.js?v=20260925sync2"></script>
   <script defer src="cart.js"></script>
   <script defer src="category-rail-icons.js"></script>
-  <script defer src="guest-layout.js?v=20260925fluid9"></script>
+  <script defer src="guest-layout.js?v=20260925fluid11"></script>
   <script defer src="auth-db.js"></script>
   <script defer src="google-signin.js"></script>
   <script defer src="auth-home.js"></script>
@@ -337,6 +348,6 @@
   <script defer src="craft-category-card.js?v=20260731d"></script>
   <script defer src="premium-category-cards.js?v=20260731d"></script>
   <script defer src="premium-product-listing.js?v=20260925ux1"></script>
-  <script defer src="raw-material.js"></script>
+  <script defer src="raw-material.js?v=20260926listing3"></script>
 </body>
 </html>

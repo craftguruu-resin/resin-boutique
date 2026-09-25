@@ -19,12 +19,18 @@
   }
 
   function featurePillsHtml() {
+    var features = [
+      ["◇", "Premium Finish"],
+      ["♧", "Made with Care"],
+      ["♜", "Strong & Durable"],
+      ["◈", "Easy to Choose"],
+      ["✦", "Perfect for Gifting"],
+    ];
     return (
       '<div class="cg-pdp__feature-pills rm-pdp__feature-bar" aria-label="Product highlights">' +
-      '<span class="cg-pdp__feature-pill">Handmade With Love</span>' +
-      '<span class="cg-pdp__feature-pill">Premium Quality</span>' +
-      '<span class="cg-pdp__feature-pill">Made To Last</span>' +
-      '<span class="cg-pdp__feature-pill">Perfect For Gifting</span>' +
+      features.map(function (feature) {
+        return '<span class="cg-pdp__feature-pill"><span class="cg-pdp__feature-icon" aria-hidden="true">' + feature[0] + '</span><span>' + feature[1] + '</span></span>';
+      }).join("") +
       "</div>"
     );
   }
@@ -240,7 +246,7 @@
   }
 
   function bottomSectionsHtml(productType) {
-    return serviceBannerHtml() + qualityBannerHtml(productType);
+    return featurePillsHtml() + serviceBannerHtml() + qualityBannerHtml(productType);
   }
 
   function formatDescParagraphs(desc) {

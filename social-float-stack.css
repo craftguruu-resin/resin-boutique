@@ -14,13 +14,18 @@
   flex-direction: column-reverse;
   align-items: flex-end;
   gap: var(--cg-float-gap);
-  pointer-events: none;
+  /* Some Android WebViews do not reliably restore child hit testing when a
+     fixed parent has pointer-events:none. The stack itself is only the small
+     FAB area, so keep it directly touchable. */
+  pointer-events: auto;
+  touch-action: manipulation;
   visibility: visible;
   animation: cg-social-float 5s ease-in-out infinite;
 }
 
 .cg-social-float-stack > * {
   pointer-events: auto;
+  touch-action: manipulation;
 }
 
 .cg-social-float-stack:has(.cg-wa-widget.is-open) {

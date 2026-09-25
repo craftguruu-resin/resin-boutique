@@ -505,3 +505,223 @@ body.pdp-ethereal .product-detail--purchase .product-return-gift-badge {
     margin-inline: 0.22rem;
   }
 }
+
+/* -------------------------------------------------------------------------
+   Reference PDP composition
+   Shared by the main catalogue, Resin Raw Materials, and Photo Frames.
+   The gallery is deliberately the primary visual column; the purchase card
+   stays calm and has a stable rhythm regardless of product type.
+   ------------------------------------------------------------------------- */
+body.pdp-ethereal .pdp-ethereal-fx {
+  display: none;
+}
+
+body.pdp-ethereal.page-product .product-page,
+body.pdp-ethereal.rm-page-wide .band-shop-inner {
+  width: min(100% - 2rem, 92rem);
+  max-width: 92rem;
+  margin-inline: auto;
+}
+
+body.pdp-ethereal.rm-page-wide .band-shop.band-shop--flush {
+  padding-inline: 1rem;
+}
+
+/* Material and photo-frame PDPs do not need a second category sidebar: the
+   breadcrumb and consistent main navigation already provide that context. */
+body.pdp-ethereal .rm-shop-layout--pdp {
+  display: block;
+}
+
+body.pdp-ethereal .rm-shop-layout--pdp > .rm-nav-tree-wrap {
+  display: none !important;
+}
+
+body.pdp-ethereal .rm-shop-layout--pdp > .rm-shop-layout__main {
+  min-width: 0;
+  width: 100%;
+}
+
+body.pdp-ethereal.page-product .product-layout--split,
+body.pdp-ethereal .rm-pdp--modern.cg-pdp-shell {
+  grid-template-columns: minmax(0, 1.62fr) minmax(25rem, 1fr);
+  gap: clamp(1.2rem, 2.2vw, 2rem);
+}
+
+/* Main catalogue source order is hero then thumbnails. Place the thumbnail
+   rail at the left just like the shared material/photo-frame gallery. */
+body.pdp-ethereal.page-product .product-catalog-gallery--multi {
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: clamp(0.7rem, 1.1vw, 1rem);
+}
+
+body.pdp-ethereal.page-product .product-catalog-gallery--multi .product-catalog-gallery__hero {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+body.pdp-ethereal.page-product .product-catalog-gallery--multi .product-catalog-gallery__thumb-col {
+  grid-column: 1;
+  grid-row: 1;
+  max-height: clamp(25rem, 38vw, 32rem);
+}
+
+body.pdp-ethereal .rm-pdp-gallery--shell {
+  grid-template-columns: 5.6rem minmax(0, 1fr);
+  gap: clamp(0.7rem, 1.1vw, 1rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+body.pdp-ethereal .rm-pdp-thumb-track,
+body.pdp-ethereal.page-product .product-catalog-gallery__track {
+  gap: 0.55rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+body.pdp-ethereal .rm-pdp__thumb,
+body.pdp-ethereal .cg-pdp__thumb,
+body.pdp-ethereal.page-product .product-catalog-gallery__thumb {
+  width: 5.6rem;
+  height: 5.6rem;
+  flex: 0 0 5.6rem;
+  border: 2px solid transparent;
+  border-radius: 0.85rem;
+  background: #fff;
+  box-shadow: 0 5px 14px rgba(25, 51, 78, 0.09);
+}
+
+body.pdp-ethereal .rm-pdp__thumb img,
+body.pdp-ethereal .cg-pdp__thumb img,
+body.pdp-ethereal.page-product .product-catalog-gallery__thumb img {
+  width: 100%;
+  height: 100%;
+  border-radius: calc(0.85rem - 2px);
+  object-fit: cover;
+}
+
+body.pdp-ethereal .rm-pdp__thumb.is-active,
+body.pdp-ethereal .cg-pdp__thumb.is-active,
+body.pdp-ethereal.page-product .product-catalog-gallery__thumb.is-active {
+  border-color: var(--pdp-ref-teal);
+  box-shadow: 0 0 0 3px rgba(0, 155, 141, 0.16);
+}
+
+body.pdp-ethereal .rm-pdp__hero-wrap,
+body.pdp-ethereal.page-product .product-hero-img--fx,
+body.pdp-ethereal.page-product .product-hero-img--zoomhost {
+  width: 100%;
+  min-height: clamp(25rem, 38vw, 32rem);
+  aspect-ratio: 1.58 / 1;
+  border: 0;
+  border-radius: 1.4rem;
+  background: #f5f8f7;
+  box-shadow: 0 12px 30px rgba(24, 52, 77, 0.1);
+}
+
+body.pdp-ethereal .rm-pdp__hero-zoom,
+body.pdp-ethereal .rm-pdp__hero-zoom img,
+body.pdp-ethereal.page-product .product-hero-img--zoomhost img,
+body.pdp-ethereal.page-product #productImage {
+  width: 100%;
+  height: 100%;
+}
+
+body.pdp-ethereal .rm-pdp__hero-zoom img,
+body.pdp-ethereal.page-product .product-hero-img--zoomhost img,
+body.pdp-ethereal.page-product #productImage {
+  object-fit: cover;
+  filter: none;
+}
+
+body.pdp-ethereal .rm-pdp__left-stack .cg-pdp__bottom {
+  order: 1;
+  margin-top: 0.1rem;
+}
+
+body.pdp-ethereal .rm-pdp__left-stack .product-overview--fullwidth {
+  order: 2;
+}
+
+body.pdp-ethereal .cg-pdp__feature-pills {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 0.65rem;
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 8px 22px rgba(26, 52, 78, 0.06);
+}
+
+body.pdp-ethereal .cg-pdp__feature-pill {
+  min-height: 5.1rem;
+  padding: 0.4rem 0.28rem;
+  flex-direction: column;
+  gap: 0.28rem;
+  border: 0;
+  border-right: 1px solid #e6edf0;
+  border-radius: 0;
+  background: transparent;
+  color: #12344c;
+  font-size: 0.69rem;
+  font-weight: 700;
+  line-height: 1.22;
+}
+
+body.pdp-ethereal .cg-pdp__feature-pill:last-child {
+  border-right: 0;
+}
+
+body.pdp-ethereal .cg-pdp__feature-icon {
+  color: var(--pdp-ref-teal);
+  font-size: 1.45rem;
+  line-height: 1;
+}
+
+body.pdp-ethereal .rm-pdp__detail-card,
+body.pdp-ethereal .product-detail--purchase.product-detail--buy-column {
+  padding: clamp(1.15rem, 1.7vw, 1.55rem);
+  border-radius: 1.4rem;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+body.pdp-ethereal .cg-pdp__buy-now,
+body.pdp-ethereal .cg-pdp__wa-buy,
+body.pdp-ethereal .pd-buy-rail__cta,
+body.pdp-ethereal .rm-pdp--modern .rm-pdp__add {
+  border-radius: 999px !important;
+}
+
+@media (max-width: 960px) {
+  body.pdp-ethereal.page-product .product-page,
+  body.pdp-ethereal.rm-page-wide .band-shop-inner {
+    width: min(100% - 1.4rem, 92rem);
+  }
+
+  body.pdp-ethereal .rm-pdp__hero-wrap,
+  body.pdp-ethereal.page-product .product-hero-img--fx,
+  body.pdp-ethereal.page-product .product-hero-img--zoomhost {
+    min-height: 0;
+    aspect-ratio: 1 / 1;
+  }
+}
+
+@media (max-width: 640px) {
+  body.pdp-ethereal .cg-pdp__feature-pills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  body.pdp-ethereal .cg-pdp__feature-pill {
+    min-height: 4.25rem;
+    border-right: 0;
+    border-bottom: 1px solid #e6edf0;
+  }
+
+  body.pdp-ethereal .cg-pdp__feature-pill:nth-last-child(-n + 1) {
+    border-bottom: 0;
+  }
+}

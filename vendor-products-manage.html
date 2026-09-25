@@ -16,6 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400..700;1,9..40,400..700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="vendor-saas.css" />
+  <link rel="stylesheet" href="vendor-modern.css?v=20260926a" />
   <link rel="stylesheet" href="craftguru-theme.css" />
 </head>
 <body class="vendor-saas" data-vendor-nav="products">
@@ -72,70 +73,6 @@
                   maxlength="8000"
                   placeholder="Detailed product description for the product page (line breaks preserved)."
                 ></textarea>
-                <p class="vs-muted" style="margin: 0.35rem 0 0; font-size: 0.82rem">
-                  Shown on the product details page only — not on category listings. Up to 8,000 characters.
-                </p>
-              </div>
-              <div class="vs-row" style="display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.25rem; grid-column: 1 / -1">
-                <div class="vs-field" style="flex: 1; min-width: 8rem">
-                  <label for="viApStockQty">Qty on hand (optional)</label>
-                  <input type="number" id="viApStockQty" class="vs-input" min="0" step="1" placeholder="Warehouse" />
-                </div>
-                <div class="vs-field" style="flex: 2; min-width: 12rem">
-                  <label for="viApStockNote">Shelf note (optional)</label>
-                  <input type="text" id="viApStockNote" class="vs-input" maxlength="500" />
-                </div>
-              </div>
-              <div class="vs-field" style="grid-column: 1 / -1">
-                <label for="viApNote">Short note (shipping / lead time)</label>
-                <input type="text" id="viApNote" maxlength="300" placeholder="e.g. Ships in 5–7 business days" />
-              </div>
-              <div class="vs-field">
-                <label for="viApMrpS">MRP tier S (optional)</label>
-                <input type="number" id="viApMrpS" min="0" step="0.01" placeholder="Strike-through" />
-              </div>
-              <div class="vs-field">
-                <label for="viApMrpM">MRP tier M (optional)</label>
-                <input type="number" id="viApMrpM" min="0" step="0.01" placeholder="Strike-through" />
-              </div>
-              <div class="vs-field">
-                <label for="viApMrpL">MRP tier L (optional)</label>
-                <input type="number" id="viApMrpL" min="0" step="0.01" placeholder="Strike-through" />
-              </div>
-              <div class="vs-field" style="grid-column: 1 / -1">
-                <label for="viApBadge">Badge (optional)</label>
-                <input type="text" id="viApBadge" maxlength="80" placeholder="e.g. BEST SELLER" />
-              </div>
-              <div class="vs-field" style="grid-column: 1 / -1">
-                <label for="viApTrust">Trust line bullets (one per line)</label>
-                <textarea id="viApTrust" rows="3" maxlength="800" placeholder="Safe &amp; non-toxic&#10;Lab tested"></textarea>
-              </div>
-              <div class="vs-field" style="grid-column: 1 / -1">
-                <label><input type="checkbox" id="viApReturnGift" /> Mark as corporate gifting collection</label>
-              </div>
-              <div class="vs-field">
-                <label for="viApPriceS">Price tier 1 (S) ₹</label>
-                <input type="number" id="viApPriceS" min="0" step="1" value="0" />
-              </div>
-              <div class="vs-field">
-                <label for="viApPriceM">Price tier 2 (M) ₹</label>
-                <input type="number" id="viApPriceM" min="0" step="1" value="0" />
-              </div>
-              <div class="vs-field">
-                <label for="viApPriceL">Price tier 3 (L) ₹</label>
-                <input type="number" id="viApPriceL" min="0" step="1" value="0" />
-              </div>
-              <div class="vs-field">
-                <label for="viApSizeS">Size label S (shown on website)</label>
-                <input type="text" id="viApSizeS" maxlength="120" placeholder="e.g. 6 inch" />
-              </div>
-              <div class="vs-field">
-                <label for="viApSizeM">Size label M</label>
-                <input type="text" id="viApSizeM" maxlength="120" placeholder="e.g. 8 inch" />
-              </div>
-              <div class="vs-field">
-                <label for="viApSizeL">Size label L</label>
-                <input type="text" id="viApSizeL" maxlength="120" placeholder="e.g. 10 inch or 44×23×34 cm" />
               </div>
               <div class="vs-field" style="grid-column: 1 / -1">
                 <label>Additional size choices (optional)</label>
@@ -428,7 +365,7 @@
 
   <script src="image-fit.js"></script>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-storefront-add-product.js?v=20260925publish1"></script>
+  <script src="vendor-storefront-add-product.js?v=20260926simple1"></script>
   <script src="vendor-catalog-pdp-options.js"></script>
   <script src="vendor-products-manage.js?v=20260925sync2"></script>
 </body>
