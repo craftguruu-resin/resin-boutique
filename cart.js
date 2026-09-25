@@ -388,7 +388,7 @@
   }
 
   /**
-   * Cart / checkout UI copy. Product prices already include GST and shipping.
+   * Cart / checkout UI copy. Shipping is free and remains a zero-value line.
    * @returns {{ free: boolean, text: string, empty: boolean }}
    */
   function shippingNotice(subOpt) {
@@ -399,7 +399,7 @@
     return {
       free: true,
       empty: false,
-      text: "Shipping is already included in the displayed product price.",
+      text: "Free Shipping on this order.",
     };
   }
 

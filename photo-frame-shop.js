@@ -336,6 +336,7 @@
     var sub = document.getElementById("rmCatHubSub");
     var heading = document.getElementById("rmCatHubHeading");
     var hero = document.getElementById("pf-hero") || document.querySelector(".pf-landing-hero");
+    document.body.classList.toggle("pf-category-results", !home);
     if (hubSection) hubSection.removeAttribute("hidden");
     if (tb) tb.removeAttribute("hidden");
     if (hero) hero.toggleAttribute("hidden", !home);

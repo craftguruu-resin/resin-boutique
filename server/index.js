@@ -1155,7 +1155,7 @@ app.post("/api/cod-advance-order", function (req, res) {
     return sum + Math.max(0, Number(it.unitPrice) || 0) * Math.max(1, Math.floor(Number(it.qty) || 1));
   }, 0);
   productValue = orderPricing.round2(productValue);
-  if (productValue < 500) {
+  if (productValue < orderPricing.COD_MIN_PRODUCT_VALUE) {
     return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
   }
 
@@ -1207,7 +1207,7 @@ app.post("/api/cod-advance-verify", function (req, res) {
 
   var items = rawItems.map(sanitizeBillItem);
   var totals = computeTotals(items, { paymentMethod: "cod" });
-  if (Number(totals.productValue || 0) < 500) {
+  if (Number(totals.productValue || 0) < orderPricing.COD_MIN_PRODUCT_VALUE) {
     return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
   }
   var guestNorm = normalizeGuestParcel(guest);

@@ -344,6 +344,7 @@
     var hero = document.getElementById("rm-hero");
     var grid = document.getElementById("rmGrid");
     var shell = document.getElementById("rmPlpShell");
+    document.body.classList.toggle("rm-category-results", !home);
     if (hub) hub.toggleAttribute("hidden", !home);
     if (tb) tb.toggleAttribute("hidden", !home);
     if (hero) hero.toggleAttribute("hidden", !home);

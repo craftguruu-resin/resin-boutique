@@ -5,9 +5,10 @@
   var D = window.RESIN_DATA;
   if (!CART || !D) return;
 
-  /** Line prices already include 18% GST and shipping. No shipping is added here. */
+  /** Product prices include GST; shipping is free and no extra charge is added here. */
   var GST_INCLUSIVE_RATE = 0.18;
   var PREPAID_DISCOUNT_RATE = 0.10;
+  var COD_MIN_PRODUCT_VALUE = 500;
 
   function splitGstFromInclusive(inclTotal) {
     var t = Math.round(Number(inclTotal) * 100) / 100;
@@ -1312,10 +1313,12 @@
     if (hint && checkoutPhase === "payment") {
       hint.textContent =
         method === "cod"
-          ? "COD requires ₹500+ in products. Pay ₹200 advance by Razorpay to confirm the order; the remaining product balance is collected on delivery."
+          ? "COD is available on orders of ₹500 or more. Pay ₹200 advance by Razorpay to confirm the order; the remaining product balance is collected on delivery."
           : "Open Pay now to complete Razorpay checkout — 10% instant online discount applied.";
     }
-    var codEligible = method === "cod" && Number(CART.subtotal()) >= 500;
+    /* Eligibility is independent of the currently selected payment method.
+       Razorpay is selected by default, but eligible carts must still be able to choose COD. */
+    var codEligible = Number(CART.subtotal()) >= COD_MIN_PRODUCT_VALUE;
     document.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(function (inp) {
       var isCod = String(inp.value || "").toLowerCase() === "cod";
       inp.disabled = isCod ? !codEligible : false;
@@ -1702,7 +1705,7 @@
       }
     }
     if (els.taxable) els.taxable.textContent = fmt(totals.taxable);
-    if (els.ship) els.ship.textContent = "Included";
+    if (els.ship) els.ship.textContent = "Free";
     if (els.tax) els.tax.textContent = fmt(totals.gst);
     if (els.total) els.total.textContent = fmt(totals.grand);
     if (els.modalSub) els.modalSub.textContent = fmt(totals.productValue);
@@ -1713,7 +1716,7 @@
       els.modalDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
     }
     if (els.modalTaxable) els.modalTaxable.textContent = fmt(totals.taxable);
-    if (els.modalShip) els.modalShip.textContent = "Included";
+    if (els.modalShip) els.modalShip.textContent = "Free";
     if (els.modalTax) els.modalTax.textContent = fmt(totals.gst);
     if (els.modalGrand) els.modalGrand.textContent = fmt(totals.grand);
     updatePaymentPanelVisibility();
@@ -1740,7 +1743,7 @@
       label.textContent = "Checkout";
       if (getCheckoutPaymentMethod() === "cod") {
         msg.innerHTML =
-          "COD is available for product value ₹500+. Pay <strong>₹200 advance via Razorpay</strong> to confirm the order; the remaining product balance is collected on delivery.";
+          "COD is available on orders of ₹500 or more. Pay <strong>₹200 advance via Razorpay</strong> to confirm the order; the remaining product balance is collected on delivery.";
       } else {
         msg.innerHTML =
           "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 10% prepaid discount).";
@@ -1955,7 +1958,7 @@
           return;
         }
         var subtotal = CART.subtotal();
-        if (Number(subtotal) < 500) {
+        if (Number(subtotal) < COD_MIN_PRODUCT_VALUE) {
           window.alert("Cash on Delivery is available only when your product total is ₹500 or more.");
           return;
         }

@@ -4,6 +4,7 @@
 var GST = 0.18;
 var PREPAID_DISCOUNT_RATE = 0.10;
 var RAZORPAY_FEE_RATE = 0.025;
+var COD_MIN_PRODUCT_VALUE = 500;
 
 function round2(n) {
   return Math.round(Number(n) * 100) / 100;
@@ -62,6 +63,7 @@ module.exports = {
   GST: GST,
   PREPAID_DISCOUNT_RATE: PREPAID_DISCOUNT_RATE,
   RAZORPAY_FEE_RATE: RAZORPAY_FEE_RATE,
+  COD_MIN_PRODUCT_VALUE: COD_MIN_PRODUCT_VALUE,
   normalizePaymentMethod: normalizePaymentMethod,
   computeTotals: computeTotals,
   round2: round2,

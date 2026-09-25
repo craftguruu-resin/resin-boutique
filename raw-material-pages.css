@@ -152,6 +152,17 @@ body.rm-page-wide {
   margin-bottom: 0;
 }
 
+/* Category drill-down pages are text + product results only. Keep the
+   storefront hero and category-card block exclusive to the shop landing page. */
+body.rm-category-results #rm-hero,
+body.rm-category-results .rm-cat-hub,
+body.pf-category-results #pf-hero,
+body.pf-category-results .pf-landing-hero,
+body.pf-category-results .rm-cat-hub__head,
+body.pf-category-results #rmCategoryHub {
+  display: none !important;
+}
+
 @media (max-width: 820px) {
   .rm-hero {
     grid-template-columns: 1fr;
