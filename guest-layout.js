@@ -1188,8 +1188,7 @@
     var signedIn = false;
     var sessionName = "";
     try {
-      signedIn = !!String(localStorage.getItem("cg_session_email") || "").trim() ||
-        !!String(localStorage.getItem("craftguruGuestToken") || "").trim();
+      signedIn = !!String(localStorage.getItem("craftguruGuestToken") || "").trim();
       sessionName = String(localStorage.getItem("cg_session_name") || "").trim();
     } catch (_) {}
     if (user) {
@@ -1200,7 +1199,7 @@
     if (signup) signup.classList.toggle("is-hidden", signedIn);
     if (login) login.classList.toggle("is-hidden", signedIn);
     if (orders) orders.classList.add("is-hidden");
-    if (logout) logout.classList.add("is-hidden");
+    if (logout) logout.classList.toggle("is-hidden", !signedIn);
   }
 
   function boot() {

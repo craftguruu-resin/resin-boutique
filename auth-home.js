@@ -276,7 +276,9 @@
     try {
       hasToken = !!localStorage.getItem(GUEST_TOKEN_KEY);
     } catch (_) {}
-    var inAuth = !!email || hasToken;
+    /* The bearer token is the server-authenticated session. Do not show a
+       signed-in header from a stale email value left in localStorage. */
+    var inAuth = hasToken;
     if (els.userLabel) {
       var label = inAuth ? getSessionName() || "My Account" : "";
       els.userLabel.textContent = label;
@@ -288,7 +290,6 @@
     if (els.loginBtn) els.loginBtn.classList.toggle("is-hidden", inAuth);
     if (els.logoutBtn) els.logoutBtn.classList.toggle("is-hidden", !inAuth);
     if (els.ordersLink) els.ordersLink.classList.add("is-hidden");
-    if (els.logoutBtn) els.logoutBtn.classList.add("is-hidden");
   }
 
   function boot() {
@@ -547,6 +548,7 @@
     getSessionEmail: getSessionEmail,
     getApiBase: getApiBase,
     openAuth: openAuth,
+    closeAuth: closeAuth,
   };
 
   /* Keep account chrome correct after bfcache restores and auth changes. */

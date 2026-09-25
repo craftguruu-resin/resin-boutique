@@ -647,9 +647,7 @@
         ? totalRow("COD advance paid", T.codAdvance != null ? T.codAdvance : 200) +
           totalRow("Balance on delivery", T.codBalanceDue != null ? T.codBalanceDue : Math.max(0, Number(grand || 0) - 200))
         : "") +
-      totalRow("Shipping", T.shipping) +
       totalRow("Tax (GST)", T.tax) +
-      (Number(T.gatewayFee) > 0 ? totalRow("Gateway fee", T.gatewayFee) : "") +
       '<div class="account-order-bill__totalrow account-order-bill__totalrow--grand"><span>' +
       escapeHtml("Total") +
       "</span><span>" +
@@ -1197,6 +1195,11 @@
     showAccountAuth(false);
     showSessionBar(true, "");
     showAccountStoreChrome(true, emailNorm);
+    /* Account has its own Google buttons but may also have the global header
+       auth modal. Close the latter after either callback succeeds. */
+    if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.closeAuth === "function") {
+      window.CRAFT_AUTH_HOME.closeAuth();
+    }
     loadOrders();
   }
 

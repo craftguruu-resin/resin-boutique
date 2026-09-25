@@ -30,6 +30,35 @@
     return p && p.image ? p.image : "";
   }
 
+  // Some pages only render the shared cart button. Keep the cart usable there
+  // too by supplying the same drawer markup used by storefront pages.
+  function ensureCartDrawer() {
+    if (!document.getElementById("cartToggle") || !document.body) return;
+    var drawer = document.getElementById("cartDrawer");
+    var backdrop = document.getElementById("cartBackdrop");
+    if (!drawer) {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        '<aside class="cart-drawer" id="cartDrawer" aria-hidden="true">' +
+          '<div class="cart-drawer-inner">' +
+            '<div class="cart-header"><h2>Your cart</h2><button type="button" class="icon-btn" id="cartClose" aria-label="Close cart">✕</button></div>' +
+            '<ul class="cart-list" id="cartList"></ul>' +
+            '<div class="cart-footer">' +
+              '<div class="cart-total-row"><span>Subtotal</span><strong id="cartSubtotal">₹0</strong></div>' +
+              '<p class="cart-shipping-note" id="cartShippingNote" role="status" hidden></p>' +
+              '<button type="button" class="btn-checkout" id="checkoutBtn">Go to checkout</button>' +
+              '<p class="cart-note">Questions? WhatsApp +91-8824350056 · Instagram @craftguruindia</p>' +
+            '</div>' +
+          '</div>' +
+        '</aside>'
+      );
+      drawer = document.getElementById("cartDrawer");
+    }
+    if (!backdrop) {
+      document.body.insertAdjacentHTML("beforeend", '<div class="cart-backdrop" id="cartBackdrop" hidden></div>');
+    }
+  }
+
   function updateBadge() {
     var c = document.getElementById("cartCount");
     if (c) c.textContent = String(CART.countItems());
@@ -269,6 +298,7 @@
     }
   }
 
+  ensureCartDrawer();
   updateBadge();
   renderDrawer();
   bindDrawer();

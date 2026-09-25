@@ -605,6 +605,7 @@
       if (emailNorm) localStorage.setItem(GUEST_SESSION_EMAIL_KEY, emailNorm);
       else localStorage.removeItem(GUEST_SESSION_EMAIL_KEY);
     } catch (_) {}
+    try { window.dispatchEvent(new CustomEvent("craftguruAuthChanged")); } catch (_) {}
   }
 
   function checkoutPostJson(url, body, cb) {
@@ -682,6 +683,11 @@
       try {
         authDet.open = false;
       } catch (_) {}
+    }
+    /* Checkout also has the global header auth modal. Close it when its
+       Google button routed through this page-specific callback. */
+    if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.closeAuth === "function") {
+      window.CRAFT_AUTH_HOME.closeAuth();
     }
   }
 

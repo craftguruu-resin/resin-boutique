@@ -1045,7 +1045,7 @@ app.post("/api/razorpay-order", function (req, res) {
   var totals = computeTotals(items, { paymentMethod: "razorpay" });
   var amountPaise = Math.round(totals.total * 100);
   if (!Number.isFinite(amountPaise) || amountPaise < 100) {
-    return res.status(400).json({ ok: false, error: "Order total must be at least ₹1 after fees." });
+    return res.status(400).json({ ok: false, error: "Order total must be at least ₹1." });
   }
 
   var receipt = ("cg" + Date.now()).replace(/\D/g, "").slice(0, 40);
@@ -1715,7 +1715,17 @@ app.get("/api/guest/orders", function (req, res) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
       res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true, orders: list || [] });
+      var customerOrders = (list || []).map(function (order) {
+        var out = Object.assign({}, order);
+        if (order && order.totals && typeof order.totals === "object") {
+          out.totals = Object.assign({}, order.totals);
+          // Gateway cost and shipping accounting stay server-side/vendor-only.
+          delete out.totals.gatewayFee;
+          delete out.totals.shipping;
+        }
+        return out;
+      });
+      res.json({ ok: true, orders: customerOrders });
     });
   });
 });

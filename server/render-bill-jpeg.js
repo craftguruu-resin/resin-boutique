@@ -67,7 +67,7 @@ function buildBillSvg(p) {
   var n = items.length;
   var headerEnd = 132;
   var bodyH = n * rowH + 16;
-  var totalsH = 176;
+  var totalsH = 112;
   var qrSection = 272;
   var H = headerEnd + bodyH + totalsH + qrSection + 44;
 
@@ -264,10 +264,6 @@ function buildBillSvg(p) {
       '" stroke-width="1"/>'
   );
 
-  var taxableJ =
-    p.taxableValue != null && Number.isFinite(Number(p.taxableValue))
-      ? Number(p.taxableValue)
-      : Math.round((Number(p.subtotal) || 0) / 1.18 * 100) / 100;
   body.push(
     '<text x="' +
       pad +
@@ -293,7 +289,7 @@ function buildBillSvg(p) {
       (ty + 26) +
       '" fill="' +
       muted +
-      '" font-size="14">Taxable value (excl. GST)</text>' +
+      '" font-size="14">GST 18%</text>' +
       '<text x="' +
       (W - pad) +
       '" y="' +
@@ -301,55 +297,18 @@ function buildBillSvg(p) {
       '" fill="' +
       ink +
       '" font-size="14" text-anchor="end">' +
-      fmtInr(taxableJ) +
-      "</text>"
-  );
-  body.push(
-    '<text x="' +
-      pad +
-      '" y="' +
-      (ty + 52) +
-      '" fill="' +
-      muted +
-      '" font-size="14">GST 18%</text>' +
-      '<text x="' +
-      (W - pad) +
-      '" y="' +
-      (ty + 52) +
-      '" fill="' +
-      ink +
-      '" font-size="14" text-anchor="end">' +
       fmtInr(p.tax) +
       "</text>"
   );
   body.push(
-    '<text x="' +
-      pad +
-      '" y="' +
-      (ty + 78) +
-      '" fill="' +
-      muted +
-      '" font-size="14">Shipping</text>' +
-      '<text x="' +
-      (W - pad) +
-      '" y="' +
-      (ty + 78) +
-      '" fill="' +
-      ink +
-      '" font-size="14" text-anchor="end">' +
-      (p.shipping === 0 ? "Free" : fmtInr(p.shipping)) +
-      "</text>"
-  );
-
-  body.push(
     '<line x1="' +
       pad +
       '" y1="' +
-      (ty + 98) +
+      (ty + 52) +
       '" x2="' +
       (W - pad) +
       '" y2="' +
-      (ty + 98) +
+      (ty + 52) +
       '" stroke="' +
       lineCol +
       '" stroke-width="1" stroke-dasharray="6 5"/>'
@@ -358,14 +317,14 @@ function buildBillSvg(p) {
     '<text x="' +
       pad +
       '" y="' +
-      (ty + 128) +
+      (ty + 82) +
       '" fill="' +
       ink +
       '" font-size="17" font-weight="700" font-family="Plus Jakarta Sans, system-ui, sans-serif">Total due</text>' +
       '<text x="' +
       (W - pad) +
       '" y="' +
-      (ty + 128) +
+      (ty + 82) +
       '" fill="' +
       accent +
       '" font-size="24" font-weight="700" text-anchor="end" font-family="Inter, system-ui, sans-serif" letter-spacing="-0.03em">' +
@@ -373,7 +332,7 @@ function buildBillSvg(p) {
       "</text>"
   );
 
-  var qrY = ty + 152;
+  var qrY = ty + 106;
   var qrSize = 220;
   body.push(
     '<rect x="' +

@@ -315,7 +315,7 @@
                 <span>Prepaid Discount (10%)</span>
                 <span id="valDiscount">− ₹0</span>
               </div>
-              <div class="checkout-total-row">
+              <div class="checkout-total-row" hidden>
                 <span>Taxable Value</span>
                 <span id="valTaxable">₹0</span>
               </div>
@@ -323,7 +323,7 @@
                 <span>GST (18%)</span>
                 <span id="valTax">₹0</span>
               </div>
-              <div class="checkout-total-row">
+              <div class="checkout-total-row" hidden>
                 <span>Shipping</span>
                 <span id="valShipping">Free</span>
               </div>
@@ -436,9 +436,9 @@
           <ul class="checkout-pay-modal__lines">
             <li><span>Items (incl. 18% GST)</span><span id="checkoutModalSub">₹0</span></li>
             <li hidden><span>Prepaid discount (10%)</span><span id="checkoutModalDiscount">− ₹0</span></li>
-            <li><span>Taxable (ex GST)</span><span id="checkoutModalTaxable">₹0</span></li>
+            <li hidden><span>Taxable (ex GST)</span><span id="checkoutModalTaxable">₹0</span></li>
             <li><span>GST (18%)</span><span id="checkoutModalTax">₹0</span></li>
-            <li><span>Shipping</span><span id="checkoutModalShip">Free</span></li>
+            <li hidden><span>Shipping</span><span id="checkoutModalShip">Free</span></li>
             <li class="checkout-pay-modal__lines--grand"><span>Total due</span><span id="checkoutModalGrand">₹0</span></li>
           </ul>
           <div class="checkout-payment-status" id="checkoutPaymentStatus" data-state="idle">

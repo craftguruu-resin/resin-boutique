@@ -218,17 +218,10 @@ function renderOrderBillPdf(p) {
       doc.moveTo(margin, y).lineTo(margin + contentW, y).strokeColor(LINE).lineWidth(0.5).stroke();
       y += 14;
 
-      var taxable =
-        p.taxableValue != null && Number.isFinite(Number(p.taxableValue))
-          ? Number(p.taxableValue)
-          : Math.round((Number(p.subtotal) || 0) / 1.18 * 100) / 100;
       var ty = y;
       doc.font("Helvetica").fontSize(11).fillColor(MUTED);
       doc.text("Items total (incl. 18% GST)", margin, ty);
       doc.fillColor(INK).text(fmtInr(p.subtotal), margin, ty, { width: contentW, align: "right" });
-      ty += 22;
-      doc.fillColor(MUTED).text("Taxable value (excl. GST)", margin, ty);
-      doc.fillColor(INK).text(fmtInr(taxable), margin, ty, { width: contentW, align: "right" });
       ty += 22;
       doc.fillColor(MUTED).text("GST 18%", margin, ty);
       doc.fillColor(INK).text(fmtInr(p.tax), margin, ty, { width: contentW, align: "right" });
@@ -238,17 +231,6 @@ function renderOrderBillPdf(p) {
         doc.fillColor(INK).text("− " + fmtInr(p.prepaidDiscount), margin, ty, { width: contentW, align: "right" });
         ty += 22;
       }
-      doc.fillColor(MUTED).text("Shipping", margin, ty);
-      doc.fillColor(INK).text(p.shipping === 0 ? "Free" : fmtInr(p.shipping), margin, ty, { width: contentW, align: "right" });
-      ty += 24;
-
-      if (Number(p.gatewayFee) > 0) {
-        doc.font("Helvetica").fontSize(11).fillColor(MUTED);
-        doc.text("Gateway fee", margin, ty);
-        doc.fillColor(INK).text(fmtInr(p.gatewayFee), margin, ty, { width: contentW, align: "right" });
-        ty += 22;
-      }
-
       doc.save();
       doc.moveTo(margin, ty).lineTo(margin + contentW, ty);
       doc.dash(6, { space: 5 }).strokeColor(LINE).lineWidth(0.5).stroke();
