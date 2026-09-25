@@ -8,10 +8,6 @@ var mediaCacheBust = require("./media-cache-bust.js");
 var RM_TAXONOMY_KEY = "raw_material_taxonomy";
 var PHOTO_FRAME_NAV_KEY = "photo_frame_nav";
 
-function taxonomyFilePath() {
-  return path.join(__dirname, "..", "raw-material-taxonomy.json");
-}
-
 function photoFrameNavFilePath() {
   return path.join(__dirname, "..", "photo-frame-nav-default.json");
 }
@@ -25,12 +21,9 @@ function invalidateTaxonomyApiCache() {
 }
 
 function readDefaultRawMaterialTaxonomySync() {
-  try {
-    var raw = fs.readFileSync(taxonomyFilePath(), "utf8");
-    return JSON.parse(raw);
-  } catch (_) {
-    return { version: 1, categories: [] };
-  }
+  /* Raw-material categories are vendor-panel/database owned. Git has no
+     fallback taxonomy and therefore cannot recreate category cards. */
+  return { version: 1, generatedFrom: "vendor-panel", categories: [] };
 }
 
 /**

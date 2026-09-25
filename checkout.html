@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="" data-bill-api-port="" data-bill-api-secret="" data-google-client-id="503148377146-kre2qp28ekei1ifib9sotqshevjcocu9.apps.googleusercontent.com">
+<html lang="en" data-bill-api-base="" data-bill-api-port="" data-bill-api-secret="" data-google-client-id="329259882406-sub7h0vk5b0l74v0f6rm8k4p0i265eir.apps.googleusercontent.com">
 <head>
   <meta charset="UTF-8" />
   <meta name="color-scheme" content="light" />
@@ -258,6 +258,8 @@
                         <button type="button" class="auth-tab is-active" id="checkoutAuthTabLo">Log in</button>
                         <button type="button" class="auth-tab" id="checkoutAuthTabSu">Sign up</button>
                       </div>
+                      <p class="auth-google-hint auth-google-hint--panel">Continue with Google</p>
+                      <div id="checkoutGoogleSignIn" class="auth-google-slot" aria-label="Continue with Google"></div>
                       <div id="checkoutAuthPanelLo">
                         <div class="auth-field">
                           <label for="checkoutAuthEmailLo">Email</label>
@@ -270,7 +272,6 @@
                         </div>
                         <p class="auth-msg" id="checkoutAuthMsgLo" style="display: none"></p>
                         <button type="button" class="auth-submit" id="checkoutAuthVerifyLo">Verify &amp; load account</button>
-                        <div id="checkoutGoogleSignIn" style="margin-top: 0.75rem"></div>
                       </div>
                       <div id="checkoutAuthPanelSu" class="is-hidden">
                         <div class="auth-field">
@@ -323,8 +324,8 @@
                 <span id="valTax">₹0</span>
               </div>
               <div class="checkout-total-row">
-                <span>Shipping</span>
-                <span id="valShipping">₹0</span>
+                <span>Shipping (included)</span>
+                <span id="valShipping">Included</span>
               </div>
               <p class="checkout-shipping-hint" id="checkoutShippingHint" role="status" hidden></p>
               <div class="ck-savings-banner" id="checkoutSavingsBanner" hidden>Yay! You saved ₹0 on this order.</div>
@@ -341,8 +342,8 @@
             <div class="ck-trust-icons" aria-label="Order benefits">
               <div class="ck-trust-icon">
                 <span class="ck-trust-icon__glyph" aria-hidden="true">🚚</span>
-                <span class="ck-trust-icon__label">Free Shipping</span>
-                <span class="ck-trust-icon__sub">On prepaid orders</span>
+                <span class="ck-trust-icon__label">Shipping included</span>
+                <span class="ck-trust-icon__sub">In the displayed price</span>
               </div>
               <div class="ck-trust-icon">
                 <span class="ck-trust-icon__glyph" aria-hidden="true">📦</span>
@@ -437,7 +438,7 @@
             <li hidden><span>Prepaid discount (10%)</span><span id="checkoutModalDiscount">− ₹0</span></li>
             <li><span>Taxable (ex GST)</span><span id="checkoutModalTaxable">₹0</span></li>
             <li><span>GST (18%)</span><span id="checkoutModalTax">₹0</span></li>
-            <li><span>Shipping</span><span id="checkoutModalShip">₹0</span></li>
+            <li><span>Shipping (included)</span><span id="checkoutModalShip">Included</span></li>
             <li class="checkout-pay-modal__lines--grand"><span>Total due</span><span id="checkoutModalGrand">₹0</span></li>
           </ul>
           <div class="checkout-payment-status" id="checkoutPaymentStatus" data-state="idle">

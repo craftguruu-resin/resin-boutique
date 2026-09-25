@@ -188,7 +188,7 @@ function verifyGuestEmailOtp(emailRaw, codeRaw, cb) {
       var otpId = r.rows[0].id;
       return pool.query("UPDATE guest_email_otps SET consumed_at = now() WHERE id = $1", [otpId]).then(function () {
         return pool.query(
-          "SELECT id FROM guest_customers WHERE LOWER(TRIM(email)) = $1 ORDER BY id DESC LIMIT 1",
+          "SELECT id, display_name FROM guest_customers WHERE LOWER(TRIM(email)) = $1 ORDER BY id DESC LIMIT 1",
           [email]
         );
       });
@@ -197,7 +197,10 @@ function verifyGuestEmailOtp(emailRaw, codeRaw, cb) {
       if (!r2.rows.length) {
         throw new Error("Guest not found");
       }
-      cb(null, { guestId: Number(r2.rows[0].id) });
+      cb(null, {
+        guestId: Number(r2.rows[0].id),
+        displayName: r2.rows[0].display_name != null ? String(r2.rows[0].display_name).trim() : "",
+      });
     })
     .catch(cb);
 }
@@ -251,7 +254,7 @@ function verifySignupGuestEmailOtp(body, cb) {
           }
           return pool
             .query(
-              "INSERT INTO guest_customers (phone_norm, email, display_name) VALUES ($1, $2, $3) RETURNING id",
+              "INSERT INTO guest_customers (phone_norm, email, display_name) VALUES ($1, $2, $3) RETURNING id, display_name",
               [phoneKey, emailStored, displayName || "Guest"]
             )
             .then(function (ins) {
@@ -262,7 +265,10 @@ function verifySignupGuestEmailOtp(body, cb) {
         });
     })
     .then(function (ins) {
-      cb(null, { guestId: Number(ins.rows[0].id) });
+      cb(null, {
+        guestId: Number(ins.rows[0].id),
+        displayName: ins.rows[0].display_name != null ? String(ins.rows[0].display_name).trim() : "",
+      });
     })
     .catch(function (err) {
       if (err && err.code === "23505") {

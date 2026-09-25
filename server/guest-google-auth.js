@@ -15,7 +15,7 @@ function googleSignInConfigured() {
 /**
  * Verify GIS JWT, find or create guest row, return guest id + normalized email.
  * @param {string} idToken — credential from Google Identity Services
- * @param {(err: Error|null, out?: { guestId: number, email: string }) => void} cb
+ * @param {(err: Error|null, out?: { guestId: number, email: string, displayName?: string }) => void} cb
  */
 function verifyAndEnsureGuest(idToken, cb) {
   var audience = googleClientId();
@@ -65,10 +65,10 @@ function verifyAndEnsureGuest(idToken, cb) {
               return pool
                 .query("UPDATE guest_customers SET display_name = $1, updated_at = now() WHERE id = $2", [profile.name, id])
                 .then(function () {
-                  return { guestId: id, email: profile.emailLower };
+                  return { guestId: id, email: profile.emailLower, displayName: profile.name };
                 });
             }
-            return { guestId: id, email: profile.emailLower };
+            return { guestId: id, email: profile.emailLower, displayName: String(dn || profile.name || "").trim() };
           }
           var phoneKey = guestDb.phoneNormKey("cg-google:" + profile.sub);
           return pool
@@ -77,7 +77,7 @@ function verifyAndEnsureGuest(idToken, cb) {
               [phoneKey, profile.emailStored, profile.name || "Guest"]
             )
             .then(function (ins) {
-              return { guestId: Number(ins.rows[0].id), email: profile.emailLower };
+              return { guestId: Number(ins.rows[0].id), email: profile.emailLower, displayName: profile.name };
             })
             .catch(function (err) {
               if (err && err.code === "23505") {
@@ -85,7 +85,7 @@ function verifyAndEnsureGuest(idToken, cb) {
                   .query("SELECT id FROM guest_customers WHERE LOWER(TRIM(email)) = $1 LIMIT 1", [profile.emailLower])
                   .then(function (r2) {
                     if (!r2.rows.length) throw err;
-                    return { guestId: Number(r2.rows[0].id), email: profile.emailLower };
+                    return { guestId: Number(r2.rows[0].id), email: profile.emailLower, displayName: profile.name };
                   });
               }
               throw err;

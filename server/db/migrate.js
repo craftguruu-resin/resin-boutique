@@ -33,7 +33,9 @@ function migrate(cb) {
       return schemaHotfix.ensureVendorInventoryColumns();
     })
     .then(function () {
-      return rawMaterialsDb.seedDemoMaterialsPromise(p);
+      /* One-time cleanup of exact legacy Git rows. New raw-material products
+         are created only through the vendor panel; Git never seeds them. */
+      return rawMaterialsDb.removeGitSeededMaterialsPromise(p);
     })
     .then(function () {
       return photoFramesDb.seedDemoPhotoFramesPromise(p);

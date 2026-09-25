@@ -216,7 +216,7 @@ function normalizeIndia10(raw) {
   return x.length === 10 ? x : "";
 }
 
-/** Line MRP / unit prices are GST-inclusive (18%). Shipping is added without extra GST in this model. */
+/** Line MRP / unit prices are inclusive of 18% GST and shipping. */
 function computeTotals(items, opts) {
   return orderPricing.computeTotals(items, opts);
 }
@@ -1462,6 +1462,7 @@ app.post("/api/guest/otp/verify", function (req, res) {
         token: sess.token,
         guestId: sess.guestId,
         expiresInMs: sess.expiresInMs,
+        displayName: v.displayName || "",
       });
     });
   });
@@ -1510,6 +1511,7 @@ app.post("/api/guest-auth/signup/verify", function (req, res) {
         token: sess.token,
         guestId: sess.guestId,
         expiresInMs: sess.expiresInMs,
+        displayName: v.displayName || "",
       });
     });
   });
@@ -1559,6 +1561,7 @@ app.post("/api/guest-auth/login/verify", function (req, res) {
         token: sess.token,
         guestId: sess.guestId,
         expiresInMs: sess.expiresInMs,
+        displayName: v.displayName || "",
       });
     });
   });
@@ -1604,6 +1607,7 @@ app.post("/api/guest-auth/google/session", function (req, res) {
         guestId: sess.guestId,
         expiresInMs: sess.expiresInMs,
         email: out.email,
+        displayName: out.displayName || "",
       });
     });
   });

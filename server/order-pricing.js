@@ -2,8 +2,6 @@
 
 /** Shared checkout pricing — keep in sync with checkout.js refreshCheckout(). */
 var GST = 0.18;
-var SHIP_FLAT = 10;
-var FREE_SHIP_MIN = 150;
 var PREPAID_DISCOUNT_RATE = 0.10;
 var RAZORPAY_FEE_RATE = 0.025;
 
@@ -34,9 +32,9 @@ function computeTotals(items, opts) {
     sub += u * q;
   });
   var productValue = round2(sub);
-  var ship = paymentMethod === "razorpay"
-    ? (productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT)
-    : 0;
+  /* Product prices are already inclusive of GST and shipping. Never add a
+     second shipping charge at checkout or on server-created orders. */
+  var ship = 0;
   var prepaidDiscount = paymentMethod === "razorpay" ? round2(productValue * PREPAID_DISCOUNT_RATE) : 0;
   var afterDiscount = round2(Math.max(0, productValue - prepaidDiscount));
   var taxable = round2(afterDiscount / (1 + GST));
@@ -62,8 +60,6 @@ function computeTotals(items, opts) {
 
 module.exports = {
   GST: GST,
-  SHIP_FLAT: SHIP_FLAT,
-  FREE_SHIP_MIN: FREE_SHIP_MIN,
   PREPAID_DISCOUNT_RATE: PREPAID_DISCOUNT_RATE,
   RAZORPAY_FEE_RATE: RAZORPAY_FEE_RATE,
   normalizePaymentMethod: normalizePaymentMethod,

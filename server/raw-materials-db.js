@@ -334,6 +334,8 @@ function listActive(filter, cb) {
   var sql =
     "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug, updated_at FROM raw_materials WHERE is_active = true";
   var params = [];
+  params.push(LEGACY_GIT_SEEDED_ROWS.map(function (row) { return row[0]; }));
+  sql += " AND NOT (id = ANY($" + params.length + "::text[]))";
   if (base) {
     params.push(base);
     sql += " AND base_category_slug = $" + params.length;
@@ -432,8 +434,8 @@ function getActiveById(id, cb) {
   var rid = String(id || "").trim().slice(0, 120);
   pool
     .query(
-      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug, updated_at FROM raw_materials WHERE id = $1 AND is_active = true",
-      [rid]
+      "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, base_category_slug, subcategory_slug, updated_at FROM raw_materials WHERE id = $1 AND is_active = true AND NOT (id = ANY($2::text[]))",
+      [rid, LEGACY_GIT_SEEDED_ROWS.map(function (row) { return row[0]; })]
     )
     .then(function (r) {
       if (!r.rows.length) return cb(null, null);
@@ -766,224 +768,38 @@ function setActive(id, isActive, cb) {
     .catch(cb);
 }
 
-var DEMO_IDS = ["raw-mat--craftguru-showcase-pour"];
-
-function seedMinimalOptions(badge) {
-  return {
-    useSize: true,
-    useQty: false,
-    useColor: false,
-    badge: String(badge || "").trim().slice(0, 80),
-    heroImage: "",
-    trustBullets: [],
-    sizes: [{ id: "pk-std", label: "Standard pack", image: "" }],
-    qtyOptions: [],
-    colors: [],
-    brandLine: "CRAFT GURU",
-    ratingScore: "",
-    reviewCount: null,
-    detailBody:
-      "Craftguru studio listing — open the product page for sizes, colours, and checkout. Mix and store per batch instructions.",
-    galleryImages: [],
-    vendorInventory: { qtyOnHand: null, note: "" },
-  };
-}
-
-function showcaseLuminaOptions() {
-  /* Shop marketing banner belongs on raw-material-shop home only — not on PDP/cards. */
-  var pdpThumb = "media/raw-materials/rm-seed-2-1-art-resin.jpg";
-  return {
-    brandLine: "CRAFT GURU",
-    ratingScore: "4.8",
-    reviewCount: 214,
-    detailBody:
-      "How to use: cap bottles tightly between sessions and store upright out of direct sun. Mix Part A + Part B exactly as your batch card describes (by weight is most consistent). Pour in controlled layers for deep moulds so heat can escape. Cure times move with room temperature — 24–28°C is the sweet spot. This is a workshop resin, not a skin product; use gloves and ventilation. Questions? WhatsApp the studio from your order confirmation.",
-    useSize: true,
-    useQty: false,
-    useColor: true,
-    badge: "BEST SELLER",
-    heroImage: pdpThumb,
-    trustBullets: [
-      "Safe & non-toxic when cured",
-      "Lab-formulated in Jaipur",
-      "Low-yellowing crystal line",
-      "Vegan & cruelty-free supply chain",
-    ],
-    sizes: [
-      { id: "sz400", label: "400 ML", image: "", priceInr: 1200, mrpInr: 1500 },
-      { id: "sz600", label: "600 ML", image: "", priceInr: 1800, mrpInr: 2200 },
-    ],
-    qtyOptions: [],
-    colors: [
-      {
-        id: "co-indigo",
-        label: "Indigo label",
-        hex: "#312e81",
-        image: "",
-      },
-      {
-        id: "co-forest",
-        label: "Forest label",
-        hex: "#15803d",
-        image: "",
-      },
-      {
-        id: "co-amber",
-        label: "Amber label",
-        hex: "#d97706",
-        image: "",
-      },
-    ],
-  };
-}
+/* These are the legacy Git-seeded rows only. Vendor-created rows must never
+ * be touched by the migration cleanup below. */
+var LEGACY_GIT_SEEDED_ROWS = [
+  ["raw-mat--craftguru-showcase-pour", "RM-DEMO-POUR", "media/raw-materials/rm-seed-2-1-art-resin.jpg"],
+  ["raw-mat--seed-pearl-powder", "RM-SEED-PEARL", "media/raw-materials/rm-seed-pearl-powder.jpg"],
+  ["raw-mat--seed-uv-resin", "RM-SEED-UV50", "media/raw-materials/rm-seed-uv-resin-50g.png"],
+  ["raw-mat--seed-2-1-art", "RM-SEED-21ART", "media/raw-materials/rm-seed-2-1-art-resin.jpg"],
+  ["raw-mat--seed-gold-deco", "RM-SEED-GOLDMK", "media/raw-materials/rm-seed-gold-deco-marker.jpg"],
+  ["raw-mat--seed-tray-handle", "RM-SEED-HANDLE", "media/raw-materials/rm-seed-tray-handle.jpg"],
+  ["raw-mat--seed-coaster-mold", "RM-SEED-MOLD4", "media/raw-materials/rm-seed-coaster-mold.png"],
+  ["raw-mat--seed-mixing-stick", "RM-SEED-MIX", "media/raw-materials/rm-seed-mixing-stick.jpg"],
+  ["raw-mat--seed-keychain-hook", "RM-SEED-KHOOK", "media/raw-materials/rm-seed-keychain-hook.jpg"],
+];
 
 /**
- * Inserts one showcase raw material row for QA (ON CONFLICT DO NOTHING).
- * @param {import('pg').Pool} pool
- * @returns {Promise<void>}
+ * Remove only the exact rows previously created by the Git demo seed. A row
+ * is deleted only when its id, SKU, and original image path all match, so a
+ * vendor-edited or vendor-created row is preserved.
  */
-function seedDemoMaterialsPromise(pool) {
-  var demoPourCardImage = "media/raw-materials/rm-seed-2-1-art-resin.jpg";
-  var demos = [
-    {
-      id: DEMO_IDS[0],
-      sku: "RM-DEMO-POUR",
-      baseCategorySlug: "resin-and-pigments",
-      subcategorySlug: "",
-      name: "Oh My Pour! Crystal Clear Resin",
-      description:
-        "Your daily pour, bottled like a favourite lotion: a featherlight, high-clarity Craft Guru resin for river tables, deep casts, coasters, and bezels. Mixes smooth, cures glossy, and loves pigments. Choose your studio size and label colour — the swatches below are the exact studio picks, and your cart line follows the colour you tap.",
-      note: "Ships free the week you pay on orders over ₹1500 · WhatsApp +91-8824350056 to confirm batch timing.",
-      image: demoPourCardImage,
-      price: 1200,
-      mrp: 2049,
-      options: showcaseLuminaOptions(),
-    },
-    {
-      id: "raw-mat--seed-pearl-powder",
-      sku: "RM-SEED-PEARL",
-      baseCategorySlug: "resin-and-pigments",
-      subcategorySlug: "powder-pigments",
-      name: "Pearl powder pigment",
-      description: "High-sheen pearl powder for resin pours and geode lines. Mix sparingly into clear resin for depth.",
-      note: "Store sealed away from moisture.",
-      image: "media/raw-materials/rm-seed-pearl-powder.jpg",
-      price: 349,
-      mrp: 499,
-      options: seedMinimalOptions("POPULAR PICK"),
-    },
-    {
-      id: "raw-mat--seed-uv-resin",
-      sku: "RM-SEED-UV50",
-      baseCategorySlug: "resin-and-pigments",
-      subcategorySlug: "uv-resin",
-      name: "UV resin · 50 g",
-      description: "Fast-cure UV resin for bezels, thin coats, and small doming projects. Cure with a quality UV lamp.",
-      note: "Use nitrile gloves and eye protection.",
-      image: "media/raw-materials/rm-seed-uv-resin-50g.png",
-      price: 449,
-      mrp: 599,
-      options: seedMinimalOptions("POPULAR PICK"),
-    },
-    {
-      id: "raw-mat--seed-2-1-art",
-      sku: "RM-SEED-21ART",
-      baseCategorySlug: "resin-and-pigments",
-      subcategorySlug: "2-1-resin",
-      name: "2:1 ratio art resin",
-      description: "Deep-pour friendly 2:1 epoxy for river tables and thick castings when your workflow prefers ratio by weight.",
-      note: "Always mix complete kits; do not short the hardener.",
-      image: "media/raw-materials/rm-seed-2-1-art-resin.jpg",
-      price: 1899,
-      mrp: 2499,
-      options: seedMinimalOptions("BEST SELLER"),
-    },
-    {
-      id: "raw-mat--seed-gold-deco",
-      sku: "RM-SEED-GOLDMK",
-      baseCategorySlug: "basic-resin-material",
-      subcategorySlug: "",
-      name: "Gold deco marker",
-      description: "Metallic paint marker for resin edge highlights, lettering, and fine studio details.",
-      note: "Cap firmly after each session.",
-      image: "media/raw-materials/rm-seed-gold-deco-marker.jpg",
-      price: 199,
-      mrp: 249,
-      options: seedMinimalOptions("NEW"),
-    },
-    {
-      id: "raw-mat--seed-tray-handle",
-      sku: "RM-SEED-HANDLE",
-      baseCategorySlug: "handles",
-      subcategorySlug: "",
-      name: "Tray handle set",
-      description: "Hardware handles sized for resin trays, charcuterie boards, and serving pieces.",
-      note: "Includes mounting screws where applicable.",
-      image: "media/raw-materials/rm-seed-tray-handle.jpg",
-      price: 279,
-      mrp: 349,
-      options: seedMinimalOptions("POPULAR PICK"),
-    },
-    {
-      id: "raw-mat--seed-coaster-mold",
-      sku: "RM-SEED-MOLD4",
-      baseCategorySlug: "silicon-molds",
-      subcategorySlug: "",
-      name: "4 inch coaster silicone mold",
-      description: "Reusable silicone coaster mould with clean release for crystal pours.",
-      note: "Wash with mild soap; avoid sharp tools inside the cavity.",
-      image: "media/raw-materials/rm-seed-coaster-mold.png",
-      price: 329,
-      mrp: 399,
-      options: seedMinimalOptions(""),
-    },
-    {
-      id: "raw-mat--seed-mixing-stick",
-      sku: "RM-SEED-MIX",
-      baseCategorySlug: "pouring-and-mixing",
-      subcategorySlug: "",
-      name: "Resin mixing sticks",
-      description: "Sturdy reusable sticks for A/B blending before pour — keeps bubbles down when used with slow folding.",
-      note: "Wipe clean between colours.",
-      image: "media/raw-materials/rm-seed-mixing-stick.jpg",
-      price: 89,
-      mrp: 129,
-      options: seedMinimalOptions(""),
-    },
-    {
-      id: "raw-mat--seed-keychain-hook",
-      sku: "RM-SEED-KHOOK",
-      baseCategorySlug: "jewellery-and-keychain-material",
-      subcategorySlug: "keychains-and-hooks",
-      name: "Keychain hardware hook",
-      description: "Metal findings for resin keychains — pair with tassels or jump rings from the same aisle.",
-      note: "Check loop size against your mould eyelet.",
-      image: "media/raw-materials/rm-seed-keychain-hook.jpg",
-      price: 149,
-      mrp: 199,
-      options: seedMinimalOptions("POPULAR PICK"),
-    },
-  ];
+function removeGitSeededMaterialsPromise(pool) {
   return Promise.all(
-    demos.map(function (d) {
+    LEGACY_GIT_SEEDED_ROWS.map(function (row) {
       return pool.query(
-        "INSERT INTO raw_materials (id, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, sku, base_category_slug, subcategory_slug) VALUES ($1, $2, $3, $4, $5, true, $6, $7, $8::jsonb, $9, $10, $11) ON CONFLICT (id) DO NOTHING",
-        [
-          d.id,
-          d.name,
-          d.description,
-          d.image,
-          d.note,
-          d.price,
-          d.mrp,
-          JSON.stringify(d.options),
-          d.sku,
-          d.baseCategorySlug || "resin-and-pigments",
-          d.subcategorySlug || "",
-        ]
+        "DELETE FROM raw_materials WHERE id = $1 AND sku = $2 AND image_path = $3",
+        row
       );
     })
-  ).then(function () {});
+  ).then(function () {
+    try {
+      catalogFromData.invalidateCache();
+    } catch (_) {}
+  });
 }
 
 module.exports = {
@@ -996,6 +812,5 @@ module.exports = {
   deleteRow: deleteRow,
   setActive: setActive,
   deleteMaterialsByTaxonomySlot: deleteMaterialsByTaxonomySlot,
-  seedDemoMaterialsPromise: seedDemoMaterialsPromise,
-  DEMO_IDS: DEMO_IDS,
+  removeGitSeededMaterialsPromise: removeGitSeededMaterialsPromise,
 };

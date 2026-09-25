@@ -5,10 +5,8 @@
   var D = window.RESIN_DATA;
   if (!CART || !D) return;
 
-  /** MRP / line prices include 18% GST; shipping is added without further GST in this flow. */
+  /** Line prices already include 18% GST and shipping. No shipping is added here. */
   var GST_INCLUSIVE_RATE = 0.18;
-  var SHIP_FLAT = 10;
-  var FREE_SHIP_MIN = 150;
   var PREPAID_DISCOUNT_RATE = 0.10;
 
   function splitGstFromInclusive(inclTotal) {
@@ -64,6 +62,30 @@
   };
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
+  var GUEST_SESSION_NAME_KEY = "cg_session_name";
+
+  function checkoutSessionName() {
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.getSessionName === "function") {
+        return String(window.CRAFT_AUTH_DB.getSessionName() || "").trim();
+      }
+      return String(localStorage.getItem(GUEST_SESSION_NAME_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setCheckoutSessionName(name) {
+    var value = String(name || "").trim().slice(0, 200);
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.setSessionName === "function") {
+        window.CRAFT_AUTH_DB.setSessionName(value);
+        return;
+      }
+      if (value) localStorage.setItem(GUEST_SESSION_NAME_KEY, value);
+      else localStorage.removeItem(GUEST_SESSION_NAME_KEY);
+    } catch (_) {}
+  }
 
   function guestAuthHeaders() {
     var h = { "Content-Type": "application/json" };
@@ -103,6 +125,7 @@
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
             localStorage.removeItem(GUEST_SESSION_EMAIL_KEY);
+            localStorage.removeItem(GUEST_SESSION_NAME_KEY);
           } catch (_) {}
           try {
             window.dispatchEvent(new CustomEvent("craftguruAuthChanged"));
@@ -511,7 +534,10 @@
         var signInLink = document.getElementById("checkoutSignInLink");
         if (signInLink) signInLink.hidden = true;
         if (txt) {
-          txt.textContent = "Signed in as " + me.email + ".";
+          if (me.displayName && String(me.displayName).trim() !== "Guest") {
+            setCheckoutSessionName(me.displayName);
+          }
+          txt.textContent = "Signed in as " + (checkoutSessionName() || "My account") + ".";
         }
         if (guestEmail) {
           guestEmail.value = me.email;
@@ -630,7 +656,19 @@
       (document.getElementById("guestName") && document.getElementById("guestName").value) ||
       "";
     if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
-      window.CRAFT_AUTH_DB.putUser({ email: emailNorm, name: nm, createdAt: Date.now() }, function () {});
+      var persistCheckoutProfile = function (existing) {
+        var savedName = nm || (existing && existing.name) || checkoutSessionName();
+        if (savedName && savedName !== "Guest") setCheckoutSessionName(savedName);
+        window.CRAFT_AUTH_DB.putUser(
+          { email: emailNorm, name: savedName, createdAt: (existing && existing.createdAt) || Date.now() },
+          function () {}
+        );
+      };
+      if (window.CRAFT_AUTH_DB.getUser) {
+        window.CRAFT_AUTH_DB.getUser(emailNorm, function (_e, existing) { persistCheckoutProfile(existing); });
+      } else {
+        persistCheckoutProfile(null);
+      }
     }
     refreshGuestCheckoutUi();
     if (window.RESIN_SHELL) {
@@ -793,15 +831,11 @@
             checkoutAuthSetMsg(msgEl, err.message || "Verification failed.");
             return;
           }
-          checkoutAfterVerifySuccess(em, json, "");
+          var storedName = json && json.displayName && String(json.displayName).trim() !== "Guest"
+            ? String(json.displayName).trim()
+            : "";
+          checkoutAfterVerifySuccess(em, json, storedName);
           checkoutAuthSetMsg(msgEl, "Signed in.", "ok");
-          if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
-            window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
-              var name = (user && user.name) || "";
-              var createdAt = (user && user.createdAt) || Date.now();
-              window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
-            });
-          }
         });
       });
     }
@@ -818,7 +852,8 @@
             return;
           }
           var em = json && json.email ? normalizeCheckoutEmail(json.email) : "";
-          checkoutAfterVerifySuccess(em, json, "");
+          var googleName = json && (json.displayName || json.name) ? String(json.displayName || json.name).trim() : "";
+          checkoutAfterVerifySuccess(em, json, googleName);
           if (msgLo) checkoutAuthSetMsg(msgLo, "Signed in with Google.", "ok");
         });
       });
@@ -1194,9 +1229,7 @@
 
   function computeCheckoutTotals(subtotalVal, paymentMethod) {
     var productValue = Math.round(Number(subtotalVal) * 100) / 100;
-    var shipping = paymentMethod === "razorpay"
-      ? (productValue >= FREE_SHIP_MIN ? 0 : SHIP_FLAT)
-      : 0;
+    var shipping = 0;
     var prepaidDiscount =
       paymentMethod === "razorpay" ? Math.round(productValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
     var afterDiscount = Math.round(Math.max(0, productValue - prepaidDiscount) * 100) / 100;
@@ -1669,7 +1702,7 @@
       }
     }
     if (els.taxable) els.taxable.textContent = fmt(totals.taxable);
-    if (els.ship) els.ship.textContent = totals.shipping === 0 ? "Free" : fmt(totals.shipping);
+    if (els.ship) els.ship.textContent = "Included";
     if (els.tax) els.tax.textContent = fmt(totals.gst);
     if (els.total) els.total.textContent = fmt(totals.grand);
     if (els.modalSub) els.modalSub.textContent = fmt(totals.productValue);
@@ -1680,7 +1713,7 @@
       els.modalDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
     }
     if (els.modalTaxable) els.modalTaxable.textContent = fmt(totals.taxable);
-    if (els.modalShip) els.modalShip.textContent = totals.shipping === 0 ? "Free" : fmt(totals.shipping);
+    if (els.modalShip) els.modalShip.textContent = "Included";
     if (els.modalTax) els.modalTax.textContent = fmt(totals.gst);
     if (els.modalGrand) els.modalGrand.textContent = fmt(totals.grand);
     updatePaymentPanelVisibility();
@@ -2062,7 +2095,9 @@
       signOutBtn.addEventListener("click", function () {
         try {
           localStorage.removeItem(GUEST_TOKEN_KEY);
+          localStorage.removeItem(GUEST_SESSION_NAME_KEY);
         } catch (_) {}
+        setCheckoutSessionName("");
         setCheckoutSessionEmail("");
         if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogout === "function") {
           window.RESIN_CART.onAccountLogout();

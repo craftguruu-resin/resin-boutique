@@ -71,16 +71,12 @@
           throw new Error("taxonomy api");
         })
         .catch(function () {
-          return fetch("raw-material-taxonomy.json", { cache: "no-store" }).then(function (r2) {
-            if (!r2.ok) throw new Error("taxonomy");
-            return r2.json();
-          });
+          /* Git is not allowed to repopulate raw-material categories. */
+          return { version: 1, generatedFrom: "vendor-panel", categories: [] };
         });
     }
-    return fetch("raw-material-taxonomy.json", { cache: "no-store" }).then(function (r) {
-      if (!r.ok) throw new Error("taxonomy");
-      return r.json();
-    });
+    /* Without the vendor API, the storefront has no categories by design. */
+    return Promise.resolve({ version: 1, generatedFrom: "vendor-panel", categories: [] });
   }
 
   function hrefParams(href) {

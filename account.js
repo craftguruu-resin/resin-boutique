@@ -3,6 +3,7 @@
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var SESSION_EMAIL_KEY = "cg_session_email";
+  var SESSION_NAME_KEY = "cg_session_name";
   var pendingHighlightOrderId = "";
   var ordersCache = [];
   var activeOrderTab = "current";
@@ -144,6 +145,29 @@
     try {
       if (em) localStorage.setItem(SESSION_EMAIL_KEY, em);
       else localStorage.removeItem(SESSION_EMAIL_KEY);
+    } catch (_) {}
+  }
+
+  function getSessionName() {
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.getSessionName === "function") {
+        return String(window.CRAFT_AUTH_DB.getSessionName() || "").trim();
+      }
+      return String(localStorage.getItem(SESSION_NAME_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setSessionName(name) {
+    var value = String(name || "").trim().slice(0, 200);
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.setSessionName === "function") {
+        window.CRAFT_AUTH_DB.setSessionName(value);
+        return;
+      }
+      if (value) localStorage.setItem(SESSION_NAME_KEY, value);
+      else localStorage.removeItem(SESSION_NAME_KEY);
     } catch (_) {}
   }
 
@@ -797,7 +821,7 @@
   function refreshAccountHeroName(emailNorm, immediateName) {
     var nameEl = document.getElementById("accountHeroName");
     if (!nameEl) return;
-    var im = String(immediateName || "").trim();
+    var im = String(immediateName || getSessionName() || "").trim();
     if (im) {
       nameEl.textContent = im;
       return;
@@ -1004,8 +1028,11 @@
       if (show) hero.removeAttribute("hidden");
       else hero.setAttribute("hidden", "hidden");
     }
-    if (emH) emH.textContent = emailText != null ? String(emailText) : "";
-    if (show && emailText) refreshAccountHeroName(String(emailText).trim().toLowerCase(), "");
+    if (emH) {
+      emH.textContent = "";
+      emH.setAttribute("hidden", "hidden");
+    }
+    if (show && emailText) refreshAccountHeroName(String(emailText).trim().toLowerCase(), getSessionName());
   }
 
   function showAccountAuth(show) {
@@ -1024,7 +1051,7 @@
     if (!bar) return;
     if (show) {
       bar.removeAttribute("hidden");
-      if (em) em.textContent = emailText != null ? String(emailText) : "";
+      if (em) em.textContent = getSessionName() || "My account";
     } else {
       bar.setAttribute("hidden", "hidden");
     }
@@ -1096,6 +1123,7 @@
               localStorage.removeItem(GUEST_TOKEN_KEY);
             } catch (_) {}
             setSessionEmail("");
+            setSessionName("");
             if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogout === "function") {
               window.RESIN_CART.onAccountLogout();
             }
@@ -1146,15 +1174,28 @@
       window.RESIN_CART.onAccountLogin();
     }
     var nm = String(nameHint != null ? nameHint : "").trim();
+    if (nm && nm !== "Guest") setSessionName(nm);
     if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
-      window.CRAFT_AUTH_DB.putUser({ email: emailNorm, name: nm, createdAt: Date.now() }, function () {
-        refreshAccountHeroName(emailNorm, nm);
-      });
+      var persistProfile = function (existing) {
+        var savedName = nm || (existing && existing.name) || getSessionName();
+        if (savedName && savedName !== "Guest") setSessionName(savedName);
+        window.CRAFT_AUTH_DB.putUser(
+          { email: emailNorm, name: savedName, createdAt: (existing && existing.createdAt) || Date.now() },
+          function () {
+            refreshAccountHeroName(emailNorm, savedName);
+          }
+        );
+      };
+      if (window.CRAFT_AUTH_DB.getUser) {
+        window.CRAFT_AUTH_DB.getUser(emailNorm, function (_e, existing) { persistProfile(existing); });
+      } else {
+        persistProfile(null);
+      }
     } else {
       refreshAccountHeroName(emailNorm, nm);
     }
     showAccountAuth(false);
-    showSessionBar(true, emailNorm);
+    showSessionBar(true, "");
     showAccountStoreChrome(true, emailNorm);
     loadOrders();
   }
@@ -1187,6 +1228,15 @@
         var j = x.json || {};
         if (x.okHttp && j.ok) {
           if (j.email) setSessionEmail(j.email);
+          if (j.displayName && String(j.displayName).trim() !== "Guest") {
+            setSessionName(j.displayName);
+            if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser && j.email) {
+              window.CRAFT_AUTH_DB.putUser(
+                { email: normalizeEmail(j.email), name: String(j.displayName).trim(), createdAt: Date.now() },
+                function () {}
+              );
+            }
+          }
           var em2 = j.email || sessionEmailDisplay() || "";
           showSessionBar(true, em2);
           showAccountStoreChrome(true, em2);
@@ -1204,6 +1254,7 @@
             localStorage.removeItem(GUEST_TOKEN_KEY);
           } catch (_) {}
           setSessionEmail("");
+          setSessionName("");
           showAccountAuth(true);
           showSessionBar(false);
           showAccountStoreChrome(false);
@@ -1355,11 +1406,15 @@
             setMsg(msgEl, err.message || "Verification failed.");
             return;
           }
-          afterAuthSuccess(em, json, "");
+          var serverName = json && json.displayName && String(json.displayName).trim() !== "Guest"
+            ? String(json.displayName).trim()
+            : "";
+          afterAuthSuccess(em, json, serverName);
           setMsg(msgEl, "Signed in.", "ok");
           if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
             window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
-              var name = (user && user.name) || "";
+              var name = (user && user.name) || serverName;
+              if (name) setSessionName(name);
               var createdAt = (user && user.createdAt) || Date.now();
               window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
             });
@@ -1381,7 +1436,8 @@
             return;
           }
           var em = json && json.email ? normalizeEmail(json.email) : "";
-          afterAuthSuccess(em, json, "");
+          var googleName = json && (json.displayName || json.name) ? String(json.displayName || json.name).trim() : "";
+          afterAuthSuccess(em, json, googleName);
           if (msgSu) setMsg(msgSu, "Signed in with Google.", "ok");
           if (msgLo) setMsg(msgLo, "Signed in with Google.", "ok");
         });
@@ -1398,6 +1454,7 @@
           localStorage.removeItem(GUEST_TOKEN_KEY);
         } catch (_) {}
         setSessionEmail("");
+        setSessionName("");
         if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogout === "function") {
           window.RESIN_CART.onAccountLogout();
         }

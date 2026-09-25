@@ -650,7 +650,7 @@
     wishlist.innerHTML =
       '<span aria-hidden="true">♡</span><span class="home-header-wish__label">Wishlist</span>' +
       '<span class="home-header-wish__count" id="homeWishlistCount" hidden></span>';
-    if (actions && cartEl) {
+    if (actions && cartEl && cartEl.parentElement === actions) {
       actions.insertBefore(wishlist, cartEl);
     } else if (cartEl) {
       topEnd.insertBefore(wishlist, cartEl);
@@ -1186,12 +1186,14 @@
     var orders = document.getElementById("homeAuthOrders");
     var logout = document.getElementById("homeAuthLogout");
     var signedIn = false;
+    var sessionName = "";
     try {
       signedIn = !!String(localStorage.getItem("cg_session_email") || "").trim() ||
         !!String(localStorage.getItem("craftguruGuestToken") || "").trim();
+      sessionName = String(localStorage.getItem("cg_session_name") || "").trim();
     } catch (_) {}
     if (user) {
-      user.textContent = signedIn ? "My Account" : "";
+      user.textContent = signedIn ? sessionName || "My Account" : "";
       user.title = "My Account";
       user.classList.toggle("is-hidden", !signedIn);
     }

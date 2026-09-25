@@ -87,7 +87,25 @@
   }
 
   var SESSION_KEY = "cg_session_email";
+  var SESSION_NAME_KEY = "cg_session_name";
   var ORDERS_KEY = "cg_orders";
+
+  function getSessionName() {
+    try {
+      return String(localStorage.getItem(SESSION_NAME_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setSessionName(name) {
+    var value = String(name || "").trim().slice(0, 200);
+    try {
+      if (value) localStorage.setItem(SESSION_NAME_KEY, value);
+      else localStorage.removeItem(SESSION_NAME_KEY);
+    } catch (_) {}
+    try { global.dispatchEvent(new CustomEvent("craftguruAuthChanged")); } catch (_) {}
+  }
 
   function saveOrderForSession(order) {
     try {
@@ -105,5 +123,8 @@
     openDb: openDb,
     saveOrderForSession: saveOrderForSession,
     SESSION_EMAIL_KEY: SESSION_KEY,
+    SESSION_NAME_KEY: SESSION_NAME_KEY,
+    getSessionName: getSessionName,
+    setSessionName: setSessionName,
   };
 })(typeof window !== "undefined" ? window : this);

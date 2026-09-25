@@ -387,21 +387,8 @@
     return Math.round(sum * 100) / 100;
   }
 
-  /** Must match server/index.js computeTotals and checkout.js (₹10 under ₹150, else free). */
-  var SHIP_FLAT = 10;
-  var FREE_SHIP_MIN = 150;
-
-  function shippingAmount(subOpt) {
-    var sub = subOpt != null ? safeNumber(subOpt, 0) : subtotal();
-    return sub >= FREE_SHIP_MIN ? 0 : SHIP_FLAT;
-  }
-
-  function shippingIsFree(subOpt) {
-    return shippingAmount(subOpt) === 0;
-  }
-
   /**
-   * Cart / checkout UI copy only — does not change fee calculation.
+   * Cart / checkout UI copy. Product prices already include GST and shipping.
    * @returns {{ free: boolean, text: string, empty: boolean }}
    */
   function shippingNotice(subOpt) {
@@ -409,18 +396,10 @@
     if (!lines.length) {
       return { free: false, text: "", empty: true };
     }
-    var free = shippingIsFree(subOpt);
-    if (free) {
-      return {
-        free: true,
-        empty: false,
-        text: "Congratulations! Your order is eligible for FREE Shipping.",
-      };
-    }
     return {
-      free: false,
+      free: true,
       empty: false,
-      text: "Shipping charges will be calculated and displayed during the payment/checkout process.",
+      text: "Shipping is already included in the displayed product price.",
     };
   }
 
@@ -813,10 +792,6 @@
     clearCart: clearCart,
     countItems: countItems,
     subtotal: subtotal,
-    SHIP_FLAT: SHIP_FLAT,
-    FREE_SHIP_MIN: FREE_SHIP_MIN,
-    shippingAmount: shippingAmount,
-    shippingIsFree: shippingIsFree,
     shippingNotice: shippingNotice,
     syncShippingNotice: syncShippingNotice,
     formatMoney: formatMoney,

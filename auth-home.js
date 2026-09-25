@@ -10,6 +10,7 @@
   } catch (_) {}
 
   var SESSION_KEY = "cg_session_email";
+  var SESSION_NAME_KEY = "cg_session_name";
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
 
   var BILL_STATIC_SERVER_PORTS = {
@@ -152,6 +153,29 @@
     try { window.dispatchEvent(new CustomEvent("craftguruAuthChanged")); } catch (_) {}
   }
 
+  function getSessionName() {
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.getSessionName === "function") {
+        return String(window.CRAFT_AUTH_DB.getSessionName() || "").trim();
+      }
+      return String(localStorage.getItem(SESSION_NAME_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
+  function setSessionName(name) {
+    var value = String(name || "").trim().slice(0, 200);
+    try {
+      if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.setSessionName === "function") {
+        window.CRAFT_AUTH_DB.setSessionName(value);
+        return;
+      }
+      if (value) localStorage.setItem(SESSION_NAME_KEY, value);
+      else localStorage.removeItem(SESSION_NAME_KEY);
+    } catch (_) {}
+  }
+
   function setGuestToken(token) {
     try {
       if (token) localStorage.setItem(GUEST_TOKEN_KEY, token);
@@ -254,7 +278,7 @@
     } catch (_) {}
     var inAuth = !!email || hasToken;
     if (els.userLabel) {
-      var label = inAuth ? "My Account" : "";
+      var label = inAuth ? getSessionName() || "My Account" : "";
       els.userLabel.textContent = label;
       els.userLabel.title = "My Account";
       els.userLabel.setAttribute("aria-label", inAuth ? "My Account" : "");
@@ -279,6 +303,7 @@
     if (els.logoutBtn) {
       els.logoutBtn.addEventListener("click", function () {
         setSessionEmail("");
+        setSessionName("");
         setGuestToken("");
         if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogout === "function") {
           window.RESIN_CART.onAccountLogout();
@@ -309,6 +334,7 @@
           if (res.status === 401) {
             setGuestToken("");
             setSessionEmail("");
+            setSessionName("");
             renderAuthBar();
             return null;
           }
@@ -322,6 +348,15 @@
         })
         .then(function (j) {
           if (j && j.ok && j.email) setSessionEmail(normalizeEmail(j.email));
+          if (j && j.ok && j.displayName && String(j.displayName).trim() !== "Guest") {
+            setSessionName(j.displayName);
+            if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
+              window.CRAFT_AUTH_DB.putUser(
+                { email: normalizeEmail(j.email), name: String(j.displayName).trim(), createdAt: Date.now() },
+                function () {}
+              );
+            }
+          }
           renderAuthBar();
         })
         .catch(function () {
@@ -341,13 +376,15 @@
             return;
           }
           var em = json && json.email ? normalizeEmail(json.email) : "";
+          var googleName = json && (json.displayName || json.name) ? String(json.displayName || json.name).trim() : "";
           if (json && json.token) setGuestToken(json.token);
           if (em) setSessionEmail(em);
+          if (googleName && googleName !== "Guest") setSessionName(googleName);
           if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
             window.RESIN_CART.onAccountLogin();
           }
           if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
-            window.CRAFT_AUTH_DB.putUser({ email: em, name: "", createdAt: Date.now() }, function () {
+            window.CRAFT_AUTH_DB.putUser({ email: em, name: googleName, createdAt: Date.now() }, function () {
               renderAuthBar();
               closeAuth();
             });
@@ -410,6 +447,7 @@
             }
             if (json && json.token) setGuestToken(json.token);
             setSessionEmail(em);
+            setSessionName((els.nameSu && els.nameSu.value) || "");
             if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
               window.RESIN_CART.onAccountLogin();
             }
@@ -471,6 +509,9 @@
           }
           if (json && json.token) setGuestToken(json.token);
           setSessionEmail(em);
+          if (json && json.displayName && String(json.displayName).trim() !== "Guest") {
+            setSessionName(json.displayName);
+          }
           if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
             window.RESIN_CART.onAccountLogin();
           }
@@ -479,6 +520,7 @@
           if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.getUser && window.CRAFT_AUTH_DB.putUser) {
             window.CRAFT_AUTH_DB.getUser(em, function (e2, user) {
               var name = (user && user.name) || "";
+              if (name) setSessionName(name);
               var createdAt = (user && user.createdAt) || Date.now();
               window.CRAFT_AUTH_DB.putUser({ email: em, name: name, createdAt: createdAt }, function () {});
             });
