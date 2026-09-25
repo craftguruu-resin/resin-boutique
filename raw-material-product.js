@@ -899,6 +899,7 @@
             ? P.titleRowHtml({ title: m.name, shareHostId: "rmPdpShareHost", wishId: "rmPdpWishLink" })
             : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>");
     var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
+    var socialProof = P && P.socialProofHtml ? P.socialProofHtml() : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
@@ -946,6 +947,7 @@
       "</div>" +
       '<div class="rm-pdp__detail rm-pdp__detail-card">' +
       headerHtml +
+      socialProof +
       '<div class="rm-pdp__price-row">' +
       '<span class="rm-pdp__price" id="rmPdpPrice">' +
       (CART ? CART.formatMoney(effPrice) : "₹" + effPrice) +

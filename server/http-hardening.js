@@ -31,6 +31,11 @@ function applyHttpHardening(app) {
     helmet({
       contentSecurityPolicy: false,
       crossOriginEmbedderPolicy: false,
+      // Google Identity Services returns the credential through its popup.
+      // Helmet's default `same-origin` COOP severs that popup's opener
+      // relationship after consent, leaving /gsi/transform blank and
+      // preventing the GIS callback from reaching the storefront.
+      crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
       crossOriginResourcePolicy: { policy: "cross-origin" },
       referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     })
