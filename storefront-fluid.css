@@ -1,0 +1,637 @@
+/*
+ * Craftguru storefront fluidity layer
+ *
+ * Native scrolling is deliberately left to the browser. A display can only
+ * render at its own refresh rate, but avoiding forced scroll animation,
+ * expensive compositing and blocking touch listeners lets 90/120 Hz phones
+ * reach their available refresh rate.
+ */
+
+html.guest-responsive-root {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scrollbar-gutter: stable;
+}
+
+html.guest-responsive-root body.guest-site {
+  min-width: 0;
+  overscroll-behavior-x: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Keep tap feedback immediate and prevent double-tap zoom delays on controls. */
+html.guest-responsive-root body.guest-site button,
+html.guest-responsive-root body.guest-site [role="button"],
+html.guest-responsive-root body.guest-site input,
+html.guest-responsive-root body.guest-site select,
+html.guest-responsive-root body.guest-site textarea,
+html.guest-responsive-root body.guest-site .nav-dock-link,
+html.guest-responsive-root body.guest-site .btn-cart,
+html.guest-responsive-root body.guest-site .home-header-wish {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html.guest-responsive-root body.guest-site :focus-visible {
+  outline: 3px solid rgba(5, 150, 105, 0.58);
+  outline-offset: 3px;
+}
+
+/* -------------------------------------------------------------------------
+   Product-first experience
+   ------------------------------------------------------------------------- */
+
+/* A low-spec device cannot keep several fixed, blurred layers animating and
+   maintain a smooth scroll. Preserve the resin palette as a lightweight,
+   static background and reserve CPU/GPU time for customer interactions. */
+html.guest-responsive-root body.guest-site .animated-backdrop,
+html.guest-responsive-root body.guest-site .tone-shift,
+html.guest-responsive-root body.guest-site .grid-lines,
+html.guest-responsive-root body.guest-site .orb {
+  display: none !important;
+}
+
+html.guest-responsive-root body.guest-site .mesh-gradient {
+  animation: none !important;
+  transform: none !important;
+  filter: none !important;
+  opacity: 0.16;
+  will-change: auto !important;
+}
+
+html.guest-responsive-root body.guest-site .cg-social-float-stack {
+  animation: none !important;
+}
+
+/* Give desktop search enough room to be useful without changing the existing
+   compact phone header. */
+@media (min-width: 901px) {
+  html.guest-responsive-root body.guest-site .guest-top-cluster {
+    flex: 1 1 auto;
+  }
+
+  html.guest-responsive-root body.guest-site .guest-header-search {
+    flex: 1 1 clamp(10.5rem, 16vw, 17rem);
+    max-width: clamp(10.5rem, 16vw, 17rem);
+  }
+
+  @media (min-width: 1440px) {
+    html.guest-responsive-root body.guest-site .guest-header-search {
+      flex-basis: clamp(16rem, 18vw, 21rem);
+      max-width: clamp(16rem, 18vw, 21rem);
+    }
+  }
+}
+
+/* Larger product photography makes comparison quicker. The product's own
+   image-fit setting still decides whether it should be covered or contained. */
+html.guest-responsive-root body.guest-site .plp-card__media-wrap {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(69, 199, 184, 0.12), transparent 40%),
+    linear-gradient(145deg, #f9fcfc, #eef7f6);
+}
+
+html.guest-responsive-root body.guest-site .plp-card__media img {
+  transition: transform 220ms ease;
+}
+
+html.guest-responsive-root body.guest-site .plp-card__service {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin: 0.46rem 0 0;
+  color: #08766d;
+  font-size: 0.7rem;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+html.guest-responsive-root body.guest-site .plp-card__service span {
+  display: grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(8, 118, 109, 0.12);
+  font-size: 0.62rem;
+}
+
+@media (min-width: 768px) {
+  html.guest-responsive-root body.guest-site .plp-card__media-wrap {
+    aspect-ratio: 1 / 1;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__media {
+    padding: clamp(0.35rem, 1vw, 0.65rem);
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__body {
+    padding: 0.8rem 0.85rem 0.3rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__name {
+    font-size: 0.98rem;
+    line-height: 1.28;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__price {
+    font-size: 0.92rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__actions {
+    padding: 0.62rem 0.85rem 0.85rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__cta {
+    min-height: 2.5rem;
+    font-size: 0.68rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.guest-responsive-root body.guest-site .plp-card:hover .plp-card__media img {
+    transform: scale(1.025);
+  }
+}
+
+/* Limit animation to compositor-friendly properties. */
+@media (prefers-reduced-motion: no-preference) {
+  html.guest-responsive-root body.guest-site .product-card,
+  html.guest-responsive-root body.guest-site .rm-product-card,
+  html.guest-responsive-root body.guest-site .rm-card-shop,
+  html.guest-responsive-root body.guest-site .nav-dock-link,
+  html.guest-responsive-root body.guest-site button,
+  html.guest-responsive-root body.guest-site .btn-cart {
+    transition-property: transform, opacity, background-color, border-color, color, box-shadow;
+  }
+}
+
+/* Browsers skip paint/layout work for product cards below the fold. */
+@supports (content-visibility: auto) {
+  html.guest-responsive-root body.guest-site .site-footer,
+  html.guest-responsive-root body.guest-site .footer-sitemap {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 340px;
+  }
+
+  @media (max-width: 899px) {
+    html.guest-responsive-root body.guest-site .product-grid > :nth-child(n + 5),
+    html.guest-responsive-root body.guest-site .rm-grid-cards > :nth-child(n + 5),
+    html.guest-responsive-root body.guest-site .featured-collections-grid > :nth-child(n + 5),
+    html.guest-responsive-root body.guest-site .testimonials-grid > :nth-child(n + 3) {
+      content-visibility: auto;
+      contain-intrinsic-size: auto 260px;
+    }
+  }
+}
+
+/* Desktop retains the richer glass and hover detail. On touch hardware, use
+   the same artwork with cheaper static effects so the compositor stays free
+   for native scrolling and drawer/checkout interactions. */
+@media (hover: none), (pointer: coarse), (max-width: 720px) {
+  html.guest-responsive-root {
+    scrollbar-gutter: auto;
+  }
+
+  html.guest-responsive-root body.guest-site {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  html.guest-responsive-root body.guest-site button,
+  html.guest-responsive-root body.guest-site [role="button"],
+  html.guest-responsive-root body.guest-site .btn-cart,
+  html.guest-responsive-root body.guest-site .home-header-wish,
+  html.guest-responsive-root body.guest-site .nav-dock-link,
+  html.guest-responsive-root body.guest-site .rm-pdp__cart-row button,
+  html.guest-responsive-root body.guest-site .rm-pdp__buy-row a,
+  html.guest-responsive-root body.guest-site .rm-pdp__buy-row button {
+    min-height: 44px;
+  }
+
+  /* Static gradients preserve the visual richness without a fixed blur layer
+     repainting during every finger movement. */
+  html.guest-responsive-root body.guest-site .mesh-gradient,
+  html.guest-responsive-root body.guest-site .tone-shift,
+  html.guest-responsive-root body.guest-site .animated-backdrop,
+  html.guest-responsive-root body.guest-site .page-atmosphere,
+  html.guest-responsive-root body.guest-site .pdp-ethereal-fx,
+  html.guest-responsive-root body.guest-site .mist,
+  html.guest-responsive-root body.guest-site .orb {
+    animation: none !important;
+    filter: none !important;
+    will-change: auto !important;
+  }
+
+  html.guest-responsive-root body.guest-site .mesh-gradient,
+  html.guest-responsive-root body.guest-site .tone-shift,
+  html.guest-responsive-root body.guest-site .animated-backdrop,
+  html.guest-responsive-root body.guest-site .page-atmosphere,
+  html.guest-responsive-root body.guest-site .pdp-ethereal-fx,
+  html.guest-responsive-root body.guest-site .mist {
+    opacity: 0.28;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top--fx,
+  html.guest-responsive-root body.guest-site .nav-dock--fx,
+  html.guest-responsive-root body.guest-site .glass-panel,
+  html.guest-responsive-root body.guest-site .product-detail--purchase,
+  html.guest-responsive-root body.guest-site .rm-pdp__purchase,
+  html.guest-responsive-root body.guest-site .pdp-feature-bar,
+  html.guest-responsive-root body.guest-site .global-find__popover {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top--fx,
+  html.guest-responsive-root body.guest-site .nav-dock--fx,
+  html.guest-responsive-root body.guest-site .glass-panel,
+  html.guest-responsive-root body.guest-site .product-detail--purchase,
+  html.guest-responsive-root body.guest-site .rm-pdp__purchase {
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  /* Horizontal rails must remain a single, native touch gesture. */
+  html.guest-responsive-root body.guest-site .nav-dock,
+  html.guest-responsive-root body.guest-site .crumb,
+  html.guest-responsive-root body.guest-site .product-catalog-gallery__track,
+  html.guest-responsive-root body.guest-site .rm-pdp__thumbs {
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+  }
+
+  html.guest-responsive-root body.guest-site .product-card:hover,
+  html.guest-responsive-root body.guest-site .rm-product-card:hover,
+  html.guest-responsive-root body.guest-site .rm-card-shop:hover {
+    transform: none;
+  }
+}
+
+/* Keep account and cart actions understandable on small phones. Earlier
+   compact rules reduced these labels to single letters, which was space-saving
+   but not customer-friendly. */
+@media (max-width: 640px) {
+  html.guest-responsive-root body.page-home .home-auth-btn {
+    min-height: 2.35rem;
+    padding-inline: 0.5rem;
+    font-size: clamp(0.6rem, 2.6vw, 0.7rem) !important;
+    letter-spacing: 0;
+  }
+
+  html.guest-responsive-root body.page-home .home-auth-btn::first-letter {
+    font-size: inherit !important;
+  }
+
+  html.guest-responsive-root body.page-home .btn-cart {
+    width: auto;
+    min-width: 0;
+    padding-inline: 0.5rem;
+    gap: 0.32rem;
+  }
+
+  html.guest-responsive-root body.page-home .btn-cart-label {
+    display: inline;
+    font-size: clamp(0.6rem, 2.6vw, 0.7rem);
+  }
+}
+
+@media (max-width: 360px) {
+  html.guest-responsive-root body.page-home .home-auth-btn,
+  html.guest-responsive-root body.page-home .btn-cart-label {
+    font-size: 0.58rem !important;
+  }
+}
+
+/* -------------------------------------------------------------------------
+   Native-feeling mobile storefront shell
+   ------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  html.guest-responsive-root body.guest-site .site-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto auto;
+    gap: 0.55rem;
+    padding: max(0.6rem, env(safe-area-inset-top, 0px)) 0.75rem 0.6rem;
+    background: rgba(255, 255, 255, 0.98);
+    border-bottom: 1px solid rgba(15, 43, 55, 0.08);
+    box-shadow: 0 5px 18px rgba(15, 43, 55, 0.05);
+  }
+
+  html.guest-responsive-root body.guest-site .site-top::after {
+    display: none;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .guest-top-cluster > .brand,
+  html.guest-responsive-root body.guest-site .site-top > .brand {
+    grid-column: 1;
+    grid-row: 1;
+    display: inline-flex;
+    align-items: center;
+    width: auto;
+    max-width: none;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body.guest-site .brand__logo-img {
+    display: block;
+    width: auto;
+    max-width: 6.25rem;
+    max-height: 2.75rem;
+    object-fit: contain;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top-end,
+  html.guest-responsive-root body.guest-site .site-top-end--home {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+    align-self: center;
+    width: auto;
+    max-width: none;
+    display: flex;
+    gap: 0.22rem;
+    overflow: visible;
+  }
+
+  html.guest-responsive-root body.guest-site .home-auth-bar {
+    flex: 0 0 auto;
+    gap: 0.22rem;
+    overflow: visible;
+  }
+
+  html.guest-responsive-root body.guest-site .home-auth-btn {
+    min-height: 2.3rem;
+    padding-inline: 0.45rem;
+    border-color: rgba(15, 77, 74, 0.12);
+    background: #f4f8f8;
+    color: #123d4a;
+    font-size: 0.6rem !important;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top-actions {
+    gap: 0.2rem;
+  }
+
+  html.guest-responsive-root body.guest-site .home-header-wish {
+    width: 2.3rem;
+    min-width: 2.3rem;
+    min-height: 2.3rem;
+    padding: 0;
+    border-color: rgba(15, 77, 74, 0.12);
+    background: #f4f8f8;
+  }
+
+  html.guest-responsive-root body.guest-site .btn-cart {
+    width: auto;
+    min-width: 2.8rem;
+    min-height: 2.3rem;
+    padding-inline: 0.45rem;
+    border-color: rgba(15, 77, 74, 0.12);
+    background: #f4f8f8;
+    color: #123d4a;
+    box-shadow: none;
+  }
+
+  html.guest-responsive-root body.guest-site .btn-cart-label {
+    display: inline;
+    font-size: 0.6rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+  }
+
+  html.guest-responsive-root body.guest-site .guest-header-search {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 3rem;
+    margin: 0;
+    padding: 0.18rem;
+    border: 1px solid rgba(15, 77, 74, 0.14);
+    border-radius: 0.9rem;
+    background: #f6f9f9;
+    box-shadow: none;
+  }
+
+  html.guest-responsive-root body.guest-site .guest-header-search__icon {
+    width: 2.45rem;
+    height: 2.45rem;
+    background: transparent;
+    border: none;
+  }
+
+  html.guest-responsive-root body.guest-site .guest-header-search__input {
+    height: 2.45rem;
+    border: none;
+    background: transparent;
+    box-shadow: none;
+    font-size: 16px;
+  }
+
+  /* Search is useful on the full desktop header, but it crowds the compact
+     phone shell. Primary sections stay one-tap away in the navigation rail. */
+  html.guest-responsive-root body.guest-site .guest-header-search {
+    display: none !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top {
+    grid-template-rows: auto auto;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    margin: 0;
+    padding: 0.2rem;
+    gap: 0.15rem;
+    border-radius: 0.9rem;
+    background: #123d4a;
+    box-shadow: none;
+    scrollbar-width: none;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock-link {
+    min-height: 2.5rem;
+    padding-inline: 0.8rem;
+    border-radius: 0.7rem;
+    font-size: 0.68rem;
+    font-weight: 750;
+    letter-spacing: 0;
+  }
+
+  /* A phone header has one purpose: quick movement between the three retail
+     areas. Secondary desktop links remain in the footer and desktop header. */
+  html.guest-responsive-root body.guest-site .nav-dock-link:nth-of-type(n + 4) {
+    display: none !important;
+  }
+
+  /* Phone navigation uses the single top section rail. Sidebar category
+     drawers are kept for tablet/desktop where they have enough room. */
+  html.guest-responsive-root body.guest-site .home-category-rail,
+  html.guest-responsive-root body.guest-site .guest-page-category-rail,
+  html.guest-responsive-root body.guest-site .rm-category-rail,
+  html.guest-responsive-root body.guest-site .rm-nav-tree-wrap,
+  html.guest-responsive-root body.guest-site .cg-rail-toggle[aria-controls] {
+    display: none !important;
+  }
+
+  /* The large category promotion belongs to the spacious desktop catalog.
+     On phones it delayed customers before they could reach products. */
+  html.guest-responsive-root body.guest-site .rm-cat-hub {
+    display: none !important;
+  }
+
+  html.guest-responsive-root body.guest-site .sub-main,
+  html.guest-responsive-root body.guest-site .band-shop--home {
+    padding-inline: 0.7rem;
+  }
+
+  html.guest-responsive-root body.page-home .home-resin-hero {
+    margin-bottom: 0.8rem !important;
+    border-radius: 1rem !important;
+    box-shadow: 0 10px 24px rgba(15, 43, 55, 0.08) !important;
+  }
+
+  html.guest-responsive-root body.page-home .home-cat-hub {
+    padding: 0.9rem !important;
+    border-radius: 1rem !important;
+    background: #fff !important;
+    box-shadow: 0 8px 22px rgba(15, 43, 55, 0.06) !important;
+  }
+
+  /* Product cards retain a useful two-column browsing rhythm even on small
+     phones. Category cards remain larger so their labels stay readable. */
+  html.guest-responsive-root body.guest-site .plp-grid,
+  html.guest-responsive-root body.guest-site .plp-grid.product-grid,
+  html.guest-responsive-root body.guest-site .plp-grid.rm-grid-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 0.65rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card {
+    border-radius: 0.9rem;
+    box-shadow: 0 5px 16px rgba(15, 43, 55, 0.08);
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__media-wrap {
+    aspect-ratio: 1 / 1;
+    border-radius: 0.9rem 0.9rem 0 0;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__body {
+    padding: 0.65rem 0.7rem 0.2rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__name {
+    font-size: 0.82rem;
+    line-height: 1.25;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__rating,
+  html.guest-responsive-root body.guest-site .plp-card__service {
+    margin-top: 0.3rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__price {
+    margin-top: 0.35rem;
+    font-size: 0.86rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__actions {
+    gap: 0.35rem;
+    padding: 0.5rem 0.7rem 0.7rem;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__cta {
+    min-height: 2.55rem;
+    padding-inline: 0.4rem;
+    font-size: 0.61rem;
+  }
+
+  /* Keep both requested social channels available on phones, while removing
+     the animated rings/glow that made the stack visually noisy. */
+  html.guest-responsive-root body.guest-site #cgInstagramWidget {
+    display: block !important;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-social-float-stack {
+    --cg-float-fab: 3.15rem;
+    --cg-float-edge-x: 0.75rem;
+    --cg-float-edge-y: 0.75rem;
+    --cg-float-gap: 0;
+    pointer-events: auto !important;
+    touch-action: manipulation;
+    z-index: 2147483000;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-social-float-stack > *,
+  html.guest-responsive-root body.guest-site #cgWhatsAppWidget,
+  html.guest-responsive-root body.guest-site #cgInstagramWidget,
+  html.guest-responsive-root body.guest-site .cg-wa-widget__fab,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__fab {
+    pointer-events: auto !important;
+    touch-action: manipulation;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-wa-widget__ring,
+  html.guest-responsive-root body.guest-site .cg-wa-widget__glow,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__ring,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__glow {
+    display: none;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-wa-widget__fab-core {
+    box-shadow: 0 5px 14px rgba(18, 100, 60, 0.24);
+  }
+
+  html.guest-responsive-root body.guest-site .cg-ig-widget__fab-core {
+    box-shadow: 0 5px 14px rgba(188, 24, 136, 0.22);
+  }
+}
+
+@media (max-width: 360px) {
+  html.guest-responsive-root body.guest-site .brand__logo-img {
+    max-width: 4.7rem;
+  }
+
+  html.guest-responsive-root body.guest-site .home-auth-btn {
+    padding-inline: 0.35rem;
+    font-size: 0.56rem !important;
+  }
+
+  html.guest-responsive-root body.guest-site .home-header-wish {
+    width: 2.1rem;
+    min-width: 2.1rem;
+  }
+
+  html.guest-responsive-root body.guest-site .btn-cart {
+    min-width: 2.55rem;
+    padding-inline: 0.35rem;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock {
+    gap: 0.08rem;
+    padding: 0.16rem;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock-link {
+    min-height: 2.42rem;
+    padding-inline: 0.48rem;
+    font-size: 0.59rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.guest-responsive-root body.guest-site *,
+  html.guest-responsive-root body.guest-site *::before,
+  html.guest-responsive-root body.guest-site *::after {
+    scroll-behavior: auto !important;
+  }
+}

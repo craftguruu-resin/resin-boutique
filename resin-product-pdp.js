@@ -1135,7 +1135,9 @@
       hz.style.cursor = "zoom-in";
     });
 
-    root.addEventListener(
+    /* Wheel zoom is desktop-only; touch devices need an unblocked scroll path. */
+    var supportsFinePointer = !window.matchMedia || !window.matchMedia("(pointer: coarse)").matches;
+    if (supportsFinePointer) root.addEventListener(
       "wheel",
       function (ev) {
         var zoomEl = ev.target && ev.target.closest && ev.target.closest("#resinPdpHeroZoom");

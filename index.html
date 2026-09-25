@@ -69,7 +69,8 @@
   </style>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="preload" href="styles.css?v=20260917c" as="style" />
-  <link rel="preload" href="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3" as="image" type="image/webp" fetchpriority="high" />
+  <link rel="preload" href="media/home-showcase/home-hero-craftguru-768.webp?v=20260925hero-mobile1" as="image" type="image/webp" media="(max-width: 767px)" fetchpriority="high" />
+  <link rel="preload" href="media/home-showcase/home-hero-craftguru.webp?v=20260925hero4" as="image" type="image/webp" media="(min-width: 768px)" fetchpriority="high" />
   <link rel="preload" href="media/brand-craftguru.png?v=20260730" as="image" />
   <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
@@ -106,7 +107,7 @@
   <link rel="stylesheet" href="connect-section.css?v=20260815b" media="print" onload="this.media='all'" />
   <link rel="stylesheet" href="craftguru-theme.css?v=20260815b" />
   <link rel="stylesheet" href="layout-responsive.css?v=20260815b" />
-  <link rel="stylesheet" href="storefront-perf.css?v=20260925hero5" />
+  <link rel="stylesheet" href="storefront-perf.css?v=20260925hero6" />
 </head>
 <body id="top" class="page-home">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -219,13 +220,19 @@
               <div id="heroAtelierBuiltin">
                 <picture>
                   <source
+                    media="(max-width: 767px)"
                     type="image/webp"
-                    srcset="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3 1536w"
+                    srcset="media/home-showcase/home-hero-craftguru-768.webp?v=20260925hero-mobile1 768w"
+                    sizes="100vw"
+                  />
+                  <source
+                    type="image/webp"
+                    srcset="media/home-showcase/home-hero-craftguru.webp?v=20260925hero4 1536w"
                     sizes="(max-width: 899px) 100vw, min(1200px, 72vw)"
                   />
                   <img
                     class="rm-landing-hero__exact-art home-landing-hero__exact-art"
-                    src="media/home-showcase/home-hero-craftguru.webp?v=20260924hero3"
+                    src="media/home-showcase/home-hero-craftguru.webp?v=20260925hero4"
                     width="1536"
                     height="1024"
                     fetchpriority="high"
@@ -671,7 +678,7 @@
   <script src="premium-category-cards.js?v=20260815b"></script>
   <script src="app.js?v=20260924catalog1"></script>
   <script defer src="home-self-heal.js?v=20260917h"></script>
-  <script defer src="guest-layout.js?v=20260925hero5"></script>
+  <script defer src="guest-layout.js?v=20260925fluid9"></script>
   <script defer src="shell.js?v=20260922cart2"></script>
   <script defer src="header.js?v=20260815b"></script>
   <script defer src="global-find.js?v=20260815b"></script>

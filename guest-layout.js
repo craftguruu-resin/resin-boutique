@@ -794,7 +794,11 @@
     var link = document.createElement("link");
     link.rel = "stylesheet";
     var versionedHref =
-      href === "mobile-quality.css" ? href + "?v=20260921m2" : href;
+      href === "mobile-quality.css"
+        ? href + "?v=20260925m3"
+        : href === "storefront-fluid.css"
+          ? href + "?v=20260925f9"
+          : href;
     link.href = versionedHref;
     document.head.appendChild(link);
   }
@@ -844,6 +848,7 @@
   function ensureLayoutResponsiveStyles() {
     ensureStylesheet("layout-responsive.css");
     ensureStylesheet("mobile-quality.css");
+    ensureStylesheet("storefront-fluid.css");
     try {
       document.documentElement.classList.add("guest-responsive-root");
     } catch (_) {}
@@ -939,7 +944,12 @@
     function collectSidebars() {
       var items = [];
       var home = document.getElementById("categories");
-      if (home && home.classList.contains("home-category-rail")) {
+      /* Phone navigation already exposes the main storefront sections. Keeping
+         a second Home-only category drawer here made the top of the page feel
+         crowded and left an unnecessary extra tap before the hero. */
+      var isPhone = window.matchMedia("(max-width: 640px)").matches;
+      if (isPhone) return items;
+      if (!isPhone && home && home.classList.contains("home-category-rail")) {
         items.push({
           el: home,
           label: "Shop by category",
@@ -1034,6 +1044,16 @@
         document.querySelectorAll(".cg-rail-drawer-panel").forEach(restorePanelFromBody);
         return;
       }
+      var isPhone = window.matchMedia("(max-width: 640px)").matches;
+      if (isPhone) {
+        /* Clean up drawer controls if the viewport was resized from a wider
+           layout after they had already been wired. Phones use the one clear
+           top navigation rail instead of a second category drawer. */
+        closeAllDrawers();
+        document.querySelectorAll(".cg-rail-drawer-panel").forEach(restorePanelFromBody);
+        document.querySelectorAll(".cg-rail-toggle").forEach(function (btn) { btn.remove(); });
+        return;
+      }
       ensureBackdrop();
       removeOrphanToggles();
       collectSidebars().forEach(wireSidebar);
@@ -1095,7 +1115,7 @@
     if (!document.querySelector("link[data-cg-storefront-perf]")) {
       var perf = document.createElement("link");
       perf.rel = "stylesheet";
-      perf.href = "storefront-perf.css?v=20260925hero5";
+      perf.href = "storefront-perf.css?v=20260925hero6";
       perf.setAttribute("data-cg-storefront-perf", "1");
       document.head.appendChild(perf);
     }
@@ -1125,7 +1145,6 @@
 
     var scrollRaf = 0;
     var scrolledClass = false;
-    var scrollIdleTimer = 0;
 
     function onScrollFrame() {
       scrollRaf = 0;
@@ -1137,11 +1156,6 @@
     }
 
     function onScrollSignal() {
-      document.documentElement.classList.add("cg-scroll-active");
-      window.clearTimeout(scrollIdleTimer);
-      scrollIdleTimer = window.setTimeout(function () {
-        document.documentElement.classList.remove("cg-scroll-active");
-      }, 120);
       if (!scrollRaf) scrollRaf = requestAnimationFrame(onScrollFrame);
     }
 

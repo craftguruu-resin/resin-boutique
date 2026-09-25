@@ -28,12 +28,12 @@ html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   inset: auto !important;
 }
 
-/* Use the tiny supplied WebP directly. This removes the first-load wait on the 2.2 MB PNG. */
+/* Let the picture element choose the right responsive WebP source. */
 html body.page-home .home-resin-hero .home-landing-hero__exact-art {
   display: block !important;
   opacity: 1 !important;
   visibility: visible !important;
-  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260915a") !important;
+  content: normal !important;
 }
 
 html body.rm-theme--materials .rm-landing-hero__exact-art {

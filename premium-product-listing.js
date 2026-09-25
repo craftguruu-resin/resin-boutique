@@ -129,7 +129,7 @@
     var href = opts.href || "#";
     var name = opts.name || opts.title || "";
     var priceLabel = opts.priceLabel || opts.price || "";
-    var ctaText = opts.ctaText || "View options →";
+    var ctaText = opts.ctaText || "View details →";
     var ctaHref = opts.ctaHref || href;
     var meta = resolveRating(opts);
     var showNew = isProductNew({ isNew: opts.isNew, name: name, productId: opts.productId });
@@ -191,7 +191,7 @@
           esc(priceLabel) +
           mrpHtml +
           discountHtml +
-          "</p>"
+          '</p><p class="plp-card__service"><span aria-hidden="true">✓</span> Free shipping</p>'
         : "") +
       "</div>" +
       '<div class="plp-card__actions">' +

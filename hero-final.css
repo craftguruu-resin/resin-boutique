@@ -65,9 +65,9 @@ html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {
   pointer-events: none !important;
 }
 
-/* Critical: force the lightweight supplied WebP instead of waiting for the 2.2 MB PNG. */
+/* The responsive picture element owns the optimized home hero source. */
 html body.page-home .home-resin-hero .home-landing-hero__exact-art {
-  content: url("media/home-showcase/home-hero-craftguru.webp?v=20260915a") !important;
+  content: normal !important;
 }
 
 html body.rm-theme--materials #rm-hero > .rm-landing-hero__exact-art {

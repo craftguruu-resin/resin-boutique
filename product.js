@@ -1383,7 +1383,11 @@
       applyTransform();
     }
 
-    host.addEventListener("wheel", onWheel, { passive: false });
+    /* Wheel zoom is a desktop enhancement. Keeping a non-passive listener
+       off touch devices lets the browser keep native scrolling on its fast
+       input path. */
+    var supportsFinePointer = !window.matchMedia || !window.matchMedia("(pointer: coarse)").matches;
+    if (supportsFinePointer) host.addEventListener("wheel", onWheel, { passive: false });
     host.addEventListener("mousedown", onDown);
     window.addEventListener("mouseup", onUp);
     window.addEventListener("mousemove", onMove);
