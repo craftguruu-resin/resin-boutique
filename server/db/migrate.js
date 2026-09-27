@@ -47,8 +47,13 @@ function migrate(cb) {
 }
 
 function bootstrapVendorUserPromise(p) {
-  var user = process.env.VENDOR_PORTAL_USER || "nammu";
-  var pass = process.env.VENDOR_PORTAL_PASSWORD || "nammu";
+  var user = String(process.env.VENDOR_PORTAL_USER || "").trim();
+  var pass = String(process.env.VENDOR_PORTAL_PASSWORD || "").trim();
+  if (!user || !pass) {
+    return Promise.reject(
+      new Error("VENDOR_PORTAL_USER and VENDOR_PORTAL_PASSWORD must be set before migrating vendor users")
+    );
+  }
   var hash = bcrypt.hashSync(pass, 10);
   return p.query(
     "INSERT INTO vendor_users (username, password_hash) VALUES ($1, $2) " +

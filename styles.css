@@ -4254,6 +4254,21 @@ body.product-page--oos .btn-add-lg {
   box-shadow: 0 18px 44px rgba(20, 25, 35, 0.32);
 }
 
+.btn-checkout:disabled,
+.btn-checkout[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+  box-shadow: none;
+}
+
+.footer-newsletter__status {
+  width: 100%;
+  margin: 0.55rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 .cart-note {
   margin: 0.85rem 0 0;
   font-size: 0.72rem;
@@ -5742,6 +5757,13 @@ body.product-page--oos .btn-add-lg {
   color: rgba(148, 163, 184, 0.9);
 }
 
+.checkout-payment-availability {
+  margin: 0.75rem 0 0;
+  color: #a52c2c;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
 .checkout-razor-panel__ghost {
   margin-top: 0.85rem;
   width: 100%;
@@ -6192,6 +6214,114 @@ a.home-auth-btn {
   background: rgba(255, 255, 255, 0.5);
   border-radius: var(--radius-pill);
   box-sizing: border-box;
+}
+
+/* Storefront header resilience
+   The customer logo is a square artwork with lettering close to each edge.
+   A circular crop cut into the mark and made it look cramped. Keep the full
+   artwork in a small, consistent tile, and reserve real grid space for the
+   signed-in name/actions so they cannot paint over the main navigation. */
+body.guest-site .brand__logo-img,
+body:not(.vendor-saas) .brand__logo-img {
+  width: 60px;
+  height: 60px;
+  max-width: 60px;
+  padding: 2px;
+  border-radius: 14px;
+  object-fit: contain;
+  object-position: center;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(25, 45, 90, 0.12);
+}
+
+@media (min-width: 901px) and (max-width: 1449px) {
+  body.guest-site .site-top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    grid-template-rows: auto auto;
+    gap: 0.55rem 0.8rem;
+  }
+
+  body.guest-site .site-top .guest-top-cluster,
+  body.guest-site .site-top > .brand {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  body.guest-site .site-top .site-top-end,
+  body.guest-site .site-top .site-top-end--home {
+    grid-column: 2;
+    grid-row: 1;
+    max-width: min(31rem, 52vw);
+  }
+
+  body.guest-site .site-top > .nav-dock {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: stretch;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .site-top > .nav-dock::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@media (min-width: 1450px) {
+  body.guest-site .site-top {
+    grid-template-columns: minmax(14rem, 1fr) minmax(0, auto) minmax(22rem, 1fr);
+    column-gap: clamp(0.45rem, 1vw, 1rem);
+  }
+
+  body.guest-site .guest-top-cluster {
+    min-width: 0;
+    max-width: min(24rem, 27vw);
+    overflow: hidden;
+  }
+
+  body.guest-site .site-top-end,
+  body.guest-site .site-top-end--home {
+    min-width: 0;
+    max-width: min(32rem, 34vw);
+  }
+
+  body.guest-site .home-auth-bar {
+    min-width: 0;
+    max-width: min(14.5rem, 16vw);
+    overflow: hidden;
+  }
+
+  body.guest-site .home-auth-user {
+    flex: 0 1 auto;
+    max-width: 9.5rem;
+  }
+
+  body.guest-site .nav-dock {
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .nav-dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.guest-site .nav-dock-link {
+    padding-inline: clamp(0.5rem, 0.72vw, 0.8rem);
+  }
+}
+
+@media (max-width: 520px) {
+  body.guest-site .brand__logo-img,
+  body:not(.vendor-saas) .brand__logo-img {
+    width: 48px;
+    height: 48px;
+    max-width: 48px;
+    border-radius: 12px;
+  }
 }
 
 .is-hidden {

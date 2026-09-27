@@ -1,6 +1,18 @@
 (function () {
   "use strict";
 
+  /* One presentation layer for every customer page keeps the storefront from
+     drifting visually while leaving page-specific catalog/cart scripts alone. */
+  function loadStorefrontRefresh() {
+    if (document.getElementById("cgStorefrontRefresh")) return;
+    var link = document.createElement("link");
+    link.id = "cgStorefrontRefresh";
+    link.rel = "stylesheet";
+    link.href = "storefront-refresh.css?v=20260928storefront1";
+    document.head.appendChild(link);
+  }
+  loadStorefrontRefresh();
+
   window.CraftguruCategoryScroll = window.CraftguruCategoryScroll || {};
   var reduce = false;
   try {
@@ -94,6 +106,39 @@
 
 (function () {
   "use strict";
+
+  var guestFeedbackTimer = null;
+
+  function ensureGuestFeedback() {
+    if (document.getElementById("cgGuestFeedback")) return;
+    var feedback = document.createElement("div");
+    feedback.id = "cgGuestFeedback";
+    feedback.className = "cg-guest-feedback";
+    feedback.setAttribute("role", "status");
+    feedback.setAttribute("aria-live", "polite");
+    feedback.hidden = true;
+    document.body.appendChild(feedback);
+    window.CraftguruGuestFeedback = {
+      notify: function (message) {
+        var text = String(message == null ? "" : message).trim();
+        if (!text) return;
+        feedback.textContent = text;
+        feedback.hidden = false;
+        feedback.classList.remove("is-visible");
+        requestAnimationFrame(function () { feedback.classList.add("is-visible"); });
+        if (guestFeedbackTimer) window.clearTimeout(guestFeedbackTimer);
+        guestFeedbackTimer = window.setTimeout(function () {
+          feedback.classList.remove("is-visible");
+          window.setTimeout(function () { feedback.hidden = true; }, 180);
+        }, 5200);
+      },
+    };
+    /* Product, cart and checkout validation used blocking browser dialogs.
+       Keep their existing call sites, but make the customer experience non-blocking. */
+    window.alert = function (message) {
+      window.CraftguruGuestFeedback.notify(message);
+    };
+  }
 
   function escapeHtml(s) {
     var d = document.createElement("div");
@@ -375,6 +420,7 @@
     var inp = document.getElementById("guestCatalogSearchInput");
     var res = document.getElementById("guestCatalogSearchResults");
     if (!inp || !res) return;
+    var rawSearchSequence = 0;
 
     function renderCategoryHits(cats, D2, q) {
       if (!cats.length) return "";
@@ -495,6 +541,7 @@
     function runSearch() {
       var D2 = window.RESIN_DATA;
       var q = String(inp.value || "").trim();
+      var searchSequence = ++rawSearchSequence;
       syncGuestSearchToPageFilter(q);
       if (!q) {
         res.hidden = true;
@@ -504,9 +551,13 @@
       if (headerSearchUsesRawMaterialsApi()) {
         fetch(rawMaterialsSearchFetchUrl(q))
           .then(function (r) {
-            return r.json();
+            return r.json().catch(function () { return {}; }).then(function (body) {
+              if (!r.ok) throw new Error((body && body.error) || "Search unavailable.");
+              return body;
+            });
           })
           .then(function (j) {
+            if (searchSequence !== rawSearchSequence) return;
             if (!j || !j.ok) {
               res.innerHTML = '<p class="guest-header-search__empty">No matches.</p>';
               res.hidden = false;
@@ -515,6 +566,7 @@
             renderRawMaterialHits(j.materials || [], D2);
           })
           .catch(function () {
+            if (searchSequence !== rawSearchSequence) return;
             res.innerHTML = '<p class="guest-header-search__empty">Search unavailable.</p>';
             res.hidden = false;
           });
@@ -1075,8 +1127,6 @@
   }
 
   function injectFooterMainMenu() {
-    var D = window.RESIN_DATA;
-    if (!D || !D.categories) return;
     var cols = document.querySelectorAll(".footer-sitemap__col");
     var col = null;
     cols.forEach(function (c) {
@@ -1086,16 +1136,10 @@
     if (!col) return;
     var ul = col.querySelector(".footer-sitemap__list");
     if (!ul) return;
-    ul.innerHTML = "";
-    D.categories.forEach(function (c) {
-      if (!c || !c.id) return;
-      var li = document.createElement("li");
-      var a = document.createElement("a");
-      a.href = "category.html?cat=" + encodeURIComponent(String(c.id));
-      a.textContent = D.getCategoryLabel ? D.getCategoryLabel(c.id) : c.label || c.id;
-      li.appendChild(a);
-      ul.appendChild(li);
-    });
+    ul.innerHTML =
+      '<li><a href="index.html">Resin Home</a></li>' +
+      '<li><a href="raw-material-shop.html">Resin Raw material</a></li>' +
+      '<li><a href="photo-frames.html">Resin Photo Frame</a></li>';
   }
 
   function ensureIconRailStyles() {
@@ -1166,7 +1210,7 @@
   }
 
   function ensureCloudinaryPreconnect() {
-    if (document.querySelector("link[data-cg-preconnect='cloudinary']")) return;
+    if (document.querySelector("link[data-cg-preconnect='cloudinary'], link[rel='preconnect'][href*='res.cloudinary.com']")) return;
     var link = document.createElement("link");
     link.rel = "preconnect";
     link.href = "https://res.cloudinary.com";
@@ -1218,8 +1262,113 @@
     if (logout) logout.classList.toggle("is-hidden", !signedIn);
   }
 
+  function normalizeFooterNavigation() {
+    var footer = document.querySelector("footer.site-footer");
+    if (!footer) return;
+    footer.querySelectorAll(".footer-sitemap__col").forEach(function (col) {
+      var title = col.querySelector(".footer-sitemap__title");
+      var list = col.querySelector(".footer-sitemap__list");
+      if (!title || !list) return;
+      var heading = String(title.textContent || "").trim().toLowerCase();
+      if (heading === "useful links") {
+        list.querySelectorAll("li").forEach(function (li) {
+          var text = String(li.textContent || "").trim().toLowerCase();
+          if (text === "faqs" || text === "faq" || text === "blog" || text === "careers") li.remove();
+        });
+      }
+      if (heading === "main menu") {
+        list.innerHTML =
+          '<li><a href="index.html">Resin Home</a></li>' +
+          '<li><a href="raw-material-shop.html">Resin Raw material</a></li>' +
+          '<li><a href="photo-frames.html">Resin Photo Frame</a></li>';
+      }
+      if (heading === "help") {
+        list.querySelectorAll("a").forEach(function (link) {
+          var label = String(link.textContent || "").trim().toLowerCase();
+          var anchor =
+            label.indexOf("privacy") >= 0 ? "privacy" :
+            label.indexOf("shipping") >= 0 ? "shipping" :
+            label.indexOf("terms") >= 0 ? "terms" :
+            label.indexOf("return") >= 0 ? "returns" : "";
+          if (anchor) link.setAttribute("href", "policies.html#" + anchor);
+        });
+      }
+    });
+    footer.querySelectorAll(".footer-social__link").forEach(function (link) {
+      var href = String(link.getAttribute("href") || "").replace(/\/$/, "").toLowerCase();
+      if (href === "https://twitter.com" || href === "https://www.facebook.com" || href === "https://www.pinterest.com") {
+        link.remove();
+        return;
+      }
+      if (href === "https://www.youtube.com") {
+        link.setAttribute("href", "https://www.youtube.com/@Craftguru_india");
+      }
+    });
+  }
+
+  function ensureSeoMetadata() {
+    var page = (window.location.pathname || "").split("/").pop() || "index.html";
+    var descriptions = {
+      "index.html": "Shop handcrafted resin home décor, gifts and keepsakes from Craftguru.",
+      "category.html": "Browse handcrafted resin home décor and gift collections from Craftguru.",
+      "product.html": "Explore handcrafted resin décor and gifts from Craftguru.",
+      "raw-material.html": "Shop resin raw materials and supplies from Craftguru.",
+      "raw-material-shop.html": "Shop resin raw materials and supplies from Craftguru.",
+      "raw-material-product.html": "Explore resin raw materials from Craftguru.",
+      "photo-frames.html": "Shop handcrafted resin photo frames from Craftguru.",
+      "photo-frame-shop.html": "Shop handcrafted resin photo frames from Craftguru.",
+      "photo-frame-product.html": "Explore handcrafted resin photo frames from Craftguru.",
+      "about.html": "Learn about Craftguru, handcrafted resin décor and gifting from Jaipur.",
+      "checkout.html": "Securely complete your Craftguru order.",
+    };
+    var description = descriptions[page] || "Handcrafted resin décor, gifts and supplies from Craftguru.";
+    var canonical = window.location.origin + window.location.pathname;
+    if ((page === "product.html" || page === "raw-material-product.html" || page === "photo-frame-product.html") && window.location.search) {
+      var id = new URLSearchParams(window.location.search).get("id");
+      if (id) canonical += "?id=" + encodeURIComponent(id);
+    }
+    function upsert(selector, attrs) {
+      var node = document.head.querySelector(selector);
+      if (!node) {
+        node = document.createElement("meta");
+        document.head.appendChild(node);
+      }
+      Object.keys(attrs).forEach(function (key) { node.setAttribute(key, attrs[key]); });
+    }
+    var canonicalNode = document.head.querySelector('link[rel="canonical"]');
+    if (!canonicalNode) {
+      canonicalNode = document.createElement("link");
+      canonicalNode.rel = "canonical";
+      document.head.appendChild(canonicalNode);
+    }
+    canonicalNode.href = canonical;
+    upsert('meta[name="description"]', { name: "description", content: description });
+    upsert('meta[property="og:title"]', { property: "og:title", content: document.title || "Craftguru" });
+    upsert('meta[property="og:description"]', { property: "og:description", content: description });
+    upsert('meta[property="og:url"]', { property: "og:url", content: canonical });
+    upsert('meta[property="og:type"]', { property: "og:type", content: page.indexOf("product") >= 0 ? "product" : "website" });
+    upsert('meta[property="og:image"]', { property: "og:image", content: window.location.origin + "/media/brand-craftguru.png" });
+    upsert('meta[name="twitter:card"]', { name: "twitter:card", content: "summary" });
+    upsert('meta[name="twitter:title"]', { name: "twitter:title", content: document.title || "Craftguru" });
+    upsert('meta[name="twitter:description"]', { name: "twitter:description", content: description });
+    upsert('meta[name="twitter:image"]', { name: "twitter:image", content: window.location.origin + "/media/brand-craftguru.png" });
+  }
+
+  function ensureCatalogStatus() {
+    /* Catalog data is refreshed in the background. A global warning made
+       every customer page look broken even when its bundled catalog and cart
+       remained usable; page-specific empty/recovery states handle true
+       failures where the customer actually needs an action. */
+    var old = document.getElementById("cgCatalogStatus");
+    if (old) old.remove();
+  }
+
   function boot() {
     document.body.classList.add("guest-site");
+    ensureGuestFeedback();
+    normalizeFooterNavigation();
+    ensureSeoMetadata();
+    ensureCatalogStatus();
     ensureScrollPerfStyles();
     wireScrollPerf();
     ensureCloudinaryPreconnect();

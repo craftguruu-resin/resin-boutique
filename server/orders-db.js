@@ -201,6 +201,7 @@ function createCheckoutParcelOrder(opts, cb) {
   var tagRef = opts.tagRef;
   var paymentStatus = opts.paymentStatus != null ? String(opts.paymentStatus).slice(0, 40) : "pending_payment";
   var paymentMethod = opts.paymentMethod != null ? String(opts.paymentMethod).slice(0, 40) : "";
+  var paymentReference = opts.paymentReference != null ? String(opts.paymentReference).trim().slice(0, 120) : "";
   var snap = guestSnapshotObj(guest);
 
   var client;
@@ -218,8 +219,9 @@ function createCheckoutParcelOrder(opts, cb) {
       return resolveSkuMapWithClient(client, items).then(function (skuMap) {
         return client
           .query(
-            "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at) " +
-              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14) RETURNING id, created_at",
+            "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at, payment_reference) " +
+              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14, $15) " +
+              "ON CONFLICT (payment_reference) WHERE payment_reference IS NOT NULL DO NOTHING RETURNING id, created_at",
             [
               tagRef,
               guestId,
@@ -235,12 +237,30 @@ function createCheckoutParcelOrder(opts, cb) {
               paymentStatus,
               paymentMethod,
               paymentStatus === "paid" ? new Date().toISOString() : null,
+              paymentReference || null,
             ]
           )
           .then(function (ins) {
+            if (!ins.rows.length) {
+              return client
+                .query(
+                  "SELECT id, tag_ref, guest_id, created_at FROM orders WHERE payment_reference = $1 LIMIT 1",
+                  [paymentReference]
+                )
+                .then(function (found) {
+                  if (!found.rows.length) throw new Error("Existing payment order could not be loaded");
+                  return {
+                    orderId: found.rows[0].id,
+                    createdAt: found.rows[0].created_at,
+                    guestId: found.rows[0].guest_id,
+                    tagRef: found.rows[0].tag_ref,
+                    duplicate: true,
+                  };
+                });
+            }
             var orderId = ins.rows[0].id;
             var createdAt = ins.rows[0].created_at;
-            var metaBase = { orderId: orderId, createdAt: createdAt, guestId: guestId };
+            var metaBase = { orderId: orderId, createdAt: createdAt, guestId: guestId, tagRef: tagRef };
             var lineQs = [];
             for (var i = 0; i < items.length; i++) {
               var it = items[i];
@@ -288,7 +308,7 @@ function createCheckoutParcelOrder(opts, cb) {
       client = null;
       cb(null, {
         orderId: meta.orderId,
-        tagRef: tagRef,
+        tagRef: meta.tagRef || tagRef,
         guestId: meta.guestId != null ? Number(meta.guestId) : null,
         createdAt: new Date(meta.createdAt).toISOString(),
         guest: snap,

@@ -650,24 +650,76 @@ body.pdp-ethereal .rm-pdp__left-stack .product-overview--fullwidth {
 body.pdp-ethereal .cg-pdp__feature-pills {
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 0;
-  margin: 0;
-  padding: 0.65rem;
-  border-radius: 1.25rem;
+  margin: 0.15rem 0 0;
+  padding: 0.35rem;
+  border-radius: 0.9rem;
   background: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 8px 22px rgba(26, 52, 78, 0.06);
+  box-shadow: 0 5px 14px rgba(26, 52, 78, 0.05);
+}
+
+body.pdp-ethereal.page-product .cg-pdp__feature-pills {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+/* Override the older ethereal feature-card layer. Its decorative pseudo
+   icons and generous padding turned a simple reassurance row into a second
+   oversized content block. Keep one real icon and a compact label instead. */
+body.pdp-ethereal .rm-pdp__feature-bar.cg-pdp__feature-pills,
+body.pdp-ethereal.page-product .rm-pdp__feature-bar.cg-pdp__feature-pills {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0;
+  margin: 0.15rem 0 0;
+  padding: 0.22rem;
+  border: 1px solid rgba(0, 121, 107, 0.22);
+  border-radius: 0.75rem;
+  background: rgba(250, 253, 252, 0.96);
+  box-shadow: 0 3px 10px rgba(26, 52, 78, 0.04);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+body.pdp-ethereal .rm-pdp__feature-bar span.cg-pdp__feature-pill,
+body.pdp-ethereal.page-product .rm-pdp__feature-bar span.cg-pdp__feature-pill {
+  min-height: 2.45rem;
+  padding: 0.2rem 0.3rem;
+  flex-direction: row;
+  gap: 0.32rem;
+  border: 0;
+  border-right: 1px solid #e4eceb;
+  border-radius: 0;
+  background: transparent;
+  font-size: 0.58rem;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+body.pdp-ethereal .rm-pdp__feature-bar span.cg-pdp__feature-pill::before,
+body.pdp-ethereal.page-product .rm-pdp__feature-bar span.cg-pdp__feature-pill::before {
+  content: none !important;
+  display: none !important;
+}
+
+body.pdp-ethereal .rm-pdp__feature-bar span.cg-pdp__feature-pill:last-child,
+body.pdp-ethereal.page-product .rm-pdp__feature-bar span.cg-pdp__feature-pill:last-child {
+  border-right: 0;
+}
+
+body.pdp-ethereal .rm-pdp__feature-bar .cg-pdp__feature-icon {
+  flex: 0 0 auto;
+  font-size: 0.78rem;
 }
 
 body.pdp-ethereal .cg-pdp__feature-pill {
-  min-height: 5.1rem;
-  padding: 0.4rem 0.28rem;
+  min-height: 3.35rem;
+  padding: 0.25rem 0.2rem;
   flex-direction: column;
-  gap: 0.28rem;
+  gap: 0.12rem;
   border: 0;
   border-right: 1px solid #e6edf0;
   border-radius: 0;
   background: transparent;
   color: #12344c;
-  font-size: 0.69rem;
+  font-size: 0.61rem;
   font-weight: 700;
   line-height: 1.22;
 }
@@ -678,7 +730,7 @@ body.pdp-ethereal .cg-pdp__feature-pill:last-child {
 
 body.pdp-ethereal .cg-pdp__feature-icon {
   color: var(--pdp-ref-teal);
-  font-size: 1.45rem;
+  font-size: 0.9rem;
   line-height: 1;
 }
 
@@ -715,10 +767,22 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__add {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  body.pdp-ethereal .rm-pdp__feature-bar.cg-pdp__feature-pills,
+  body.pdp-ethereal.page-product .rm-pdp__feature-bar.cg-pdp__feature-pills {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   body.pdp-ethereal .cg-pdp__feature-pill {
-    min-height: 4.25rem;
+    min-height: 3.6rem;
     border-right: 0;
     border-bottom: 1px solid #e6edf0;
+  }
+
+  body.pdp-ethereal .rm-pdp__feature-bar span.cg-pdp__feature-pill,
+  body.pdp-ethereal.page-product .rm-pdp__feature-bar span.cg-pdp__feature-pill {
+    min-height: 2.4rem;
+    border-right: 0;
+    border-bottom: 1px solid #e4eceb;
   }
 
   body.pdp-ethereal .cg-pdp__feature-pill:nth-last-child(-n + 1) {

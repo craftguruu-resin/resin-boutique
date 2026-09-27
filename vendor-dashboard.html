@@ -122,12 +122,57 @@
               <h3 class="vd-panel__title" style="margin-top: 0">Recent paid orders</h3>
               <div class="vs-notify" id="vdNotify"></div>
             </div>
+            <div class="vd-panel" style="margin-top: 1rem">
+              <h3 class="vd-panel__title" style="margin-top: 0">Recent vendor activity</h3>
+              <p class="vd-panel__hint">Successful catalog, inventory, fulfilment, and storefront changes.</p>
+              <div class="vs-notify" id="vdAudit"></div>
+            </div>
           </div>
         </div>
+
+        <section id="sales-profit" class="vd-dashboard-profit" aria-labelledby="vspHeading">
+          <div class="vs-row-actions" style="justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 0.75rem; margin: 2rem 0 0.85rem">
+            <div>
+              <h2 id="vspHeading" class="vs-topbar__title" style="font-size: 1.25rem; margin: 0">Sales &amp; profit</h2>
+              <p class="vs-muted" style="margin: 0.25rem 0 0">Paid orders only · profit = selling price − 2.5% Razorpay − unit cost.</p>
+            </div>
+            <button type="button" class="vs-btn" id="vspRefreshBtn">Refresh profit data</button>
+          </div>
+          <div id="vspSection">
+            <div class="vd-ledger">
+              <p id="vspErr" class="vd-ledger__err" hidden></p>
+              <div class="vd-ledger__toolbar">
+                <div class="vd-ledger__tabs" role="tablist" aria-label="Profit period">
+                  <button type="button" class="vd-ledger__tab" data-vsp-period="daily">Daily</button>
+                  <button type="button" class="vd-ledger__tab" data-vsp-period="weekly">Weekly</button>
+                  <button type="button" class="vd-ledger__tab vd-ledger__tab--active" data-vsp-period="monthly">Monthly</button>
+                  <button type="button" class="vd-ledger__tab" data-vsp-period="yearly">Yearly</button>
+                </div>
+                <div class="vd-ledger__period"><span id="vspPeriodLabel">—</span></div>
+              </div>
+              <div class="vs-row-actions" style="margin: 0.75rem 0 1rem; flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
+                <div class="vs-field" style="margin: 0; min-width: 9rem"><label for="vspExportFrom">Billing from</label><input type="date" id="vspExportFrom" /></div>
+                <div class="vs-field" style="margin: 0; min-width: 9rem"><label for="vspExportTo">Billing to</label><input type="date" id="vspExportTo" /></div>
+                <button type="button" class="vs-btn" id="vspExportPdf">Export billing PDF</button>
+                <button type="button" class="vs-btn vs-btn--primary" id="vspExportXlsx">Export billing Excel</button>
+              </div>
+              <div class="vd-kpi-row">
+                <div class="vd-kpi-card"><div class="vd-kpi-card__body"><p class="vd-kpi-card__label">Revenue (sell price)</p><p class="vd-kpi-card__value" id="vspKpiRevenue">₹0</p><p class="vd-kpi-card__sub" id="vspKpiRevenueSub">Qty sold in period</p></div></div>
+                <div class="vd-kpi-card"><div class="vd-kpi-card__body"><p class="vd-kpi-card__label">Razorpay fee (2.5%)</p><p class="vd-kpi-card__value" id="vspKpiRazorpay">₹0</p><p class="vd-kpi-card__sub">Flat 2.5% of line revenue</p></div></div>
+                <div class="vd-kpi-card"><div class="vd-kpi-card__body"><p class="vd-kpi-card__label">Product cost</p><p class="vd-kpi-card__value" id="vspKpiCost">₹0</p><p class="vd-kpi-card__sub">Unit cost × qty (inventory / edit product)</p></div></div>
+                <div class="vd-kpi-card vsp-kpi-card--profit"><div class="vd-kpi-card__body"><p class="vd-kpi-card__label">Net profit</p><p class="vd-kpi-card__value" id="vspKpiProfit">₹0</p><p class="vd-kpi-card__sub" id="vspKpiProfitSub">After Razorpay &amp; cost</p></div></div>
+              </div>
+              <div class="vd-panel"><h2 class="vd-panel__title" id="vspChartTitle">Revenue &amp; profit</h2><p class="vd-panel__hint" id="vspChartHint">Bars = revenue · green line = estimated profit.</p><div class="vs-chart-wrap vd-chart-wrap--tall"><canvas id="vspMainChart" aria-label="Sales and profit chart"></canvas></div></div>
+              <div class="vd-panel"><h3 class="vd-panel__title" style="margin-top: 0">Profit by product</h3><p class="vd-panel__hint">Rollup for the selected period · sorted by profit</p><div class="vs-table-wrap"><table class="vs-table vsp-table"><thead><tr><th>Product</th><th>Qty</th><th>Revenue</th><th>Razorpay</th><th>Cost</th><th>Profit</th></tr></thead><tbody id="vspProductRows"><tr><td colspan="6" class="vs-muted">Loading…</td></tr></tbody></table></div></div>
+              <div class="vd-panel"><h3 class="vd-panel__title" style="margin-top: 0">Order line detail</h3><p class="vd-panel__hint">Latest paid lines in period (up to 200)</p><div class="vs-table-wrap"><table class="vs-table vsp-table vsp-table--lines"><thead><tr><th>Date</th><th>Order</th><th>Product</th><th>Payment</th><th>Product value</th><th>Discount</th><th>Gateway</th><th>Net revenue</th><th>Profit</th></tr></thead><tbody id="vspLineRows"><tr><td colspan="9" class="vs-muted">Loading…</td></tr></tbody></table></div></div>
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   </div>
   <script src="vendor-shell.js"></script>
   <script src="vendor-dashboard.js"></script>
+  <script src="vendor-sales-profit.js"></script>
 </body>
 </html>

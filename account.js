@@ -56,6 +56,11 @@
 
   function billApiBase() {
     try {
+      if (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function") {
+        return String(window.CraftguruApiBase.get() || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    try {
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
@@ -93,21 +98,8 @@
     return "http://127.0.0.1:" + (billApiPortOverride() || "3847");
   }
 
-  function billApiSecret() {
-    try {
-      var v = document.documentElement.getAttribute("data-bill-api-secret");
-      return v ? String(v).trim() : "";
-    } catch (_) {
-      return "";
-    }
-  }
-
   function guestAuthHeaders() {
     var h = { "Content-Type": "application/json" };
-    var sec = billApiSecret();
-    if (sec) {
-      h["x-bill-api-secret"] = sec;
-    }
     try {
       var t = localStorage.getItem(GUEST_TOKEN_KEY);
       if (t) {
@@ -1153,9 +1145,14 @@
         renderOrdersFromCache();
       })
       .catch(function (e) {
-        showOrdersCard(false);
+        /* A temporary outage must not make a signed-in customer look logged
+           out or leave an unexplained blank account panel. */
+        showOrdersCard(true);
         ordersCache = [];
-        list.innerHTML = "";
+        list.innerHTML =
+          '<li class="account-orders-empty"><p class="account-orders-empty__text">' +
+          escapeHtml("Could not load orders. Check your connection and try Refresh.") +
+          "</p></li>";
         try {
           console.error("loadOrders", e);
         } catch (_) {}

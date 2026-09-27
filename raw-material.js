@@ -43,11 +43,35 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  /* This is the shop-level banner, not catalog media.  Existing records may
+     still contain an old accidental reference, so never let it become a
+     category preview or product-card image while the vendor corrects it. */
+  function isLandingHeroAsset(url) {
+    var value = String(url || "").trim().toLowerCase();
+    try { value = decodeURIComponent(value); } catch (_) {}
+    return value.indexOf("rm-hero-panel") >= 0 || value.indexOf("raw-material-showcase/rm-hero") >= 0;
+  }
+
+  function safeMaterialImage(material) {
+    var m = material || {};
+    var opt = m.options || {};
+    var candidates = [m.image, opt.heroImage]
+      .concat((opt.colors || []).map(function (row) { return row && row.image; }))
+      .concat((opt.sizes || []).map(function (row) { return row && row.image; }))
+      .concat((opt.qtyOptions || []).map(function (row) { return row && row.image; }))
+      .concat(opt.galleryImages || []);
+    for (var i = 0; i < candidates.length; i++) {
+      var url = String(candidates[i] || "").trim();
+      if (url && !isLandingHeroAsset(url)) return url;
+    }
+    return "";
+  }
+
   function hubCategoryPreview(c, mats) {
     var nav = String(
       (c && c.nav_image) || (c && c.navImage) || (c && c.image) || ""
     ).trim();
-    if (nav) {
+    if (nav && !isLandingHeroAsset(nav)) {
       return {
         image: nav,
         fit: String((c && c.nav_image_fit) || (c && c.navImageFit) || (c && c.imageFit) || "")
@@ -60,7 +84,7 @@
       for (var mi = 0; mi < mats.length; mi++) {
         var m = mats[mi];
         if (!materialBelongsToHubCategory(m, c)) continue;
-        var matImg = String(m.image || "").trim();
+        var matImg = safeMaterialImage(m);
         if (matImg) return { image: matImg, fit: "", fallback: "" };
       }
     }
@@ -232,6 +256,7 @@
 
   var lastMaterials = [];
   var allMaterials = [];
+  var catalogLoadFailed = false;
   var sortWired = false;
   var filterWired = false;
   var DEFAULT_SORT = "name-asc";
@@ -342,16 +367,19 @@
     var home = isRawMaterialShopHome();
     var par = qsParams();
     var showGrid = shouldShowRmProductGrid(par, needle);
+    /* A text search is also a product-listing route. Keep the promotional
+       landing hero exclusive to the untouched shop root. */
+    var listing = !home || !!String(needle || "").trim();
     var hub = document.querySelector(".rm-cat-hub");
     var tb = document.getElementById("rm-shop");
     var hero = document.getElementById("rm-hero");
     var grid = document.getElementById("rmGrid");
     var shell = document.getElementById("rmPlpShell");
-    document.body.classList.toggle("rm-category-results", !home);
-    document.documentElement.classList.toggle("storefront-category-listing", !home);
-    if (hub) hub.toggleAttribute("hidden", !home);
-    if (tb) tb.toggleAttribute("hidden", !home);
-    if (hero) hero.toggleAttribute("hidden", !home);
+    document.body.classList.toggle("rm-category-results", listing);
+    document.documentElement.classList.toggle("storefront-category-listing", listing);
+    if (hub) hub.toggleAttribute("hidden", listing);
+    if (tb) tb.toggleAttribute("hidden", listing);
+    if (hero) hero.toggleAttribute("hidden", listing);
     if (shell) shell.toggleAttribute("hidden", !showGrid);
     if (grid && showGrid) grid.removeAttribute("hidden");
   }
@@ -741,7 +769,9 @@
       var parLive = qsParams();
       var hasBrowse = !!(parLive.base || parLive.sub);
       var emptyMsg;
-      if (catalogTotal === 0) {
+      if (catalogLoadFailed && catalogTotal === 0) {
+        emptyMsg = "We could not load raw materials right now. Use Try again above to refresh the catalog.";
+      } else if (catalogTotal === 0) {
         emptyMsg = "No materials listed yet.";
       } else if (!hasBrowse) {
         emptyMsg = "Choose a category from Shop by category or the sidebar to see products.";
@@ -759,7 +789,8 @@
     }
     rows.forEach(function (m, i) {
       var href = "raw-material-product.html?id=" + encodeURIComponent(m.id);
-      var img = m.image ? imgSrc(m.image) : "";
+      var cardImage = safeMaterialImage(m);
+      var img = cardImage ? imgSrc(cardImage) : "";
       var meta = minOfferMeta(m);
       var effMrp = effectiveMrpInr(m, meta.sel);
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
@@ -903,9 +934,11 @@
     gq.dataset.rmNeedleWired = "1";
     var t = null;
     gq.addEventListener("input", function () {
+      var y = window.scrollY || 0;
       clearTimeout(t);
       t = setTimeout(function () {
         applyShopShellFromParams();
+        requestAnimationFrame(function () { window.scrollTo(0, y); });
       }, 160);
     });
   }
@@ -928,18 +961,27 @@
         }
         return fetch(catalogMaterialsFetchUrl(), { cache: "no-store" })
           .then(function (res) {
-            return res.json();
+            return res.json().catch(function () { return {}; }).then(function (body) {
+              if (!res.ok) throw new Error((body && body.error) || "Catalog unavailable");
+              return body;
+            });
           })
           .then(function (j) {
             if (!j || !j.ok) {
+              catalogLoadFailed = true;
               applyMaterials(doc, []);
+              try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
               return;
             }
+            catalogLoadFailed = false;
             applyMaterials(doc, j.materials || []);
+            try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadRecovered")); } catch (_) {}
           });
       })
       .catch(function () {
+        catalogLoadFailed = true;
         applyMaterials(null, []);
+        try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
       });
   }
 
@@ -959,6 +1001,7 @@
   }
 
   window.addEventListener("craftguruShopTaxonomyRefresh", refetchTaxonomyAndHub);
+  window.addEventListener("craftguruCatalogRetryRequested", load);
   window.addEventListener("craftguruCatalogCategoriesMerged", refetchTaxonomyAndHub);
   window.addEventListener("craftguruRawMaterialsChanged", refreshRawMaterialsStorefront);
   window.addEventListener("storage", function (ev) {

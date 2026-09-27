@@ -756,7 +756,11 @@
         return;
       }
       state._lastHeroResolvedSrc = "";
-      root.innerHTML = '<p class="band-empty">Product not found.</p>';
+      root.innerHTML = pdpFetch.error
+        ? '<div class="band-empty"><p>We could not load this product right now.</p><p><button type="button" class="btn-glass-dome" id="rmPdpRetry">Try again</button> <a href="photo-frames.html">Browse resin photo frames</a></p></div>'
+        : '<div class="band-empty"><p>Product not found.</p><p><a href="photo-frames.html">Browse resin photo frames</a></p></div>';
+      var retry = document.getElementById("rmPdpRetry");
+      if (retry) retry.addEventListener("click", load);
       root.setAttribute("data-pdp-ready", "1");
       return;
     }
@@ -1022,6 +1026,7 @@
     var id = qs().trim();
     var b = catalogApiBase();
     pdpFetch.status = "loading";
+    pdpFetch.error = false;
     render();
 
     if (!id) {
@@ -1056,6 +1061,7 @@
       })
       .catch(function () {
         state.material = null;
+        pdpFetch.error = true;
       })
       .finally(function () {
         productFetchInflight = null;

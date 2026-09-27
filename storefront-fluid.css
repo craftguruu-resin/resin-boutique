@@ -468,10 +468,22 @@ html.guest-responsive-root body.guest-site .plp-card__service span {
     letter-spacing: 0;
   }
 
-  /* A phone header has one purpose: quick movement between the three retail
-     areas. Secondary desktop links remain in the footer and desktop header. */
+  /* Keep every customer destination reachable on a phone. The rail is
+     intentionally swipeable instead of silently removing links. */
   html.guest-responsive-root body.guest-site .nav-dock-link:nth-of-type(n + 4) {
-    display: none !important;
+    display: inline-flex !important;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scroll-padding-inline: 0.35rem;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock-link {
+    scroll-snap-align: start;
   }
 
   /* Phone navigation uses the single top section rail. Sidebar category
@@ -589,6 +601,39 @@ html.guest-responsive-root body.guest-site .plp-card__service span {
 
   html.guest-responsive-root body.guest-site .cg-ig-widget__fab-core {
     box-shadow: 0 5px 14px rgba(188, 24, 136, 0.22);
+  }
+}
+
+/* On small phones the account actions are their own full-width row. This
+   prevents Cart, Wishlist, Sign up or Log in from being clipped off-screen. */
+@media (max-width: 640px) {
+  html.guest-responsive-root body.guest-site .site-top {
+    grid-template-rows: auto auto auto;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top-end,
+  html.guest-responsive-root body.guest-site .site-top-end--home {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    justify-self: stretch;
+    justify-content: flex-start;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top-end::-webkit-scrollbar,
+  html.guest-responsive-root body.guest-site .site-top-end--home::-webkit-scrollbar {
+    display: none;
+  }
+
+  html.guest-responsive-root body.guest-site .nav-dock {
+    grid-row: 3;
+    justify-self: stretch;
   }
 }
 

@@ -59,6 +59,8 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS prepaid_discount NUMERIC(12, 2) NOT NULL DEFAULT 0",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_fee NUMERIC(12, 2) NOT NULL DEFAULT 0",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ",
+    "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(120)",
+    "CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_reference_unique ON orders (payment_reference) WHERE payment_reference IS NOT NULL",
     "CREATE TABLE IF NOT EXISTS storefront_hero_slides (" +
       "id SERIAL PRIMARY KEY," +
       "image_path TEXT NOT NULL," +

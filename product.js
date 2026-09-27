@@ -411,6 +411,25 @@
     img.src = u;
   }
 
+  function setProductHeroImage(img, rawUrl, width) {
+    if (!img || !rawUrl) return;
+    var primary = resolveCatalogImg(rawUrl, width || 960);
+    var fallback = String(rawUrl || "").trim();
+    img.decoding = "async";
+    try { img.fetchPriority = "high"; } catch (_) {}
+    img.dataset.cgHeroFallback = fallback;
+    img.dataset.cgHeroRetried = "";
+    img.onerror = function () {
+      if (img.dataset.cgHeroRetried === "1" || !img.dataset.cgHeroFallback) return;
+      var fallbackUrl = img.dataset.cgHeroFallback;
+      if (fallbackUrl === primary) return;
+      img.dataset.cgHeroRetried = "1";
+      img.src = fallbackUrl;
+    };
+    preloadLinkImage(primary);
+    img.src = primary || fallback;
+  }
+
   function preloadLinkImage(href) {
     if (!href) return;
     var key = String(href).slice(-48);
@@ -448,9 +467,7 @@
     });
     var hero = document.getElementById("productImage");
     if (hero && galleryState.urls[idx]) {
-      var heroSrc =
-        D.imageUrl ? D.imageUrl(galleryState.urls[idx], 960) : galleryState.urls[idx];
-      hero.src = heroSrc;
+      setProductHeroImage(hero, galleryState.urls[idx], 960);
       var opt = vendorPdpOptions(product);
       if (window.CraftguruImageFit && opt) {
         window.CraftguruImageFit.applyImageFit(hero, window.CraftguruImageFit.getFitForUrl(opt, galleryState.urls[idx]));
@@ -755,12 +772,15 @@
     col.hidden = !multi;
     wrap.classList.toggle("product-catalog-gallery--multi", multi);
     var heroUrl = urls[0] || "";
-    var heroOpt = D.imageUrl ? D.imageUrl(heroUrl, 960) : heroUrl;
-    img.src = heroOpt || heroUrl;
-    if (urls.length > 1) preloadGalleryImage(urls[1], 960);
-    urls.forEach(function (u, i) {
-      if (i > 0) preloadGalleryImage(u, 480);
-    });
+    setProductHeroImage(img, heroUrl, 960);
+    /* Let the primary image take the connection first. Loading every gallery
+       transform in parallel was enough to make a cold Cloudinary PDP appear
+       blank until a manual refresh. */
+    if (urls.length > 1) {
+      img.addEventListener("load", function preloadNextGalleryImage() {
+        preloadGalleryImage(urls[1], 480);
+      }, { once: true });
+    }
     var opt = vendorPdpOptions(product);
     if (window.CraftguruImageFit && opt && urls[0]) {
       window.CraftguruImageFit.applyImageFit(img, window.CraftguruImageFit.getFitForUrl(opt, urls[0]));

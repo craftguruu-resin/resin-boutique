@@ -78,18 +78,24 @@
 
   function getFeatured(limit) { return PRODUCTS.slice(0, limit || 12).filter(function (p) { return p && !SUPPRESSED[p.id] && p.listed !== false; }); }
 
-  function imageUrl(relPath) {
+  function imageUrl(relPath, displayWidth) {
     relPath = String(relPath || "").trim();
     /* Cloudinary/CDN URLs are already complete URLs. Encoding their protocol
        turns `https://…` into `https%3A//…`, which works nowhere outside the
        PDP's special gallery resolver. Keep external media intact so product
        cards, category listings, search, and product detail all use the same
        image source. */
-    if (/^https?:\/\//i.test(relPath) || /^\/\//.test(relPath)) return relPath;
+    if (/^https?:\/\//i.test(relPath) || /^\/\//.test(relPath)) {
+      var delivery = window.CraftguruCloudinaryDelivery;
+      if (delivery && typeof delivery.deliveryUrl === "function") {
+        return delivery.deliveryUrl(relPath, Number(displayWidth) || 640, { crop: "limit" });
+      }
+      return relPath;
+    }
     return relPath ? relPath.split("/").map(encodeURIComponent).join("/") : "";
   }
 
-  function imageSrcSet(relPath, widths) { return imageUrl(relPath); }
+  function imageSrcSet(relPath, widths) { return imageUrl(relPath, Array.isArray(widths) ? widths[widths.length - 1] : 640); }
   function imageSizes() { return "100vw"; }
 
   function getSizeProfile(catId, sizeKey) {
@@ -255,13 +261,23 @@
     q = String(q || "").toLowerCase().trim();
     if (!q) return [];
     return PRODUCTS.filter(function (p) {
-      return !SUPPRESSED[p.id] && p.listed !== false && String(p.name || "").toLowerCase().indexOf(q) >= 0;
+      if (SUPPRESSED[p.id] || p.listed === false) return false;
+      var hay = [p && p.name, p && p.id, p && p.category, p && p.subcategory]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return q.split(/\s+/).every(function (part) {
+        return hay.indexOf(part) >= 0;
+      });
     }).slice(0, limit || 12);
   }
 
   function searchCategoriesPartial(q, limit) {
     q = String(q || "").toLowerCase().trim();
-    return CATEGORIES.filter(function (c) { return !q || (String(c.label).toLowerCase().indexOf(q) >= 0); }).slice(0, limit || 12);
+    return CATEGORIES.filter(function (c) {
+      var hay = [c && c.label, c && c.id].filter(Boolean).join(" ").toLowerCase();
+      return !q || q.split(/\s+/).every(function (part) { return hay.indexOf(part) >= 0; });
+    }).slice(0, limit || 12);
   }
 
   function productSearchHaystack(p) { return [p && p.name, p && p.id, p && p.category, p && p.subcategory].filter(Boolean).join(" ").toLowerCase(); }

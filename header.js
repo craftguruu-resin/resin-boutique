@@ -14,9 +14,56 @@
       e.preventDefault();
       var input = document.getElementById("footerNewsletterEmail");
       var v = input && input.value ? String(input.value).trim() : "";
-      if (!v) return;
-      window.alert("Thank you! Our team will follow up from sales@craftguru.co.in.");
-      if (input) input.value = "";
+      var submit = newsletterForm.querySelector('button[type="submit"]');
+      var status = document.getElementById("footerNewsletterStatus");
+      if (!status) {
+        status = document.createElement("p");
+        status.id = "footerNewsletterStatus";
+        status.className = "footer-newsletter__status";
+        status.setAttribute("role", "status");
+        status.setAttribute("aria-live", "polite");
+        newsletterForm.appendChild(status);
+      }
+      if (!v) {
+        status.textContent = "Enter your email address to subscribe.";
+        return;
+      }
+      if (submit) {
+        submit.disabled = true;
+        submit.textContent = "Subscribing…";
+      }
+      status.textContent = "";
+      var base = "";
+      try {
+        base =
+          (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function" && window.CraftguruApiBase.get()) ||
+          window.CRAFTGURU_API_BASE ||
+          "";
+      } catch (_) {}
+      fetch(base + "/api/newsletter/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: v }),
+      })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (body) {
+            if (!res.ok || !body.ok) throw new Error(body.error || "Newsletter signup is temporarily unavailable.");
+            return body;
+          });
+        })
+        .then(function (body) {
+          status.textContent = body.alreadySubscribed ? "This email is already subscribed." : "You’re subscribed to Craftguru updates.";
+          if (input) input.value = "";
+        })
+        .catch(function (err) {
+          status.textContent = (err && err.message) || "Newsletter signup is temporarily unavailable. Please try again.";
+        })
+        .finally(function () {
+          if (submit) {
+            submit.disabled = false;
+            submit.textContent = "Subscribe";
+          }
+        });
     });
   }
 

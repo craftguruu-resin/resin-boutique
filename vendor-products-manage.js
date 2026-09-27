@@ -150,7 +150,7 @@
           esc(p.id) +
           "\" data-source=\"" +
           esc(src) +
-          "\">Delete</button>";
+          "\">Archive</button>";
         actions += "</div>";
         return (
           "<tr data-id=\"" +
@@ -1164,15 +1164,10 @@
         return;
       }
       if (btn.classList.contains("vpm-del")) {
-        var src = String(btn.getAttribute("data-source") || "vendor");
-        var message =
-          src === "catalog"
-            ? "Permanently delete this catalog product from the storefront? This removes all saved database settings and creates a permanent suppression record, so it will stay hidden even after future deployments. This cannot be undone."
-            : "Permanently delete this vendor-added product from the database and storefront? Its database record, saved overrides, and inventory link will be removed. This cannot be undone.";
-        if (!window.confirm(message)) {
+        if (!window.confirm("Archive this product? It will be hidden from the storefront and can be set active again later.")) {
           return;
         }
-        deleteProduct(id)
+        setActive(id, false)
           .then(function () {
             if (editingId === id) closeEdit();
             refreshGuestCatalogMerge();

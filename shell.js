@@ -119,6 +119,12 @@
     patchCartSubtotal();
     if (!list) return;
     var lines = CART.load();
+    var checkout = document.getElementById("checkoutBtn");
+    if (checkout) {
+      var hasCartItems = lines.length > 0;
+      checkout.disabled = !hasCartItems;
+      checkout.setAttribute("aria-disabled", hasCartItems ? "false" : "true");
+    }
     if (lines.length === 0) {
       list.innerHTML = '<li class="cart-empty">Your cart is empty.</li>';
       return;

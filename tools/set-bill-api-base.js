@@ -6,9 +6,9 @@
  * Env (build-time):
  *   PUBLIC_BILL_API_BASE   required — e.g. https://api.yourdomain.com or https://xxx.run.app (no trailing slash)
  *
- * Optional:
- *   PUBLIC_BILL_CLIENT_SECRET — if set, replaces data-bill-api-secret="" with this value
- *                               (must match server BILL_API_SECRET when you use vendor secret)
+ * Customer pages must never receive a server secret. Vendor authentication
+ * uses its own bearer-token flow, while public checkout verifies payment
+ * signatures server-side.
  */
 "use strict";
 
@@ -23,7 +23,6 @@ if (!base) {
   process.exit(0);
 }
 
-var secret = String(process.env.PUBLIC_BILL_CLIENT_SECRET || "").trim();
 var root = process.cwd();
 var files = fs.readdirSync(root).filter(function (f) {
   if (!f.endsWith(".html")) return false;
@@ -39,13 +38,6 @@ var newBase = 'data-bill-api-base="' + base.replace(/"/g, "&quot;") + '"';
 var devPort = 'data-bill-api-port="3847"';
 var emptyPort = 'data-bill-api-port=""';
 
-function escAttr(s) {
-  return String(s)
-    .replace(/&/g, "&amp;")
-    .replace(/"/g, "&quot;")
-    .replace(/</g, "&lt;");
-}
-
 var changed = 0;
 files.forEach(function (f) {
   var p = path.join(root, f);
@@ -59,9 +51,6 @@ files.forEach(function (f) {
   }
   if (s.indexOf(devPort) !== -1) {
     s = s.split(devPort).join(emptyPort);
-  }
-  if (secret && s.indexOf('data-bill-api-secret=""') !== -1) {
-    s = s.split('data-bill-api-secret=""').join('data-bill-api-secret="' + escAttr(secret) + '"');
   }
   if (s !== orig) {
     fs.writeFileSync(p, s, "utf8");

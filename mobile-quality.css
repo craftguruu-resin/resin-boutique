@@ -895,16 +895,28 @@ html.guest-responsive-root body *::after {
     min-width: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 0.35rem;
+    position: relative;
+    z-index: 3;
+    padding: 0.15rem 0;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  html.guest-responsive-root body .site-top-end::-webkit-scrollbar,
+  html.guest-responsive-root body .site-top-end--home::-webkit-scrollbar {
+    display: none;
   }
 
   html.guest-responsive-root body .home-auth-bar {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     width: auto;
     max-width: none;
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   html.guest-responsive-root body .home-auth-user {
@@ -916,6 +928,15 @@ html.guest-responsive-root body *::after {
   html.guest-responsive-root body .site-top-actions {
     flex: 0 0 auto;
     min-width: 0;
+  }
+
+  html.guest-responsive-root body .site-top > .nav-dock {
+    position: relative;
+    z-index: 2;
+    grid-row: 4;
+    /* Some legacy headers inject account controls after first paint. Reserve
+       a distinct line so the nav can never sit underneath those controls. */
+    margin-top: 4.35rem;
   }
 
   html.guest-responsive-root body .guest-header-search {

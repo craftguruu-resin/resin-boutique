@@ -2,7 +2,7 @@
 
 /**
  * Sync vendor_users row with VENDOR_PORTAL_USER / VENDOR_PORTAL_PASSWORD from .env
- * (default nammu / nammu). Fixes login when the row existed but the password hash was wrong
+ * Fixes login when the row existed but the password hash was wrong
  * or credentials were changed in .env after the first migrate.
  *
  * Run from server/:  npm run db:vendor-login
@@ -12,8 +12,12 @@ require("dotenv").config();
 var bcrypt = require("bcryptjs");
 var poolMod = require("../db/pool.js");
 
-var user = process.env.VENDOR_PORTAL_USER || "nammu";
-var pass = process.env.VENDOR_PORTAL_PASSWORD || "nammu";
+var user = String(process.env.VENDOR_PORTAL_USER || "").trim();
+var pass = String(process.env.VENDOR_PORTAL_PASSWORD || "").trim();
+if (!user || !pass) {
+  console.error("VENDOR_PORTAL_USER and VENDOR_PORTAL_PASSWORD must be set in server/.env");
+  process.exit(1);
+}
 var hash = bcrypt.hashSync(pass, 10);
 
 var p = poolMod.getPool();
@@ -29,7 +33,7 @@ p.query(
 )
   .then(function () {
     console.log("Vendor login updated for username:", user);
-    console.log("Password is whatever you set as VENDOR_PORTAL_PASSWORD (default: nammu).");
+    console.log("Password is whatever you set as VENDOR_PORTAL_PASSWORD.");
     process.exit(0);
   })
   .catch(function (err) {

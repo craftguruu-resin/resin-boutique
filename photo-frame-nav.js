@@ -278,7 +278,7 @@
     var base = apiBase();
     if (!base) {
       listEls.forEach(function (el) {
-        el.innerHTML = "<li>Configure API (data-bill-api-base) to load links.</li>";
+        el.innerHTML = "<li>Photo-frame collections are temporarily unavailable. Please try again shortly.</li>";
       });
       return;
     }

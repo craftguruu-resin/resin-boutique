@@ -1,0 +1,124 @@
+/*
+ * Shared customer-facing polish layer.
+ * It deliberately uses only paint-friendly transitions so scrolling and touch
+ * response stay fluid on high-refresh phones as well as desktop.
+ */
+
+html.guest-responsive-root body.guest-site {
+  background-color: #f7fbfa;
+  background-image:
+    radial-gradient(circle at 8% 0%, rgba(61, 183, 165, 0.09), transparent 25rem),
+    radial-gradient(circle at 92% 20%, rgba(233, 181, 91, 0.10), transparent 26rem);
+}
+
+html.guest-responsive-root body.guest-site .site-top--fx {
+  border-bottom: 1px solid rgba(11, 109, 99, 0.10);
+  box-shadow: 0 0.35rem 1.6rem rgba(12, 63, 62, 0.055);
+}
+
+html.guest-responsive-root body.guest-site .site-top--fx.is-scrolled {
+  box-shadow: 0 0.6rem 1.8rem rgba(12, 63, 62, 0.11);
+}
+
+/* The homepage image is treated as the hero artwork, with a refined frame
+   rather than a costly continuously animated effect. */
+html.guest-responsive-root body.page-home #heroStage {
+  isolation: isolate;
+  overflow: clip;
+  border: 1px solid rgba(23, 126, 116, 0.20);
+  box-shadow: 0 1.15rem 3rem rgba(15, 80, 75, 0.14);
+}
+
+html.guest-responsive-root body.page-home #heroStage::after {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  inset: 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.42);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+html.guest-responsive-root body.page-home #heroAtelierBuiltin img {
+  filter: saturate(1.035) contrast(1.015);
+  transform: translateZ(0);
+  transition: transform 360ms cubic-bezier(.2, .8, .2, 1), filter 220ms ease;
+}
+
+html.guest-responsive-root body.guest-site .craft-cat-section__head,
+html.guest-responsive-root body.guest-site .section-heading,
+html.guest-responsive-root body.guest-site .featured-title-row {
+  border-bottom-color: rgba(15, 125, 113, 0.16);
+}
+
+html.guest-responsive-root body.guest-site .product-card,
+html.guest-responsive-root body.guest-site .rm-card-shop,
+html.guest-responsive-root body.guest-site .plp-card {
+  border-color: rgba(16, 99, 92, 0.12);
+  box-shadow: 0 0.45rem 1.35rem rgba(15, 80, 75, 0.055);
+}
+
+html.guest-responsive-root body.guest-site .product-card .add-btn,
+html.guest-responsive-root body.guest-site .rm-card-shop__cta,
+html.guest-responsive-root body.guest-site .plp-card__cta {
+  letter-spacing: 0.015em;
+}
+
+html.guest-responsive-root body.guest-site .category-pill,
+html.guest-responsive-root body.guest-site .category-pill--rail,
+html.guest-responsive-root body.guest-site .rm-nav-tree__link {
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+html.guest-responsive-root body.guest-site .site-footer {
+  border-top: 1px solid rgba(14, 105, 97, 0.13);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.guest-responsive-root body.page-home #heroStage:hover #heroAtelierBuiltin img {
+    transform: scale(1.008) translateZ(0);
+    filter: saturate(1.075) contrast(1.02);
+  }
+
+  html.guest-responsive-root body.guest-site .product-card:hover,
+  html.guest-responsive-root body.guest-site .rm-card-shop:hover,
+  html.guest-responsive-root body.guest-site .plp-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.9rem 2rem rgba(15, 80, 75, 0.12);
+  }
+
+  html.guest-responsive-root body.guest-site .category-pill:hover,
+  html.guest-responsive-root body.guest-site .category-pill--rail:hover,
+  html.guest-responsive-root body.guest-site .rm-nav-tree__link:hover {
+    transform: translateX(2px);
+  }
+}
+
+@media (max-width: 700px) {
+  html.guest-responsive-root body.page-home #heroStage {
+    border-width: 1px;
+    box-shadow: 0 0.7rem 1.7rem rgba(15, 80, 75, 0.10);
+  }
+
+  html.guest-responsive-root body.page-home #heroStage::after {
+    inset: 0.25rem;
+  }
+
+  html.guest-responsive-root body.guest-site .product-card,
+  html.guest-responsive-root body.guest-site .rm-card-shop,
+  html.guest-responsive-root body.guest-site .plp-card {
+    box-shadow: 0 0.28rem 0.9rem rgba(15, 80, 75, 0.045);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.guest-responsive-root body.guest-site #heroAtelierBuiltin img,
+  html.guest-responsive-root body.guest-site .product-card,
+  html.guest-responsive-root body.guest-site .rm-card-shop,
+  html.guest-responsive-root body.guest-site .plp-card,
+  html.guest-responsive-root body.guest-site .category-pill,
+  html.guest-responsive-root body.guest-site .category-pill--rail,
+  html.guest-responsive-root body.guest-site .rm-nav-tree__link {
+    transition: none;
+  }
+}

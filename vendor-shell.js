@@ -197,6 +197,53 @@
     }
   }
 
+  /* One feedback surface for every vendor page. Existing page scripts used
+     browser alerts inconsistently; routing those messages here keeps the
+     workflow non-blocking and usable on mobile. */
+  function ensureFeedbackMount() {
+    var mount = document.getElementById("vsFeedback");
+    if (mount) return mount;
+    mount = document.createElement("div");
+    mount.id = "vsFeedback";
+    mount.className = "vs-feedback";
+    mount.setAttribute("aria-live", "polite");
+    mount.setAttribute("aria-atomic", "false");
+    document.body.appendChild(mount);
+    return mount;
+  }
+
+  function notify(message, kind, opts) {
+    var text = String(message || "").trim();
+    if (!text) return;
+    var mount = ensureFeedbackMount();
+    var item = document.createElement("div");
+    item.className = "vs-feedback__item vs-feedback__item--" + (kind === "success" ? "success" : kind === "info" ? "info" : "error");
+    item.setAttribute("role", kind === "error" ? "alert" : "status");
+    var copy = document.createElement("span");
+    copy.textContent = text;
+    var close = document.createElement("button");
+    close.type = "button";
+    close.className = "vs-feedback__close";
+    close.setAttribute("aria-label", "Dismiss message");
+    close.textContent = "×";
+    close.addEventListener("click", function () { item.remove(); });
+    item.appendChild(copy);
+    item.appendChild(close);
+    mount.appendChild(item);
+    var ms = opts && Number(opts.timeoutMs);
+    if (!Number.isFinite(ms)) ms = kind === "error" ? 7000 : 4200;
+    if (ms > 0) window.setTimeout(function () { item.remove(); }, ms);
+  }
+
+  function ensureVendorDesignLayer() {
+    if (document.getElementById("vsDesignLayer")) return;
+    var link = document.createElement("link");
+    link.id = "vsDesignLayer";
+    link.rel = "stylesheet";
+    link.href = vendorPageHref("vendor-design.css?v=20260927a");
+    document.head.appendChild(link);
+  }
+
   /** When not signed in, open the dashboard first; optional return to another vendor page after login. */
   function vendorDashboardLoginUrl(optNextFilename) {
     var next = String(optNextFilename || "").trim();
@@ -351,15 +398,10 @@
       "<p class='vs-sidebar__sub'>Studio vendor</p></div>" +
       "<ul class='vs-nav'>" +
       link("dashboard", vendorPageHref("vendor-dashboard.html"), "Dashboard", "▣") +
-      link("tags", vendorPageHref("vendor-tags.html"), "Orders &amp; tags", "◇") +
-      link("salesProfit", vendorPageHref("vendor-sales-profit.html"), "Sales &amp; profit", "₹") +
+      link("tags", vendorPageHref("vendor-tags.html"), "Orders", "◇") +
       link("inventory", vendorPageHref("vendor-inventory.html"), "Inventory", "◫") +
-      link("products", vendorPageHref("vendor-products-manage.html"), "Products", "✎") +
-      link("categories", vendorPageHref("vendor-categories-manage.html"), "Categories", "▦") +
-      link("hero", vendorPageHref("vendor-hero.html"), "Hero images", "◎") +
-      link("raw", vendorPageHref("vendor-raw-materials.html"), "Raw materials", "◆") +
-      link("photoFrames", vendorPageHref("vendor-photo-frames.html"), "Photo frames", "▢") +
-      link("returns", vendorPageHref("vendor-returns.html"), "Returns", "↩") +
+      link("products", vendorPageHref("vendor-products-manage.html"), "Catalog", "✎") +
+      link("hero", vendorPageHref("vendor-hero.html"), "Storefront", "◎") +
       "</ul>" +
       "<div class='vs-sidebar__foot'>" +
       "<a href='#' id='vsVendorSignOut'>Sign out</a> · <a href='" +
@@ -499,9 +541,19 @@
     explainVendor401: explainVendor401,
     doLogin: doLogin,
     parseApiJson: parseApiJson,
+    notify: notify,
   };
 
+  /* Preserve confirm() for irreversible actions; convert legacy alert() calls
+     from all existing vendor modules to accessible transient feedback. */
+  try {
+    window.alert = function (message) {
+      notify(message, "error");
+    };
+  } catch (_) {}
+
   document.addEventListener("DOMContentLoaded", function () {
+    ensureVendorDesignLayer();
     injectSidebar();
     ensureVendorAuthGate();
   });

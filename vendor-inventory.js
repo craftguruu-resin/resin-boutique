@@ -16,6 +16,7 @@
   var studioProductFilter = "";
   var studioSearchQ = "";
   var catalogScope = "resin";
+  var catalogCategoryFilter = "";
   var catalogListView = "size";
   var viCategoriesCache = [];
   var VI_STATE_KEY = "craftguruViInventoryState";
@@ -117,6 +118,42 @@
       .filter(Boolean);
   }
 
+  function refreshCatalogCategoryOptions() {
+    var sel = document.getElementById("viCatalogCategory");
+    if (!sel) return;
+    var keep = catalogCategoryFilter;
+    sel.innerHTML = "";
+    var all = document.createElement("option");
+    all.value = "";
+    all.textContent = activeTab === "resin" ? "All Resin Home categories" : "All categories";
+    sel.appendChild(all);
+    if (activeTab === "resin") {
+      if (!viCategoriesCache.length) {
+        sel.disabled = false;
+        catalogCategoryFilter = keep;
+        sel.value = keep;
+        return;
+      }
+      viCategoriesCache.forEach(function (c) {
+        var opt = document.createElement("option");
+        opt.value = String(c.id || "");
+        opt.textContent = c.label || c.id;
+        sel.appendChild(opt);
+      });
+      sel.disabled = false;
+      if (keep && Array.prototype.some.call(sel.options, function (o) { return o.value === keep; })) {
+        sel.value = keep;
+      } else {
+        catalogCategoryFilter = "";
+        sel.value = "";
+      }
+    } else {
+      catalogCategoryFilter = "";
+      sel.value = "";
+      sel.disabled = true;
+    }
+  }
+
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -163,6 +200,7 @@
     if (!isInventoryTab(tab)) tab = "resin";
     activeTab = tab;
     catalogScope = inventoryTabScopes[tab];
+    refreshCatalogCategoryOptions();
     saveInventoryState();
     var cat = document.getElementById("viCatalogPanel");
     if (cat) cat.hidden = false;
@@ -262,6 +300,7 @@
       })
       .then(function (cats) {
         viCategoriesCache = normalizeVendorCategories(cats);
+        refreshCatalogCategoryOptions();
         function refill(id, firstLabel) {
           var sel = document.getElementById(id);
           if (!sel) return;
@@ -728,6 +767,50 @@
       .then(renderRows);
   }
 
+  function loadOpsQueue() {
+    var base = V.apiBase();
+    function apiJson(path) {
+      return vf(V.vendorApiUrl(path), { headers: V.authHeaders() }).then(function (res) {
+        return V.parseApiJson(res).then(function (x) {
+          if (x.status === 401) return V.explainVendor401(base);
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Load failed");
+          return x.json;
+        });
+      });
+    }
+    return Promise.all([apiJson("/api/vendor/inventory"), apiJson("/api/vendor/inventory/movements?limit=8")])
+      .then(function (pair) {
+        var items = pair[0].items || [];
+        var movements = pair[1].movements || [];
+        var queue = document.getElementById("viOpsQueue");
+        var history = document.getElementById("viMovementRows");
+        if (queue) {
+          var attention = items.filter(function (item) {
+            return (!item.productId || (Number(item.reorderPoint) > 0 && Number(item.quantity) <= Number(item.reorderPoint)));
+          }).slice(0, 8);
+          queue.innerHTML = attention.length ? attention.map(function (item) {
+            var low = Number(item.reorderPoint) > 0 && Number(item.quantity) <= Number(item.reorderPoint);
+            return "<li class='vs-ops-queue__item'><span>" + esc(item.name || item.sku || "Inventory item") +
+              "<br><small class='vs-muted'>" + (item.sku ? esc(item.sku) + " · " : "") + (low ? "At or below reorder point" : "Unlinked SKU") +
+              "</small></span><strong class='vs-ops-queue__count'>" + esc(stockCellVal(item.quantity)) + "</strong></li>";
+          }).join("") : "<li class='vs-muted'>No low-stock or unlinked items.</li>";
+        }
+        if (history) {
+          history.innerHTML = movements.length ? movements.map(function (move) {
+            var when = "";
+            try { when = new Date(move.createdAt).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }); } catch (_) {}
+            var sign = Number(move.delta) > 0 ? "+" : "";
+            return "<li class='vs-ops-queue__item'><span>" + esc(move.name || "Inventory item") +
+              "<br><small class='vs-muted'>" + esc(move.sku || move.reason || "Stock saved") + " · " + esc(when) +
+              "</small></span><strong class='vs-ops-queue__count'>" + sign + esc(stockCellVal(move.delta)) + "</strong></li>";
+          }).join("") : "<li class='vs-muted'>No stock movements recorded yet.</li>";
+        }
+      })
+      .catch(function (e) {
+        if (V.notify) V.notify(String((e && e.message) || e), "error");
+      });
+  }
+
   function catalogStockSummary(it) {
     var st = it.effectiveStock || {};
     var parts = [];
@@ -804,6 +887,7 @@
         JSON.stringify({
           tab: activeTab,
           catalogQ: catalogQ,
+          catalogCategoryFilter: catalogCategoryFilter,
           catalogOffset: catalogOffset,
           catalogScope: catalogScope,
           catalogListView: catalogListView,
@@ -832,6 +916,7 @@
       activeTab = state.tab;
     }
     catalogQ = String(state.catalogQ || "");
+    catalogCategoryFilter = String(state.catalogCategoryFilter || "");
     catalogOffset = Math.max(0, Number(state.catalogOffset) || 0);
     catalogScope = inventoryTabScopes[activeTab] || "resin";
     catalogListView = state.catalogListView === "color" ? "color" : "size";
@@ -842,6 +927,8 @@
 
     var catSearch = document.getElementById("viCatalogSearch");
     if (catSearch) catSearch.value = catalogQ;
+    var catFilter = document.getElementById("viCatalogCategory");
+    if (catFilter) catFilter.value = catalogCategoryFilter;
     setCatalogListView(catalogListView);
     return true;
   }
@@ -873,7 +960,7 @@
   function renderCatalogRows(rows, tb, reset) {
     if (reset) tb.innerHTML = "";
     if (reset && !rows.length) {
-      tb.innerHTML = "<tr><td colspan='6' class='vs-muted'>No matches.</td></tr>";
+      tb.innerHTML = "<tr><td colspan='7' class='vs-muted'>No matches.</td></tr>";
       return;
     }
     if (reset && tb.querySelector(".vs-muted")) tb.innerHTML = "";
@@ -898,6 +985,12 @@
           ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
           : "";
     var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
+    var active = it.isActive !== false;
+    var statusCell = active
+      ? "<td><span class='vs-pill vs-pill--active'>Active</span></td>"
+      : "<td><span class='vs-pill vs-pill--inactive'>Discontinued</span></td>";
+    var toggleLabel = active ? "Discontinue" : "Set active";
+    var toggleClass = active ? "vs-btn--ghost vs-btn--danger" : "vs-btn--primary";
     var productCell =
       "<td><div class=\"vi-cat-product-cell\">" +
       imgTag +
@@ -916,21 +1009,23 @@
       return (
         "<tr data-pid='" +
         bid +
-        "'>" +
+        "' data-kind='" + esc(it.productKind || "catalog") + "'>" +
         productCell +
+        statusCell +
         "<td colspan='3'><div class='vi-variant-stock-grid' aria-label='Variant stock'>" +
         catalogVariantStockRows(it) +
         "</div></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
         bid +
-        "'>Save stock</button>" +
+        "'>Save stock</button><button type='button' class='vs-btn " + toggleClass + " vi-cat-toggle' data-pid='" + bid + "' data-next='" + (active ? "0" : "1") + "'>" + toggleLabel + "</button>" +
         "</div></td></tr>"
       );
     }
     return (
       "<tr data-pid='" +
       bid +
-      "'>" +
+      "' data-kind='" + esc(it.productKind || "catalog") + "'>" +
       productCell +
+      statusCell +
       "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
       bid +
       "' type='number' min='0' step='0.01' value='" +
@@ -945,7 +1040,7 @@
       esc(catalogStockFieldValue(st.l)) +
       "' style='width:4.5rem'/></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
       bid +
-      "'>Save</button>" +
+      "'>Save</button><button type='button' class='vs-btn " + toggleClass + " vi-cat-toggle' data-pid='" + bid + "' data-next='" + (active ? "0" : "1") + "'>" + toggleLabel + "</button>" +
       "</div></td></tr>"
     );
   }
@@ -960,6 +1055,8 @@
     var url = V.vendorApiUrl(
       "/api/vendor/catalog-products?q=" +
         encodeURIComponent(q) +
+        "&categoryId=" +
+        encodeURIComponent(catalogCategoryFilter) +
         "&scope=" +
         encodeURIComponent(scope) +
         "&limit=" +
@@ -1026,6 +1123,7 @@
     /* Inventory data does not depend on the optional category metadata.
        Start loading immediately instead of making the tab wait for it. */
     setTab(startTab);
+    loadOpsQueue();
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
@@ -1066,7 +1164,8 @@
   });
 
   on("viRefreshBtn", "click", function () {
-    window.location.reload();
+    loadOpsQueue();
+    if (isInventoryTab(activeTab)) loadCatalogPage(true);
   });
 
   on("viStudioSearchBtn", "click", function () {
@@ -1302,9 +1401,50 @@
     loadCatalogPage(false);
   });
 
+  on("viCatalogCategory", "change", function () {
+    var sel = document.getElementById("viCatalogCategory");
+    catalogCategoryFilter = sel ? String(sel.value || "").trim() : "";
+    saveInventoryState();
+    loadCatalogPage(true);
+  });
+
   var catTb = document.getElementById("viCatalogTbody");
   if (catTb) {
     catTb.addEventListener("click", function (ev) {
+      var toggle = ev.target && ev.target.closest ? ev.target.closest(".vi-cat-toggle") : null;
+      if (toggle && catTb.contains(toggle)) {
+        var toggleId = toggle.getAttribute("data-pid");
+        var next = toggle.getAttribute("data-next") === "1";
+        var row = toggle.closest("tr");
+        var kind = row ? String(row.getAttribute("data-kind") || "catalog") : "catalog";
+        if (!toggleId) return;
+        var route = kind === "raw_material"
+          ? "/api/vendor/raw-materials/"
+          : kind === "photo_frame"
+            ? "/api/vendor/photo-frame-products/"
+            : "/api/vendor/products/";
+        toggle.disabled = true;
+        vf(V.vendorApiUrl(route + encodeURIComponent(toggleId) + "/active"), {
+          method: "POST",
+          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+          body: JSON.stringify({ active: next }),
+        })
+          .then(function (res) {
+            return V.parseApiJson(res).then(function (x) {
+              if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Status update failed");
+            });
+          })
+          .then(function () {
+            return loadCatalogPage(true);
+          })
+          .catch(function (e) {
+            window.alert(String((e && e.message) || e));
+          })
+          .finally(function () {
+            toggle.disabled = false;
+          });
+        return;
+      }
       var btn = ev.target && ev.target.closest ? ev.target.closest(".vi-cat-save") : null;
       if (!btn || !catTb.contains(btn)) return;
       var pid = btn.getAttribute("data-pid");

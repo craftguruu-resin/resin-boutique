@@ -232,6 +232,7 @@
 
   var lastMaterials = [];
   var allMaterials = [];
+  var catalogLoadFailed = false;
   var sortWired = false;
   var filterWired = false;
   var DEFAULT_SORT = "name-asc";
@@ -727,8 +728,10 @@
       var parLive = qsParams();
       var hasBrowse = !!(parLive.base || parLive.sub);
       var emptyMsg;
-      if (catalogTotal === 0) {
-        emptyMsg = "No photo frames listed yet. Add products in Vendor → Photo frames (API must be reachable from this page).";
+      if (catalogLoadFailed && catalogTotal === 0) {
+        emptyMsg = "We could not load photo frames right now. Use Try again above to refresh the catalog.";
+      } else if (catalogTotal === 0) {
+        emptyMsg = "No photo frames listed yet.";
       } else if (!hasBrowse) {
         emptyMsg =
           "No photo frames match the header search. Clear the search box above to see all listings, or pick a category in the sidebar.";
@@ -902,9 +905,11 @@
     gq.dataset.rmNeedleWired = "1";
     var t = null;
     gq.addEventListener("input", function () {
+      var y = window.scrollY || 0;
       clearTimeout(t);
       t = setTimeout(function () {
         applyShopShellFromParams();
+        requestAnimationFrame(function () { window.scrollTo(0, y); });
       }, 160);
     });
   }
@@ -927,18 +932,27 @@
         }
         return fetch(catalogMaterialsFetchUrl(), { cache: "no-store" })
           .then(function (res) {
-            return res.json();
+            return res.json().catch(function () { return {}; }).then(function (body) {
+              if (!res.ok) throw new Error((body && body.error) || "Catalog unavailable");
+              return body;
+            });
           })
           .then(function (j) {
             if (!j || !j.ok) {
+              catalogLoadFailed = true;
               applyMaterials(doc, []);
+              try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
               return;
             }
+            catalogLoadFailed = false;
             applyMaterials(doc, j.materials || []);
+            try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadRecovered")); } catch (_) {}
           });
       })
       .catch(function () {
+        catalogLoadFailed = true;
         applyMaterials(null, []);
+        try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
       });
   }
 
@@ -949,5 +963,6 @@
   }
 
   window.addEventListener("craftguruShopTaxonomyRefresh", refetchTaxonomyAndHub);
+  window.addEventListener("craftguruCatalogRetryRequested", load);
   window.addEventListener("craftguruCatalogCategoriesMerged", refetchTaxonomyAndHub);
 })();

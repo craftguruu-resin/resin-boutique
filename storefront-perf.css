@@ -1,6 +1,4 @@
 @import url("homepage-glossy.css?v=20260918b");
-@import url("home-raw-hero-recovery.css?v=20260917g");
-@import url("hero-page-isolation.css?v=20260925hero6");
 @import url("home-hero-final.css?v=20260925hero6");
 @import url("home-shop-category-final.css?v=20260917g");
 
@@ -8,8 +6,8 @@
 html{scroll-behavior:auto!important}
 body.guest-site{overscroll-behavior-x:none}
 
-/* Home/Raw landing pages use deterministic baked artwork and the final Home category geometry. */
-html body.page-home .home-resin-hero,
-html body.rm-theme--materials #rm-hero {
+/* The homepage uses deterministic artwork. Raw Materials owns its own hero
+   rules, which respect the listing route's hidden state. */
+html body.page-home .home-resin-hero {
   content-visibility: visible !important;
 }

@@ -143,6 +143,8 @@ function mapMaterialToCatalogItem(m, kind, omap) {
       category: catId,
       categoryLabel: catLabel,
       subcategory: m.subcategorySlug || m.baseCategorySlug || "",
+      baseCategorySlug: m.baseCategorySlug || "",
+      subcategorySlug: m.subcategorySlug || "",
       image: m.image || "",
       basePrices: { s: eff.s, m: eff.m, l: eff.l },
       effectivePrices: eff,
@@ -222,6 +224,18 @@ function catalogProductHay(p) {
   ).toLowerCase();
 }
 
+function catalogSearchMatches(haystack, query) {
+  var hay = String(haystack || "").toLowerCase();
+  return String(query || "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .every(function (part) {
+      return hay.indexOf(part) !== -1;
+    });
+}
+
 function buildResinCatalogList(omap, supSet, extras) {
   var list;
   try {
@@ -243,8 +257,9 @@ function buildResinCatalogList(omap, supSet, extras) {
   }
   return list.filter(function (p) {
     if (supSet[p.id]) return false;
-    var ov = omap[p.id] || {};
-    return ov.listed !== false;
+    /* Vendor inventory must show discontinued rows so they can be reactivated.
+       Customer-facing catalog endpoints still filter listed products. */
+    return true;
   });
 }
 
@@ -273,6 +288,11 @@ function filterByCategory(list, catId, omap) {
       return ov.returnGift === true || p.returnGift === true;
     });
   }
+  var materialMatches = list.filter(function (p) {
+      return (p.productKind === "raw_material" || p.productKind === "photo_frame") &&
+        (p.baseCategorySlug === catId || p.subcategorySlug === catId);
+  });
+  if (materialMatches.length) return materialMatches;
   return list.filter(function (p) {
     return p.productKind === "catalog" && p.category === catId;
   });
@@ -292,7 +312,9 @@ function listStorefrontCatalog(opts, cb) {
   /* Inventory scopes are mutually exclusive product sources. Keep this
      separate from a normal Resin category id so callers cannot accidentally
      receive a mixed storefront response. */
-  if (scope) catId = INVENTORY_SCOPES[scope];
+  /* A selected category should refine the active tab. Only use the virtual
+     tab category when the vendor has not selected a real category. */
+  if (scope && !catId) catId = INVENTORY_SCOPES[scope];
   var lim = Math.min(200, Math.max(1, parseInt(String(opts.limit || "80"), 10) || 80));
   var off = Math.max(0, parseInt(String(opts.offset || "0"), 10) || 0);
 
@@ -323,7 +345,7 @@ function listStorefrontCatalog(opts, cb) {
               allItems = filterByCategory(allItems, catId, omap);
               if (q) {
                 allItems = allItems.filter(function (p) {
-                  return catalogProductHay(p).indexOf(q) !== -1;
+                  return catalogSearchMatches(catalogProductHay(p), q);
                 });
               }
               var total = allItems.length;
@@ -397,7 +419,7 @@ function listStorefrontCatalog(opts, cb) {
               if (eSku2) return cb(eSku2);
               var seen = Object.create(null);
               var filtered = merged.filter(function (p) {
-                if (catalogProductHay(p).indexOf(q) !== -1) {
+                if (catalogSearchMatches(catalogProductHay(p), q)) {
                   seen[p.id] = 1;
                   return true;
                 }
@@ -734,6 +756,7 @@ function getStorefrontCatalogProduct(productId, cb) {
           subcategory: item.subcategory,
           productKind: kind,
           sku: m.sku || "",
+          isActive: item.isActive !== false,
           options: variantInventory.ensureVendorInventory(opt),
           effectivePrices: item.effectivePrices,
           effectiveCosts: item.effectiveCosts,
@@ -776,6 +799,7 @@ function getStorefrontCatalogProduct(productId, cb) {
             subcategory: p.subcategory,
             productKind: "catalog",
             sku: (skuMap && skuMap[productId]) || "",
+            isActive: item.isActive !== false,
             returnGift: item.returnGift,
             options: opt,
             effectivePrices: item.effectivePrices,

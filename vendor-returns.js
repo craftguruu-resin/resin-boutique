@@ -4,6 +4,7 @@
   var V = window.CraftguruVendor;
   if (!V) return;
   var vf = V.vendorFetch || fetch;
+  var returnFilter = "";
 
   function on(id, ev, fn) {
     var el = document.getElementById(id);
@@ -34,6 +35,10 @@
     if (desk) desk.hidden = !on;
   }
 
+  function message(err) {
+    showErr(document.getElementById("vrMsg"), err ? String((err && err.message) || err) : "");
+  }
+
   function statusBadge(st) {
     var c = "vs-badge--pending";
     if (st === "approved" || st === "refunded") c = "vs-badge--paid";
@@ -44,7 +49,8 @@
   function renderRows(list) {
     var tb = document.getElementById("vrTbody");
     if (!tb) return;
-    if (!list || !list.length) {
+    list = (list || []).filter(function (row) { return !returnFilter || row.status === returnFilter; });
+    if (!list.length) {
       tb.innerHTML = "<tr><td colspan='7' class='vs-muted'>No returns logged yet.</td></tr>";
       return;
     }
@@ -67,12 +73,12 @@
         return (
           "<tr><td>" +
           esc(r.id) +
-          "</td><td>#" +
-          esc(String(r.orderId)) +
+          "</td><td><button type='button' class='vs-btn vr-open-order' data-order='" + esc(String(r.orderId)) + "'>#" +
+          esc(String(r.orderId)) + "</button>" +
           "</td><td>" +
           statusBadge(r.status) +
           "</td><td>" +
-          esc((r.reason || "").slice(0, 80)) +
+          esc((r.reason || "").slice(0, 80)) + (r.notes ? "<br><small class='vs-muted'>" + esc(r.notes.slice(0, 100)) + "</small>" : "") +
           "</td><td>" +
           (r.refundAmount != null ? esc(String(r.refundAmount)) : "—") +
           "</td><td class='vs-muted'>" +
@@ -104,10 +110,23 @@
               if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Update failed");
             });
           })
-          .then(loadList)
+          .then(function () {
+            message("");
+            return loadList();
+          })
           .catch(function (e) {
-            window.alert(String((e && e.message) || e));
+            message(e);
           });
+      });
+    });
+    tb.querySelectorAll(".vr-open-order").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var search = document.getElementById("vtSearch");
+        if (!search) return;
+        search.value = btn.getAttribute("data-order") || "";
+        search.dispatchEvent(new Event("input", { bubbles: true }));
+        search.scrollIntoView({ behavior: "smooth", block: "center" });
+        search.focus();
       });
     });
   }
@@ -124,31 +143,31 @@
           return x.json.returns || [];
         });
       })
-      .then(renderRows);
+      .then(function (rows) {
+        message("");
+        renderRows(rows);
+      });
   }
 
   function boot() {
     showDesk(true);
-    loadList().catch(function (e) {
-      window.alert(String((e && e.message) || e));
-    });
+    loadList().catch(message);
   }
 
   on("vrRefreshBtn", "click", function () {
-    loadList().catch(function (e) {
-      window.alert(String((e && e.message) || e));
-    });
+    loadList().catch(message);
   });
 
   on("vrCreateBtn", "click", function () {
     var oid = Number(document.getElementById("vrOrderId").value);
     var reason = document.getElementById("vrReason").value.trim();
     if (!Number.isFinite(oid) || !reason) {
-      window.alert("Order # and reason are required");
+      message("Order # and reason are required");
       return;
     }
     var ref = document.getElementById("vrRefund").value.trim();
-    var body = { orderId: oid, reason: reason };
+    var notesEl = document.getElementById("vrNotes");
+    var body = { orderId: oid, reason: reason, notes: notesEl ? notesEl.value.trim() : "" };
     if (ref) body.refundAmount = Number(ref);
     var base = V.apiBase();
     vf(V.vendorApiUrl("/api/vendor/returns"), {
@@ -165,11 +184,18 @@
         document.getElementById("vrOrderId").value = "";
         document.getElementById("vrReason").value = "";
         document.getElementById("vrRefund").value = "";
+        if (notesEl) notesEl.value = "";
+        message("");
         return loadList();
       })
       .catch(function (e) {
-        window.alert(String((e && e.message) || e));
+        message(e);
       });
+  });
+
+  on("vrFilter", "change", function (ev) {
+    returnFilter = String((ev.target && ev.target.value) || "");
+    loadList().catch(message);
   });
 
   boot();

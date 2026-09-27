@@ -53,6 +53,11 @@
 
   function getApiBase() {
     try {
+      if (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function") {
+        return String(window.CraftguruApiBase.get() || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    try {
       var v0 = document.documentElement.getAttribute("data-bill-api-base");
       if (v0 != null) {
         var t = String(v0).trim().replace(/\/+$/, "");
@@ -348,7 +353,12 @@
           });
         })
         .then(function (j) {
-          if (j && j.ok && j.email) setSessionEmail(normalizeEmail(j.email));
+          if (j && j.ok && j.email) {
+            setSessionEmail(normalizeEmail(j.email));
+            if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogin === "function") {
+              window.RESIN_CART.onAccountLogin();
+            }
+          }
           if (j && j.ok && j.displayName && String(j.displayName).trim() !== "Guest") {
             setSessionName(j.displayName);
             if (window.CRAFT_AUTH_DB && window.CRAFT_AUTH_DB.putUser) {
@@ -417,8 +427,7 @@
             setMsg(els.msgSu, err.message || "Could not send code.");
             return;
           }
-          var hint = json && json.devMailSkipped ? " (code is in the API server console if SMTP is off)" : "";
-          setMsg(els.msgSu, "Enter the 6-digit code sent to your email. It expires in 5 minutes." + hint, "ok");
+          setMsg(els.msgSu, "Enter the 6-digit code sent to your email. It expires in 5 minutes.", "ok");
         });
       });
     }

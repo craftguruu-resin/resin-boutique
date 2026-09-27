@@ -21,6 +21,7 @@
   var formBound = false;
   var checkoutPhase = "shipping"; /* shipping | payment */
   var googlePlacesReady = false;
+  var paymentsAvailable = true;
 
   var els = {
     lines: document.getElementById("checkoutLines"),
@@ -90,10 +91,6 @@
 
   function guestAuthHeaders() {
     var h = { "Content-Type": "application/json" };
-    var sec = billApiSecret();
-    if (sec) {
-      h["x-bill-api-secret"] = sec;
-    }
     try {
       var t = localStorage.getItem(GUEST_TOKEN_KEY);
       if (t) {
@@ -972,6 +969,11 @@
 
   function billApiBase() {
     try {
+      if (window.CraftguruApiBase && typeof window.CraftguruApiBase.get === "function") {
+        return String(window.CraftguruApiBase.get() || "").replace(/\/+$/, "");
+      }
+    } catch (_) {}
+    try {
       var v = document.documentElement.getAttribute("data-bill-api-base");
       if (v != null) {
         var t = String(v).trim().replace(/\/+$/, "");
@@ -1022,6 +1024,48 @@
     return "http://127.0.0.1:3847";
   }
 
+  function setPaymentAvailability(available, message) {
+    paymentsAvailable = available;
+    [els.openUpiModal, els.btnRazorpayCheckout, els.btnCodCheckout].forEach(function (button) {
+      if (!button) return;
+      button.disabled = !available;
+      button.setAttribute("aria-disabled", available ? "false" : "true");
+      button.title = available ? "" : message;
+    });
+    var host = document.getElementById("checkoutRazorPanel");
+    if (!host) return;
+    var status = document.getElementById("checkoutPaymentAvailability");
+    if (!status) {
+      status = document.createElement("p");
+      status.id = "checkoutPaymentAvailability";
+      status.className = "checkout-payment-availability";
+      status.setAttribute("role", "status");
+      status.setAttribute("aria-live", "polite");
+      host.appendChild(status);
+    }
+    status.textContent = available ? "" : message;
+  }
+
+  function checkPaymentReadiness() {
+    var base = billApiBase();
+    if (!base) {
+      setPaymentAvailability(false, "Online payments are temporarily unavailable. Please try again later or contact Craftguru.");
+      return;
+    }
+    fetch(base + "/api/razorpay-status", { cache: "no-store" })
+      .then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (body) {
+          if (!res.ok || !body.configured) {
+            throw new Error("Online payments are temporarily unavailable. Please try again later or contact Craftguru.");
+          }
+          setPaymentAvailability(true, "");
+        });
+      })
+      .catch(function (err) {
+        setPaymentAvailability(false, (err && err.message) || "Online payments are temporarily unavailable. Please try again later or contact Craftguru.");
+      });
+  }
+
   /** Avoid res.json() on HTML error pages (Unexpected token '<'). */
   function parseApiJson(res) {
     return res.text().then(function (text) {
@@ -1043,15 +1087,6 @@
       }
       return { okHttp: res.ok, json: j };
     });
-  }
-
-  function billApiSecret() {
-    try {
-      var v = document.documentElement.getAttribute("data-bill-api-secret");
-      return v ? String(v).trim() : "";
-    } catch (_) {
-      return "";
-    }
   }
 
   function buildBillItemsForApi() {
@@ -1257,8 +1292,6 @@
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = { "Content-Type": "application/json" };
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
     return fetch(base + "/api/cod-advance-order", {
       method: "POST",
       headers: headers,
@@ -1280,8 +1313,6 @@
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = guestAuthHeaders();
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
     return fetch(base + "/api/cod-advance-verify", {
       method: "POST",
       headers: headers,
@@ -1357,8 +1388,6 @@
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = { "Content-Type": "application/json" };
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
     return fetch(base + "/api/razorpay-order", {
       method: "POST",
       headers: headers,
@@ -1379,8 +1408,6 @@
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = guestAuthHeaders();
-    var sec = billApiSecret();
-    if (sec) headers["x-bill-api-secret"] = sec;
     var body = {
       razorpay_order_id: paymentResponse.razorpay_order_id,
       razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -1856,9 +1883,11 @@
     }
 
     goToDetailsStep();
+    checkPaymentReadiness();
 
     if (els.openUpiModal) {
       els.openUpiModal.addEventListener("click", function () {
+        if (!paymentsAvailable) return;
         if (checkoutPhase === "shipping") {
           continueToPayment();
         } else {
@@ -1925,7 +1954,7 @@
                   .then(function (j) {
                     if (!j || !j.orderCreated) {
                       throw new Error(
-                        "Payment verified but no order was saved. Use the full checkout address form, ensure the server has DATABASE_URL, and if BILL_API_SECRET is set add data-bill-api-secret on this page's <html>."
+                        "Payment verified but no order was saved. Use the full checkout address form and ensure the server has DATABASE_URL."
                       );
                     }
                     afterPaidCheckoutNavigate(j);

@@ -115,7 +115,11 @@
     if (!gf || gf.dataset.rgSearchWired === "1") return;
     gf.dataset.rgSearchWired = "1";
     gf.addEventListener("input", function () {
+      var y = window.scrollY || 0;
       paint();
+      requestAnimationFrame(function () {
+        window.scrollTo(0, y);
+      });
     });
   }
 

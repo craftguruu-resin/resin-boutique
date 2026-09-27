@@ -37,6 +37,14 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  /* The raw-material landing artwork is a shop-only promotion. A vendor field
+     must never make that panel become a product photo on every detail page. */
+  function isLandingHeroAsset(url) {
+    var value = String(url || "").trim().toLowerCase();
+    try { value = decodeURIComponent(value); } catch (_) {}
+    return value.indexOf("rm-hero-panel") >= 0 || value.indexOf("raw-material-showcase/rm-hero") >= 0;
+  }
+
   function qs() {
     try {
       var u = new URL(window.location.href);
@@ -172,7 +180,7 @@
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
-        if (!u) return;
+        if (!u || isLandingHeroAsset(u)) return;
         entries.push({
           url: u,
           kind: "color",
@@ -185,7 +193,7 @@
     var seenExtra = Object.create(null);
     function pushExtra(url, meta) {
       url = String(url || "").trim();
-      if (!url) return;
+      if (!url || isLandingHeroAsset(url)) return;
       if (colorUrls[url]) return;
       if (seenExtra[url]) return;
       seenExtra[url] = 1;
@@ -756,7 +764,11 @@
         return;
       }
       state._lastHeroResolvedSrc = "";
-      root.innerHTML = '<p class="band-empty">Product not found.</p>';
+      root.innerHTML = pdpFetch.error
+        ? '<div class="band-empty"><p>We could not load this product right now.</p><p><button type="button" class="btn-glass-dome" id="rmPdpRetry">Try again</button> <a href="raw-material-shop.html">Browse resin raw materials</a></p></div>'
+        : '<div class="band-empty"><p>Product not found.</p><p><a href="raw-material-shop.html">Browse resin raw materials</a></p></div>';
+      var retry = document.getElementById("rmPdpRetry");
+      if (retry) retry.addEventListener("click", load);
       root.setAttribute("data-pdp-ready", "1");
       return;
     }
@@ -1022,6 +1034,7 @@
     var id = qs().trim();
     var b = catalogApiBase();
     pdpFetch.status = "loading";
+    pdpFetch.error = false;
     render();
 
     if (!id) {
@@ -1056,6 +1069,7 @@
       })
       .catch(function () {
         state.material = null;
+        pdpFetch.error = true;
       })
       .finally(function () {
         productFetchInflight = null;

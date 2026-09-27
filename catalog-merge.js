@@ -84,8 +84,23 @@
     } catch (_) {}
   }
 
+  function dispatchCatalogFailure() {
+    lastLoadFailed = true;
+    try {
+      window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed"));
+    } catch (_) {}
+  }
+
+  function dispatchCatalogRecovered() {
+    lastLoadFailed = false;
+    try {
+      window.dispatchEvent(new CustomEvent("craftguruCatalogLoadRecovered"));
+    } catch (_) {}
+  }
+
   var mergeInflight = null;
   var mergeFinished = false;
+  var lastLoadFailed = false;
   var lastMergeAt = 0;
   var CATEGORIES_CACHE_KEY = "__cgCategoriesCache";
   var VENDOR_CACHE_KEY = "__cgVendorProductsCache";
@@ -199,7 +214,18 @@
     return fetch(base + path, opts)
       .then(function (res) {
         window.clearTimeout(timer);
-        return res.json();
+        return res.text().then(function (text) {
+          var payload;
+          try {
+            payload = text ? JSON.parse(text) : {};
+          } catch (_) {
+            throw new Error("Catalog returned an invalid response");
+          }
+          if (!res.ok) {
+            throw new Error((payload && payload.error) || "Catalog is unavailable");
+          }
+          return payload;
+        });
       })
       .catch(function (err) {
         window.clearTimeout(timer);
@@ -249,26 +275,26 @@
     if (needCategories && needVendor && needOverrides) {
       mergeInflight = catalogFetch(base, "/api/catalog/storefront-bootstrap")
         .then(function (j) {
-          if (j && j.ok) {
-            if (j.categories && typeof D.applyCategoriesMerge === "function") {
-              D.applyCategoriesMerge(j.categories);
-              writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: j.categories });
-            }
-            if (j.products && typeof D.applyVendorProductsMerge === "function") {
-              D.applyVendorProductsMerge(j.products);
-              writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j.products });
-            }
-            applyOverridesPayload(j);
-            writeSessionJson(OVERRIDES_CACHE_KEY, {
-              ts: Date.now(),
-              overrides: j.overrides || {},
-              suppressedProductIds: j.suppressedProductIds || [],
-            });
-            dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
-            dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+          if (!j || !j.ok) throw new Error("Catalog is unavailable");
+          if (j.categories && typeof D.applyCategoriesMerge === "function") {
+            D.applyCategoriesMerge(j.categories);
+            writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: j.categories });
           }
+          if (j.products && typeof D.applyVendorProductsMerge === "function") {
+            D.applyVendorProductsMerge(j.products);
+            writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j.products });
+          }
+          applyOverridesPayload(j);
+          writeSessionJson(OVERRIDES_CACHE_KEY, {
+            ts: Date.now(),
+            overrides: j.overrides || {},
+            suppressedProductIds: j.suppressedProductIds || [],
+          });
+          dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
+          dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+          dispatchCatalogRecovered();
         })
-        .catch(function () {})
+        .catch(function () { dispatchCatalogFailure(); })
         .finally(function () {
           mergeFinished = true;
           mergeInflight = null;
@@ -317,7 +343,8 @@
     }
 
     mergeInflight = Promise.all(tasks)
-      .catch(function () {})
+      .then(function () { dispatchCatalogRecovered(); })
+      .catch(function () { dispatchCatalogFailure(); })
       .finally(function () {
         mergeFinished = true;
         mergeInflight = null;
@@ -357,6 +384,7 @@
     whenReady: whenCatalogReady,
     getApiBase: billApiBase,
     clearCache: clearSessionCatalogCache,
+    hasLoadFailure: function () { return lastLoadFailed; },
   };
 
   var visibilityRefreshTimer = null;

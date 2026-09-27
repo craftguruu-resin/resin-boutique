@@ -130,7 +130,6 @@ After **7**, guest orders, OTP tables, and vendor tables expected by this codeba
    | Name | Value |
    |------|--------|
    | `PUBLIC_BILL_API_BASE` | `https://YOUR-SERVICE.onrender.com` (no trailing slash) |
-   | `PUBLIC_BILL_CLIENT_SECRET` | Only if you set `BILL_API_SECRET` on Render — paste the **same** value so the build can fill `data-bill-api-secret` on HTML |
 
 5. Save and deploy. Open the `*.pages.dev` URL and test checkout on **HTTPS**.
 
@@ -160,13 +159,10 @@ Checkout uses **Razorpay Standard Checkout** (`checkout.js` + `https://checkout.
 5. **Same host vs split host**  
    If the storefront is opened from the **same** URL as the API (e.g. only Render: `https://your-service.onrender.com/checkout.html`), same-origin avoids CORS issues. If you use a static host + API host, ensure `data-bill-api-base` on checkout matches the API origin and `ALLOWED_ORIGIN` includes the static site origin.
 
-6. **`BILL_API_SECRET`** (optional)  
-   If set on the server, `checkout.html` must have the same value on `data-bill-api-secret` on the `<html>` element (and rebuild Pages if you inject it at build time).
-
-7. **Webhooks (optional for this codebase)**  
+6. **Webhooks (optional for this codebase)**
    This repo does **not** expose a Razorpay webhook URL; orders are recorded when `/api/razorpay-verify` succeeds in the browser. For extra reliability (e.g. if the user closes the tab before verify completes), you could add a webhook handler later in the server and register its **HTTPS** URL under Razorpay → **Webhooks** → use your public API base (e.g. `https://www.craftguruindia.com/api/...` once implemented).
 
-8. **Smoke test**  
+7. **Smoke test**
    After deploy: open checkout on **HTTPS**, use a **small real** UPI/card payment, confirm order appears in your DB / vendor flow. Use Razorpay Dashboard → **Payments** to reconcile.
 
 ---

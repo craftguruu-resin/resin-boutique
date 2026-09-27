@@ -381,7 +381,11 @@
     if (!inp) return;
     gfInputWired = true;
     inp.addEventListener("input", function () {
+      var y = window.scrollY || 0;
       applyCatalogFilters(true);
+      requestAnimationFrame(function () {
+        window.scrollTo(0, y);
+      });
     });
   }
 

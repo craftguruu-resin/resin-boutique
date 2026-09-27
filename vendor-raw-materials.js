@@ -1091,7 +1091,7 @@
         "</span></td><td>" +
         esc(String(minOfferPrice(r))) +
         "</td><td>" +
-        (active ? "<span class=\"vs-pill vs-pill--active\">Live</span>" : "<span class=\"vs-pill vs-pill--inactive\">Hidden</span>") +
+        (active ? "<span class=\"vs-pill vs-pill--active\">Active</span>" : "<span class=\"vs-pill vs-pill--inactive\">Discontinued</span>") +
         "</td><td><button type=\"button\" class=\"vs-btn vs-btn--ghost vrm-edit\" data-id=\"" +
         esc(r.id) +
         "\">Edit</button> " +
@@ -1100,13 +1100,13 @@
         "\" data-next=\"" +
         (active ? "0" : "1") +
         "\">" +
-        (active ? "Hide" : "Show") +
+        (active ? "Discontinue" : "Set active") +
         "</button> " +
         "<button type=\"button\" class=\"vs-btn vs-btn--ghost vrm-delete\" data-id=\"" +
         esc(r.id) +
         "\" data-name=\"" +
         esc(r.name || "") +
-        "\">Delete</button></td>";
+        "\">Archive</button></td>";
       tb.appendChild(tr);
     });
   }
@@ -1212,23 +1212,8 @@
 
   function deleteMaterial(id, name) {
     var label = name || id || "this product";
-    if (!window.confirm('Permanently delete "' + label + '"? This cannot be undone.')) return;
-    return fetch(base() + "/api/vendor/raw-materials/" + encodeURIComponent(id), {
-      method: "DELETE",
-      headers: V.authHeaders(),
-      cache: "no-store",
-    }).then(function (res) {
-      return res.text().then(function (text) {
-        var j = {};
-        try {
-          j = text ? JSON.parse(text) : {};
-        } catch (_) {}
-        if (!res.ok || !j.ok) {
-          throw new Error((j && j.error) || res.statusText || "Delete failed");
-        }
-        notifyGuestRawMaterialsRefresh();
-      });
-    });
+    if (!window.confirm('Archive "' + label + '"? It will be hidden from the storefront and can be set active again later.')) return;
+    return setActive(id, false);
   }
 
   function boot() {

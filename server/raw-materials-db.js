@@ -267,6 +267,30 @@ function normalizeOptions(o) {
   };
 }
 
+/* The Raw Materials landing panel is a site-level promotion, never a product
+   photograph. Reject it at persistence time so a vendor cannot accidentally
+   publish it into cards or product galleries again. */
+function isRawMaterialLandingAsset(raw) {
+  var value = String(raw || "").trim().toLowerCase();
+  try { value = decodeURIComponent(value); } catch (_) {}
+  return value.indexOf("rm-hero-panel") >= 0 || value.indexOf("raw-material-showcase/rm-hero") >= 0;
+}
+
+function assertNoRawMaterialLandingAsset(options, imageUrl) {
+  var media = [imageUrl, options && options.heroImage]
+    .concat((options && options.galleryImages) || [])
+    .concat((options && options.sizes) || [])
+    .concat((options && options.qtyOptions) || [])
+    .concat((options && options.colors) || []);
+  for (var i = 0; i < media.length; i++) {
+    var item = media[i];
+    var url = item && typeof item === "object" ? item.image : item;
+    if (isRawMaterialLandingAsset(url)) {
+      throw new Error("The Raw Materials landing banner can only be used on the Raw Materials shop homepage. Choose a product image instead.");
+    }
+  }
+}
+
 function mapRow(row) {
   var opts = parseOptionsCell(row.options_json);
   try {
@@ -514,6 +538,7 @@ function createRow(opts, cb) {
   var normOpts;
   try {
     normOpts = normalizeOptions((opts && opts.options) || {});
+    assertNoRawMaterialLandingAsset(normOpts, opts && opts.imageUrl);
   } catch (e) {
     return process.nextTick(function () {
       cb(e);
@@ -610,6 +635,7 @@ function updateRow(id, opts, cb) {
   var normOpts;
   try {
     normOpts = normalizeOptions((opts && opts.options) || {});
+    assertNoRawMaterialLandingAsset(normOpts, opts && opts.imageUrl);
   } catch (e) {
     return process.nextTick(function () {
       cb(e);

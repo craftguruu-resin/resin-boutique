@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="en" data-bill-api-base="" data-bill-api-port="" data-bill-api-secret="" data-google-client-id="329259882406-sub7h0vk5b0l74v0f6rm8k4p0i265eir.apps.googleusercontent.com">
+<html lang="en" data-bill-api-base="" data-bill-api-port="" data-google-client-id="329259882406-sub7h0vk5b0l74v0f6rm8k4p0i265eir.apps.googleusercontent.com">
 <head>
   <meta charset="UTF-8" />
   <meta name="color-scheme" content="light" />
   <!-- If checkout is not on the API port, set data-bill-api-port on <html>, or once: localStorage.setItem('craftguruBillApiPort','YOUR_PORT'). -->
   <!-- If server/.env sets BILL_API_SECRET, set the same value on data-bill-api-secret above (vendor pages must match). -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="preload" href="styles.css" as="style" />
+  <link rel="preload" href="styles.css?v=20260928header1" as="style" />
   <link rel="preload" href="guest-layout.css" as="style" />
   <link rel="shortcut icon" href="/favicon.ico?v=20260730" />
   <link rel="icon" href="media/brand-craftguru.png?v=20260730" type="image/png" sizes="32x32" />
@@ -16,7 +16,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=20260928header1" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css" />
   <link rel="stylesheet" href="craftguru-theme.css" />
@@ -529,33 +529,23 @@
         <ul class="footer-sitemap__list">
           <li><a href="about.html">About Us</a></li>
           <li><a href="index.html#footer-connect">Contact Us</a></li>
-          <li><a href="#">FAQs</a></li>
-          <li><a href="#">Blog</a></li>
-          <li><a href="#">Careers</a></li>
         </ul>
       </div>
       <div class="footer-sitemap__col">
         <h3 class="footer-sitemap__title">Main menu</h3>
         <ul class="footer-sitemap__list">
-          <li><a href="category.html?cat=resin-coasters">Resin Coasters</a></li>
-          <li><a href="category.html?cat=resin-customised-frames">Ring Platter</a></li>
-          <li><a href="category.html?cat=resin-keychains">Resin Keychains</a></li>
-          <li><a href="category.html?cat=resin-name-plates">Resin Nameplates</a></li>
-          <li><a href="category.html?cat=resin-customised-frames">Resin Photo Frame</a></li>
-          <li><a href="category.html?cat=resin-pooja-plate">Resin Pooja Platter</a></li>
-          <li><a href="category.html?cat=vermala-preservation">Varmala Preservation</a></li>
-          <li><a href="category.html?cat=resin-clocks">Resin Wall Clock</a></li>
-          <li><a href="category.html?cat=resin-mantra-frame">Resin Mantra Frame</a></li>
-          <li><a href="category.html?cat=resin-cutlery-and-tissue-holder">Resin Tray</a></li>
+          <li><a href="index.html">Resin Home</a></li>
+          <li><a href="raw-material-shop.html">Resin Raw material</a></li>
+          <li><a href="photo-frames.html">Resin Photo Frame</a></li>
         </ul>
       </div>
       <div class="footer-sitemap__col">
         <h3 class="footer-sitemap__title">Help</h3>
         <ul class="footer-sitemap__list">
-          <li><a href="#">Privacy Policy</a></li>
-          <li><a href="#">Shipping Options</a></li>
-          <li><a href="#">Terms &amp; Conditions</a></li>
-          <li><a href="#">Purchase &amp; Returns</a></li>
+          <li><a href="policies.html#privacy">Privacy Policy</a></li>
+          <li><a href="policies.html#shipping">Shipping Options</a></li>
+          <li><a href="policies.html#terms">Terms &amp; Conditions</a></li>
+          <li><a href="policies.html#returns">Purchase &amp; Returns</a></li>
         </ul>
       </div>
       <div class="footer-sitemap__col" id="footer-connect">
@@ -613,16 +603,16 @@
   <script defer src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script defer src="cloudinary-delivery.js?v=20260815b"></script>
   <script src="craftguru-api-base.js"></script>
-  <script defer src="data.js?v=20260925media1"></script>
-  <script defer src="catalog-merge.js?v=20260925sync2"></script>
-  <script defer src="cart.js"></script>
-  <script defer src="guest-layout.js?v=20260925fluid11"></script>
+  <script defer src="data.js?v=20260928cloud1"></script>
+  <script defer src="catalog-merge.js?v=20260928catalog-state1"></script>
+  <script defer src="cart.js?v=20260928state1"></script>
+  <script defer src="guest-layout.js?v=20260928storefront2"></script>
   <script defer src="shell.js"></script>
-  <script defer src="header.js"></script>
+  <script defer src="header.js?v=20260928newsletter2"></script>
   <script defer src="global-find.js"></script>
   <script defer src="auth-db.js"></script>
   <script defer src="google-signin.js"></script>
   <script defer src="auth-home.js"></script>
-  <script defer src="checkout.js?v=20260923cod1"></script>
+  <script defer src="checkout.js?v=20260928payment1"></script>
 </body>
 </html>

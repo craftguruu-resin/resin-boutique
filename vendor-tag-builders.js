@@ -149,6 +149,8 @@
           "<tr><td>" +
           esc(it.name) +
           "</td><td>" +
+          esc(it.sku || "—") +
+          "</td><td>" +
           esc(it.sizeLabel || "") +
           "</td><td style='text-align:center'>" +
           esc(String(it.qty || 1)) +
@@ -184,7 +186,7 @@
       "<p><strong>Order type:</strong> " +
       esc(order.orderType || "—") +
       "</p>" +
-      "<table class='vendor-inline-bill__table'><thead><tr><th>Item</th><th>Size</th><th>Qty</th><th>Amt</th></tr></thead><tbody>" +
+      "<table class='vendor-inline-bill__table'><thead><tr><th>Item</th><th>SKU</th><th>Size</th><th>Qty</th><th>Amt</th></tr></thead><tbody>" +
       rows +
       "</tbody></table>" +
       "<div class='vendor-inline-bill__sum'>" +
@@ -222,6 +224,8 @@
         return (
           "<tr><td>" +
           esc(it.name) +
+          "</td><td>" +
+          esc(it.sku || "—") +
           "</td><td>" +
           esc(it.sizeLabel || "") +
           "</td><td style='text-align:center'>" +
@@ -272,7 +276,7 @@
       "<p style='font-size:13px;margin:0 0 8px;'><strong>Order type:</strong> " +
       esc(order.orderType || "—") +
       "</p>" +
-      "<table class='bill-t'><thead><tr><th>Item</th><th>Size</th><th>Qty</th><th style='text-align:right'>Amount</th></tr></thead><tbody>" +
+      "<table class='bill-t'><thead><tr><th>Item</th><th>SKU</th><th>Size</th><th>Qty</th><th style='text-align:right'>Amount</th></tr></thead><tbody>" +
       rows +
       "</tbody></table>" +
       "<div class='sum'>" +

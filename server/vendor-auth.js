@@ -4,14 +4,10 @@ var crypto = require("crypto");
 var bcrypt = require("bcryptjs");
 var poolMod = require("./db/pool.js");
 
-var VENDOR_PORTAL_USER =
-  process.env.VENDOR_PORTAL_USER == null || String(process.env.VENDOR_PORTAL_USER).trim() === ""
-    ? "nammu"
-    : String(process.env.VENDOR_PORTAL_USER).trim();
-var VENDOR_PORTAL_PASSWORD =
-  process.env.VENDOR_PORTAL_PASSWORD == null || String(process.env.VENDOR_PORTAL_PASSWORD).trim() === ""
-    ? "nammu"
-    : String(process.env.VENDOR_PORTAL_PASSWORD).trim();
+// There must never be a deployable, shared default credential. Configure these
+// values in the production environment (and use the vendor-user migration).
+var VENDOR_PORTAL_USER = String(process.env.VENDOR_PORTAL_USER || "").trim();
+var VENDOR_PORTAL_PASSWORD = String(process.env.VENDOR_PORTAL_PASSWORD || "").trim();
 
 /** Sliding inactivity window (ms). After this long without an authenticated API call, re-login. Default 1 hour. */
 var IDLE_MS = Number(process.env.VENDOR_SESSION_IDLE_MS);
@@ -127,6 +123,12 @@ function tokenValid(req, cb, opts) {
 function login(username, password, cb) {
   var u = String(username || "").trim();
   var p = String(password || "").trim();
+
+  if (!VENDOR_PORTAL_USER || !VENDOR_PORTAL_PASSWORD) {
+    return process.nextTick(function () {
+      cb(new Error("Vendor sign-in is not configured. Set VENDOR_PORTAL_USER and VENDOR_PORTAL_PASSWORD."));
+    });
+  }
 
   if (poolMod.isEnabled()) {
     poolMod

@@ -420,8 +420,14 @@
 
   var homeFilterTimer = null;
   function scheduleHomeCatalogFilter() {
+    var y = window.scrollY || 0;
     clearTimeout(homeFilterTimer);
-    homeFilterTimer = setTimeout(applyHomeCatalogFilter, 120);
+    homeFilterTimer = setTimeout(function () {
+      applyHomeCatalogFilter();
+      requestAnimationFrame(function () {
+        window.scrollTo(0, y);
+      });
+    }, 120);
   }
 
   function patchHomeCategoriesFromMerge() {
@@ -818,6 +824,11 @@
     if (els.cartCount) els.cartCount.textContent = String(count);
     if (els.cartSubtotal) els.cartSubtotal.textContent = CART.formatMoney(CART.subtotal());
     if (CART.syncShippingNotice) CART.syncShippingNotice();
+    if (els.checkoutBtn) {
+      var hasCartItems = lines.length > 0;
+      els.checkoutBtn.disabled = !hasCartItems;
+      els.checkoutBtn.setAttribute("aria-disabled", hasCartItems ? "false" : "true");
+    }
 
     if (!els.cartList) return;
     if (lines.length === 0) {

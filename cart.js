@@ -730,18 +730,27 @@
         cache: "no-store",
       })
         .then(function (res) {
-          return res.json();
+          return res.json().catch(function () { return {}; }).then(function (body) {
+            if (!res.ok || !body.ok || typeof body.on !== "boolean") {
+              throw new Error((body && body.error) || "Could not update your saved item.");
+            }
+            return body;
+          });
         })
         .then(function (j) {
-          if (j && j.ok && typeof j.on === "boolean") {
-            if (j.on) wishCache[key] = true;
-            else delete wishCache[key];
-            setLocalWishlistFromCache();
-            notifyWishlist();
-          }
+          if (j.on) wishCache[key] = true;
+          else delete wishCache[key];
+          setLocalWishlistFromCache();
+          notifyWishlist();
           if (done) done(null, !!wishCache[key]);
         })
         .catch(function (err) {
+          /* Optimistic UI must not claim a signed-in wishlist change that the
+             server rejected or failed to save. */
+          if (nextOn) delete wishCache[key];
+          else wishCache[key] = true;
+          setLocalWishlistFromCache();
+          notifyWishlist();
           if (done) done(err, !!wishCache[key]);
         });
       return nextOn;

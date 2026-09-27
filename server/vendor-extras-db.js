@@ -364,6 +364,26 @@ function listInventory(optsOrCb, maybeCb) {
   });
 }
 
+/** Latest stock changes, captured by the database whenever a quantity changes. */
+function listInventoryMovements(limit, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) return process.nextTick(function () { cb(new Error("Database not configured")); });
+  var n = Math.max(1, Math.min(100, Number(limit) || 12));
+  pool.query(
+    "SELECT m.id, m.inventory_id, m.previous_quantity, m.quantity_delta, m.next_quantity, m.reason, m.created_at, i.name, i.sku " +
+      "FROM vendor_inventory_movements m JOIN vendor_inventory_items i ON i.id = m.inventory_id ORDER BY m.id DESC LIMIT $1",
+    [n]
+  ).then(function (result) {
+    cb(null, result.rows.map(function (row) {
+      return {
+        id: String(row.id), inventoryId: String(row.inventory_id), name: row.name || "Inventory item", sku: row.sku || "",
+        previousQuantity: Number(row.previous_quantity), delta: Number(row.quantity_delta), nextQuantity: Number(row.next_quantity),
+        reason: row.reason || "Inventory saved", createdAt: new Date(row.created_at).toISOString(),
+      };
+    }));
+  }).catch(cb);
+}
+
 /**
  * Resolve bundled or DB product name + category for studio inventory linking.
  * @param {string} productId
@@ -813,6 +833,7 @@ module.exports = {
   getDashboardExtras,
   countInventoryRows: countInventoryRows,
   listInventory,
+  listInventoryMovements,
   createInventory,
   updateInventory,
   listReturns,

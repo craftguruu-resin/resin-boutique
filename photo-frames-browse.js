@@ -202,7 +202,7 @@
     g.innerHTML = "";
     if (!list || !list.length) {
       g.innerHTML =
-        '<p class="pf-browse__empty">No frames listed for this line yet. Add products in Vendor → Photo frames.</p>';
+        '<p class="pf-browse__empty">No frames are available for this collection yet.</p>';
       return;
     }
     list.forEach(function (m, i) {
@@ -277,7 +277,10 @@
     }
     fetch(productsUrl(par), { cache: "no-store" })
       .then(function (r) {
-        return r.json();
+        return r.json().catch(function () { return {}; }).then(function (body) {
+          if (!r.ok) throw new Error((body && body.error) || "Catalog unavailable");
+          return body;
+        });
       })
       .then(function (j) {
         if (!j || !j.ok) {

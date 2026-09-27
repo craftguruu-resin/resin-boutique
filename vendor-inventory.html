@@ -39,10 +39,27 @@
             <button type="button" class="vs-btn vs-btn--ghost vi-tab" data-tab="photo">Photo frame inventory</button>
           </div>
 
+          <div class="vs-ops-grid" style="margin-bottom: 1rem">
+            <section class="vs-ops-queue" aria-labelledby="viQueueHeading">
+              <h2 id="viQueueHeading" class="vs-ops-queue__title">Stock attention queue</h2>
+              <ul class="vs-ops-queue__list" id="viOpsQueue"><li class="vs-muted">Loading stock checks…</li></ul>
+            </section>
+            <section class="vs-ops-queue" aria-labelledby="viMovementHeading">
+              <h2 id="viMovementHeading" class="vs-ops-queue__title">Recent stock movements</h2>
+              <ul class="vs-ops-queue__list" id="viMovementRows"><li class="vs-muted">Loading movement history…</li></ul>
+            </section>
+          </div>
+
           <div id="viCatalogPanel" hidden>
             <p class="vs-muted" id="viCatalogStats" style="margin: 0 0 0.75rem; font-size: 0.82rem" hidden></p>
             <div class="vs-card" style="margin-bottom: 1rem">
               <div class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.5rem">
+                <div class="vs-field" style="margin: 0; min-width: 13rem">
+                  <label for="viCatalogCategory">Category</label>
+                  <select id="viCatalogCategory" class="vs-input">
+                    <option value="">All Resin Home categories</option>
+                  </select>
+                </div>
                 <div class="vs-field" style="margin: 0; flex: 1; min-width: 12rem">
                   <label for="viCatalogSearch">Search</label>
                   <input type="search" id="viCatalogSearch" placeholder="Name, product id, or SKU…" />
@@ -56,6 +73,7 @@
                   <tr>
                     <th>Product</th>
                     <th>Category</th>
+                    <th>Status</th>
                     <th title="For legacy products without configured options">S stock</th>
                     <th title="For legacy products without configured options">M stock</th>
                     <th title="For legacy products without configured options">L stock</th>
@@ -73,6 +91,6 @@
     </div>
   </div>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-inventory.js?v=20260926inventory8"></script>
+  <script src="vendor-inventory.js?v=20260927inventory1"></script>
 </body>
 </html>

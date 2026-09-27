@@ -163,6 +163,21 @@ body.pf-category-results #rmCategoryHub {
   display: none !important;
 }
 
+/* The Raw Materials artwork belongs only to the unfiltered shop landing.
+   This selector remains stronger than any legacy visual style if an old CSS
+   file is still present in a visitor's cache. */
+html.storefront-category-listing body.rm-theme--materials #rm-hero,
+html.storefront-category-listing body.rm-theme--materials #rm-hero[hidden] {
+  display: none !important;
+}
+
+/* Detail routes use the shared PDP gallery only; the raw-material landing
+   promotion is intentionally restricted to raw-material-shop.html. */
+body.rm-page-wide.page-product #rm-hero,
+body.rm-page-wide.page-product .rm-landing-hero {
+  display: none !important;
+}
+
 @media (max-width: 820px) {
   .rm-hero {
     grid-template-columns: 1fr;

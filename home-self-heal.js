@@ -45,7 +45,16 @@
       }
     }
 
-    return gridReady && heroReady;
+    /* The API is the catalog source of truth. If it is unavailable, the
+       shared storefront banner offers a retry. Do not trap customers behind
+       a loading skeleton or trigger a reload loop just because there are no
+       locally bundled products to render. */
+    var catalogUnavailable = false;
+    try {
+      var status = document.getElementById("cgCatalogStatus");
+      catalogUnavailable = !!status && !status.hidden;
+    } catch (_) {}
+    return heroReady && (gridReady || catalogUnavailable);
   }
 
   function removeSkeleton() {

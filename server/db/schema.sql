@@ -69,6 +69,17 @@ CREATE TABLE IF NOT EXISTS vendor_sessions (
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_vendor_sessions_token_hash ON vendor_sessions (token_hash);
 
+CREATE TABLE IF NOT EXISTS vendor_audit_log (
+  id BIGSERIAL PRIMARY KEY,
+  actor VARCHAR(80) NOT NULL DEFAULT 'vendor',
+  action VARCHAR(80) NOT NULL,
+  entity_type VARCHAR(80) NOT NULL,
+  entity_id VARCHAR(220) NOT NULL DEFAULT '',
+  detail JSONB NOT NULL DEFAULT '{}'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendor_audit_log_created ON vendor_audit_log (id DESC);
+
 CREATE SEQUENCE IF NOT EXISTS order_public_id_seq START WITH 10001 INCREMENT BY 1;
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -105,6 +116,10 @@ CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items (order_id);
 -- Payment tracking (test checkout vs Razorpay later). Safe to re-run on existing DBs.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_status VARCHAR(40) NOT NULL DEFAULT 'pending_payment';
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method VARCHAR(40) NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(120);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_reference_unique
+  ON orders (payment_reference)
+  WHERE payment_reference IS NOT NULL;
 
 -- Optional dispatch state (vendor can PATCH later). Default keeps existing rows valid.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'new';
@@ -152,6 +167,35 @@ CREATE INDEX IF NOT EXISTS idx_vendor_inventory_category ON vendor_inventory_ite
 ALTER TABLE vendor_inventory_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT '';
 CREATE INDEX IF NOT EXISTS idx_vendor_inventory_product ON vendor_inventory_items (product_id);
 
+CREATE TABLE IF NOT EXISTS vendor_inventory_movements (
+  id BIGSERIAL PRIMARY KEY,
+  inventory_id BIGINT NOT NULL REFERENCES vendor_inventory_items (id) ON DELETE CASCADE,
+  previous_quantity NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  quantity_delta NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  next_quantity NUMERIC(14, 2) NOT NULL DEFAULT 0,
+  reason VARCHAR(120) NOT NULL DEFAULT 'Inventory saved',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_vendor_inventory_movements_item ON vendor_inventory_movements (inventory_id, id DESC);
+
+CREATE OR REPLACE FUNCTION log_vendor_inventory_movement() RETURNS trigger AS $$
+BEGIN
+  IF TG_OP = 'INSERT' THEN
+    INSERT INTO vendor_inventory_movements (inventory_id, previous_quantity, quantity_delta, next_quantity, reason)
+    VALUES (NEW.id, 0, COALESCE(NEW.quantity, 0), COALESCE(NEW.quantity, 0), 'Initial stock');
+  ELSIF NEW.quantity IS DISTINCT FROM OLD.quantity THEN
+    INSERT INTO vendor_inventory_movements (inventory_id, previous_quantity, quantity_delta, next_quantity, reason)
+    VALUES (NEW.id, COALESCE(OLD.quantity, 0), COALESCE(NEW.quantity, 0) - COALESCE(OLD.quantity, 0), COALESCE(NEW.quantity, 0), 'Inventory saved');
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_vendor_inventory_movement ON vendor_inventory_items;
+CREATE TRIGGER trg_vendor_inventory_movement
+AFTER INSERT OR UPDATE OF quantity ON vendor_inventory_items
+FOR EACH ROW EXECUTE FUNCTION log_vendor_inventory_movement();
+
 CREATE TABLE IF NOT EXISTS vendor_order_returns (
   id BIGSERIAL PRIMARY KEY,
   order_id INTEGER NOT NULL REFERENCES orders (id) ON DELETE CASCADE,
@@ -165,6 +209,11 @@ CREATE TABLE IF NOT EXISTS vendor_order_returns (
 
 CREATE INDEX IF NOT EXISTS idx_vendor_returns_order ON vendor_order_returns (order_id);
 CREATE INDEX IF NOT EXISTS idx_vendor_returns_status ON vendor_order_returns (status);
+
+CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+  email TEXT PRIMARY KEY,
+  subscribed_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
 
 CREATE TABLE IF NOT EXISTS categories (
   id VARCHAR(80) PRIMARY KEY,
