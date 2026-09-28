@@ -256,6 +256,21 @@
         var size = q.getAttribute("data-line-size");
         var xk = q.getAttribute("data-line-extrak");
         var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
+        var current = findCartLine(id, size, xk);
+        var limit = current && CART.lineStockLimit ? CART.lineStockLimit(current) : null;
+        if (current && d > 0 && limit != null && Number(current.qty || 0) + d > limit) {
+          /* Keep the purchasable amount in the cart and give an immediate,
+             non-blocking explanation instead of silently ignoring the tap. */
+          CART.setLineQty(id, size, limit, xk);
+          if (window.CraftguruGuestFeedback && window.CraftguruGuestFeedback.notify) {
+            window.CraftguruGuestFeedback.notify("Only " + limit + " products are left for this size.");
+          } else {
+            window.alert("Only " + limit + " products are left for this size.");
+          }
+          updateBadge();
+          renderDrawer();
+          return;
+        }
         CART.incrementLine(id, size, d, xk);
         updateBadge();
         if (!patchCartLineFromButton(q)) renderDrawer();

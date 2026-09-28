@@ -4255,6 +4255,9 @@ app.get("/api/vendor/catalog-products", function (req, res) {
           .trim(),
         categoryId: String((req.query && req.query.categoryId) || "").trim(),
         scope: String((req.query && req.query.scope) || "").trim(),
+        /* Inventory is deliberately restricted to sellable listings. Product
+           lifecycle management (discontinue/reactivate) lives in Catalog. */
+        activeOnly: String((req.query && req.query.activeOnly) || "") === "1",
         limit: Math.min(200, Math.max(1, parseInt(String((req.query && req.query.limit) || "80"), 10) || 80)),
         offset: Math.max(0, parseInt(String((req.query && req.query.offset) || "0"), 10) || 0),
       },

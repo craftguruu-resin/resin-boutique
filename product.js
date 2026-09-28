@@ -271,7 +271,9 @@
     var stk = product && product.stock && selected && product.stock[selected] != null
       ? Number(product.stock[selected])
       : null;
-    var out = Number.isFinite(stk) && stk <= 0;
+    /* A product can be purchased only when Inventory has defined a numeric
+       quantity for the currently selected size. */
+    var out = !Number.isFinite(stk) || stk <= 0;
     if (ban) {
       ban.hidden = !out;
       if (out) ban.textContent = "Out of stock";
@@ -280,6 +282,17 @@
     if (els.addBtn) {
       els.addBtn.disabled = out;
       els.addBtn.setAttribute("aria-disabled", out ? "true" : "false");
+      els.addBtn.classList.toggle("is-out-of-stock", out);
+      var addLabel = els.addBtn.querySelector(".btn-add-premium__text");
+      if (addLabel) addLabel.textContent = out ? "Out of Stock" : "Add to Cart";
+    }
+    var buyNow = document.getElementById("buyNowBtn");
+    if (buyNow) {
+      buyNow.disabled = out;
+      buyNow.setAttribute("aria-disabled", out ? "true" : "false");
+      buyNow.classList.toggle("is-out-of-stock", out);
+      var buyLabel = buyNow.querySelector("span");
+      if (buyLabel) buyLabel.textContent = out ? "Out of Stock" : "Buy Now";
     }
     if (els.sizes) {
       els.sizes.querySelectorAll(".size-pick").forEach(function (b) {
@@ -296,7 +309,7 @@
       qm.disabled = selectedQty <= 1;
     }
     if (qp) {
-      qp.disabled = selectedQty >= maxSelectableQty();
+      qp.disabled = maxSelectableQty() <= 0;
     }
   }
 
@@ -615,6 +628,7 @@
           }
         }
         updatePrice();
+        applyOutOfStockUi();
       });
     });
     updatePrice();
@@ -842,12 +856,12 @@
   }
 
   function maxSelectableQty() {
-    if (!product || !selected) return 99;
+    if (!product || !selected) return 1;
     var stk = product.stock && product.stock[selected];
     if (stk != null && Number.isFinite(Number(stk))) {
       return Math.max(1, Math.min(99, Math.floor(Number(stk))));
     }
-    return 99;
+    return 1;
   }
 
   function refreshQtyUi() {
@@ -859,8 +873,9 @@
     var p = document.getElementById("productQtyPlus");
     if (v) v.textContent = String(selectedQty);
     if (m) m.disabled = selectedQty <= 1;
-    if (p) p.disabled = selectedQty >= mx;
+    if (p) p.disabled = mx <= 0;
     updatePrice();
+    applyOutOfStockUi();
   }
 
   /** Isometric resin “slab” — unique SVG defs per option (no gradient collisions). */
@@ -1188,6 +1203,7 @@
           price: unit,
           image: cartLineImage() || product.image,
           qty: q,
+          stockMax: Number(stk),
         });
         if (window.RESIN_SHELL) {
           window.RESIN_SHELL.updateBadge();
@@ -1433,7 +1449,13 @@
         refreshQtyUi();
       } else if (t.id === "productQtyPlus") {
         e.preventDefault();
-        selectedQty += 1;
+        var limit = maxSelectableQty();
+        if (selectedQty + 1 > limit) {
+          selectedQty = limit;
+          window.alert("Only " + limit + " products are left for this size.");
+        } else {
+          selectedQty += 1;
+        }
         refreshQtyUi();
       }
     });

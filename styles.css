@@ -6234,7 +6234,7 @@ body:not(.vendor-saas) .brand__logo-img {
   box-shadow: 0 5px 16px rgba(25, 45, 90, 0.12);
 }
 
-@media (min-width: 901px) and (max-width: 1449px) {
+@media (min-width: 901px) and (max-width: 1700px) {
   body.guest-site .site-top {
     grid-template-columns: minmax(0, 1fr) minmax(0, auto);
     grid-template-rows: auto auto;
@@ -6269,7 +6269,7 @@ body:not(.vendor-saas) .brand__logo-img {
   }
 }
 
-@media (min-width: 1450px) {
+@media (min-width: 1701px) {
   body.guest-site .site-top {
     grid-template-columns: minmax(14rem, 1fr) minmax(0, auto) minmax(22rem, 1fr);
     column-gap: clamp(0.45rem, 1vw, 1rem);

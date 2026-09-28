@@ -406,6 +406,21 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__add {
   text-transform: none;
 }
 
+/* Defined inventory is required before a customer can purchase. Keep the
+   unavailable state unmistakable even where the normal CTA gradient is forced. */
+body.pdp-ethereal .pd-buy-rail__cta.is-out-of-stock,
+body.pdp-ethereal .rm-pdp--modern .rm-pdp__add.is-out-of-stock,
+body.pdp-ethereal .cg-pdp__buy-now.is-out-of-stock,
+body.pdp-ethereal .pd-buy-rail__cta:disabled,
+body.pdp-ethereal .rm-pdp--modern .rm-pdp__add:disabled,
+body.pdp-ethereal .cg-pdp__buy-now:disabled {
+  background: #cbd5e1 !important;
+  box-shadow: none !important;
+  color: #64748b !important;
+  cursor: not-allowed;
+  filter: grayscale(0.35);
+}
+
 body.pdp-ethereal.page-product .pd-buy-rail__cta {
   grid-column: 2;
   align-self: stretch;

@@ -448,6 +448,25 @@
       : null;
   }
 
+  function syncResinPurchaseAvailability(root, material) {
+    if (!root || !material) return;
+    var stock = variantStockForSelection(state.product, material, state.sel);
+    var unavailable = !Number.isFinite(stock) || stock <= 0;
+    root.classList.toggle("rm-pdp--out-of-stock", unavailable);
+    ["#resinPdpAdd", "#resinPdpBuyNow"].forEach(function (selector) {
+      var button = root.querySelector(selector);
+      if (!button) return;
+      button.disabled = unavailable;
+      button.setAttribute("aria-disabled", unavailable ? "true" : "false");
+      button.classList.toggle("is-out-of-stock", unavailable);
+      if (selector === "#resinPdpAdd") button.textContent = unavailable ? "Out of Stock" : "Add to Cart";
+      else {
+        var label = button.querySelector("span");
+        if (label) label.textContent = unavailable ? "Out of Stock" : "Buy Now";
+      }
+    });
+  }
+
   function customLineExtra() {
     var o = {};
     if (state.namePlateText) o.namePlateText = state.namePlateText;
@@ -912,6 +931,7 @@
     var shellEl = root.querySelector('.rm-pdp--modern[data-resin-pdp="1"]');
     if (shellEl) shellEl.setAttribute("data-resin-opt-sig", optionsLayoutSig(m));
     updateResinThumbNavVisibility(root);
+    syncResinPurchaseAvailability(root, m);
     if (window.RESIN_WISHLIST && state.product) {
       var wishBtn = document.getElementById("resinPdpWish");
       var wishLink = document.getElementById("resinPdpWishLink");
@@ -1064,7 +1084,14 @@
       }
       if (t.getAttribute("data-rm-line-qty") != null) {
         var d = Number(t.getAttribute("data-rm-line-qty")) || 0;
-        state.lineQty = Math.max(1, Math.min(99, state.lineQty + d));
+        var available = variantStockForSelection(state.product, m, state.sel);
+        var maxQty = Number.isFinite(available) ? Math.max(1, Math.floor(available)) : 1;
+        if (d > 0 && state.lineQty + d > maxQty) {
+          state.lineQty = maxQty;
+          window.alert("Only " + maxQty + " products are left for this size.");
+        } else {
+          state.lineQty = Math.max(1, Math.min(maxQty, state.lineQty + d));
+        }
         var lqv = root.querySelector("[data-rm-line-qty-val]");
         if (lqv) lqv.textContent = String(state.lineQty);
         return;
@@ -1117,6 +1144,7 @@
           price: effectivePriceInr(m, state.sel),
           image: lineImageFor(m, state.sel) || prod.image,
           qty: state.lineQty,
+          stockMax: stockValue,
           lineExtra: Object.assign({ productKind: "catalog" }, ex || {}),
         });
         if (t.id === "resinPdpBuyNow" || (t.closest && t.closest("#resinPdpBuyNow"))) {

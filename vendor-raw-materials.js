@@ -6,6 +6,7 @@
 
   var rawList = [];
   var vrmTaxonomy = null;
+  var listingStatusFilter = "all";
 
   /* Raw-material products have a separate public API from the Resin Home
      catalog. Notify open guest tabs after every successful mutation so they
@@ -1073,6 +1074,18 @@
     }
     empty.style.display = "none";
     table.style.display = "";
+    rows = (rows || []).filter(function (r) {
+      var active = r && r.isActive !== false;
+      if (listingStatusFilter === "active") return active;
+      if (listingStatusFilter === "discontinued") return !active;
+      return true;
+    });
+    if (!rows.length) {
+      empty.textContent = "No products match this listing status.";
+      empty.style.display = "block";
+      table.style.display = "none";
+      return;
+    }
     rows.forEach(function (r) {
       var active = r.isActive !== false;
       var tr = document.createElement("tr");
@@ -1254,6 +1267,14 @@
       loadList().catch(function () {});
     });
 
+    var vrmStatus = document.getElementById("vrmStatus");
+    if (vrmStatus) {
+      vrmStatus.addEventListener("change", function () {
+        listingStatusFilter = String(vrmStatus.value || "all");
+        loadList().catch(function () {});
+      });
+    }
+
     var vrmSearchTimer = null;
     function scheduleVrmSearchReload() {
       if (vrmSearchTimer) window.clearTimeout(vrmSearchTimer);
@@ -1360,6 +1381,9 @@
         setActive(id, next)
           .then(function () {
             return loadList();
+          })
+          .then(function () {
+            showMsg(next ? "Product is active again and will return to the storefront." : "Product discontinued. View it under the Discontinued filter.", false);
           })
           .catch(function (e) {
             window.alert(String((e && e.message) || e));

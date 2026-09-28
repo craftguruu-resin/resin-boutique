@@ -299,7 +299,7 @@ function filterByCategory(list, catId, omap) {
 }
 
 /**
- * @param {{ q?: string, categoryId?: string, scope?: string, limit?: number, offset?: number }} opts
+ * @param {{ q?: string, categoryId?: string, scope?: string, activeOnly?: boolean, limit?: number, offset?: number }} opts
  * @param {(err: Error|null, payload?: object) => void} cb
  */
 function listStorefrontCatalog(opts, cb) {
@@ -309,6 +309,7 @@ function listStorefrontCatalog(opts, cb) {
     .trim();
   var catId = String(opts.categoryId || "").trim();
   var scope = normalizeInventoryScope(opts.scope);
+  var activeOnly = opts.activeOnly === true;
   /* Inventory scopes are mutually exclusive product sources. Keep this
      separate from a normal Resin category id so callers cannot accidentally
      receive a mixed storefront response. */
@@ -342,6 +343,11 @@ function listStorefrontCatalog(opts, cb) {
             if (ePf) return cb(ePf);
 
             function finishUnified(allItems) {
+              if (activeOnly) {
+                allItems = allItems.filter(function (p) {
+                  return p && p.isActive !== false;
+                });
+              }
               allItems = filterByCategory(allItems, catId, omap);
               if (q) {
                 allItems = allItems.filter(function (p) {

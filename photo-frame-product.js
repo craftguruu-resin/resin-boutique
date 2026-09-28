@@ -126,11 +126,7 @@
 
   function canAddSelectedQuantity(material, sel, qty) {
     var stock = inventoryValueForSelection(material, sel);
-    if (stock === null) {
-      window.alert("Inventory is currently unavailable for this option. Please select a stocked option.");
-      return false;
-    }
-    if (Number.isFinite(stock) && stock <= 0) {
+    if (!Number.isFinite(stock) || stock <= 0) {
       window.alert("This product is currently out of stock.");
       return false;
     }
@@ -139,6 +135,28 @@
       return false;
     }
     return true;
+  }
+
+  function syncPurchaseAvailability(root, material) {
+    if (!root || !material) return;
+    var stock = inventoryValueForSelection(material, state.sel);
+    var unavailable = !Number.isFinite(stock) || stock <= 0;
+    root.classList.toggle("rm-pdp--out-of-stock", unavailable);
+    ["#rmAddCart", "#rmBuyNow"].forEach(function (selector) {
+      var button = root.querySelector(selector);
+      if (!button) return;
+      button.disabled = unavailable;
+      button.setAttribute("aria-disabled", unavailable ? "true" : "false");
+      button.classList.toggle("is-out-of-stock", unavailable);
+      if (selector === "#rmAddCart") button.textContent = unavailable ? "Out of Stock" : "Add to Cart";
+      else {
+        var label = button.querySelector("span");
+        if (label) label.textContent = unavailable ? "Out of Stock" : "Buy Now";
+      }
+    });
+    root.querySelectorAll("#rmLineQtyMinus, #rmLineQtyPlus").forEach(function (button) {
+      button.disabled = unavailable;
+    });
   }
 
   function variantLabelFrom(material, o) {
@@ -370,6 +388,7 @@
         price: effectivePriceInr(m, state.sel),
         image: lineImageFor(m, state.sel),
         qty: state.lineQty,
+        stockMax: inventoryValueForSelection(m, state.sel),
         lineExtra: { productKind: "photo_frame" },
       };
       var result = activeCart.addItem(item);
@@ -506,7 +525,14 @@
         return;
       }
       if (t.closest("#rmLineQtyPlus")) {
-        state.lineQty = Math.min(99, state.lineQty + 1);
+        var available = inventoryValueForSelection(m, state.sel);
+        var maxQty = Number.isFinite(available) ? Math.max(1, Math.floor(available)) : 1;
+        if (state.lineQty + 1 > maxQty) {
+          state.lineQty = maxQty;
+          window.alert("Only " + maxQty + " products are left for this size.");
+        } else {
+          state.lineQty = Math.min(maxQty, state.lineQty + 1);
+        }
         render();
         return;
       }
@@ -554,6 +580,7 @@
           price: effectivePriceInr(m, state.sel),
           image: lineImageFor(m, state.sel),
           qty: state.lineQty,
+          stockMax: inventoryValueForSelection(m, state.sel),
           lineExtra: { productKind: "photo_frame" },
         });
         if (buyNow) {
@@ -996,6 +1023,7 @@
     }
     wirePdpRootOnce(root);
     bindPdpCartButtons(root);
+    syncPurchaseAvailability(root, m);
     mountRmPdpShare(root);
     mountRmBulkBuy(root);
     fadeHeroImageIn(root);
@@ -1079,9 +1107,28 @@
       });
   }
 
+  var photoFrameRefreshTimer = null;
+  function refreshCurrentPhotoFrame() {
+    if (photoFrameRefreshTimer) clearTimeout(photoFrameRefreshTimer);
+    photoFrameRefreshTimer = setTimeout(function () {
+      photoFrameRefreshTimer = null;
+      productFetchInflight = null;
+      load();
+    }, 80);
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", load);
   } else {
     load();
   }
+  window.addEventListener("craftguruPhotoFramesChanged", refreshCurrentPhotoFrame);
+  window.addEventListener("storage", function (ev) {
+    if (ev && ev.key === "craftguruPhotoFramesChangedAt" && ev.newValue) {
+      refreshCurrentPhotoFrame();
+    }
+  });
+  window.addEventListener("pageshow", function (ev) {
+    if (ev && ev.persisted) refreshCurrentPhotoFrame();
+  });
 })();

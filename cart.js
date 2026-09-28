@@ -87,6 +87,8 @@
       .toLowerCase()
       .slice(0, 1);
     if (stockSlot !== "s" && stockSlot !== "m" && stockSlot !== "l") stockSlot = "";
+    var stockMax = Number(line.stockMax);
+    if (!Number.isFinite(stockMax) || stockMax < 0) stockMax = null;
     return {
       id: id,
       size: size,
@@ -97,7 +99,40 @@
       qty: Math.max(1, Math.floor(safeNumber(line.qty, 1))),
       lineExtra: le || undefined,
       stockSlot: stockSlot || undefined,
+      /* Store the inventory snapshot for this exact option. Product ids are
+         shared by all size/colour choices, so the cart must never use a
+         product-wide value to cap a selected variant. */
+      stockMax: stockMax == null ? undefined : Math.floor(stockMax),
     };
+  }
+
+  function lineStockLimit(line) {
+    if (!line) return null;
+    var saved = Number(line.stockMax);
+    if (Number.isFinite(saved) && saved >= 0) return Math.floor(saved);
+    try {
+      var D = global.RESIN_DATA;
+      var p = D && typeof D.getProduct === "function" ? D.getProduct(line.id) : null;
+      if (!p) return null;
+      var opt = productOptions(p);
+      var variants = opt && opt.vendorInventory && opt.vendorInventory.variants;
+      if (variants && typeof variants === "object") {
+        var row = variants[String(line.size || "")];
+        var variantStock = row && Number(row.stock);
+        if (Number.isFinite(variantStock) && variantStock >= 0) return Math.floor(variantStock);
+      }
+      var slot = String(line.stockSlot || line.size || "").toLowerCase();
+      var legacyStock = p.stock && Number(p.stock[slot]);
+      if (Number.isFinite(legacyStock) && legacyStock >= 0) return Math.floor(legacyStock);
+    } catch (_) {}
+    return null;
+  }
+
+  function clampLineQty(line, qty) {
+    var q = Math.max(0, Math.floor(safeNumber(qty, 0)));
+    var max = lineStockLimit(line);
+    if (max != null) q = Math.min(q, max);
+    return q;
   }
 
   function notify() {
@@ -211,9 +246,12 @@
       }
     }
     if (hit) {
-      hit.qty = Math.max(1, Math.floor(safeNumber(hit.qty, 1) + safeNumber(n.qty, 1)));
+      if (n.stockMax != null) hit.stockMax = n.stockMax;
+      var mergedQty = clampLineQty(hit, safeNumber(hit.qty, 1) + safeNumber(n.qty, 1));
+      if (mergedQty > 0) hit.qty = mergedQty;
     } else {
-      lines.push(n);
+      n.qty = clampLineQty(n, n.qty);
+      if (n.qty > 0) lines.push(n);
     }
     save(lines);
     return lines;
@@ -243,8 +281,9 @@
         if (l.id !== sid || l.size !== ss) return l;
         if (lineExtraKey(l.lineExtra) !== ex) return l;
         changed = true;
-        if (q <= 0) return null;
-        var n = normalizeLine(Object.assign({}, l, { qty: q }));
+        var cappedQty = clampLineQty(l, q);
+        if (cappedQty <= 0) return null;
+        var n = normalizeLine(Object.assign({}, l, { qty: cappedQty }));
         return n;
       })
       .filter(Boolean);
@@ -455,8 +494,14 @@
       if (!D || typeof D.getProduct !== "function") return safeNumber(line.price, 0);
       var p = D.getProduct(line.id);
       if (!p || !p.prices) return safeNumber(line.price, 0);
-      var sizeKey = String(line.size || "m").trim().toLowerCase();
-      if (sizeKey !== "s" && sizeKey !== "m" && sizeKey !== "l") sizeKey = "m";
+      var rawSize = String(line.size || "m").trim();
+      var sizeKey = rawSize.toLowerCase();
+      var customPrice = liveVariantPrice(p, rawSize);
+      if (customPrice != null) return customPrice;
+      /* Custom option ids such as s:8-inch are not S/M/L. Their stored unit
+         price is authoritative when a catalog snapshot does not expose the
+         option metadata; never silently replace it with the M price. */
+      if (sizeKey !== "s" && sizeKey !== "m" && sizeKey !== "l") return safeNumber(line.price, 0);
       var slotPrice = Number(p.prices[sizeKey]);
       if (Number.isFinite(slotPrice) && slotPrice > 0) return slotPrice;
       var keys = ["s", "m", "l"];
@@ -470,6 +515,54 @@
       }
     } catch (_) {}
     return safeNumber(line.price, 0);
+  }
+
+  function optionById(rows, id) {
+    if (!Array.isArray(rows) || !id) return null;
+    for (var i = 0; i < rows.length; i++) {
+      if (String(rows[i] && rows[i].id || "") === String(id)) return rows[i];
+    }
+    return null;
+  }
+
+  function productOptions(product) {
+    if (product && product.options && typeof product.options === "object") return product.options;
+    try {
+      var adapter = global.RESIN_CATALOG_PDP;
+      if (adapter && typeof adapter.getOptionsForProduct === "function") {
+        var opt = adapter.getOptionsForProduct(product);
+        if (opt && typeof opt === "object") return opt;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  function moneyValue(value) {
+    var n = Number(value);
+    return Number.isFinite(n) && n >= 0 ? n : null;
+  }
+
+  function liveVariantPrice(product, rawSlot) {
+    var opt = productOptions(product);
+    if (!opt) return null;
+    var sid = "";
+    var qid = "";
+    String(rawSlot || "").split("|").forEach(function (part) {
+      if (part.indexOf("s:") === 0) sid = part.slice(2);
+      if (part.indexOf("q:") === 0) qid = part.slice(2);
+    });
+    if (!sid && !qid) return null;
+    var base = moneyValue(product.priceInr);
+    if (base == null && product.prices) base = moneyValue(product.prices.m);
+    if (base == null) base = 0;
+    var size = opt.useSize && sid ? optionById(opt.sizes, sid) : null;
+    var qty = opt.useQty && qid ? optionById(opt.qtyOptions, qid) : null;
+    var sizePrice = size ? moneyValue(size.priceInr) : null;
+    var qtyPrice = qty ? moneyValue(qty.priceInr) : null;
+    if (opt.useSize && opt.useQty && (size || qty)) return (sizePrice != null ? sizePrice : base) + (qtyPrice != null ? qtyPrice : 0);
+    if (opt.useSize && size) return sizePrice != null ? sizePrice : base;
+    if (opt.useQty && qty) return qtyPrice != null ? qtyPrice : base;
+    return null;
   }
 
   function syncCartPricesFromCatalog() {
@@ -797,6 +890,7 @@
     removeLine: removeLine,
     setLineQty: setLineQty,
     incrementLine: incrementLine,
+    lineStockLimit: lineStockLimit,
     clear: clearCart,
     clearCart: clearCart,
     countItems: countItems,

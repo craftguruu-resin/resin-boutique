@@ -1,0 +1,158 @@
+/*
+ * Customer header layout
+ *
+ * This is intentionally loaded after the older storefront layout layers.  It
+ * keeps the navigation and account controls in predictable grid slots instead
+ * of allowing breakpoint-specific rules to put one on top of the other.
+ */
+
+body.guest-site .site-top {
+  isolation: isolate;
+}
+
+@media (min-width: 901px) {
+  body.guest-site .site-top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    grid-template-rows: auto auto;
+    gap: 0.6rem 0.9rem;
+  }
+
+  body.guest-site .site-top > .brand,
+  body.guest-site .site-top .guest-top-cluster {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  body.guest-site .site-top > .nav-dock {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .site-top > .nav-dock::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.guest-site .site-top .site-top-end,
+  body.guest-site .site-top .site-top-end--home {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    justify-self: end;
+    min-width: 0;
+    max-width: min(34rem, 48vw);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .site-top .site-top-end::-webkit-scrollbar,
+  body.guest-site .site-top .site-top-end--home::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.guest-site .site-top .home-auth-bar {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 900px) {
+  html.guest-responsive-root body.guest-site .site-top,
+  body.guest-site .site-top {
+    grid-template-columns: minmax(0, 1fr) !important;
+    grid-template-rows: auto auto auto auto !important;
+    gap: 0.65rem !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top > .brand,
+  html.guest-responsive-root body.guest-site .site-top .guest-top-cluster > .brand,
+  body.guest-site .site-top > .brand,
+  body.guest-site .site-top .guest-top-cluster > .brand {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .guest-top-cluster,
+  body.guest-site .site-top .guest-top-cluster {
+    display: contents;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .guest-header-search,
+  body.guest-site .site-top .guest-header-search {
+    grid-column: 1 !important;
+    grid-row: 2 !important;
+    width: min(100%, 36rem) !important;
+    margin-inline: 0 !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock,
+  body.guest-site .site-top > .nav-dock {
+    grid-column: 1 !important;
+    grid-row: 3 !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-top: 0 !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .site-top-end,
+  html.guest-responsive-root body.guest-site .site-top .site-top-end--home,
+  body.guest-site .site-top .site-top-end,
+  body.guest-site .site-top .site-top-end--home {
+    grid-column: 1 !important;
+    grid-row: 4 !important;
+    justify-self: stretch !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    margin-top: 0 !important;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .site-top-end::-webkit-scrollbar,
+  html.guest-responsive-root body.guest-site .site-top .site-top-end--home::-webkit-scrollbar,
+  body.guest-site .site-top .site-top-end::-webkit-scrollbar,
+  body.guest-site .site-top .site-top-end--home::-webkit-scrollbar {
+    display: none;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .home-auth-bar,
+  body.guest-site .site-top .home-auth-bar {
+    flex: 0 0 auto;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  html.guest-responsive-root body.guest-site .site-top,
+  body.guest-site .site-top {
+    grid-template-rows: auto auto auto !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .guest-header-search,
+  body.guest-site .site-top .guest-header-search {
+    display: none !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock,
+  body.guest-site .site-top > .nav-dock {
+    grid-row: 2 !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .site-top-end,
+  html.guest-responsive-root body.guest-site .site-top .site-top-end--home,
+  body.guest-site .site-top .site-top-end,
+  body.guest-site .site-top .site-top-end--home {
+    grid-row: 3 !important;
+  }
+}

@@ -958,6 +958,12 @@
   }
 
   function renderCatalogRows(rows, tb, reset) {
+    /* Lifecycle is intentionally absent from Inventory. Discontinued rows are
+       managed and restored in Catalog, while this screen stays focused on
+       stock for live listings only. */
+    rows = (rows || []).filter(function (row) {
+      return row && row.isActive !== false;
+    });
     if (reset) tb.innerHTML = "";
     if (reset && !rows.length) {
       tb.innerHTML = "<tr><td colspan='7' class='vs-muted'>No matches.</td></tr>";
@@ -965,6 +971,22 @@
     }
     if (reset && tb.querySelector(".vs-muted")) tb.innerHTML = "";
     tb.innerHTML += rows.map(renderCatalogDataRow).join("");
+  }
+
+  function inventoryAvailabilityCell(item) {
+    var stock = item && item.effectiveStock && typeof item.effectiveStock === "object" ? item.effectiveStock : {};
+    var values = [stock.s, stock.m, stock.l]
+      .map(function (value) { return Number(value); })
+      .filter(function (value) { return Number.isFinite(value); });
+    var variants = item && item.options && item.options.vendorInventory && item.options.vendorInventory.variants;
+    if (variants && typeof variants === "object" && Object.keys(variants).length) {
+      values = Object.keys(variants)
+        .map(function (key) { return Number(variants[key] && variants[key].stock); })
+        .filter(function (value) { return Number.isFinite(value); });
+    }
+    return values.some(function (value) { return value > 0; })
+      ? "<td><span class='vs-pill vs-pill--active'>In stock</span></td>"
+      : "<td><span class='vs-pill vs-pill--inactive'>Out of stock</span></td>";
   }
 
   function renderCatalogDataRow(it) {
@@ -985,12 +1007,7 @@
           ? " <span class='vs-badge vs-badge--paid' title='Corporate gifting'>CG</span>"
           : "";
     var skuLine = it.sku ? "<br/><span class='vs-muted'>SKU " + esc(it.sku) + "</span>" : "";
-    var active = it.isActive !== false;
-    var statusCell = active
-      ? "<td><span class='vs-pill vs-pill--active'>Active</span></td>"
-      : "<td><span class='vs-pill vs-pill--inactive'>Discontinued</span></td>";
-    var toggleLabel = active ? "Discontinue" : "Set active";
-    var toggleClass = active ? "vs-btn--ghost vs-btn--danger" : "vs-btn--primary";
+    var availabilityCell = inventoryAvailabilityCell(it);
     var productCell =
       "<td><div class=\"vi-cat-product-cell\">" +
       imgTag +
@@ -1011,12 +1028,12 @@
         bid +
         "' data-kind='" + esc(it.productKind || "catalog") + "'>" +
         productCell +
-        statusCell +
+        availabilityCell +
         "<td colspan='3'><div class='vi-variant-stock-grid' aria-label='Variant stock'>" +
         catalogVariantStockRows(it) +
         "</div></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
         bid +
-        "'>Save stock</button><button type='button' class='vs-btn " + toggleClass + " vi-cat-toggle' data-pid='" + bid + "' data-next='" + (active ? "0" : "1") + "'>" + toggleLabel + "</button>" +
+        "'>Save stock</button>" +
         "</div></td></tr>"
       );
     }
@@ -1025,7 +1042,7 @@
       bid +
       "' data-kind='" + esc(it.productKind || "catalog") + "'>" +
       productCell +
-      statusCell +
+      availabilityCell +
       "<td><input class='vi-cat-stock' data-k='s' data-pid='" +
       bid +
       "' type='number' min='0' step='0.01' value='" +
@@ -1040,7 +1057,7 @@
       esc(catalogStockFieldValue(st.l)) +
       "' style='width:4.5rem'/></td><td><div class='vi-cat-actions'><button type='button' class='vs-btn vs-btn--primary vi-cat-save' data-pid='" +
       bid +
-      "'>Save</button><button type='button' class='vs-btn " + toggleClass + " vi-cat-toggle' data-pid='" + bid + "' data-next='" + (active ? "0" : "1") + "'>" + toggleLabel + "</button>" +
+      "'>Save stock</button>" +
       "</div></td></tr>"
     );
   }
@@ -1059,6 +1076,7 @@
         encodeURIComponent(catalogCategoryFilter) +
         "&scope=" +
         encodeURIComponent(scope) +
+        "&activeOnly=1" +
         "&limit=" +
         catalogLimit +
         "&offset=" +
@@ -1411,40 +1429,6 @@
   var catTb = document.getElementById("viCatalogTbody");
   if (catTb) {
     catTb.addEventListener("click", function (ev) {
-      var toggle = ev.target && ev.target.closest ? ev.target.closest(".vi-cat-toggle") : null;
-      if (toggle && catTb.contains(toggle)) {
-        var toggleId = toggle.getAttribute("data-pid");
-        var next = toggle.getAttribute("data-next") === "1";
-        var row = toggle.closest("tr");
-        var kind = row ? String(row.getAttribute("data-kind") || "catalog") : "catalog";
-        if (!toggleId) return;
-        var route = kind === "raw_material"
-          ? "/api/vendor/raw-materials/"
-          : kind === "photo_frame"
-            ? "/api/vendor/photo-frame-products/"
-            : "/api/vendor/products/";
-        toggle.disabled = true;
-        vf(V.vendorApiUrl(route + encodeURIComponent(toggleId) + "/active"), {
-          method: "POST",
-          headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify({ active: next }),
-        })
-          .then(function (res) {
-            return V.parseApiJson(res).then(function (x) {
-              if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Status update failed");
-            });
-          })
-          .then(function () {
-            return loadCatalogPage(true);
-          })
-          .catch(function (e) {
-            window.alert(String((e && e.message) || e));
-          })
-          .finally(function () {
-            toggle.disabled = false;
-          });
-        return;
-      }
       var btn = ev.target && ev.target.closest ? ev.target.closest(".vi-cat-save") : null;
       if (!btn || !catTb.contains(btn)) return;
       var pid = btn.getAttribute("data-pid");

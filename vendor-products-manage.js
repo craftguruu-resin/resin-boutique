@@ -829,6 +829,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Update failed");
         }
+        refreshGuestCatalogMerge();
       });
     });
   }
@@ -1148,6 +1149,9 @@
           .then(function () {
             return loadList();
           })
+          .then(function () {
+            showMsg("Product discontinued. It is hidden from the storefront and available under the Discontinued filter.", false);
+          })
           .catch(function (e) {
             window.alert(String((e && e.message) || e));
           });
@@ -1157,6 +1161,9 @@
         setActive(id, true)
           .then(function () {
             return loadList();
+          })
+          .then(function () {
+            showMsg("Product is active again and will return to the storefront.", false);
           })
           .catch(function (e) {
             window.alert(String((e && e.message) || e));

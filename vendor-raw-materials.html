@@ -62,6 +62,14 @@
                     <option value="">All</option>
                   </select>
                 </div>
+                <div class="vs-field" style="margin: 0; min-width: 9.5rem">
+                  <label for="vrmStatus">Listing status</label>
+                  <select id="vrmStatus" class="vs-input">
+                    <option value="all">All listings</option>
+                    <option value="active">Active</option>
+                    <option value="discontinued">Discontinued</option>
+                  </select>
+                </div>
                 <div class="vs-field vrm-search-field" style="margin: 0">
                   <label for="vrmSearch" class="visually-hidden">Search materials</label>
                   <input
@@ -84,7 +92,7 @@
                     <th>Name</th>
                     <th>SKU</th>
                     <th>From price</th>
-                    <th>Active</th>
+                    <th>Listing status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -203,7 +211,7 @@
   </div>
   <script src="image-fit.js"></script>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-raw-materials.js"></script>
+  <script src="vendor-raw-materials.js?v=20260928lifecycle1"></script>
   <script src="vendor-form-steps.js"></script>
 </body>
 </html>

@@ -6,6 +6,17 @@
 
   var rawList = [];
   var vpfNav = null;
+  var listingStatusFilter = "all";
+
+  function notifyGuestPhotoFramesRefresh() {
+    try {
+      localStorage.setItem("craftguruPhotoFramesChangedAt", Date.now() + ":" + Math.random());
+      localStorage.setItem("craftguruCatalogChangedAt", Date.now() + ":" + Math.random());
+    } catch (_) {}
+    try {
+      window.dispatchEvent(new CustomEvent("craftguruPhotoFramesChanged"));
+    } catch (_) {}
+  }
 
   function pfNavCategories() {
     return (vpfNav && vpfNav.categories) || [];
@@ -1061,6 +1072,18 @@
     }
     empty.style.display = "none";
     table.style.display = "";
+    rows = (rows || []).filter(function (r) {
+      var active = r && r.isActive !== false;
+      if (listingStatusFilter === "active") return active;
+      if (listingStatusFilter === "discontinued") return !active;
+      return true;
+    });
+    if (!rows.length) {
+      empty.textContent = "No products match this listing status.";
+      empty.style.display = "block";
+      table.style.display = "none";
+      return;
+    }
     rows.forEach(function (r) {
       var active = r.isActive !== false;
       var tr = document.createElement("tr");
@@ -1149,6 +1172,7 @@
         if (!res.ok || !j.ok) {
           throw new Error((j && j.error) || res.statusText || "Update failed");
         }
+        notifyGuestPhotoFramesRefresh();
       });
     });
   }
@@ -1238,6 +1262,14 @@
     document.getElementById("vpfRefresh").addEventListener("click", function () {
       loadList().catch(function () {});
     });
+
+    var vpfStatus = document.getElementById("vpfStatus");
+    if (vpfStatus) {
+      vpfStatus.addEventListener("change", function () {
+        listingStatusFilter = String(vpfStatus.value || "all");
+        loadList().catch(function () {});
+      });
+    }
 
     var vpfSearchTimer = null;
     function scheduleVrmSearchReload() {
@@ -1345,6 +1377,9 @@
         setActive(id, next)
           .then(function () {
             return loadList();
+          })
+          .then(function () {
+            showMsg(next ? "Product is active again and will return to the storefront." : "Product discontinued. View it under the Discontinued filter.", false);
           })
           .catch(function (e) {
             window.alert(String((e && e.message) || e));
