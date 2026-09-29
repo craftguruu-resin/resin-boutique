@@ -3765,7 +3765,7 @@ app.post("/api/vendor/hero-slides", function (req, res, next) {
   });
 });
 
-/** Vendor: upload 5–20 hero images in one request (same animation for all). */
+/** Vendor: upload 2–20 hero images in one request (same animation for all). */
 app.post(
   "/api/vendor/hero-slides/batch",
   heroBatchUpload.array("images", 20),
@@ -3778,10 +3778,10 @@ app.post(
         return res.status(401).json({ ok: false, error: "Unauthorized" });
       }
       var files = req.files || [];
-      if (files.length < 5) {
+      if (files.length < 2) {
         return res.status(400).json({
           ok: false,
-          error: "Select at least 5 images for a batch upload (up to 20). Use \"Add one slide\" below for a single image.",
+          error: "Select at least 2 images for a batch upload (up to 20). Use \"Add one slide\" below for a single image.",
         });
       }
       if (files.length > 20) {

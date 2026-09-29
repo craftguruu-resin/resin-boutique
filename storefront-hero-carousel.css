@@ -1,0 +1,172 @@
+/* Vendor-published homepage heroes. The customer view is deliberately calm,
+   touch-friendly, and independent from the built-in artwork hero. */
+html body.page-home .home-resin-hero.home-resin-hero--promo {
+  display: block !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 16 / 9 !important;
+  overflow: visible !important;
+  background: transparent !important;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo #heroAtelierBuiltin,
+html body.page-home .home-resin-hero.home-resin-hero--promo .home-landing-hero__copy,
+html body.page-home .home-resin-hero.home-resin-hero--promo .home-landing-hero__fx,
+html body.page-home .home-resin-hero.home-resin-hero--promo .home-landing-hero__hits {
+  display: none !important;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel {
+  display: block !important;
+  position: relative;
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  overflow: visible !important;
+  line-height: normal;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__frame {
+  position: relative !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  aspect-ratio: 16 / 9;
+  overflow: hidden !important;
+  isolation: isolate;
+  border: 1px solid rgba(15, 45, 60, 0.08) !important;
+  border-radius: clamp(1.25rem, 3.4vw, 2.45rem) !important;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(39, 185, 168, 0.18), transparent 34%),
+    linear-gradient(135deg, #0b2130, #123c4b 55%, #0f6670) !important;
+  box-shadow: 0 24px 60px rgba(12, 47, 61, 0.16) !important;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__img {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  object-fit: contain !important;
+  object-position: center !important;
+  border-radius: inherit !important;
+  will-change: transform, opacity;
+}
+
+/* Next campaigns enter from the left and leave toward the right. */
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__img.hero-promo-carousel__img--leave {
+  transform: translateX(105%) !important;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__img.hero-promo-carousel__img--enter-start {
+  transform: translateX(-105%) !important;
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__img.hero-promo-carousel__img--enter-run {
+  transform: translateX(0) !important;
+}
+
+html body.page-home .hero-promo-carousel__veil {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(6, 26, 35, 0.13), transparent 25%, transparent 76%, rgba(4, 29, 37, 0.1));
+}
+
+html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__toolbar {
+  position: absolute;
+  z-index: 3;
+  right: clamp(0.6rem, 2vw, 1.15rem);
+  bottom: clamp(0.55rem, 1.8vw, 1rem);
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  max-width: calc(100% - 1.2rem);
+  padding: 0.42rem 0.48rem 0.42rem 0.68rem;
+  border: 1px solid rgba(255, 255, 255, 0.38);
+  border-radius: 999px;
+  background: rgba(6, 27, 37, 0.64);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html body.page-home .hero-promo-carousel__dots,
+html body.page-home .hero-promo-carousel__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.38rem;
+}
+
+html body.page-home .hero-promo-carousel__dot {
+  width: 0.44rem;
+  height: 0.44rem;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.56);
+  cursor: pointer;
+  transition: width 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+html body.page-home .hero-promo-carousel__dot.is-active {
+  width: 1.25rem;
+  background: #fff;
+}
+
+html body.page-home .hero-promo-carousel__dot:hover { transform: scale(1.14); }
+
+html body.page-home .hero-promo-carousel__nav {
+  display: inline-grid;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.34);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  font: 600 1.05rem/1 system-ui, sans-serif;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease;
+}
+
+html body.page-home .hero-promo-carousel__nav:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: translateY(-1px);
+}
+
+html body.page-home .hero-promo-carousel__dot:focus-visible,
+html body.page-home .hero-promo-carousel__nav:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+html body.page-home .hero-promo-carousel__count {
+  min-width: 2.3rem;
+  color: rgba(255, 255, 255, 0.88);
+  font: 650 0.72rem/1.2 "Plus Jakarta Sans", system-ui, sans-serif;
+  letter-spacing: 0.04em;
+  text-align: center;
+}
+
+@media (max-width: 560px) {
+  html body.page-home .home-resin-hero.home-resin-hero--promo { aspect-ratio: 4 / 3 !important; }
+  html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__frame { aspect-ratio: 4 / 3; }
+  html body.page-home .home-resin-hero.home-resin-hero--promo .hero-promo-carousel__toolbar { gap: 0.45rem; }
+  html body.page-home .hero-promo-carousel__dots { max-width: 7.3rem; overflow: hidden; }
+  html body.page-home .hero-promo-carousel__nav { width: 2.25rem; height: 2.25rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body.page-home .hero-promo-carousel__img { transition: none !important; }
+  html body.page-home .hero-promo-carousel__dot,
+  html body.page-home .hero-promo-carousel__nav { transition: none; }
+}

@@ -392,21 +392,13 @@
           return x.json.summary || {};
         });
       }),
-      vf(V.vendorApiUrl("/api/vendor/audit?limit=8"), { headers: V.authHeaders() }).then(function (res) {
-        return V.parseApiJson(res).then(function (x) {
-          if (!x.okHttp || !x.json.ok) return [];
-          return x.json.entries || [];
-        });
-      }),
     ])
       .then(function (pair) {
         var ins = pair[0];
         var sum = pair[1];
-        var audit = pair[2] || [];
         fillKpis(ins);
         renderCategoryBars(ins);
         renderNotify(sum.notifications || []);
-        renderAudit(audit);
         ensureChartJs(function () {
           renderDonuts(ins);
           renderMainChart(ins);
@@ -415,23 +407,6 @@
       .catch(function (e) {
         showErr(errEl, String((e && e.message) || e));
       });
-  }
-
-  function renderAudit(entries) {
-    var el = document.getElementById("vdAudit");
-    if (!el) return;
-    if (!entries.length) {
-      el.innerHTML = "<p class='vs-muted'>No recorded changes yet.</p>";
-      return;
-    }
-    el.innerHTML = entries.map(function (entry) {
-      var when = "";
-      try { when = new Date(entry.createdAt).toLocaleString("en-IN", { timeZone: "Asia/Kolkata", day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); } catch (_) {}
-      return "<p class='vs-muted' style='margin:.35rem 0'><strong>" + esc(entry.entityType || "vendor") +
-        "</strong> · " + esc(entry.action || "updated") +
-        (entry.entityId ? " · " + esc(entry.entityId) : "") +
-        (when ? " <span style='float:right'>" + esc(when) + "</span>" : "") + "</p>";
-    }).join("");
   }
 
   function tryApplyVendorNextRedirect() {

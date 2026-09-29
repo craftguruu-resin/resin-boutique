@@ -39,12 +39,15 @@
   }
 
   function syncCustomHeroUi(settings) {
-    var togg = document.getElementById("vhCustomToggle");
-    if (!togg || !settings) return;
-    togg.checked = settings.customHeroEnabled !== false;
+    if (!settings) return;
+    var customOn = settings.customHeroEnabled !== false;
+    var builtinMode = document.getElementById("vhModeBuiltin");
+    var carouselMode = document.getElementById("vhModeCarousel");
+    if (builtinMode) builtinMode.checked = !customOn;
+    if (carouselMode) carouselMode.checked = customOn;
     var hint = document.getElementById("vhCustomHint");
     if (hint) {
-      if (!togg.checked) {
+      if (!customOn) {
         hint.hidden = false;
         hint.textContent =
           "Guests currently see the built-in Craftguru homepage hero. Turn “Custom hero on homepage” on to publish your slides again.";
@@ -52,6 +55,11 @@
         hint.hidden = true;
         hint.textContent = "";
       }
+    }
+    var state = document.getElementById("vhPublishState");
+    if (state) {
+      state.textContent = customOn ? "Carousel live" : "Default hero live";
+      state.classList.toggle("vh-publish-state--live", customOn);
     }
   }
 
@@ -380,23 +388,24 @@
       });
     }
 
-    var customTog = document.getElementById("vhCustomToggle");
-    if (customTog) {
-      customTog.addEventListener("change", function () {
+    document.querySelectorAll('input[name="vhMode"]').forEach(function (mode) {
+      mode.addEventListener("change", function () {
+        if (!mode.checked) return;
+        var customOn = mode.value === "carousel";
         showMsg("Saving…", false);
-        putHeroSettings({ customHeroEnabled: customTog.checked })
+        putHeroSettings({ customHeroEnabled: customOn })
           .then(function () {
             return loadSlides({ quiet: true });
           })
           .then(function () {
-            showMsg(customTog.checked ? "Custom hero is live on the guest site." : "Guest site now uses the built-in hero.", false);
+            showMsg(customOn ? "Multi-image carousel is live on the guest site." : "Guest site now uses the default hero.", false);
           })
           .catch(function (e) {
             showMsg(String((e && e.message) || e), true);
             return loadSlides({ quiet: true });
           });
       });
-    }
+    });
 
     var builtinBtn = document.getElementById("vhBuiltinBtn");
     if (builtinBtn) {
@@ -486,8 +495,8 @@
         ev.preventDefault();
         var fi = document.getElementById("vhBatchImages");
         var files = fi && fi.files ? fi.files : null;
-        if (!files || files.length < 5) {
-          showBatchMsg("Choose at least 5 images (up to 20) for a batch upload.", true);
+        if (!files || files.length < 2) {
+          showBatchMsg("Choose at least 2 images (up to 20) for a batch upload.", true);
           return;
         }
         if (files.length > 20) {

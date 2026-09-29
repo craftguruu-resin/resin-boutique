@@ -230,7 +230,14 @@ function renderHeroPromo(req, pack) {
     '" sizes="' +
     escAttr(cloudinaryDelivery.sizesAttr("hero")) +
     '" alt="Homepage promotion" width="1200" height="640" loading="eager" decoding="async" fetchpriority="high" />' +
-    "</div></div>";
+    '<div class="hero-promo-carousel__veil" aria-hidden="true"></div>' +
+    '</div><div class="hero-promo-carousel__toolbar" id="heroPromoControls" hidden>' +
+    '<div class="hero-promo-carousel__dots" id="heroPromoDots" aria-label="Choose a hero slide"></div>' +
+    '<div class="hero-promo-carousel__actions">' +
+    '<button type="button" class="hero-promo-carousel__nav" id="heroPromoPrev" aria-label="Previous hero slide">←</button>' +
+    '<span class="hero-promo-carousel__count" id="heroPromoCount" aria-live="polite"></span>' +
+    '<button type="button" class="hero-promo-carousel__nav" id="heroPromoNext" aria-label="Next hero slide">→</button>' +
+    "</div></div></div>";
   return { html: html, showPromo: true };
 }
 
@@ -334,8 +341,9 @@ function serveHomepage(req, res, next) {
       var index = buildProductIndex(staticData, bootstrap);
       var categoryRail = renderCategoryRail(bootstrap.categories || []);
       var featuredGrid = renderFeaturedGrid(req, bootstrap.categories || [], index);
-      // Keep the built-in homepage hero authoritative. Custom DB promo slides must not hide it.
-      var hero = { html: "", showPromo: false };
+      // Render the first campaign slide on the server, then let app.js hydrate
+      // the accessible carousel without a first-paint flash.
+      var hero = renderHeroPromo(req, heroPack);
 
       var html = injectHomepage(template, {
         categoryRail: categoryRail,

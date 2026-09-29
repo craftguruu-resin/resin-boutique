@@ -1200,81 +1200,317 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
-  .vendor-saas {
-    --vs-surface: #14263b;
-    --vs-surface-muted: #192d43;
-    --vs-text: #e8f0f7;
-    --vs-muted: #a7b6c7;
-    --vs-border: rgba(201, 220, 235, 0.14);
-    --vm-card: rgba(20, 38, 59, 0.94);
-    --vm-canvas: #0d1a2a;
-    --vm-navy-2: #edf6fb;
-    background:
-      radial-gradient(circle at 86% -5%, rgba(94, 87, 213, 0.23), transparent 30rem),
-      radial-gradient(circle at 6% 0%, rgba(13, 152, 140, 0.16), transparent 28rem),
-      #0d1a2a;
-  }
+/* Keep the vendor workspace light regardless of the operating-system theme. */
 
-  .vendor-saas .vs-sidebar,
-  .vendor-saas .vs-topbar,
-  .vendor-saas .vs-card,
-  .vendor-saas .vd-panel,
-  .vendor-saas .vs-ops-queue,
-  .vendor-saas .vs-table-wrap,
-  .vendor-saas .vpm-media,
-  .vendor-saas .cg-ship-panel,
-  .vendor-saas .vt-detail,
-  .vendor-saas .vs-detail {
-    border-color: rgba(214, 230, 240, 0.11);
-    background: rgba(20, 38, 59, 0.92);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
-  }
+/* Storefront Hero Studio -------------------------------------------------- */
+.vendor-saas .vh-studio {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
 
-  .vendor-saas .vs-sidebar__foot,
-  .vendor-saas .vd-ledger__toolbar,
-  .vendor-saas .vendor-catalog-tabs,
-  .vendor-saas .vrm-tabs,
-  .vendor-saas .vpf-tabs,
-  .vendor-saas .vd-ledger__tabs {
-    background: rgba(31, 54, 77, 0.9);
-  }
+.vendor-saas .vh-studio > .vs-card {
+  margin: 0 !important;
+  padding: clamp(1rem, 2.2vw, 1.45rem) !important;
+}
 
-  .vendor-saas .vs-field input,
-  .vendor-saas .vs-field select,
-  .vendor-saas .vs-field textarea,
-  .vendor-saas .vs-input,
-  .vendor-saas .vrm-search-input,
-  .vendor-saas .vpf-search-input,
-  .vendor-saas .vd-ledger__tab,
-  .vendor-saas .vs-pill,
-  .vendor-saas .vs-ful-pill {
-    border-color: rgba(214, 230, 240, 0.14);
-    background: #172c43;
-    color: #dbe7ef;
-  }
+.vendor-saas .vh-command-card,
+.vendor-saas .vh-library-card {
+  grid-column: 1 / -1;
+}
 
-  .vendor-saas .vs-table th {
-    background: #183249;
-    color: #aebfd0;
-  }
+.vendor-saas .vh-command-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(8, 122, 114, 0.15);
+  background:
+    radial-gradient(circle at 91% 9%, rgba(31, 183, 165, 0.19), transparent 22rem),
+    linear-gradient(125deg, #f5fffd, #fbfefd 56%, #effaf8);
+}
 
-  .vendor-saas .vs-table td,
-  .vendor-saas .vd-panel__hint,
-  .vendor-saas .vd-kpi-card__sub,
-  .vendor-saas .vs-field label,
-  .vendor-saas .vs-label-like {
-    color: #b5c4d3;
-  }
+.vendor-saas .vh-command-card::after {
+  position: absolute;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: -2.3rem;
+  width: 11rem;
+  height: 11rem;
+  border: 1px solid rgba(8, 122, 114, 0.14);
+  border-radius: 50%;
+  content: "";
+  pointer-events: none;
+}
 
-  .vendor-saas .vd-kpi-card {
-    border-color: rgba(214, 230, 240, 0.1);
-    background: linear-gradient(145deg, #193047, #14283d);
-  }
+.vendor-saas .vh-command-card__eyebrow,
+.vendor-saas .vh-section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0 0 0.55rem;
+  color: #087a72;
+  font-size: 0.69rem;
+  font-weight: 780;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
 
-  .vendor-saas .vs-chart-wrap,
-  .vendor-saas .vd-chart-wrap--tall {
-    border-color: rgba(214, 230, 240, 0.1);
-    background-color: #14283d;
-  }
+.vendor-saas .vh-command-card .vs-card__title {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+  color: #173147;
+  font-size: clamp(1.45rem, 2.7vw, 2rem);
+}
+
+.vendor-saas .vh-command-card > .vs-muted {
+  position: relative;
+  z-index: 1;
+  max-width: 47rem;
+  margin: 0.55rem 0 1.1rem;
+  color: #587083;
+}
+
+.vendor-saas .vh-command-card__actions,
+.vendor-saas .vh-playback-card__controls {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.vendor-saas .vh-mode-picker {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.7rem;
+  max-width: 52rem;
+}
+
+.vendor-saas .vh-mode-option {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.6rem;
+  min-height: 5.25rem;
+  padding: 0.82rem;
+  border: 1px solid rgba(44, 78, 103, 0.14);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.76);
+  color: #29475b;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.vendor-saas .vh-mode-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(8, 122, 114, 0.28);
+  box-shadow: 0 9px 20px rgba(20, 74, 81, 0.07);
+}
+
+.vendor-saas .vh-mode-option:has(input:checked) {
+  border-color: rgba(8, 122, 114, 0.34);
+  background: linear-gradient(145deg, #e5faf6, #fafffe);
+  box-shadow: 0 9px 22px rgba(8, 122, 114, 0.1);
+}
+
+.vendor-saas .vh-mode-option input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.14rem 0 0;
+  accent-color: #087a72;
+}
+
+.vendor-saas .vh-mode-option__icon {
+  display: inline-grid;
+  width: 1.9rem;
+  height: 1.9rem;
+  place-items: center;
+  border-radius: 0.65rem;
+  background: #edf7f6;
+  color: #087a72;
+  font-weight: 800;
+}
+
+.vendor-saas .vh-mode-option strong,
+.vendor-saas .vh-mode-option small {
+  display: block;
+}
+
+.vendor-saas .vh-mode-option strong {
+  margin: 0.03rem 0 0.18rem;
+  color: #1d3c51;
+  font-size: 0.86rem;
+}
+
+.vendor-saas .vh-mode-option small {
+  color: #668095;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
+
+.vendor-saas .vh-command-card__actions .vs-field {
+  min-height: 2.65rem;
+  padding: 0.5rem 0.76rem;
+  border: 1px solid rgba(8, 122, 114, 0.14);
+  border-radius: 0.8rem;
+  background: rgba(255, 255, 255, 0.77);
+  color: #244457;
+  font-weight: 720;
+}
+
+.vendor-saas .vh-command-card__actions input[type="checkbox"] {
+  inline-size: 1.05rem;
+  block-size: 1.05rem;
+  accent-color: #087a72;
+}
+
+.vendor-saas .vh-publish-state--live {
+  border-color: rgba(8, 122, 114, 0.16);
+  background: #dff8f3;
+  color: #087a72;
+}
+
+.vendor-saas .vh-playback-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  border-color: rgba(70, 104, 135, 0.13);
+  background: linear-gradient(145deg, #fff, #f6fafc);
+}
+
+.vendor-saas .vh-playback-card .vs-card__title,
+.vendor-saas .vh-upload-card .vs-card__title,
+.vendor-saas .vh-url-card .vs-card__title,
+.vendor-saas .vh-single-card .vs-card__title,
+.vendor-saas .vh-library-card .vs-card__title {
+  margin: 0;
+  color: #203a50;
+  font-size: 1.08rem;
+}
+
+.vendor-saas .vh-playback-card .vs-muted {
+  max-width: 34rem;
+  margin: 0.35rem 0 0;
+}
+
+.vendor-saas .vh-playback-card__controls {
+  justify-content: flex-end;
+  align-self: end;
+}
+
+.vendor-saas .vh-playback-card__controls .vs-field label { font-size: 0.72rem; }
+
+.vendor-saas .vh-upload-card,
+.vendor-saas .vh-url-card,
+.vendor-saas .vh-single-card {
+  min-height: 100%;
+  border-color: rgba(70, 104, 135, 0.12);
+  background: linear-gradient(150deg, #fff, #f9fcfc);
+}
+
+.vendor-saas .vh-upload-card { background: linear-gradient(145deg, #f7fffc, #f5fbfa); }
+.vendor-saas .vh-url-card { background: linear-gradient(145deg, #f8fbff, #fff); }
+
+.vendor-saas .vh-upload-card > .vs-muted,
+.vendor-saas .vh-url-card > .vs-muted,
+.vendor-saas .vh-single-card > .vs-muted {
+  margin: 0.35rem 0 1rem;
+}
+
+.vendor-saas .vh-upload-card .vs-row-actions,
+.vendor-saas .vh-single-card .vs-row-actions,
+.vendor-saas .vh-url-card .vs-row-actions {
+  gap: 0.75rem !important;
+}
+
+.vendor-saas .vh-upload-card input[type="file"],
+.vendor-saas .vh-single-card input[type="file"] {
+  max-width: min(100%, 19rem);
+  padding: 0.42rem;
+  border: 1px dashed rgba(8, 122, 114, 0.27);
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.vendor-saas .vh-url-card textarea {
+  min-height: 8rem;
+  border-color: rgba(70, 104, 135, 0.17);
+  border-radius: 0.85rem;
+  background: rgba(255, 255, 255, 0.86);
+}
+
+.vendor-saas .vh-hero-preview-card {
+  border-color: rgba(8, 122, 114, 0.14);
+  background: linear-gradient(145deg, #f0faf8, #fbfefe);
+}
+
+.vendor-saas .vh-live-preview {
+  max-width: none;
+}
+
+.vendor-saas .vh-live-preview__frame {
+  max-height: none;
+  aspect-ratio: 16 / 8;
+  border-radius: 1.15rem;
+  background:
+    radial-gradient(circle at 78% 15%, rgba(29, 184, 165, 0.22), transparent 35%),
+    linear-gradient(135deg, #0c2735, #0f5660);
+  box-shadow: 0 16px 36px rgba(11, 57, 65, 0.17);
+}
+
+.vendor-saas .vh-live-preview__img.vh-live-preview__img--leave { transform: translateX(105%); }
+.vendor-saas .vh-live-preview__img.vh-live-preview__img--enter-start { transform: translateX(-105%); }
+.vendor-saas .vh-live-preview__img.vh-live-preview__img--enter-run { transform: translateX(0); }
+
+.vendor-saas .vh-library-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.9rem;
+}
+
+.vendor-saas .vh-library-card #vhList { gap: 0.7rem !important; }
+
+.vendor-saas .vh-library-card #vhList > li {
+  min-height: 6.75rem;
+  padding: 0.6rem;
+  border: 1px solid rgba(70, 104, 135, 0.12);
+  border-radius: 1rem;
+  background: #fbfdfd;
+  box-shadow: 0 6px 16px rgba(29, 63, 89, 0.035);
+  transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+}
+
+.vendor-saas .vh-library-card #vhList > li:hover {
+  transform: translateY(-1px);
+  border-color: rgba(8, 122, 114, 0.24);
+  box-shadow: 0 10px 22px rgba(29, 63, 89, 0.07);
+}
+
+.vendor-saas .vh-library-card #vhList > li > img {
+  width: 7.25rem !important;
+  height: 5.5rem !important;
+  border-radius: 0.7rem !important;
+}
+
+@media (max-width: 860px) {
+  .vendor-saas .vh-studio { grid-template-columns: 1fr; }
+  .vendor-saas .vh-playback-card { grid-template-columns: 1fr; }
+  .vendor-saas .vh-playback-card__controls { justify-content: flex-start; }
+}
+
+@media (max-width: 560px) {
+  .vendor-saas .vh-studio { gap: 0.75rem; }
+  .vendor-saas .vh-command-card__actions,
+  .vendor-saas .vh-playback-card__controls { align-items: stretch; }
+  .vendor-saas .vh-command-card__actions .vs-btn,
+  .vendor-saas .vh-playback-card__controls .vs-btn { flex: 1 1 10rem; }
+  .vendor-saas .vh-library-card #vhList > li > img { width: 5.5rem !important; height: 4.4rem !important; }
+  .vendor-saas .vh-mode-picker { grid-template-columns: 1fr; }
 }
