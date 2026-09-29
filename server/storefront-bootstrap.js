@@ -58,6 +58,7 @@ function mergeCategoriesDbWithCatalog(dbRows) {
       subcategories: normalizeCategorySubcategories(row.subcategories),
       nav_image: String((row.nav_image != null && row.nav_image) || "").trim(),
       nav_image_fit: String((row.nav_image_fit != null && row.nav_image_fit) || "").trim(),
+      sort_order: Number(row.sort_order) || 0,
       vendor_owned: Boolean(row.vendor_owned),
     };
   });
@@ -79,6 +80,7 @@ function mergeCategoriesDbWithCatalog(dbRows) {
         folder: c.folder || "",
         subcategories: fromDataSubs,
         nav_image: "",
+        sort_order: 0,
         vendor_owned: false,
       };
     } else {
@@ -102,7 +104,8 @@ function mergeCategoriesDbWithCatalog(dbRows) {
       return map[k];
     })
     .sort(function (a, b) {
-      return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
+      var d = (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0);
+      return d || String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
     });
 }
 
@@ -115,6 +118,7 @@ function categoriesFromDataJsOnly() {
       subcategories: normalizeCategorySubcategories(c.subcategories),
       nav_image: "",
       nav_image_fit: "",
+      sort_order: 0,
       vendor_owned: false,
     };
   });
@@ -156,7 +160,7 @@ function loadStorefrontBootstrap(cb) {
     poolMod
       .getPool()
       .query(
-        "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
+        "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, COALESCE(sort_order, 0) AS sort_order, updated_at FROM categories ORDER BY sort_order ASC, label ASC"
       )
       .then(function (r) {
         out.categories = mergeCategoriesDbWithCatalog(r.rows);

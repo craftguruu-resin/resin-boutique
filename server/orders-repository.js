@@ -36,6 +36,7 @@ function createCheckoutParcelOrder(opts, cb) {
     paymentStatus: opts.paymentStatus != null ? String(opts.paymentStatus) : "pending_payment",
     paymentMethod: opts.paymentMethod != null ? String(opts.paymentMethod) : "",
     paymentReference: opts.paymentReference != null ? String(opts.paymentReference).slice(0, 120) : "",
+    couponCode: opts.couponCode != null ? String(opts.couponCode).slice(0, 40) : "",
     fulfillmentStatus: "new",
   };
   ordersStore.appendOrder(orderRecord);

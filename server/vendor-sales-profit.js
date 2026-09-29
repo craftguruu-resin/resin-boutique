@@ -126,10 +126,12 @@ function buildLineMetrics(row, ovMap) {
   }
   var share = orderProductValue > 0 ? productValue / orderProductValue : 1;
   var orderPrepaid = Number(row.order_prepaid_discount) || 0;
+  var orderCoupon = Number(row.order_coupon_discount) || 0;
   var orderGateway = Number(row.order_gateway_fee) || 0;
   var prepaidDiscount = Math.round(orderPrepaid * share * 100) / 100;
+  var couponDiscount = Math.round(orderCoupon * share * 100) / 100;
   var gatewayFee = Math.round(orderGateway * share * 100) / 100;
-  var netRevenue = Math.round((productValue - prepaidDiscount - gatewayFee) * 100) / 100;
+  var netRevenue = Math.round((productValue - couponDiscount - prepaidDiscount - gatewayFee) * 100) / 100;
   var le = parseLineExtra(row.line_extra);
   var unitCost = resolveUnitCost(row.product_id, row.size_key, row.size_label, le, ovMap[row.product_id]);
   var totalCost = Math.round(unitCost * qty * 100) / 100;
@@ -145,6 +147,7 @@ function buildLineMetrics(row, ovMap) {
     unitPrice: unitPrice,
     productValue: productValue,
     revenue: productValue,
+    couponDiscount: couponDiscount,
     prepaidDiscount: prepaidDiscount,
     gatewayFee: gatewayFee,
     razorpayFee: gatewayFee,
@@ -175,7 +178,7 @@ function getSalesProfitInsights(period, cb) {
   var qLines =
     "SELECT oi.product_id, oi.name, oi.size_key, oi.size_label, oi.qty, oi.unit_price, oi.line_extra, " +
     "o.id AS order_id, o.tag_ref, o.created_at, o.payment_method, o.payment_status, " +
-    "o.product_value AS order_product_value, o.prepaid_discount AS order_prepaid_discount, o.gateway_fee AS order_gateway_fee " +
+    "o.product_value AS order_product_value, o.coupon_discount AS order_coupon_discount, o.prepaid_discount AS order_prepaid_discount, o.gateway_fee AS order_gateway_fee " +
     "FROM order_items oi JOIN orders o ON o.id = oi.order_id " +
     "WHERE o.payment_status = 'paid' AND " +
     where +
@@ -196,6 +199,7 @@ function getSalesProfitInsights(period, cb) {
         var totals = metrics.reduce(
           function (acc, m) {
             acc.revenue += m.productValue;
+            acc.couponDiscount += m.couponDiscount;
             acc.prepaidDiscount += m.prepaidDiscount;
             acc.razorpayFee += m.gatewayFee;
             acc.netRevenue += m.netRevenue;
@@ -204,9 +208,10 @@ function getSalesProfitInsights(period, cb) {
             acc.qty += m.qty;
             return acc;
           },
-          { revenue: 0, prepaidDiscount: 0, razorpayFee: 0, netRevenue: 0, totalCost: 0, profit: 0, qty: 0 }
+          { revenue: 0, couponDiscount: 0, prepaidDiscount: 0, razorpayFee: 0, netRevenue: 0, totalCost: 0, profit: 0, qty: 0 }
         );
         totals.revenue = Math.round(totals.revenue * 100) / 100;
+        totals.couponDiscount = Math.round(totals.couponDiscount * 100) / 100;
         totals.prepaidDiscount = Math.round(totals.prepaidDiscount * 100) / 100;
         totals.razorpayFee = Math.round(totals.razorpayFee * 100) / 100;
         totals.netRevenue = Math.round(totals.netRevenue * 100) / 100;
@@ -222,6 +227,7 @@ function getSalesProfitInsights(period, cb) {
               name: m.name,
               qty: 0,
               revenue: 0,
+              couponDiscount: 0,
               prepaidDiscount: 0,
               razorpayFee: 0,
               netRevenue: 0,
@@ -232,6 +238,7 @@ function getSalesProfitInsights(period, cb) {
           var bp = byProduct[key];
           bp.qty += m.qty;
           bp.revenue += m.productValue;
+          bp.couponDiscount += m.couponDiscount;
           bp.prepaidDiscount += m.prepaidDiscount;
           bp.razorpayFee += m.gatewayFee;
           bp.netRevenue += m.netRevenue;
@@ -242,6 +249,7 @@ function getSalesProfitInsights(period, cb) {
           .map(function (k) {
             var r = byProduct[k];
             r.revenue = Math.round(r.revenue * 100) / 100;
+            r.couponDiscount = Math.round(r.couponDiscount * 100) / 100;
             r.prepaidDiscount = Math.round(r.prepaidDiscount * 100) / 100;
             r.razorpayFee = Math.round(r.razorpayFee * 100) / 100;
             r.netRevenue = Math.round(r.netRevenue * 100) / 100;

@@ -1564,7 +1564,20 @@
         var btn = ev.target && ev.target.closest ? ev.target.closest("[data-cancel-id]") : null;
         if (!btn) return;
         var id = btn.getAttribute("data-cancel-id");
-        if (!window.confirm("Cancel order #" + id + "? This only works before payment.")) return;
+        if (btn.dataset.cancelArmed !== "1") {
+          btn.dataset.cancelArmed = "1";
+          btn.dataset.cancelLabel = btn.textContent;
+          btn.textContent = "Tap again to cancel";
+          if (window.CraftguruGuestFeedback) window.CraftguruGuestFeedback.notify("Tap again within 5 seconds to cancel order #" + id + ".");
+          window.setTimeout(function () {
+            if (btn.dataset.cancelArmed !== "1") return;
+            delete btn.dataset.cancelArmed;
+            btn.textContent = btn.dataset.cancelLabel || "Cancel order";
+          }, 5000);
+          return;
+        }
+        delete btn.dataset.cancelArmed;
+        btn.disabled = true;
         fetch(billApiBase() + "/api/guest/order/cancel", {
           method: "POST",
           headers: guestAuthHeaders(),
@@ -1580,7 +1593,11 @@
             loadOrders();
           })
           .catch(function (e) {
-            window.alert(String((e && e.message) || e));
+            if (window.CraftguruGuestFeedback) window.CraftguruGuestFeedback.notify(String((e && e.message) || e));
+            else window.alert(String((e && e.message) || e));
+          })
+          .finally(function () {
+            btn.disabled = false;
           });
       });
     }

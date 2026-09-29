@@ -129,7 +129,7 @@ body.page-home #shop .featured-collections-grid,
 }
 
 .craft-cat-card__media img[data-image-fit="contain"] {
-  object-fit: cover;
+  object-fit: contain;
   object-position: center;
 }
 

@@ -1,0 +1,369 @@
+/* Mobile customer experience contract. Loaded after legacy responsive sheets
+   so visual product browsing is governed by one predictable set of rules. */
+
+/* These controls are injected on every customer route but must never alter
+   the centred desktop navigation or desktop PDP purchase layout. */
+.cg-mobile-header-actions,
+.cg-mobile-header-drawer,
+.cg-mobile-header-backdrop,
+.cg-mobile-pdp-purchase {
+  display: none;
+}
+
+.cg-skip-link { position: fixed; left: 1rem; top: -5rem; z-index: 2147483647; padding: .7rem .9rem; border-radius: .6rem; background: #fff; color: #173b48; font-weight: 800; text-decoration: none; }
+.cg-skip-link:focus { top: 1rem; }
+html.cg-overlay-locked, body.cg-overlay-locked { overflow: hidden !important; }
+html.cg-low-data body.guest-site img { image-rendering: auto; }
+html.cg-low-data body.guest-site .cg-social-float-stack,
+html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !important; transition: none !important; }
+
+@media (max-width: 640px) {
+  /* Final mobile touch contract for the two support shortcuts. This comes
+     after older responsive sheets that previously disabled the stack itself. */
+  html.guest-responsive-root body.guest-site .cg-social-float-stack,
+  html.guest-responsive-root body.guest-site .cg-social-float-stack > *,
+  html.guest-responsive-root body.guest-site .cg-wa-widget__fab,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__fab {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+  html.guest-responsive-root body.guest-site #cgInstagramWidget,
+  html.guest-responsive-root body.guest-site #cgWhatsAppWidget { display: block !important; visibility: visible !important; }
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto !important;
+    align-items: center;
+    gap: 0.7rem !important;
+    padding: 0.72rem 1rem !important;
+  }
+
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top .guest-top-cluster {
+    grid-column: 1 !important;
+    grid-row: 1 !important;
+    min-width: 0;
+  }
+
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top > .nav-dock,
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top .site-top-end {
+    display: none !important;
+  }
+
+  .cg-mobile-header-actions {
+    display: inline-flex;
+    grid-column: 2;
+    grid-row: 1;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.45rem;
+  }
+
+  .cg-mobile-header-action {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    border: 1px solid rgba(15, 23, 42, 0.12);
+    border-radius: 0.8rem;
+    background: #fff;
+    color: #173b48;
+    font: 700 0.7rem/1 system-ui, sans-serif;
+    cursor: pointer;
+  }
+
+  .cg-mobile-header-cart-count {
+    position: absolute;
+    top: -0.28rem;
+    right: -0.28rem;
+    display: grid;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    padding-inline: 0.2rem;
+    place-items: center;
+    border: 2px solid #fff;
+    border-radius: 999px;
+    background: #00796b;
+    color: #fff;
+    font-size: 0.64rem;
+  }
+
+  .cg-mobile-menu-lines { display: grid; gap: 0.22rem; width: 1.12rem; }
+  .cg-mobile-menu-lines i { display: block; height: 2px; border-radius: 2px; background: currentColor; }
+
+  .cg-mobile-header-drawer[hidden] { display: none !important; }
+  .cg-mobile-header-backdrop[hidden] { display: none !important; }
+  .cg-mobile-header-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 10019;
+    border: 0;
+    background: rgba(15, 23, 42, .34);
+    cursor: pointer;
+  }
+  .cg-mobile-header-drawer {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10020;
+    max-height: min(88vh, 46rem);
+    overflow: auto;
+    padding: max(1rem, env(safe-area-inset-top)) 1rem max(1.2rem, env(safe-area-inset-bottom));
+    border-bottom: 1px solid rgba(15, 23, 42, 0.13);
+    border-radius: 0 0 1.15rem 1.15rem;
+    background: #fff;
+  }
+
+  .cg-mobile-header-drawer__head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 0.9rem; color: #173b48; }
+  .cg-mobile-header-drawer__close { display: inline-grid; width: 2.75rem; height: 2.75rem; place-items: center; border: 1px solid rgba(15,23,42,.12); border-radius: .8rem; background: #fff; color: #173b48; font-size: 1.5rem; cursor: pointer; }
+  .cg-mobile-header-drawer .guest-header-search { display: flex !important; width: 100% !important; max-width: none !important; margin: 0 0 1rem; }
+  .cg-mobile-header-drawer .guest-header-search__input { min-height: 2.75rem; font-size: 1rem; }
+  .cg-mobile-header-drawer__links { display: grid; gap: 0.45rem; }
+  .cg-mobile-header-drawer__link,
+  .cg-mobile-header-drawer__account a { display: flex; align-items: center; min-height: 2.9rem; padding: 0 0.9rem; border: 1px solid rgba(15,23,42,.09); border-radius: .75rem; background: #f8fafb; color: #173b48; font-weight: 700; text-decoration: none; }
+  .cg-mobile-header-drawer__account { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; margin-top: 1rem; }
+  .cg-mobile-header-drawer__account a { justify-content: center; font-size: .84rem; }
+  .cg-mobile-header-drawer__categories { margin-top: 0.8rem; }
+  .cg-mobile-header-drawer__categories summary { min-height: 2.9rem; display: flex; align-items: center; padding: 0 .9rem; border: 1px solid rgba(15,23,42,.09); border-radius: .75rem; background: #f8fafb; color: #173b48; font-weight: 700; cursor: pointer; }
+  .cg-mobile-header-drawer__categories > div { display: grid; grid-template-columns: 1fr 1fr; gap: .45rem; padding: .6rem 0 .1rem; }
+  .cg-mobile-header-drawer__category { display: flex; align-items: center; min-height: 2.75rem; padding: .35rem .65rem; border-radius: .65rem; background: #f8fafb; color: #173b48; font-size: .82rem; font-weight: 650; text-decoration: none; }
+  .cg-mobile-header-drawer__category.is-active { background: #dff4f0; color: #075f56; }
+  .cg-mobile-header-drawer__empty { margin: .4rem 0; color: #64748b; font-size: .82rem; }
+  body.cg-mobile-header-open { overflow: hidden; }
+  /* The open navigation owns the whole phone screen; the social shortcuts
+     return as soon as it closes and cannot sit above the menu/backdrop. */
+  body.cg-mobile-header-open .cg-social-float-stack {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Checkout remains task-focused: no global dock, only home/exit and cart. */
+  html.guest-responsive-root body.page-checkout .site-top {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto !important;
+    padding: 0.72rem 1rem !important;
+  }
+  html.guest-responsive-root body.page-checkout .site-top .guest-top-cluster { grid-column: 1 !important; grid-row: 1 !important; }
+  html.guest-responsive-root body.page-checkout .site-top > .nav-dock { display: none !important; }
+  html.guest-responsive-root body.page-checkout .site-top .site-top-end { display: inline-flex !important; grid-column: 2 !important; grid-row: 1 !important; width: auto !important; margin: 0 !important; overflow: visible !important; gap: .45rem; }
+  html.guest-responsive-root body.page-checkout .checkout-exit,
+  html.guest-responsive-root body.page-checkout .btn-cart { min-width: 2.75rem; min-height: 2.75rem; }
+  .cg-mobile-gallery-help { margin: .35rem 0 0; color: #64748b; font-size: .72rem; text-align: center; }
+  .cg-mobile-gallery-count { margin: .1rem 0 0; color: #173b48; font-size: .74rem; font-weight: 800; text-align: center; }
+  .cg-mobile-gallery-fullscreen { display: block; min-height: 2.5rem; margin: .35rem auto 0; border: 0; background: transparent; color: #075f56; font: 800 .75rem/1 system-ui,sans-serif; text-decoration: underline; cursor: pointer; }
+  .cg-mobile-media-dialog { width: min(100vw, 42rem); height: 100dvh; max-width: none; max-height: none; margin: 0; padding: 3.5rem 1rem 1rem; border: 0; background: #0f172a; }
+  .cg-mobile-media-dialog::backdrop { background: #0f172a; }
+  .cg-mobile-media-dialog button { position: absolute; top: max(.75rem, env(safe-area-inset-top)); right: 1rem; width: 2.75rem; height: 2.75rem; border: 1px solid rgba(255,255,255,.35); border-radius: 999px; background: rgba(15,23,42,.65); color: #fff; font-size: 1.5rem; cursor: pointer; }
+  .cg-mobile-media-dialog img { display: block; width: 100%; height: calc(100dvh - 5rem); object-fit: contain; }
+  .cg-mobile-back-results { display: inline-flex; min-height: 2.5rem; align-items: center; margin: .35rem 0; border: 0; background: transparent; color: #075f56; font: 800 .78rem/1 system-ui,sans-serif; text-decoration: underline; cursor: pointer; }
+
+  .cg-mobile-catalog-quickbar { position: sticky; top: .45rem; z-index: 40; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: .5rem; margin: .5rem 1rem .8rem; padding: .4rem; border: 1px solid rgba(15,23,42,.1); border-radius: .85rem; background: rgba(255,255,255,.96); }
+  .cg-mobile-catalog-quickbar button { min-height: 2.55rem; border: 0; border-radius: .6rem; background: #eef7f6; color: #0f5f57; font: 800 .78rem/1 system-ui,sans-serif; cursor: pointer; }
+  .cg-mobile-catalog-count { grid-column: 1 / -1; min-height: 1.1rem; color: #52666d; font: 700 .72rem/1.2 system-ui,sans-serif; text-align: center; }
+  .site-footer .footer-sitemap__col { border-bottom: 1px solid rgba(15,23,42,.1); padding-block: .2rem; }
+  .site-footer .cg-footer-accordion__toggle { display: flex; width: 100%; min-height: 3rem; align-items: center; justify-content: space-between; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 800; text-align: left; cursor: pointer; }
+  .site-footer .cg-footer-accordion__toggle::after { content: "+"; font-size: 1.2rem; }
+  .site-footer .cg-footer-accordion__toggle[aria-expanded="true"]::after { content: "−"; }
+  html.guest-responsive-root body.guest-site :focus-visible { outline: 2px solid #00796b; outline-offset: -2px; }
+
+  /* A single-image material/PF PDP used to retain the desktop empty thumbnail
+     column.  Make every mobile gallery a genuine one-column composition. */
+  html.guest-responsive-root body.page-product .rm-pdp-gallery,
+  html.guest-responsive-root body.page-product .rm-pdp--modern .rm-pdp-gallery--shell {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: 1fr !important;
+    padding-inline: 0 !important;
+    margin-inline: auto !important;
+  }
+  html.guest-responsive-root body.page-product .rm-pdp__hero-wrap,
+  html.guest-responsive-root body.page-product .rm-pdp--modern .rm-pdp__hero-wrap,
+  html.guest-responsive-root body.page-product .product-catalog-gallery__hero,
+  html.guest-responsive-root body.page-product .product-hero-img--fx,
+  html.guest-responsive-root body.page-product .product-hero-img--zoomhost {
+    grid-column: 1 !important;
+    align-self: center !important;
+    justify-self: center !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+  }
+  html.guest-responsive-root body.page-product .rm-pdp__hero-zoom,
+  html.guest-responsive-root body.page-product .rm-pdp__hero-zoom img,
+  html.guest-responsive-root body.page-product .product-hero-img--zoomhost img,
+  html.guest-responsive-root body.page-product #productImage {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100% !important;
+    margin-inline: auto !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+  html.guest-responsive-root body.page-product .rm-pdp-thumb-col {
+    width: 100% !important;
+    order: 2 !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Product imagery must lead mobile browsing. This deliberately overrides
+     legacy two-column product-grid rules across every catalog family. */
+  html.guest-responsive-root body.guest-site .plp-grid,
+  html.guest-responsive-root body.guest-site .plp-grid.product-grid,
+  html.guest-responsive-root body.guest-site .plp-grid.rm-grid-cards,
+  html.guest-responsive-root body.guest-site #wishlistGrid.plp-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1rem !important;
+  }
+  /* The photo-frame catalogue still uses the original raw-material card
+     component on one route.  Give it the same image-first phone treatment. */
+  html.guest-responsive-root body.guest-site .rm-grid-cards:not(.plp-grid) {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 1rem !important;
+  }
+  html.guest-responsive-root body.guest-site .rm-card-shop__img {
+    aspect-ratio: 1 / 1 !important;
+  }
+  html.guest-responsive-root body.guest-site .rm-card-shop__img img {
+    width: 100% !important;
+    height: 100% !important;
+  }
+  html.guest-responsive-root body.guest-site .rm-card-shop__title {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  html.guest-responsive-root body.guest-site .plp-card__media-wrap {
+    aspect-ratio: 1 / 1 !important;
+  }
+  html.guest-responsive-root body.guest-site .plp-card__media { padding: 0.45rem !important; }
+  html.guest-responsive-root body.guest-site .plp-card__media img { width: 100% !important; height: 100% !important; border-radius: 0.75rem; }
+  /* Equal card rhythm prevents a long product name from moving the action
+     row lower than neighbouring products. */
+  html.guest-responsive-root body.guest-site .plp-card__name {
+    display: -webkit-box;
+    min-height: 2.5em;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  html.guest-responsive-root body.guest-site .plp-card__rating { min-height: 1rem; }
+  html.guest-responsive-root body.guest-site .plp-card__price { min-height: 1.4rem; }
+  html.guest-responsive-root body.guest-site .plp-card__availability { margin: .2rem 0 0; color: #9a3412; font-size: .72rem; font-weight: 750; }
+  html.guest-responsive-root body.guest-site .plp-card.is-unavailable { opacity: .78; }
+  /* Catalogue actions should feel precise rather than oversized.  The card
+     itself is now wide, so a compact 40px icon and a 42px primary action are
+     both easy to tap and visually balanced. */
+  html.guest-responsive-root body.guest-site .plp-card__wish { width: 2.4rem; min-width: 2.4rem; height: 2.4rem; min-height: 2.4rem; }
+  html.guest-responsive-root body.guest-site .plp-card__actions { display: flex; align-items: center; gap: .5rem; padding: .55rem .75rem .75rem; }
+  html.guest-responsive-root body.guest-site .plp-card__cta,
+  html.guest-responsive-root body.guest-site .product-card .add-btn,
+  html.guest-responsive-root body.guest-site .rm-card-shop__cta { min-height: 2.6rem; padding: .5rem .7rem; border-radius: .65rem; font-size: .7rem; justify-content: center; }
+  html.guest-responsive-root body.guest-site .bulk-buy-btn--plp-icon { width: 2.45rem; min-width: 2.45rem; height: 2.45rem; }
+  html.guest-responsive-root body.guest-site .cart-header .icon-btn,
+  html.guest-responsive-root body.guest-site .cart-item__remove,
+  html.guest-responsive-root body.guest-site .cart-item__qty { min-width: 2.75rem; min-height: 2.75rem; }
+  html.guest-responsive-root body.guest-site .cart-item { align-items: flex-start; }
+  html.guest-responsive-root body.guest-site .cart-item__status { margin: .18rem 0 0; color: #4b6b67; font-size: .68rem; font-weight: 650; line-height: 1.25; }
+  html.guest-responsive-root body.guest-site .cg-cart-saved-later { display: inline-flex; align-items: center; min-height: 2.55rem; margin-top: .45rem; color: #075f56; font-size: .8rem; font-weight: 800; text-decoration: underline; text-underline-offset: .15rem; }
+
+  /* Large, reliable controls on every product-detail family. */
+  body.page-product .product-crumb a { display: inline-flex; align-items: center; min-height: 2.75rem; }
+  body.pdp-ethereal .product-qty-stepper--pill button,
+  body.pdp-ethereal .rm-pdp--modern .rm-pdp__qty button { width: 2.75rem; height: 2.75rem; }
+  body.pdp-ethereal .rm-pdp--modern .rm-pdp__cart-row { grid-template-columns: 7.5rem minmax(0, 1fr) 3rem; }
+  body.pdp-ethereal .rm-pdp--modern .rm-pdp__wish { min-width: 3rem; min-height: 3rem; }
+  body.page-product .rm-opt-pill,
+  body.page-product .product-size-option,
+  body.page-product .product-color-option { min-height: 2.75rem; }
+  body.page-product .rm-color-swatch,
+  body.page-product .cg-pdp__wishlist-link,
+  body.page-product .product-share-bar__toggle { min-width: 2.75rem; min-height: 2.75rem; }
+  body.page-product { padding-bottom: calc(6.9rem + env(safe-area-inset-bottom)); }
+  body.page-product #productCatalogGallery,
+  body.page-product .rm-pdp-gallery { touch-action: pan-y pinch-zoom; }
+  body.page-product #productCatalogGallery.cg-mobile-gallery-zoomed img,
+  body.page-product .rm-pdp-gallery.cg-mobile-gallery-zoomed .rm-pdp__hero img { transform: scale(1.55); cursor: zoom-out; }
+
+  .cg-mobile-pdp-purchase[hidden] { display: none !important; }
+  .cg-mobile-pdp-purchase { position: fixed; z-index: 10010; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .45rem .6rem; align-items: center; padding: .65rem 1rem max(.65rem, env(safe-area-inset-bottom)); border-top: 1px solid rgba(15,23,42,.13); background: rgba(255,255,255,.98); }
+  .cg-mobile-pdp-purchase__price { overflow: hidden; color: #173b48; font-size: .95rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-mobile-pdp-purchase__selection { overflow: hidden; color: #64748b; font-size: .72rem; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-mobile-pdp-purchase__cta, .cg-mobile-pdp-purchase__buy { min-height: 3rem; border: 0; border-radius: .78rem; font: 800 .88rem/1 system-ui, sans-serif; cursor: pointer; }
+  .cg-mobile-pdp-purchase__cta { background: #00796b; color: #fff; }
+  .cg-mobile-pdp-purchase__buy { border: 1px solid #00796b; background: #fff; color: #00685e; }
+  .cg-mobile-pdp-purchase__cta:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
+
+  /* Home category imagery is an actual browsing decision, not decoration.
+     One clear tile per row keeps its image, title and touch target legible on
+     standard 360–430px phones. */
+  html.guest-responsive-root body.page-home .home-cat-hub .featured-collections-grid,
+  html.guest-responsive-root body.page-home .home-cat-hub .cg-category-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.85rem !important;
+  }
+  html.guest-responsive-root body.page-home .home-cat-hub .craft-cat-card__shell {
+    display: grid !important;
+    grid-template-columns: minmax(7.5rem, 38%) minmax(0, 1fr) !important;
+    min-height: 8.5rem !important;
+  }
+  html.guest-responsive-root body.page-home .home-cat-hub .craft-cat-card__media {
+    aspect-ratio: auto !important;
+    height: 100% !important;
+    border-radius: 1rem 0 0 1rem !important;
+  }
+  html.guest-responsive-root body.page-home .home-cat-hub .craft-cat-card__body {
+    min-width: 0;
+    padding: 0.9rem 1rem !important;
+  }
+  html.guest-responsive-root body.page-home .home-cat-hub .craft-cat-card__name {
+    min-height: 0 !important;
+    font-size: 1rem !important;
+  }
+  html.guest-responsive-root body.page-home .home-cat-hub .craft-cat-card__cta {
+    display: none !important;
+  }
+
+  /* Make special catalogue headings and filters compact without sacrificing
+     their tap targets. */
+  html.guest-responsive-root body .plp-header,
+  html.guest-responsive-root body .catalog-header,
+  html.guest-responsive-root body .wishlist-header {
+    padding: 1rem !important;
+  }
+  html.guest-responsive-root body .plp-header h1,
+  html.guest-responsive-root body .catalog-header h1,
+  html.guest-responsive-root body .wishlist-header h1 { font-size: clamp(1.55rem, 8vw, 2rem) !important; }
+  html.guest-responsive-root body .plp-filter-toggle,
+  html.guest-responsive-root body .filter-toggle,
+  html.guest-responsive-root body .sort-select { min-height: 2.75rem; }
+  html.guest-responsive-root body .plp-grid:empty::before,
+  html.guest-responsive-root body .rm-grid-cards:empty::before { content: "Loading products…"; display: block; grid-column: 1 / -1; min-height: 12rem; padding: 4rem 1rem; border-radius: 1rem; background: #f1f5f4; color: #52666d; font: 800 .85rem/1 system-ui,sans-serif; text-align: center; }
+
+  /* Account, empty and offline screens need the same readable gutters as the
+     catalogue; otherwise their desktop panels feel stranded on a phone. */
+  html.guest-responsive-root body .account-shell,
+  html.guest-responsive-root body .account-page,
+  html.guest-responsive-root body .wishlist-empty,
+  html.guest-responsive-root body .empty-state,
+  html.guest-responsive-root body .catalog-recovery,
+  html.guest-responsive-root body .offline-state { margin-inline: 1rem; }
+  html.guest-responsive-root body .empty-state a,
+  html.guest-responsive-root body .empty-state button,
+  html.guest-responsive-root body .catalog-recovery button,
+  html.guest-responsive-root body .offline-state button { min-height: 2.75rem; }
+
+  /* Keep the next checkout action reachable after a long address form. */
+  body.page-checkout .checkout-summary-pay {
+    position: sticky;
+    bottom: max(.65rem, env(safe-area-inset-bottom));
+    z-index: 5;
+    min-height: 3.2rem;
+  }
+  body.page-checkout .checkout-auth-details__summary { min-height: 2.9rem; display: flex; align-items: center; }
+}

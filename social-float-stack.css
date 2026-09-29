@@ -58,6 +58,11 @@
     visibility: visible !important;
     opacity: 1 !important;
   }
+
+  /* Never cover the persistent product purchase action. */
+  body.page-product .cg-social-float-stack {
+    bottom: calc(7.3rem + env(safe-area-inset-bottom, 0px));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

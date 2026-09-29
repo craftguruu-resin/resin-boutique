@@ -21,6 +21,16 @@
     }
   }
 
+  function allowedHere() {
+    try {
+      var host = String(global.location && global.location.hostname || "").toLowerCase();
+      /* Google blocks unregistered localhost origins. Avoid rendering a broken
+         sign-in control during local testing unless it is explicitly enabled. */
+      if ((host === "localhost" || host === "127.0.0.1") && document.documentElement.getAttribute("data-google-local-enabled") !== "1") return false;
+    } catch (_) {}
+    return true;
+  }
+
   function loadScript(cb) {
     if (scriptLoaded) {
       return cb();
@@ -93,13 +103,13 @@
 
   global.CRAFT_GOOGLE_SIGNIN = {
     isConfigured: function () {
-      return clientId().length > 0;
+      return clientId().length > 0 && allowedHere();
     },
     /**
      * @param {function(string): void} onCredential — JWT from Google (post to /api/guest-auth/google/session)
      */
     bootstrap: function (onCredential) {
-      if (!clientId() || typeof onCredential !== "function") return;
+      if (!clientId() || !allowedHere() || typeof onCredential !== "function") return;
       global.__CRAFT_GOOGLE_CB = onCredential;
       loadScript(function () {
         if (!global.google || !global.google.accounts || !global.google.accounts.id) return;
@@ -119,7 +129,7 @@
     },
     /** Queue a host element for the Google button (call after bootstrap, or before — order is handled). */
     renderButton: function (el, buttonOpts) {
-      if (!el || !clientId()) return;
+      if (!el || !clientId() || !allowedHere()) return;
       pendingButtons.push([el, buttonOpts || {}]);
       if (initDone) flushPendingButtons();
     },

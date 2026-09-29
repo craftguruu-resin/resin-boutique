@@ -9,6 +9,9 @@
   var editingSource = "";
   var searchQ = "";
   var statusFilter = "all";
+  var couponType = "percentage";
+  var editingCouponId = "";
+  var loadedCoupons = [];
 
   function base() {
     return String(V.apiBase() || "").replace(/\/+$/, "");
@@ -36,6 +39,102 @@
     el.textContent = text || "";
     el.style.display = text ? "block" : "none";
     el.style.color = isErr ? "#b42318" : "";
+  }
+
+  function showCouponMsg(text, isErr) {
+    var el = document.getElementById("vpmCouponMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.hidden = !text;
+    el.style.color = isErr ? "#b42318" : "";
+  }
+
+  function renderCoupons(coupons) {
+    var body = document.getElementById("vpmCouponTbody");
+    var empty = document.getElementById("vpmCouponEmpty");
+    if (!body) return;
+    if (!coupons || !coupons.length) {
+      body.innerHTML = "";
+      if (empty) empty.hidden = false;
+      return;
+    }
+    if (empty) empty.hidden = true;
+    loadedCoupons = coupons || [];
+    body.innerHTML = loadedCoupons.map(function (coupon) {
+      var amount = coupon.discountType === "percentage" ? esc(coupon.discountValue) + "%" : "₹" + esc(coupon.discountValue);
+      var status = coupon.isActive ? "<span class=\"vs-pill vs-pill--active\">Active</span>" : "<span class=\"vs-pill vs-pill--inactive\">Inactive</span>";
+      var rules = (coupon.minSubtotal > 0 ? "Min ₹" + esc(coupon.minSubtotal) : "No minimum") + (coupon.endsAt ? " · ends " + esc(new Date(coupon.endsAt).toLocaleDateString("en-IN")) : "") + (coupon.maxRedemptions != null ? " · max " + esc(coupon.maxRedemptions) : "");
+      var usage = esc(coupon.redemptionCount || 0) + (coupon.maxRedemptions != null ? " / " + esc(coupon.maxRedemptions) : " used");
+      return "<tr><td><strong>" + esc(coupon.code) + "</strong></td><td>" + amount + " off<br><small>" + rules + "</small></td><td>" + usage + "</td><td>" + status + "</td><td><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-edit\" data-coupon-id=\"" + esc(coupon.id) + "\">Edit</button> <button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-toggle\" data-coupon-id=\"" + esc(coupon.id) + "\" data-coupon-active=\"" + (coupon.isActive ? "1" : "0") + "\">" + (coupon.isActive ? "Deactivate" : "Activate") + "</button></td></tr>";
+    }).join("");
+  }
+
+  function loadCoupons() {
+    return fetch(base() + "/api/vendor/coupons", { headers: V.authHeaders(), cache: "no-store" }).then(function (res) {
+      return V.parseApiJson(res).then(function (x) {
+        if (x.status === 401) return V.explainVendor401(base());
+        if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not load coupons.");
+        renderCoupons(x.json.coupons || []);
+      });
+    }).catch(function (err) { showCouponMsg(String((err && err.message) || err), true); });
+  }
+
+  function setCouponType(next) {
+    couponType = next === "flat" ? "flat" : "percentage";
+    document.querySelectorAll(".vpm-coupon-tab").forEach(function (button) {
+      var on = button.getAttribute("data-coupon-type") === couponType;
+      button.classList.toggle("is-active", on);
+      button.setAttribute("aria-selected", on ? "true" : "false");
+    });
+    var label = document.getElementById("vpmCouponValueLabel");
+    var input = document.getElementById("vpmCouponValue");
+    if (label) label.textContent = couponType === "flat" ? "Flat discount (₹)" : "Percentage value";
+    if (input) { input.max = couponType === "flat" ? "999999" : "100"; input.placeholder = couponType === "flat" ? "100" : "10"; }
+  }
+
+  function saveCoupon() {
+    var code = document.getElementById("vpmCouponCode");
+    var value = document.getElementById("vpmCouponValue");
+    var minSubtotal = document.getElementById("vpmCouponMinSubtotal");
+    var maxRedemptions = document.getElementById("vpmCouponMaxRedemptions");
+    var startsAt = document.getElementById("vpmCouponStartsAt");
+    var endsAt = document.getElementById("vpmCouponEndsAt");
+    var save = document.getElementById("vpmCouponSave");
+    var payload = { code: code ? code.value : "", discountType: couponType, discountValue: value ? value.value : "", minSubtotal: minSubtotal ? minSubtotal.value : "", maxRedemptions: maxRedemptions ? maxRedemptions.value : "", startsAt: startsAt ? startsAt.value : "", endsAt: endsAt ? endsAt.value : "" };
+    showCouponMsg("", false);
+    if (save) save.disabled = true;
+    return fetch(base() + "/api/vendor/coupons" + (editingCouponId ? "/" + encodeURIComponent(editingCouponId) : ""), { method: editingCouponId ? "PUT" : "POST", headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()), body: JSON.stringify(payload) }).then(function (res) {
+      return V.parseApiJson(res).then(function (x) {
+        if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not save coupon.");
+        clearCouponForm();
+        showCouponMsg("Coupon saved. Customers see the final discount only on checkout.", false);
+        return loadCoupons();
+      });
+    }).catch(function (err) { showCouponMsg(String((err && err.message) || err), true); }).then(function (out) { if (save) save.disabled = false; return out; });
+  }
+
+  function localDateValue(iso) {
+    if (!iso) return "";
+    var d = new Date(iso); if (Number.isNaN(d.getTime())) return "";
+    var pad = function (n) { return String(n).padStart(2, "0"); };
+    return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()) + "T" + pad(d.getHours()) + ":" + pad(d.getMinutes());
+  }
+  function clearCouponForm() {
+    editingCouponId = "";
+    ["vpmCouponCode", "vpmCouponValue", "vpmCouponMinSubtotal", "vpmCouponMaxRedemptions", "vpmCouponStartsAt", "vpmCouponEndsAt"].forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ""; });
+    var save = document.getElementById("vpmCouponSave"); if (save) save.textContent = "Add coupon";
+    var cancel = document.getElementById("vpmCouponCancelEdit"); if (cancel) cancel.hidden = true;
+    setCouponType("percentage");
+  }
+  function editCoupon(id) {
+    var coupon = loadedCoupons.find(function (x) { return String(x.id) === String(id); });
+    if (!coupon) return;
+    editingCouponId = String(coupon.id);
+    var set = function (id2, value2) { var el = document.getElementById(id2); if (el) el.value = value2 == null ? "" : String(value2); };
+    set("vpmCouponCode", coupon.code); set("vpmCouponValue", coupon.discountValue); set("vpmCouponMinSubtotal", coupon.minSubtotal || ""); set("vpmCouponMaxRedemptions", coupon.maxRedemptions == null ? "" : coupon.maxRedemptions); set("vpmCouponStartsAt", localDateValue(coupon.startsAt)); set("vpmCouponEndsAt", localDateValue(coupon.endsAt));
+    setCouponType(coupon.discountType);
+    var save = document.getElementById("vpmCouponSave"); if (save) save.textContent = "Save changes";
+    var cancel = document.getElementById("vpmCouponCancelEdit"); if (cancel) cancel.hidden = false;
   }
 
   function refreshGuestCatalogMerge() {
@@ -1093,6 +1192,37 @@
         showAddPanel(true);
       });
     }
+    var couponsBtn = document.getElementById("vpmCoupons");
+    if (couponsBtn) {
+      couponsBtn.addEventListener("click", function () {
+        var panel = document.getElementById("vpmCouponPanel");
+        if (!panel) return;
+        panel.hidden = !panel.hidden;
+        if (!panel.hidden) { setCouponType(couponType); loadCoupons(); }
+      });
+    }
+    var couponsClose = document.getElementById("vpmCouponsClose");
+    if (couponsClose) couponsClose.addEventListener("click", function () { document.getElementById("vpmCouponPanel").hidden = true; });
+    document.querySelectorAll(".vpm-coupon-tab").forEach(function (button) {
+      button.addEventListener("click", function () { setCouponType(button.getAttribute("data-coupon-type")); });
+    });
+    var couponSave = document.getElementById("vpmCouponSave");
+    if (couponSave) couponSave.addEventListener("click", saveCoupon);
+    var couponBody = document.getElementById("vpmCouponTbody");
+    if (couponBody) couponBody.addEventListener("click", function (event) {
+      var edit = event.target && event.target.closest ? event.target.closest(".vpm-coupon-edit") : null;
+      if (edit) { editCoupon(edit.getAttribute("data-coupon-id")); return; }
+      var button = event.target && event.target.closest ? event.target.closest(".vpm-coupon-toggle") : null;
+      if (!button) return;
+      var id = button.getAttribute("data-coupon-id");
+      var active = button.getAttribute("data-coupon-active") !== "1";
+      fetch(base() + "/api/vendor/coupons/" + encodeURIComponent(id) + "/active", { method: "PATCH", headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()), body: JSON.stringify({ active: active }) })
+        .then(function (res) { return V.parseApiJson(res); })
+        .then(function (x) { if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not update coupon."); showCouponMsg(active ? "Coupon activated." : "Coupon deactivated.", false); return loadCoupons(); })
+        .catch(function (err) { showCouponMsg(String((err && err.message) || err), true); });
+    });
+    var couponCancelEdit = document.getElementById("vpmCouponCancelEdit");
+    if (couponCancelEdit) couponCancelEdit.addEventListener("click", clearCouponForm);
     var addCancel = document.getElementById("vpmAddCancel");
     if (addCancel) {
       addCancel.addEventListener("click", function () {

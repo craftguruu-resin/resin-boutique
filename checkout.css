@@ -232,7 +232,8 @@ body.page-checkout .checkout-panel {
   border: none;
   cursor: pointer;
   font-family: inherit;
-  padding: 0;
+  min-height: 2.75rem;
+  padding: 0 0.45rem;
 }
 
 .ck-section__link:hover {
@@ -337,6 +338,30 @@ body.page-checkout .checkout-panel {
   position: absolute;
   left: 0.85rem;
   top: 1rem;
+  accent-color: var(--ck-teal);
+}
+
+.checkout-addr-type {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.checkout-addr-type__opt {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.75rem;
+  padding: 0 0.8rem;
+  border: 1px solid var(--ck-border);
+  border-radius: 0.65rem;
+  background: #fff;
+  cursor: pointer;
+}
+
+.checkout-addr-type__opt input[type="radio"] {
+  width: 1.15rem;
+  height: 1.15rem;
   accent-color: var(--ck-teal);
 }
 
@@ -479,6 +504,12 @@ body.page-checkout .checkout-panel {
   accent-color: var(--ck-teal);
 }
 
+.ck-pay-card input[type="radio"],
+.ck-addr-card input[type="radio"] {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
 .ck-pay-card__title {
   font-size: 0.92rem;
   font-weight: 700;
@@ -548,6 +579,21 @@ body.page-checkout .checkout-total-row--discount span:last-child {
   color: #16a34a;
   font-weight: 600;
 }
+
+body.page-checkout .checkout-total-row--coupon span:last-child {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.checkout-coupon { margin-top: 0.35rem; }
+.checkout-coupon__row { display: flex; gap: 0.55rem; align-items: center; }
+.checkout-coupon__row .checkout-input { min-width: 0; flex: 1; }
+.checkout-coupon__apply, .checkout-coupon__remove { border-radius: 0.55rem; min-height: 2.8rem; padding: 0.65rem 0.9rem; font: inherit; font-weight: 700; cursor: pointer; }
+.checkout-coupon__apply { border: 1px solid var(--ck-teal); background: var(--ck-teal); color: #fff; }
+.checkout-coupon__remove { border: 1px solid var(--ck-border); background: #fff; color: var(--ck-text); }
+.checkout-coupon__message { margin: 0.55rem 0 0; font-size: 0.84rem; color: #166534; }
+.checkout-coupon__message.is-error { color: #b42318; }
+@media (max-width: 430px) { .checkout-coupon__row { flex-wrap: wrap; } .checkout-coupon__row .checkout-input { flex-basis: 100%; } }
 
 .ck-savings-banner {
   margin: 0.75rem 0 0.5rem;
@@ -681,6 +727,19 @@ body.page-checkout .checkout-auth-details {
   border-color: var(--ck-border);
 }
 
+body.page-checkout .checkout-auth-details__summary {
+  display: flex;
+  align-items: center;
+  min-height: 2.75rem;
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--ck-teal-deep);
+}
+
+body.page-checkout .checkout-auth-details:not([open]) .checkout-auth-details__body {
+  display: none;
+}
+
 /* Hide legacy elements */
 body.page-checkout .checkout-step-badge,
 body.page-checkout .checkout-breadcrumb,
@@ -691,6 +750,29 @@ body.page-checkout #checkoutAddAddressBtn,
 body.page-checkout .checkout-panel.checkout-intro {
   display: none !important;
 }
+
+.checkout-payment-recovery {
+  margin: 0.9rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(194, 65, 12, 0.22);
+  border-radius: 0.75rem;
+  background: rgba(255, 247, 237, 0.86);
+  color: #7c2d12;
+}
+
+.checkout-payment-recovery strong { display: block; font-size: 0.9rem; }
+.checkout-payment-recovery p { margin: 0.35rem 0 0; font-size: 0.82rem; line-height: 1.45; }
+.checkout-payment-recovery__actions { display: flex; flex-wrap: wrap; gap: 0.65rem; margin-top: 0.7rem; align-items: center; }
+.checkout-payment-recovery__actions button,
+.checkout-payment-recovery__actions a,
+.checkout-result-popup__support,
+.checkout-result-popup__retry { min-height: 2.35rem; padding: 0.55rem 0.78rem; border-radius: 0.55rem; font: inherit; font-size: 0.82rem; font-weight: 700; text-decoration: none; cursor: pointer; }
+.checkout-payment-recovery__actions button,
+.checkout-result-popup__retry { border: 0; background: #17424d; color: #fff; }
+.checkout-payment-recovery__actions a,
+.checkout-result-popup__support { border: 1px solid rgba(124, 45, 18, 0.22); color: #9a3412; background: #fff; }
+.checkout-result-popup__support,
+.checkout-result-popup__retry { display: inline-flex; align-items: center; justify-content: center; margin: 0.18rem 0.2rem; }
 
 /* Google Places dropdown */
 .pac-container {
@@ -736,4 +818,31 @@ body.page-checkout .checkout-panel.checkout-intro {
   .ck-trust-icons {
     grid-template-columns: 1fr 1fr;
   }
+
+  body.page-checkout .checkout-page {
+    max-width: 100%;
+    padding-inline: 1rem;
+  }
+
+  body.page-checkout .checkout-layout__main,
+  body.page-checkout .checkout-summary-rail {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  body.page-checkout .checkout-panel--shipping,
+  body.page-checkout .checkout-summary-rail {
+    padding: 1rem;
+  }
+
+  .checkout-coupon__apply,
+  .checkout-coupon__remove,
+  body.page-checkout .checkout-summary-pay {
+    min-height: 3rem;
+  }
+
+  .ck-step { min-width: 0; flex: 1 1 0; }
+  .ck-step__line { flex: 0 1 1rem; }
+  .ck-step__icon { width: 2.5rem; height: 2.5rem; }
+  .ck-secure-badge__text span { display: none; }
 }

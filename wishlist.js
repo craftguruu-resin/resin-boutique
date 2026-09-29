@@ -46,7 +46,7 @@
       var kind = String((row && row.kind) || "catalog").toLowerCase();
       var p = resolveCatalogProduct(id);
       var name = p && p.name ? p.name : id;
-      var img = p && p.image ? p.image : "";
+      var productImages = p && D && D.getProductImageCandidates ? D.getProductImageCandidates(p) : [p && p.image];
       var href = productHref(id, kind);
       var priceLabel = p ? priceLabelForProduct(p) : "";
       var cardFit = p && D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
@@ -58,12 +58,21 @@
           name: name,
           href: href,
           ctaHref: href,
-          imgSrc: img ? imgUrl(img) : "",
+          imgSrc: productImages[0] ? imgUrl(productImages[0]) : "",
+          imgFallbacks: productImages.slice(1).map(imgUrl).filter(Boolean),
           imgFit: cardFit,
           priceLabel: priceLabel,
           wishlistKind: kind,
           stagger: i,
         });
+        if (!p) {
+          card.classList.add("is-unavailable");
+          var unavailable = document.createElement("p");
+          unavailable.className = "plp-card__availability";
+          unavailable.setAttribute("role", "status");
+          unavailable.textContent = "This item is no longer available.";
+          card.querySelector(".plp-card__body") && card.querySelector(".plp-card__body").appendChild(unavailable);
+        }
         grid.appendChild(card);
         return;
       }
@@ -76,7 +85,7 @@
         '"></a><div class="plp-card__body"><h3 class="plp-card__name">' +
         name +
         "</h3>" +
-        (priceLabel ? "<p class='plp-card__price'>" + priceLabel + "</p>" : "") +
+        (priceLabel ? "<p class='plp-card__price'>" + priceLabel + "</p>" : "<p class='plp-card__availability' role='status'>This item is no longer available.</p>") +
         "</div>";
       grid.appendChild(article);
     });
@@ -98,6 +107,7 @@
   window.addEventListener("resinWishlistChanged", paint);
   window.addEventListener("craftguruCatalogPricesMerged", paint);
   window.addEventListener("craftguruCatalogVendorProductsMerged", paint);
+  window.addEventListener("craftguruCatalogCategoriesMerged", paint);
 
   whenCatalogReady();
 })();

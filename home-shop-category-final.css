@@ -43,12 +43,16 @@ html body.page-home .home-cat-hub .craft-cat-card__media img{
   display:block!important;
   width:100%!important;
   height:100%!important;
-  object-fit:contain!important;
+  object-fit:cover!important;
   object-position:center!important;
   background:#fff!important;
   border:0!important;
   border-radius:0!important;
   transform:none!important;
+}
+
+html body.page-home .home-cat-hub .craft-cat-card__media img[data-image-fit="contain"]{
+  object-fit:contain!important;
 }
 
 html body.page-home .home-cat-hub .craft-cat-card__body{

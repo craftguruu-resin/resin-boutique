@@ -787,8 +787,8 @@ function seedMinimalOptions(badge) {
       { id: "co-blush", label: "Blush", hex: "#f472b6", image: "" },
     ],
     brandLine: "CRAFT GURU",
-    ratingScore: "4.8",
-    reviewCount: 120,
+    ratingScore: "",
+    reviewCount: null,
     detailBody:
       "Hand-poured resin photo frame — each piece is finished in Jaipur. Pick size, colour, and quantity; your cart line updates with the options you choose.",
     galleryImages: [],

@@ -87,20 +87,12 @@
     }
 
     if (fab) {
-      var lastTouchToggleAt = 0;
-      /* Preserve a real tap path for Android/iOS WebViews, while suppressing
-         the compatibility click that follows the same touch interaction. */
-      fab.addEventListener("touchend", function (ev) {
-        lastTouchToggleAt = Date.now();
-        if (ev.cancelable) ev.preventDefault();
-        toggleOpen();
-      }, { passive: false });
-      fab.addEventListener("click", function (ev) {
-        if (Date.now() - lastTouchToggleAt < 700) {
-          ev.preventDefault();
-          return;
-        }
-        toggleOpen();
+      /* A floating support icon must take the customer to WhatsApp on the
+         first tap.  A hidden menu made this primary action appear broken. */
+      fab.addEventListener("click", function () {
+        var target = waUrl("Hi Craftguru, I need help with an order or product.");
+        try { window.open(target, "_blank", "noopener,noreferrer"); }
+        catch (_) { window.location.href = target; }
       });
     }
 

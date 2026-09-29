@@ -89,6 +89,10 @@
           "[home-self-heal] content still not ready after a reload attempt -- showing the page as-is to avoid a reload loop."
         );
       }
+      /* reloadBehindSkeleton has already set `settled`; reset it before
+         removing the overlay or the guard in removeSkeleton leaves Home
+         permanently covered by the dark loading skeleton. */
+      settled = false;
       removeSkeleton();
       return;
     }

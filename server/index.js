@@ -25,6 +25,7 @@ var rawMaterialsDb = require("./raw-materials-db.js");
 var photoFramesDb = require("./photo-frames-db.js");
 var vendorSiteDocsDb = require("./vendor-site-docs-db.js");
 var vendorCategoriesDb = require("./vendor-categories-db.js");
+var couponsDb = require("./coupons-db.js");
 var mediaCacheBust = require("./media-cache-bust.js");
 var hiddenResinCatalog = require("./hidden-resin-catalog.js");
 var resinClocksTaxonomy = require("./resin-clocks-taxonomy.js");
@@ -223,6 +224,39 @@ function computeTotals(items, opts) {
   return orderPricing.computeTotals(items, opts);
 }
 
+function productValueForItems(items) {
+  return orderPricing.round2(
+    (items || []).reduce(function (sum, it) {
+      return sum + Math.max(0, Number(it.unitPrice) || 0) * Math.max(1, Math.floor(Number(it.qty) || 1));
+    }, 0)
+  );
+}
+
+function resolveCouponTotals(items, paymentMethod, couponCode, cb) {
+  var productValue = productValueForItems(items);
+  couponsDb.resolveCoupon(couponCode, productValue, function (err, coupon) {
+    if (err) return cb(err);
+    if (couponCode && !coupon) return cb(new Error("This coupon is not available."));
+    var totals = computeTotals(items, { paymentMethod: paymentMethod, couponDiscount: coupon ? coupon.discount : 0 });
+    totals.coupon = coupon
+      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount }
+      : null;
+    cb(null, totals, coupon);
+  });
+}
+
+function totalsFromPaymentContext(items, paymentMethod, razorpayOrderId, cb) {
+  var productValue = productValueForItems(items);
+  couponsDb.getPaymentContext(razorpayOrderId, paymentMethod, productValue, function (err, coupon) {
+    if (err) return cb(err);
+    var totals = computeTotals(items, { paymentMethod: paymentMethod, couponDiscount: coupon ? coupon.discount : 0 });
+    totals.coupon = coupon
+      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount }
+      : null;
+    cb(null, totals, coupon);
+  });
+}
+
 function makeTagRef() {
   return (
     "CG-" +
@@ -274,6 +308,7 @@ function finishCheckoutOrder(req, res, opts) {
       paymentStatus: paymentStatus,
       paymentMethod: paymentMethod,
       paymentReference: opts.paymentReference || "",
+      couponCode: opts.couponCode || "",
     },
     function (err, orderRecord) {
       if (err) {
@@ -371,6 +406,10 @@ function sanitizeLineExtra(raw) {
     .trim()
     .slice(0, 200);
   if (kn) o.keychainName = kn;
+  var fi = String(raw.frameInstructions != null ? raw.frameInstructions : "")
+    .trim()
+    .slice(0, 1000);
+  if (fi) o.frameInstructions = fi;
   return Object.keys(o).length ? o : null;
 }
 
@@ -636,6 +675,7 @@ function mergeCategoriesDbWithCatalog(dbRows) {
       subcategories: normalizeCategorySubcategories(row.subcategories),
       nav_image: String((row.nav_image != null && row.nav_image) || "").trim(),
       nav_image_fit: String((row.nav_image_fit != null && row.nav_image_fit) || "").trim(),
+      sort_order: Number(row.sort_order) || 0,
       vendor_owned: Boolean(row.vendor_owned),
     };
   });
@@ -659,6 +699,7 @@ function mergeCategoriesDbWithCatalog(dbRows) {
         folder: c.folder || "",
         subcategories: fromDataSubs,
         nav_image: "",
+        sort_order: 0,
         vendor_owned: false,
       };
     } else {
@@ -851,6 +892,7 @@ function validateGuestParcel(g) {
   if (typeof g.state !== "string" || g.state.trim().length < 1 || g.state.length > 120) return "Invalid state";
   if (typeof g.zip !== "string" || g.zip.trim().length < 1 || g.zip.length > 20) return "Invalid postal code";
   if (typeof g.country !== "string" || g.country.trim().length < 1 || g.country.length > 80) return "Invalid country";
+  if (String(g.country).trim().toUpperCase() !== "IN") return "We currently deliver within India only";
   if (g.addressType != null && typeof g.addressType === "string" && g.addressType.length > 24) return "Invalid address type";
   return null;
 }
@@ -867,7 +909,7 @@ function normalizeGuestParcel(g) {
     city: String(g.city || "").trim().slice(0, 120),
     state: String(g.state || "").trim().slice(0, 120),
     zip: String(g.zip || "").trim().slice(0, 20),
-    country: String(g.country || "").trim().slice(0, 80),
+    country: "IN",
     addressType: at,
   };
 }
@@ -1144,6 +1186,71 @@ app.get("/api/shipping/providers", function (_req, res) {
   });
 });
 
+/** Preview a coupon against authoritative catalog prices. No guest data is stored. */
+app.post("/api/coupons/validate", function (req, res) {
+  var ip = req.ip || req.connection.remoteAddress || "unknown";
+  if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
+  var body = req.body || {};
+  var itemsErr = validateItems(body.items);
+  if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
+  resolveAuthoritativeCheckoutItems(body.items, function (priceErr, items) {
+    if (priceErr) return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
+    resolveCouponTotals(items, "razorpay", body.code, function (couponErr, totals, coupon) {
+      if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
+      res.json({ ok: true, coupon: coupon ? totals.coupon : null, productValue: totals.productValue });
+    });
+  });
+});
+
+/** Vendor coupon controls live inside the Products workspace. */
+app.get("/api/vendor/coupons", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) return res.status(500).json({ ok: false, error: String(err.message || err) });
+    if (!ok) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    couponsDb.listCoupons(function (listErr, coupons) {
+      if (listErr) return res.status(500).json({ ok: false, error: String(listErr.message || listErr) });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, coupons: coupons || [] });
+    });
+  });
+});
+
+app.post("/api/vendor/coupons", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) return res.status(500).json({ ok: false, error: String(err.message || err) });
+    if (!ok) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    couponsDb.createCoupon(req.body || {}, function (saveErr, coupon) {
+      if (saveErr) return res.status(400).json({ ok: false, error: String(saveErr.message || saveErr) });
+      vendorAudit.record({ req: req, action: "coupon_created", detail: { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue } });
+      res.status(201).json({ ok: true, coupon: coupon });
+    });
+  });
+});
+
+app.put("/api/vendor/coupons/:id", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) return res.status(500).json({ ok: false, error: String(err.message || err) });
+    if (!ok) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    couponsDb.updateCoupon(req.params.id, req.body || {}, function (saveErr, coupon) {
+      if (saveErr) return res.status(400).json({ ok: false, error: String(saveErr.message || saveErr) });
+      vendorAudit.record({ req: req, action: "coupon_updated", detail: { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue } });
+      res.json({ ok: true, coupon: coupon });
+    });
+  });
+});
+
+app.patch("/api/vendor/coupons/:id/active", function (req, res) {
+  vendorAuth.tokenValid(req, function (err, ok) {
+    if (err) return res.status(500).json({ ok: false, error: String(err.message || err) });
+    if (!ok) return res.status(401).json({ ok: false, error: "Unauthorized" });
+    couponsDb.setCouponActive(req.params.id, !!(req.body && req.body.active), function (saveErr, coupon) {
+      if (saveErr) return res.status(400).json({ ok: false, error: String(saveErr.message || saveErr) });
+      vendorAudit.record({ req: req, action: coupon.isActive ? "coupon_activated" : "coupon_deactivated", detail: { code: coupon.code } });
+      res.json({ ok: true, coupon: coupon });
+    });
+  });
+});
+
 /** Create Razorpay order from cart lines (amount fixed server-side). */
 app.post("/api/razorpay-order", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
@@ -1169,39 +1276,28 @@ app.post("/api/razorpay-order", function (req, res) {
       return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
     }
 
-    var totals = computeTotals(items, { paymentMethod: "razorpay" });
-    var amountPaise = Math.round(totals.total * 100);
-    if (!Number.isFinite(amountPaise) || amountPaise < 100) {
-      return res.status(400).json({ ok: false, error: "Order total must be at least ₹1." });
-    }
-
-    var receipt = ("cg" + Date.now()).replace(/\D/g, "").slice(0, 40);
-
-    checkInventoryBeforePayment(items, function (invErr) {
-      if (invErr) {
-        return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
+    resolveCouponTotals(items, "razorpay", body.couponCode, function (couponErr, totals, coupon) {
+      if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
+      var amountPaise = Math.round(totals.total * 100);
+      if (!Number.isFinite(amountPaise) || amountPaise < 100) {
+        return res.status(400).json({ ok: false, error: "Order total must be at least ₹1." });
       }
-      rz.orders
-        .create({ amount: amountPaise, currency: "INR", receipt: receipt })
-      .then(function (order) {
-        res.json({
-          ok: true,
-          keyId: RAZORPAY_KEY_ID,
-          orderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          totals: totals,
-        });
-      })
-      .catch(function (err) {
-        var desc =
-          err &&
-          err.error &&
-          (err.error.description || err.error.reason || err.error.code || err.error.step);
-        res.status(502).json({
-          ok: false,
-          error: String(desc || err.message || err || "Razorpay order failed"),
-        });
+      var receipt = ("cg" + Date.now()).replace(/\D/g, "").slice(0, 40);
+      checkInventoryBeforePayment(items, function (invErr) {
+        if (invErr) return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
+        rz.orders.create({ amount: amountPaise, currency: "INR", receipt: receipt })
+          .then(function (order) {
+            return new Promise(function (resolve, reject) {
+              couponsDb.createPaymentContext(order.id, "razorpay", coupon, function (ctxErr) { if (ctxErr) reject(ctxErr); else resolve(order); });
+            });
+          })
+          .then(function (order) {
+            res.json({ ok: true, keyId: RAZORPAY_KEY_ID, orderId: order.id, amount: order.amount, currency: order.currency, totals: totals });
+          })
+          .catch(function (err) {
+            var desc = err && err.error && (err.error.description || err.error.reason || err.error.code || err.error.step);
+            res.status(502).json({ ok: false, error: String(desc || err.message || err || "Razorpay order failed") });
+          });
       });
     });
   });
@@ -1240,29 +1336,22 @@ app.post("/api/razorpay-verify", function (req, res) {
       if (priceErr) {
         return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
       }
-      var totals0 = computeTotals(items0, { paymentMethod: "razorpay" });
-      var g0 = normalizeGuestParcel(guest);
-      var rz0 = getRazorpayClient();
-
-      verifyRazorpayOrderAmount(rz0, oid, Math.round(Number(totals0.total) * 100))
-        .then(function () {
-          runCheckoutWithOptionalSession(req, res, g0, function () {
-            finishCheckoutOrder(req, res, {
-              guest: g0,
-              items: items0,
-              totals: totals0,
-              orderType: "Checkout · Razorpay",
-              tagRef: makeTagRef(),
-            paymentStatus: "paid",
-            paymentMethod: "razorpay",
-            paymentReference: String(payId || ""),
-            extraJson: { razorpayPaymentId: String(payId || "") },
+      totalsFromPaymentContext(items0, "razorpay", oid, function (contextErr, totals0, coupon) {
+        if (contextErr) return res.status(500).json({ ok: false, error: "Could not load the protected checkout total." });
+        var g0 = normalizeGuestParcel(guest);
+        var rz0 = getRazorpayClient();
+        verifyRazorpayOrderAmount(rz0, oid, Math.round(Number(totals0.total) * 100))
+          .then(function () {
+            runCheckoutWithOptionalSession(req, res, g0, function () {
+              finishCheckoutOrder(req, res, {
+                guest: g0, items: items0, totals: totals0, orderType: "Checkout · Razorpay", tagRef: makeTagRef(),
+                paymentStatus: "paid", paymentMethod: "razorpay", paymentReference: String(payId || ""),
+                couponCode: coupon ? coupon.code : "", extraJson: { razorpayPaymentId: String(payId || "") },
+              });
             });
-          });
-        })
-        .catch(function (err) {
-          res.status(400).json({ ok: false, error: String(err.message || err || "Razorpay order verification failed") });
-        });
+          })
+          .catch(function (err) { res.status(400).json({ ok: false, error: String(err.message || err || "Razorpay order verification failed") }); });
+      });
     });
   }
 
@@ -1283,10 +1372,7 @@ app.post("/api/cod-advance-order", function (req, res) {
     if (priceErr) {
       return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
     }
-    var productValue = items.reduce(function (sum, it) {
-      return sum + Math.max(0, Number(it.unitPrice) || 0) * Math.max(1, Math.floor(Number(it.qty) || 1));
-    }, 0);
-    productValue = orderPricing.round2(productValue);
+    var productValue = productValueForItems(items);
     if (productValue < orderPricing.COD_MIN_PRODUCT_VALUE) {
       return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
     }
@@ -1297,21 +1383,21 @@ app.post("/api/cod-advance-order", function (req, res) {
       if (invErr) {
         return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
       }
-      rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
-      .then(function (order) {
-        res.json({
-          ok: true,
-          keyId: RAZORPAY_KEY_ID,
-          orderId: order.id,
-          amount: order.amount,
-          currency: order.currency,
-          advance: 200,
-          productValue: productValue,
+      resolveCouponTotals(items, "cod", b.couponCode, function (couponErr, totals, coupon) {
+        if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
+        rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
+        .then(function (order) {
+          return new Promise(function (resolve, reject) {
+            couponsDb.createPaymentContext(order.id, "cod", coupon, function (ctxErr) { if (ctxErr) reject(ctxErr); else resolve(order); });
+          });
+        })
+        .then(function (order) {
+          res.json({ ok: true, keyId: RAZORPAY_KEY_ID, orderId: order.id, amount: order.amount, currency: order.currency, advance: 200, productValue: productValue, totals: totals });
+        })
+        .catch(function (err) {
+          var desc = err && err.error && (err.error.description || err.error.reason || err.error.code);
+          res.status(502).json({ ok: false, error: String(desc || err.message || err || "Razorpay order failed") });
         });
-      })
-      .catch(function (err) {
-        var desc = err && err.error && (err.error.description || err.error.reason || err.error.code);
-        res.status(502).json({ ok: false, error: String(desc || err.message || err || "Razorpay order failed") });
       });
     });
   });
@@ -1341,39 +1427,29 @@ app.post("/api/cod-advance-verify", function (req, res) {
     if (priceErr) {
       return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
     }
-    var totals = computeTotals(items, { paymentMethod: "cod" });
-    if (Number(totals.productValue || 0) < orderPricing.COD_MIN_PRODUCT_VALUE) {
-      return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
-    }
-    var guestNorm = normalizeGuestParcel(guest);
-    var rzCod = getRazorpayClient();
-    totals.codAdvance = 200;
-    totals.codBalanceDue = orderPricing.round2(Math.max(0, Number(totals.total || 0) - 200));
-    totals.codAdvanceRazorpayPaymentId = String(b.razorpay_payment_id || "").slice(0, 120);
-
-    verifyRazorpayOrderAmount(rzCod, b.razorpay_order_id, 20000)
-      .then(function () {
-        runCheckoutWithOptionalSession(req, res, guestNorm, function () {
-          finishCheckoutOrder(req, res, {
-            guest: guestNorm,
-            items: items,
-            totals: totals,
-            orderType: "Checkout · COD",
-            tagRef: makeTagRef(),
-          paymentStatus: "cod_advance_paid",
-          paymentMethod: "cod",
-          paymentReference: String(b.razorpay_payment_id || ""),
-          extraJson: {
-              codAdvancePaid: 200,
-              codBalanceDue: totals.codBalanceDue,
-              razorpayPaymentId: String(b.razorpay_payment_id || ""),
-            },
+    totalsFromPaymentContext(items, "cod", b.razorpay_order_id, function (contextErr, totals, coupon) {
+      if (contextErr) return res.status(500).json({ ok: false, error: "Could not load the protected checkout total." });
+      if (Number(totals.productValue || 0) < orderPricing.COD_MIN_PRODUCT_VALUE) {
+        return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
+      }
+      var guestNorm = normalizeGuestParcel(guest);
+      var rzCod = getRazorpayClient();
+      totals.codAdvance = 200;
+      totals.codBalanceDue = orderPricing.round2(Math.max(0, Number(totals.total || 0) - 200));
+      totals.codAdvanceRazorpayPaymentId = String(b.razorpay_payment_id || "").slice(0, 120);
+      verifyRazorpayOrderAmount(rzCod, b.razorpay_order_id, 20000)
+        .then(function () {
+          runCheckoutWithOptionalSession(req, res, guestNorm, function () {
+            finishCheckoutOrder(req, res, {
+              guest: guestNorm, items: items, totals: totals, orderType: "Checkout · COD", tagRef: makeTagRef(),
+              paymentStatus: "cod_advance_paid", paymentMethod: "cod", paymentReference: String(b.razorpay_payment_id || ""),
+              couponCode: coupon ? coupon.code : "",
+              extraJson: { codAdvancePaid: 200, codBalanceDue: totals.codBalanceDue, razorpayPaymentId: String(b.razorpay_payment_id || "") },
+            });
           });
-        });
-      })
-      .catch(function (err) {
-        res.status(400).json({ ok: false, error: String(err.message || err || "COD advance verification failed") });
-      });
+        })
+        .catch(function (err) { res.status(400).json({ ok: false, error: String(err.message || err || "COD advance verification failed") }); });
+    });
   });
 });
 
@@ -2492,7 +2568,7 @@ app.get("/api/vendor/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, COALESCE(sort_order, 0) AS sort_order, updated_at FROM categories ORDER BY sort_order ASC, label ASC"
     )
     .then(function (r) {
       var dbRowCount = r.rows.length;
@@ -2504,6 +2580,7 @@ app.get("/api/vendor/categories", function (_req, res) {
           subcategories: normalizeCategorySubcategories(row.subcategories),
           nav_image: String(row.nav_image || "").trim(),
           nav_image_fit: String(row.nav_image_fit || "").trim(),
+          sort_order: Number(row.sort_order) || 0,
           vendor_owned: Boolean(row.vendor_owned),
         };
       });
@@ -3172,7 +3249,7 @@ app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
     poolMod
       .getPool()
       .query(
-        "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
+        "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, COALESCE(sort_order, 0) AS sort_order, updated_at FROM categories ORDER BY sort_order ASC, label ASC"
       )
       .then(function (r) {
         out.categories = mergeCategoriesDbWithCatalog(r.rows);
@@ -3269,7 +3346,7 @@ app.get("/api/catalog/categories", function (_req, res) {
   poolMod
     .getPool()
     .query(
-      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, updated_at FROM categories ORDER BY label ASC"
+      "SELECT id, label, folder, subcategories, COALESCE(vendor_owned, false) AS vendor_owned, COALESCE(nav_image, '') AS nav_image, COALESCE(nav_image_fit, '') AS nav_image_fit, COALESCE(sort_order, 0) AS sort_order, updated_at FROM categories ORDER BY sort_order ASC, label ASC"
     )
     .then(function (r) {
       var merged = mergeCategoriesDbWithCatalog(r.rows);

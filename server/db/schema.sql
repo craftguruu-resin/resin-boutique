@@ -121,6 +121,36 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_reference_unique
   ON orders (payment_reference)
   WHERE payment_reference IS NOT NULL;
 
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code VARCHAR(40) NOT NULL DEFAULT '';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_discount NUMERIC(12, 2) NOT NULL DEFAULT 0;
+
+CREATE TABLE IF NOT EXISTS store_coupons (
+  id BIGSERIAL PRIMARY KEY,
+  code VARCHAR(40) NOT NULL UNIQUE,
+  discount_type VARCHAR(16) NOT NULL CHECK (discount_type IN ('percentage', 'flat')),
+  discount_value NUMERIC(12, 2) NOT NULL CHECK (discount_value > 0),
+  is_active BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_store_coupons_active_code ON store_coupons (code) WHERE is_active;
+ALTER TABLE store_coupons ADD COLUMN IF NOT EXISTS min_subtotal NUMERIC(12, 2) NOT NULL DEFAULT 0;
+ALTER TABLE store_coupons ADD COLUMN IF NOT EXISTS starts_at TIMESTAMPTZ;
+ALTER TABLE store_coupons ADD COLUMN IF NOT EXISTS ends_at TIMESTAMPTZ;
+ALTER TABLE store_coupons ADD COLUMN IF NOT EXISTS max_redemptions INTEGER;
+CREATE INDEX IF NOT EXISTS idx_orders_coupon_code ON orders (coupon_code) WHERE coupon_code <> '';
+
+CREATE TABLE IF NOT EXISTS checkout_payment_contexts (
+  razorpay_order_id VARCHAR(120) PRIMARY KEY,
+  payment_method VARCHAR(20) NOT NULL,
+  coupon_code VARCHAR(40) NOT NULL DEFAULT '',
+  coupon_type VARCHAR(16) NOT NULL DEFAULT '',
+  coupon_value NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  coupon_discount NUMERIC(12, 2) NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Optional dispatch state (vendor can PATCH later). Default keeps existing rows valid.
 ALTER TABLE orders ADD COLUMN IF NOT EXISTS fulfillment_status VARCHAR(40) NOT NULL DEFAULT 'new';
 
@@ -226,6 +256,8 @@ CREATE TABLE IF NOT EXISTS categories (
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS vendor_owned BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS nav_image VARCHAR(500) NOT NULL DEFAULT '';
 ALTER TABLE categories ADD COLUMN IF NOT EXISTS nav_image_fit VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE categories ADD COLUMN IF NOT EXISTS sort_order INTEGER NOT NULL DEFAULT 0;
+CREATE INDEX IF NOT EXISTS idx_categories_sort_order ON categories (sort_order, label);
 
 CREATE TABLE IF NOT EXISTS vendor_site_docs (
   doc_key VARCHAR(80) PRIMARY KEY,

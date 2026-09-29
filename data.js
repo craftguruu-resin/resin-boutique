@@ -10,6 +10,24 @@
   var SUPPRESSED = Object.create(null);
   var PAGE_SIZE = 48;
 
+  /* A published navigation fallback keeps the storefront usable when the
+     live catalog cannot be reached. It deliberately contains no products or
+     prices, so the UI can be honest about a temporary catalog outage. */
+  var FALLBACK_CATEGORIES = [
+    ["resin-clocks", "Resin Clocks"],
+    ["resin-coasters", "Resin Coasters"],
+    ["resin-customised-frames", "Customised Frames"],
+    ["resin-keychains", "Resin Keychains"],
+    ["resin-name-plates", "Resin Name Plates"],
+    ["resin-pooja-plate", "Resin Pooja Plates"],
+    ["resin-mantra-frame", "Resin Mantra Frames"],
+    ["resin-key-holder", "Resin Key Holders"],
+    ["resin-car-hanging", "Resin Car Hanging"],
+    ["resin-guruji-products", "Resin Guruji Products"],
+    ["resin-cutlery-and-tissue-holder", "Cutlery & Tissue Holders"],
+    ["mini-resin-deshboard", "Mini Resin Dashboard"],
+  ];
+
   var SIZE_LABELS = {
     s: { key: "s", name: "Compact", hint: "Smallest pour" },
     m: { key: "m", name: "Classic", hint: "Most popular" },
@@ -135,7 +153,73 @@
 
   function getProductCoverImageFit() { return ""; }
   function getCategoryPreviewImageFit() { return ""; }
-  function getCategoryCardPreview() { return { image: "", fit: "", fallback: "" }; }
+
+  /* Category records do not own media.  Derive a representative image from
+     their published products instead of returning a blank card when the
+     vendor has supplied only product cover/gallery URLs.  The second image
+     remains available to the card's onerror handler if the preferred URL is
+     temporarily unavailable. */
+  function getCategoryPreviewImagePair(categoryId) {
+    var products = listProductsAll(String(categoryId || ""));
+    for (var i = 0; i < products.length; i++) {
+      var candidates = getProductImageCandidates(products[i]);
+      if (candidates.length) {
+        return { primary: candidates[0], fallback: candidates[1] || "" };
+      }
+    }
+    return { primary: "", fallback: "" };
+  }
+
+  function getCategoryCardPreview(categoryId) {
+    var pair = getCategoryPreviewImagePair(categoryId);
+    return { image: pair.primary, fit: getCategoryPreviewImageFit(categoryId, pair.primary), fallback: pair.fallback };
+  }
+
+  function pickRandomCatalogProductImage() {
+    for (var i = 0; i < PRODUCTS.length; i++) {
+      var candidates = getProductImageCandidates(PRODUCTS[i]);
+      if (candidates.length) return candidates[0];
+    }
+    return "";
+  }
+
+  function productImageValue(value) {
+    if (value && typeof value === "object") value = value.image || value.url || value.src || "";
+    return String(value || "").trim();
+  }
+
+  /* The ordered image chain is shared by every customer-facing listing.
+     Cover is preferred, then gallery, colour, size, and quantity media. */
+  function getProductImageCandidates(product) {
+    if (!product) return [];
+    var opt = normalizeOptionsOverride(product.options) || {};
+    var primary = [opt.heroImage, opt.coverImage, product.coverImage, product.image, product._catalogImage];
+    var secondary = [];
+    if (Array.isArray(opt.galleryImages)) secondary = secondary.concat(opt.galleryImages);
+    if (Array.isArray(product.gallery)) secondary = secondary.concat(product.gallery);
+    if (Array.isArray(product.galleryImages)) secondary = secondary.concat(product.galleryImages);
+    [opt.colors, opt.sizes, opt.qtyOptions].forEach(function (rows) {
+      if (!Array.isArray(rows)) return;
+      rows.forEach(function (row) { secondary.push(row && (row.image || row.url || row.src)); });
+    });
+
+    var real = [];
+    var placeholder = [];
+    primary.concat(secondary).forEach(function (candidate) {
+      var image = productImageValue(candidate);
+      if (!image) return;
+      var target = image.indexOf("placeholder-product") >= 0 ? placeholder : real;
+      if (target.indexOf(image) < 0) target.push(image);
+    });
+    return real.concat(placeholder);
+  }
+
+  /* Cart and checkout use the stable first image; listing cards receive the
+     remaining candidates as runtime fallbacks when an uploaded URL fails. */
+  function getProductCoverImage(product) {
+    var candidates = getProductImageCandidates(product);
+    return candidates.length ? candidates[0] : "";
+  }
 
   function normalizeOptionsOverride(raw) {
     if (!raw) return null;
@@ -257,6 +341,16 @@
     return CATEGORIES.length;
   }
 
+  function applyPublishedCategoryFallback() {
+    if (CATEGORIES.length) return CATEGORIES.length;
+    CATEGORIES = FALLBACK_CATEGORIES.map(function (row) {
+      return { id: row[0], label: row[1], folder: "", subcategories: [] };
+    });
+    rebuildCategoryProductIndex();
+    if (global.RESIN_DATA) global.RESIN_DATA.categories = CATEGORIES;
+    return CATEGORIES.length;
+  }
+
   function searchCatalogPartial(q, limit) {
     q = String(q || "").toLowerCase().trim();
     if (!q) return [];
@@ -294,11 +388,11 @@
     byCategory: BY_CAT,
     getProduct: getProduct,
     getCategoryLabel: getCategoryLabel,
-    getCategoryPreviewImage: function () { return ""; },
-    getCategoryPreviewImagePair: function () { return { primary: "", fallback: "" }; },
+    getCategoryPreviewImage: function (categoryId) { return getCategoryPreviewImagePair(categoryId).primary; },
+    getCategoryPreviewImagePair: getCategoryPreviewImagePair,
     getCategoryNavImageFit: function () { return ""; },
     listAllListedProducts: function () { return PRODUCTS.slice(); },
-    pickRandomCatalogProductImage: function () { return ""; },
+    pickRandomCatalogProductImage: pickRandomCatalogProductImage,
     getSubcategoryPreviewImage: function () { return ""; },
     getSubcategoryLabel: getSubcategoryLabel,
     getSizeProfile: getSizeProfile,
@@ -325,6 +419,7 @@
     applyVendorProductsMerge: applyVendorProductsMerge,
     rebuildCategoryProductIndex: rebuildCategoryProductIndex,
     applyCategoriesMerge: applyCategoriesMerge,
+    applyPublishedCategoryFallback: applyPublishedCategoryFallback,
     searchCatalogPartial: searchCatalogPartial,
     searchCategoriesPartial: searchCategoriesPartial,
     partialTokenMatch: partialTokenMatch,
@@ -333,6 +428,8 @@
     normalizeOptionsOverride: normalizeOptionsOverride,
     getOfferedOptionSizes: getOfferedOptionSizes,
     sanitizeOptionSizes: sanitizeOptionSizes,
+    getProductImageCandidates: getProductImageCandidates,
+    getProductCoverImage: getProductCoverImage,
     getProductCoverImageFit: getProductCoverImageFit,
     getCategoryPreviewImageFit: getCategoryPreviewImageFit,
     getCategoryCardPreview: getCategoryCardPreview

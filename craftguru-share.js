@@ -49,6 +49,41 @@
     }
   }
 
+  function copyLink(url, anchorEl) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard
+        .writeText(url)
+        .then(function () {
+          showCopyFeedback("Link copied", anchorEl);
+        })
+        .catch(function () {
+          if (window.CraftguruGuestFeedback) window.CraftguruGuestFeedback.notify("Could not open sharing. The link is ready to copy from your browser address bar.");
+          showCopyFeedback("Copy the link from the box", anchorEl);
+        });
+    }
+    if (window.CraftguruGuestFeedback) {
+      window.CraftguruGuestFeedback.notify("Copy the link from your browser address bar.");
+    }
+    showCopyFeedback("Link copied", anchorEl);
+    return Promise.resolve();
+  }
+
+  function shareLink(name, url, anchorEl) {
+    if (navigator.share) {
+      return navigator
+        .share({ title: name, text: name, url: url })
+        .then(function () {
+          showCopyFeedback("Share sheet opened", anchorEl);
+        })
+        .catch(function (err) {
+          /* Closing the system share sheet is intentional, not an error. */
+          if (err && err.name === "AbortError") return;
+          return copyLink(url, anchorEl);
+        });
+    }
+    return copyLink(url, anchorEl);
+  }
+
   function closeAllSharePops() {
     document.querySelectorAll(".product-card-share__pop[aria-hidden='false']").forEach(function (p) {
       p.hidden = true;
@@ -82,8 +117,11 @@
       '<a href="https://wa.me/?text=' +
       text +
       '" target="_blank" rel="noopener noreferrer">WhatsApp</a>' +
-      '<a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a>' +
-      '<a href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube</a>' +
+      '<button type="button" class="cg-share-native" data-url="' +
+      String(url).replace(/"/g, "&quot;") +
+      '" data-title="' +
+      String(name).replace(/"/g, "&quot;") +
+      '">Share…</button>' +
       '<button type="button" class="cg-share-copy" data-url="' +
       String(url).replace(/"/g, "&quot;") +
       '">Copy link</button>';
@@ -103,25 +141,18 @@
     });
 
     pop.addEventListener("click", function (e) {
+      var nativeShare = e.target && e.target.closest ? e.target.closest(".cg-share-native") : null;
+      if (nativeShare) {
+        e.preventDefault();
+        e.stopPropagation();
+        shareLink(nativeShare.getAttribute("data-title") || name, nativeShare.getAttribute("data-url") || url, nativeShare);
+        return;
+      }
       var c = e.target && e.target.closest ? e.target.closest(".cg-share-copy") : null;
       if (!c) return;
       e.preventDefault();
       e.stopPropagation();
-      var u = c.getAttribute("data-url") || url;
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard
-          .writeText(u)
-          .then(function () {
-            showCopyFeedback("Link copied", c);
-          })
-          .catch(function () {
-            window.prompt("Copy this link", u);
-            showCopyFeedback("Copy the link from the box", c);
-          });
-      } else {
-        window.prompt("Copy this link", u);
-        showCopyFeedback("Link copied", c);
-      }
+      copyLink(c.getAttribute("data-url") || url, c);
     });
   }
 
@@ -145,8 +176,11 @@
       '<a role="menuitem" href="https://wa.me/?text=' +
       text +
       '" target="_blank" rel="noopener noreferrer">WhatsApp</a>' +
-      '<a role="menuitem" href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer">Instagram</a>' +
-      '<a role="menuitem" href="https://www.youtube.com/" target="_blank" rel="noopener noreferrer">YouTube</a>' +
+      '<button type="button" role="menuitem" class="cg-share-native" data-url="' +
+      String(url).replace(/"/g, "&quot;") +
+      '" data-title="' +
+      String(name).replace(/"/g, "&quot;") +
+      '">Share…</button>' +
       '<button type="button" role="menuitem" class="product-share-bar__copy cg-share-copy" data-url="' +
       String(url).replace(/"/g, "&quot;") +
       '">Copy link</button>' +
@@ -179,21 +213,13 @@
     host.querySelectorAll(".cg-share-copy").forEach(function (b) {
       b.addEventListener("click", function (ev) {
         ev.preventDefault();
-        var u = b.getAttribute("data-url") || url;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard
-            .writeText(u)
-            .then(function () {
-              showCopyFeedback("Link copied", b);
-            })
-            .catch(function () {
-              window.prompt("Copy this link", u);
-              showCopyFeedback("Copy the link from the box", b);
-            });
-        } else {
-          window.prompt("Copy this link", u);
-          showCopyFeedback("Link copied", b);
-        }
+        copyLink(b.getAttribute("data-url") || url, b);
+      });
+    });
+    host.querySelectorAll(".cg-share-native").forEach(function (b) {
+      b.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        shareLink(b.getAttribute("data-title") || name, b.getAttribute("data-url") || url, b);
       });
     });
   }

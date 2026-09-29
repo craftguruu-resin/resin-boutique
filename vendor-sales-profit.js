@@ -130,7 +130,7 @@
     var rev = document.getElementById("vspKpiRevenue");
     if (rev) rev.textContent = money(t.revenue);
     var revSub = document.getElementById("vspKpiRevenueSub");
-    if (revSub) revSub.textContent = String(t.qty || 0) + " units sold in period";
+    if (revSub) revSub.textContent = String(t.qty || 0) + " units sold · coupons " + money(t.couponDiscount || 0);
     var rz = document.getElementById("vspKpiRazorpay");
     if (rz) rz.textContent = money(t.razorpayFee);
     var cost = document.getElementById("vspKpiCost");
@@ -143,7 +143,7 @@
     var profitSub = document.getElementById("vspKpiProfitSub");
     if (profitSub) {
       var margin = t.revenue > 0 ? Math.round((t.profit / t.revenue) * 1000) / 10 : 0;
-      profitSub.textContent = "Margin " + margin + "% after fees & cost";
+      profitSub.textContent = "Margin " + margin + "% after coupons, fees & cost";
     }
   }
 
@@ -284,7 +284,7 @@
           esc(moneyPrecise(r.productValue != null ? r.productValue : r.revenue)) +
           "</td>" +
           "<td>" +
-          esc(moneyPrecise(r.prepaidDiscount || 0)) +
+          esc(moneyPrecise((Number(r.couponDiscount) || 0) + (Number(r.prepaidDiscount) || 0))) +
           "</td>" +
           "<td>" +
           esc(moneyPrecise(r.gatewayFee != null ? r.gatewayFee : r.razorpayFee || 0)) +

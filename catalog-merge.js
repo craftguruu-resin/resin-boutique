@@ -105,9 +105,17 @@
   var CATEGORIES_CACHE_KEY = "__cgCategoriesCache";
   var VENDOR_CACHE_KEY = "__cgVendorProductsCache";
   var OVERRIDES_CACHE_KEY = "__cgCatalogOverridesCache";
+  /* Session cache keeps a tab fresh; this durable cache is deliberately a
+     last-known-good customer fallback. It is written only after a successful
+     API response and lets a new tab browse real, previously published pieces
+     during a short catalog outage. */
+  var DURABLE_CACHE_PREFIX = "__cgDurableCatalog:";
   var CACHE_TTL_MS = 5 * 60 * 1000;
+  var DURABLE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
   var VISIBILITY_REFRESH_MIN_MS = 2 * 60 * 1000;
   var CATALOG_CHANGE_KEY = "craftguruCatalogChangedAt";
+  var usingStaleCatalog = false;
+  var staleCatalogAt = 0;
 
   function readSessionJson(key) {
     try {
@@ -125,8 +133,37 @@
     } catch (_) {}
   }
 
+  function readDurableJson(key) {
+    try {
+      var raw = localStorage.getItem(DURABLE_CACHE_PREFIX + key);
+      if (!raw) return null;
+      return JSON.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeCatalogJson(key, value) {
+    writeSessionJson(key, value);
+    try {
+      localStorage.setItem(DURABLE_CACHE_PREFIX + key, JSON.stringify(value));
+    } catch (_) {}
+  }
+
   function cacheFresh(entry) {
     return entry && entry.ts && Date.now() - entry.ts < CACHE_TTL_MS;
+  }
+
+  function cacheDurable(entry) {
+    return entry && entry.ts && Date.now() - entry.ts < DURABLE_CACHE_TTL_MS;
+  }
+
+  function bestCatalogCache(key) {
+    var sessionEntry = readSessionJson(key);
+    if (cacheFresh(sessionEntry)) return { entry: sessionEntry, stale: false };
+    var durableEntry = readDurableJson(key);
+    if (cacheDurable(durableEntry)) return { entry: durableEntry, stale: true };
+    return null;
   }
 
   function applyOverridesPayload(j) {
@@ -149,7 +186,7 @@
       D.applyCatalogSuppressions(suppressed);
     }
     if (j.overrides) {
-      writeSessionJson(OVERRIDES_CACHE_KEY, {
+      writeCatalogJson(OVERRIDES_CACHE_KEY, {
         ts: Date.now(),
         overrides: j.overrides,
         suppressed: suppressed,
@@ -161,24 +198,37 @@
   }
 
   function hydrateCatalogFromSessionCache() {
-    var cat = readSessionJson(CATEGORIES_CACHE_KEY);
-    if (cacheFresh(cat) && cat.categories && typeof D.applyCategoriesMerge === "function") {
+    var catWrap = bestCatalogCache(CATEGORIES_CACHE_KEY);
+    var cat = catWrap && catWrap.entry;
+    if (cat && cat.categories && typeof D.applyCategoriesMerge === "function") {
       D.applyCategoriesMerge(cat.categories);
+      if (catWrap.stale) usingStaleCatalog = true;
     }
-    var vendor = readSessionJson(VENDOR_CACHE_KEY);
-    if (cacheFresh(vendor) && vendor.products && typeof D.applyVendorProductsMerge === "function") {
+    var vendorWrap = bestCatalogCache(VENDOR_CACHE_KEY);
+    var vendor = vendorWrap && vendorWrap.entry;
+    if (vendor && vendor.products && typeof D.applyVendorProductsMerge === "function") {
       D.applyVendorProductsMerge(vendor.products);
+      if (vendorWrap.stale && vendor.products.length) {
+        usingStaleCatalog = true;
+        staleCatalogAt = Number(vendor.ts) || 0;
+      }
     }
-    var ovWrap = readSessionJson(OVERRIDES_CACHE_KEY);
-    if (cacheFresh(ovWrap) && ovWrap.overrides) {
+    var ovCache = bestCatalogCache(OVERRIDES_CACHE_KEY);
+    var ovWrap = ovCache && ovCache.entry;
+    if (ovWrap && ovWrap.overrides) {
+      var cachedSuppressed = Array.isArray(ovWrap.suppressed)
+        ? ovWrap.suppressed
+        : Array.isArray(ovWrap.suppressedProductIds)
+          ? ovWrap.suppressedProductIds
+          : [];
       try {
         window.__cgCatalogOverrides = ovWrap.overrides;
       } catch (_) {}
       if (typeof D.applyCatalogSuppressions === "function") {
         try {
-          window.__cgCatalogSuppressions = Array.isArray(ovWrap.suppressed) ? ovWrap.suppressed : [];
+          window.__cgCatalogSuppressions = cachedSuppressed;
         } catch (_) {}
-        D.applyCatalogSuppressions(Array.isArray(ovWrap.suppressed) ? ovWrap.suppressed : []);
+        D.applyCatalogSuppressions(cachedSuppressed);
       }
       if (typeof D.applyPriceOverrides === "function") {
         D.applyPriceOverrides(ovWrap.overrides);
@@ -197,6 +247,14 @@
       sessionStorage.removeItem(VENDOR_CACHE_KEY);
       sessionStorage.removeItem(OVERRIDES_CACHE_KEY);
     } catch (_) {}
+  }
+
+  function hasUsableCachedCatalog() {
+    try {
+      return !!(D.allProducts && Array.isArray(D.allProducts) && D.allProducts.length);
+    } catch (_) {
+      return false;
+    }
   }
 
   function catalogFetch(base, path) {
@@ -278,20 +336,22 @@
           if (!j || !j.ok) throw new Error("Catalog is unavailable");
           if (j.categories && typeof D.applyCategoriesMerge === "function") {
             D.applyCategoriesMerge(j.categories);
-            writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: j.categories });
+            writeCatalogJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: j.categories });
           }
           if (j.products && typeof D.applyVendorProductsMerge === "function") {
             D.applyVendorProductsMerge(j.products);
-            writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j.products });
+            writeCatalogJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j.products });
           }
           applyOverridesPayload(j);
-          writeSessionJson(OVERRIDES_CACHE_KEY, {
+          writeCatalogJson(OVERRIDES_CACHE_KEY, {
             ts: Date.now(),
             overrides: j.overrides || {},
             suppressedProductIds: j.suppressedProductIds || [],
           });
           dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
           dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
+          usingStaleCatalog = false;
+          staleCatalogAt = 0;
           dispatchCatalogRecovered();
         })
         .catch(function () { dispatchCatalogFailure(); })
@@ -311,7 +371,7 @@
         catalogFetch(base, "/api/catalog/categories").then(function (jc) {
           if (jc && jc.ok && jc.categories && typeof D.applyCategoriesMerge === "function") {
             D.applyCategoriesMerge(jc.categories);
-            writeSessionJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: jc.categories });
+            writeCatalogJson(CATEGORIES_CACHE_KEY, { ts: Date.now(), categories: jc.categories });
           }
           dispatchCatalogEvent("craftguruCatalogCategoriesMerged");
         })
@@ -325,7 +385,7 @@
         catalogFetch(base, "/api/catalog/vendor-products").then(function (j2) {
           if (j2 && j2.ok && j2.products && typeof D.applyVendorProductsMerge === "function") {
             D.applyVendorProductsMerge(j2.products);
-            writeSessionJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j2.products });
+            writeCatalogJson(VENDOR_CACHE_KEY, { ts: Date.now(), products: j2.products });
           }
           dispatchCatalogEvent("craftguruCatalogVendorProductsMerged");
         })
@@ -343,7 +403,11 @@
     }
 
     mergeInflight = Promise.all(tasks)
-      .then(function () { dispatchCatalogRecovered(); })
+      .then(function () {
+        usingStaleCatalog = false;
+        staleCatalogAt = 0;
+        dispatchCatalogRecovered();
+      })
       .catch(function () { dispatchCatalogFailure(); })
       .finally(function () {
         mergeFinished = true;
@@ -385,6 +449,9 @@
     getApiBase: billApiBase,
     clearCache: clearSessionCatalogCache,
     hasLoadFailure: function () { return lastLoadFailed; },
+    hasUsableCachedCatalog: hasUsableCachedCatalog,
+    isUsingStaleCatalog: function () { return !!(lastLoadFailed && hasUsableCachedCatalog()); },
+    staleCatalogUpdatedAt: function () { return staleCatalogAt; },
   };
 
   var visibilityRefreshTimer = null;

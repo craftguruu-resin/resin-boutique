@@ -646,6 +646,7 @@
       hydrateEditFieldsFromSelection();
       if (subVal === CAT_ONLY) {
         document.getElementById("vcmEditImg").value = (c && c.nav_image) || "";
+        document.getElementById("vcmEditSortOrder").value = c && c.sort_order != null ? c.sort_order : 0;
         editImageFit = readStoredImageFit(c);
       } else {
         var s = (c && c.subcategories && c.subcategories.find(function (y) {
@@ -711,6 +712,7 @@
     var subName = String(subNameInput() && subNameInput().value || "").trim();
     var img = String(document.getElementById("vcmEditImg").value || "").trim();
     var hrefE = String(document.getElementById("vcmEditHref").value || "").trim();
+    var sortOrder = String(document.getElementById("vcmEditSortOrder").value || "0").trim();
     if (!catId) {
       setMsg("Pick a category.", true);
       return;
@@ -729,7 +731,7 @@
         V.vendorFetch(V.vendorApiUrl("/api/vendor/categories/" + encodeURIComponent(catId)), {
           method: "PATCH",
           headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
-          body: JSON.stringify({ label: catName, navImage: img, navImageFit: editImageFit || "" }),
+          body: JSON.stringify({ label: catName, navImage: img, navImageFit: editImageFit || "", sortOrder: sortOrder }),
         })
           .then(V.parseApiJson)
           .then(function (x) {

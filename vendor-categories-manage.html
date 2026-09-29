@@ -120,6 +120,11 @@
               <label for="vcmEditCatName">Category / group name</label>
               <input id="vcmEditCatName" class="vs-input" type="text" maxlength="200" autocomplete="off" />
             </div>
+            <div class="vs-field" style="margin: 0" id="vcmEditSortWrap">
+              <label for="vcmEditSortOrder">Storefront order</label>
+              <input id="vcmEditSortOrder" class="vs-input" type="number" min="-9999" max="9999" step="1" inputmode="numeric" placeholder="0" />
+              <p class="vcm-cover-hint">Lower numbers appear first. Use this for the category rail and collection grid.</p>
+            </div>
             <div class="vs-field" style="margin: 0">
               <label for="vcmEditSubName">Subcategory / line name</label>
               <input id="vcmEditSubName" class="vs-input" type="text" maxlength="200" autocomplete="off" placeholder="Select a sub line to edit its name" />

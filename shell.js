@@ -24,10 +24,10 @@
   }
 
   function getLineImage(line) {
-    if (line && line.image) return line.image;
-    if (!D || !D.getProduct || !line || !line.id) return "";
-    var p = D.getProduct(line.id);
-    return p && p.image ? p.image : "";
+    if (!line) return "";
+    var p = D && D.getProduct && line.id ? D.getProduct(line.id) : null;
+    var cover = p && D.getProductCoverImage ? D.getProductCoverImage(p) : p && p.image;
+    return cover || line.image || "";
   }
 
   // Some pages only render the shared cart button. Keep the cart usable there
@@ -148,6 +148,12 @@
       var imgBlock = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" width="56" height="56" />'
         : '<span class="cart-item__ph" aria-hidden="true"></span>';
+      var stockLimit = CART.lineStockLimit ? CART.lineStockLimit(line) : null;
+      var availability = stockLimit == null
+        ? "Availability is checked again at checkout"
+        : stockLimit > Number(line.qty || 0)
+          ? "In stock · final availability confirmed at checkout"
+          : "Last available quantity in your cart";
       li.innerHTML =
         imgBlock +
         '<div class="cart-item-info"><strong>' +
@@ -158,7 +164,9 @@
         line.qty +
         " · " +
         CART.formatMoney(line.price) +
-        " each</span></div>" +
+        ' each</span><p class="cart-item__status" role="status">' +
+        escapeHtml(availability) +
+        "</p></div>" +
         '<div class="cart-item__side">' +
         '<div class="cart-item-qty-wrap">' +
         '<button type="button" class="cart-item__qty cart-item__qty--minus" data-qty-delta="-1" data-line-id="' +
@@ -201,6 +209,7 @@
     drawer.classList.remove("is-open");
     drawer.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.release("cart");
     setTimeout(function () {
       if (!drawer.classList.contains("is-open")) backdrop.hidden = true;
     }, 300);
@@ -218,6 +227,7 @@
     });
     drawer.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.acquire("cart");
   }
 
   function bindDrawer() {
@@ -256,6 +266,8 @@
         var size = q.getAttribute("data-line-size");
         var xk = q.getAttribute("data-line-extrak");
         var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
+        var status = q.closest(".cart-item") && q.closest(".cart-item").querySelector(".cart-item__status");
+        if (status) status.textContent = "Updating quantity…";
         var current = findCartLine(id, size, xk);
         var limit = current && CART.lineStockLimit ? CART.lineStockLimit(current) : null;
         if (current && d > 0 && limit != null && Number(current.qty || 0) + d > limit) {

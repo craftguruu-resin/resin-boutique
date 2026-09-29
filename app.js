@@ -38,10 +38,12 @@
   }
 
   function getLineImage(line) {
-    if (line && line.image) return line.image;
-    if (!D || !D.getProduct || !line || !line.id) return "";
-    var p = D.getProduct(line.id);
-    return p && p.image ? p.image : "";
+    if (!line) return "";
+    var p = D && D.getProduct && line.id ? D.getProduct(line.id) : null;
+    /* Use the current product cover, never the last PDP gallery thumbnail
+       persisted on an older cart line. */
+    var cover = p && D.getProductCoverImage ? D.getProductCoverImage(p) : p && p.image;
+    return cover || line.image || "";
   }
 
   function minCompactPrice(product) {
@@ -227,7 +229,8 @@
     return true;
   }
 
-  var DEFAULT_HOME_SORT = "name-asc";
+  /* Vendor-controlled category order is the storefront default. */
+  var DEFAULT_HOME_SORT = "featured";
   var homeFeaturedSortWired = false;
 
   function homeFeaturedSortEl() {
@@ -258,7 +261,7 @@
         var nb = mb != null ? mb : -Infinity;
         return nb - na;
       });
-    } else {
+    } else if (sort === "name-asc") {
       arr.sort(function (a, b) {
         return String(a.label || "").localeCompare(String(b.label || ""), undefined, { sensitivity: "base" });
       });
@@ -477,6 +480,17 @@
     applyHomeCatalogFilter();
   }
 
+  function wireHomeCategoryToggle() {
+    var btn = document.getElementById("homeCategoryToggle");
+    var rail = document.getElementById("categories");
+    if (!btn || !rail || btn.dataset.cgWired === "1") return;
+    btn.dataset.cgWired = "1";
+    btn.addEventListener("click", function () {
+      var open = rail.classList.toggle("is-open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  }
+
   var FEATURED_SKIP_CATEGORIES = {
     "craftguru-details": true,
   };
@@ -638,8 +652,53 @@
     if (shop) shop.classList.add("is-inview");
   }
 
+  function renderCatalogUnavailable() {
+    if (D && typeof D.applyPublishedCategoryFallback === "function") {
+      D.applyPublishedCategoryFallback();
+    }
+    renderCategories();
+    if (!els.productGrid) return;
+    els.productGrid.className = "featured-collections-grid cg-catalog-recovery";
+    els.productGrid.innerHTML =
+      '<section class="cg-catalog-recovery__panel" role="status" aria-live="polite">' +
+      '<h2>Our catalogue is refreshing</h2>' +
+      '<p>Categories are available, but product details cannot be loaded just now. Please retry in a moment or message our studio for help.</p>' +
+      '<div class="cg-catalog-recovery__actions"><button type="button" class="cg-catalog-recovery__retry" data-cg-retry-catalog>Retry catalogue</button><a href="https://wa.me/918824350056?text=Hi%20Craftguru%2C%20I%20need%20help%20browsing%20the%20catalogue." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></div>' +
+      "</section>";
+    var retry = els.productGrid.querySelector("[data-cg-retry-catalog]");
+    if (retry) {
+      retry.addEventListener("click", function () {
+        retry.disabled = true;
+        retry.textContent = "Retrying…";
+        var M = window.CraftguruCatalogMerge;
+        if (M && typeof M.refresh === "function") M.refresh();
+      });
+    }
+    var shop = document.getElementById("shop");
+    if (shop) shop.classList.add("is-inview");
+  }
+
+  function setCatalogStaleNotice(show) {
+    var old = document.getElementById("cgCatalogStaleNotice");
+    if (!show) {
+      if (old) old.remove();
+      return;
+    }
+    if (old || !els.productGrid || !els.productGrid.parentNode) return;
+    var note = document.createElement("p");
+    note.id = "cgCatalogStaleNotice";
+    note.className = "cg-catalog-stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = "Showing the last available catalogue while we reconnect. Prices and stock will refresh automatically.";
+    els.productGrid.parentNode.insertBefore(note, els.productGrid);
+  }
+
   function productDisplayImageSafe(p) {
     if (!p) return "";
+    if (D && typeof D.getProductImageCandidates === "function") {
+      var candidates = D.getProductImageCandidates(p);
+      if (candidates.length) return candidates[0];
+    }
     var img = String(p.image || "").trim();
     if (img && img.indexOf("placeholder-product") < 0) return img;
     if (Array.isArray(p.gallery)) {
@@ -847,6 +906,12 @@
       var imgBlock = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" width="56" height="56" />'
         : '<span class="cart-item__ph" aria-hidden="true"></span>';
+      var stockLimit = CART.lineStockLimit ? CART.lineStockLimit(line) : null;
+      var availability = stockLimit == null
+        ? "Availability is checked again at checkout"
+        : stockLimit > Number(line.qty || 0)
+          ? "In stock · final availability confirmed at checkout"
+          : "Last available quantity in your cart";
       li.innerHTML =
         imgBlock +
         '<div class="cart-item-info">' +
@@ -859,7 +924,7 @@
         line.qty +
         " · " +
         CART.formatMoney(line.price) +
-        " each</span>" +
+        ' each</span><p class="cart-item__status" role="status">' + escapeHtml(availability) + "</p>" +
         "</div>" +
         '<div class="cart-item__side">' +
         '<div class="cart-item-qty-wrap">' +
@@ -918,6 +983,8 @@
       var size = q.getAttribute("data-line-size");
       var xk = q.getAttribute("data-line-extrak");
       var d = parseInt(q.getAttribute("data-qty-delta") || "0", 10) || 0;
+      var status = q.closest(".cart-item") && q.closest(".cart-item").querySelector(".cart-item__status");
+      if (status) status.textContent = "Updating quantity…";
       CART.incrementLine(id, size, d, xk);
       if (els.cartCount) els.cartCount.textContent = String(CART.countItems());
       if (!patchHomeCartLineFromButton(q)) updateCartUI();
@@ -932,6 +999,7 @@
     });
     els.cartDrawer.setAttribute("aria-hidden", "false");
     document.body.style.overflow = "hidden";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.acquire("cart");
   }
 
   function closeCart() {
@@ -939,6 +1007,7 @@
     els.cartDrawer.classList.remove("is-open");
     els.cartDrawer.setAttribute("aria-hidden", "true");
     document.body.style.overflow = "";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.release("cart");
     setTimeout(function () {
       if (!els.cartDrawer.classList.contains("is-open")) {
         els.cartBackdrop.hidden = true;
@@ -1013,6 +1082,7 @@
   }
 
   bootStep("renderCategories", renderCategories);
+  bootStep("wireHomeCategoryToggle", wireHomeCategoryToggle);
   bootStep("renderFeatured", renderFeatured);
   bootStep("paintHeroFloatCatalog", paintHeroFloatCatalog);
   bootStep("bootConfigurableHero", bootConfigurableHero);
@@ -1135,6 +1205,15 @@
 
   var storefrontMergeTimer = null;
   function onStorefrontCatalogMerged() {
+    var merge = window.CraftguruCatalogMerge;
+    var failed = !!(merge && typeof merge.hasLoadFailure === "function" && merge.hasLoadFailure());
+    var hasCached = !!(merge && typeof merge.hasUsableCachedCatalog === "function" && merge.hasUsableCachedCatalog());
+    if (failed && !hasCached) {
+      setCatalogStaleNotice(false);
+      renderCatalogUnavailable();
+      return;
+    }
+    setCatalogStaleNotice(failed && hasCached);
     clearTimeout(storefrontMergeTimer);
     storefrontMergeTimer = setTimeout(function () {
       bootStep("patchHomeCategoriesFromMerge", function () {
@@ -1154,4 +1233,7 @@
   }
 
   window.addEventListener("craftguruCatalogPricesMerged", onStorefrontCatalogMerged);
+  window.addEventListener("craftguruCatalogLoadFailed", function () {
+    onStorefrontCatalogMerged();
+  });
 })();

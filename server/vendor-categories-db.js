@@ -34,6 +34,11 @@ function normalizeNavImageFit(raw) {
   return "";
 }
 
+function normalizeSortOrder(raw) {
+  var n = Math.floor(Number(raw));
+  return Number.isFinite(n) ? Math.max(-9999, Math.min(9999, n)) : 0;
+}
+
 function normalizeSubcategoriesJson(subs) {
   if (typeof subs === "string") {
     try {
@@ -121,8 +126,8 @@ function createCategory(pool, body, cb) {
   var navImageFit = normalizeNavImageFit(navFitIn);
   var subs = normalizeSubcategoriesJson(body && body.subcategories);
   pool.query(
-    "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit) VALUES ($1, $2, $3, $4::jsonb, true, $5, $6) RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit",
-    [id.slice(0, 80), label, folder, JSON.stringify(subs), navImage, navImageFit]
+    "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit, sort_order) VALUES ($1, $2, $3, $4::jsonb, true, $5, $6, $7) RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit, sort_order",
+    [id.slice(0, 80), label, folder, JSON.stringify(subs), navImage, navImageFit, normalizeSortOrder(body && (body.sortOrder != null ? body.sortOrder : body.sort_order))]
   )
     .then(function (r) {
       catalogFromData.invalidateCache();
@@ -176,7 +181,7 @@ function updateCategory(pool, catId, body, cb) {
     });
   }
   pool
-    .query("SELECT id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit FROM categories WHERE id = $1 LIMIT 1", [catId])
+    .query("SELECT id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit, sort_order FROM categories WHERE id = $1 LIMIT 1", [catId])
     .then(function (r) {
       var row = r.rows.length ? r.rows[0] : null;
       if (!row) {
@@ -189,6 +194,7 @@ function updateCategory(pool, catId, body, cb) {
           vendor_owned: false,
           nav_image: seed.nav_image || "",
           nav_image_fit: seed.nav_image_fit || "",
+          sort_order: 0,
         };
       }
       var label = body.label != null ? String(body.label).trim().slice(0, 200) : String(row.label || "");
@@ -201,6 +207,7 @@ function updateCategory(pool, catId, body, cb) {
         navFitIn != null
           ? normalizeNavImageFit(navFitIn)
           : normalizeNavImageFit(row.nav_image_fit != null ? row.nav_image_fit : "");
+      var sortOrder = body.sortOrder != null || body.sort_order != null ? normalizeSortOrder(body.sortOrder != null ? body.sortOrder : body.sort_order) : normalizeSortOrder(row.sort_order);
       var subs =
         body.subcategories != null
           ? normalizeSubcategoriesJson(body.subcategories)
@@ -217,11 +224,11 @@ function updateCategory(pool, catId, body, cb) {
       var vendorOwned = Boolean(row.vendor_owned);
       return pool
         .query(
-          "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7) " +
+          "INSERT INTO categories (id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit, sort_order) VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7, $8) " +
             "ON CONFLICT (id) DO UPDATE SET label = EXCLUDED.label, folder = EXCLUDED.folder, " +
-            "subcategories = EXCLUDED.subcategories, nav_image = EXCLUDED.nav_image, nav_image_fit = EXCLUDED.nav_image_fit, updated_at = now() " +
-            "RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit",
-          [catId, label || catId, folder, JSON.stringify(subs), vendorOwned, navImage, navImageFit]
+            "subcategories = EXCLUDED.subcategories, nav_image = EXCLUDED.nav_image, nav_image_fit = EXCLUDED.nav_image_fit, sort_order = EXCLUDED.sort_order, updated_at = now() " +
+            "RETURNING id, label, folder, subcategories, vendor_owned, nav_image, nav_image_fit, sort_order",
+          [catId, label || catId, folder, JSON.stringify(subs), vendorOwned, navImage, navImageFit, sortOrder]
         )
         .then(function (r2) {
           catalogFromData.invalidateCache();

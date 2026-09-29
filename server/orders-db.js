@@ -97,6 +97,8 @@ function mapOrderTotalsRow(o) {
   var out = {
     productValue: Number(o.product_value != null ? o.product_value : o.subtotal),
     subtotal: Number(o.subtotal),
+    couponCode: String(o.coupon_code || ""),
+    couponDiscount: Number(o.coupon_discount != null ? o.coupon_discount : 0),
     prepaidDiscount: Number(o.prepaid_discount != null ? o.prepaid_discount : 0),
     shipping: Number(o.shipping),
     tax: Number(o.tax),
@@ -202,6 +204,7 @@ function createCheckoutParcelOrder(opts, cb) {
   var paymentStatus = opts.paymentStatus != null ? String(opts.paymentStatus).slice(0, 40) : "pending_payment";
   var paymentMethod = opts.paymentMethod != null ? String(opts.paymentMethod).slice(0, 40) : "";
   var paymentReference = opts.paymentReference != null ? String(opts.paymentReference).trim().slice(0, 120) : "";
+  var couponCode = opts.couponCode != null ? String(opts.couponCode).trim().slice(0, 40) : "";
   var snap = guestSnapshotObj(guest);
 
   var client;
@@ -219,8 +222,8 @@ function createCheckoutParcelOrder(opts, cb) {
       return resolveSkuMapWithClient(client, items).then(function (skuMap) {
         return client
           .query(
-            "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at, payment_reference) " +
-              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12, $13, $14, $15) " +
+            "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, coupon_code, coupon_discount, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at, payment_reference) " +
+              "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13::jsonb, $14, $15, $16, $17) " +
               "ON CONFLICT (payment_reference) WHERE payment_reference IS NOT NULL DO NOTHING RETURNING id, created_at",
             [
               tagRef,
@@ -228,6 +231,8 @@ function createCheckoutParcelOrder(opts, cb) {
               orderType,
               totals.productValue != null ? totals.productValue : totals.subtotal,
               totals.subtotal,
+              couponCode,
+              totals.couponDiscount != null ? totals.couponDiscount : 0,
               totals.prepaidDiscount != null ? totals.prepaidDiscount : 0,
               totals.shipping,
               totals.tax,
@@ -533,7 +538,7 @@ function getOrdersRecent(limit, cb) {
   }
   var lim = Math.max(1, Math.min(200, Math.floor(Number(limit) || 40)));
   var sql =
-    "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, o.guest_snapshot, " +
+    "SELECT o.id AS order_id, o.tag_ref, o.created_at, o.order_type, o.product_value, o.subtotal, o.coupon_code, o.coupon_discount, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, o.guest_snapshot, " +
     "o.payment_status, o.payment_method, o.fulfillment_status, " +
     SHIPMENT_SELECT +
     "FROM orders o " +
@@ -764,7 +769,7 @@ function listOrdersByGuestId(guestId, cb) {
   pool
     .query(
       "SELECT o.id AS \"orderId\", o.tag_ref AS \"tagRef\", o.created_at AS \"createdAt\", o.paid_at AS \"paidAt\", o.order_type AS \"orderType\", " +
-        "o.product_value, o.subtotal, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, " +
+        "o.product_value, o.subtotal, o.coupon_code, o.coupon_discount, o.prepaid_discount, o.shipping, o.tax, o.total, o.gateway_fee, " +
         "o.payment_status AS \"paymentStatus\", o.payment_method AS \"paymentMethod\", " +
         "o.fulfillment_status AS \"fulfillmentStatus\", o.guest_snapshot, " +
         "MAX(sh.tracking_number) AS sh_tracking_number, MAX(sh.courier_name) AS sh_courier_name, " +

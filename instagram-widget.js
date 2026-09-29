@@ -50,8 +50,21 @@
   }
 
   function boot() {
-    ensureStyles();
-    mountWidget();
+    /* The floating pair is a compact phone shortcut.  Desktop keeps its
+       existing footer/editorial Instagram treatment unchanged. */
+    var query = window.matchMedia("(max-width: 899px)");
+    function applyViewport() {
+      var existing = document.getElementById("cgInstagramWidget");
+      if (!query.matches) {
+        if (existing) existing.remove();
+        return;
+      }
+      ensureStyles();
+      mountWidget();
+    }
+    if (query.addEventListener) query.addEventListener("change", applyViewport);
+    else if (query.addListener) query.addListener(applyViewport);
+    applyViewport();
   }
 
   if (document.readyState === "loading") {

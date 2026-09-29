@@ -5,7 +5,7 @@
   var D = window.RESIN_DATA;
   if (!CART || !D) return;
 
-  /** Product prices include GST; shipping is free and no extra charge is added here. */
+  /** Product prices include GST; shipping is free within India and no extra charge is added here. */
   var GST_INCLUSIVE_RATE = 0.18;
   var PREPAID_DISCOUNT_RATE = 0.10;
   var COD_MIN_PRODUCT_VALUE = 500;
@@ -22,6 +22,9 @@
   var checkoutPhase = "shipping"; /* shipping | payment */
   var googlePlacesReady = false;
   var paymentsAvailable = true;
+  var appliedCoupon = null;
+  var pendingCouponRetry = false;
+  var CHECKOUT_COUPON_STORAGE_KEY = "cg_checkout_coupon_code";
 
   var els = {
     lines: document.getElementById("checkoutLines"),
@@ -61,10 +64,114 @@
     addrFormFields: document.getElementById("checkoutAddrFormFields"),
     addNewAddrBox: document.getElementById("checkoutAddNewAddrBox"),
     savedAddrCards: document.getElementById("checkoutSavedAddrCards"),
+    couponCode: document.getElementById("checkoutCouponCode"),
+    couponApply: document.getElementById("checkoutCouponApply"),
+    couponRemove: document.getElementById("checkoutCouponRemove"),
+    couponMessage: document.getElementById("checkoutCouponMessage"),
+    couponDiscount: document.getElementById("valCouponDiscount"),
+    couponLabel: document.getElementById("valCouponLabel"),
+    modalCouponRow: document.getElementById("checkoutModalCouponRow"),
+    modalCouponLabel: document.getElementById("checkoutModalCouponLabel"),
+    modalCouponDiscount: document.getElementById("checkoutModalCouponDiscount"),
   };
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var GUEST_SESSION_NAME_KEY = "cg_session_name";
+  var PAYMENT_RECOVERY_KEY = "cgPaymentRecoveryV1";
+  var PAYMENT_RECOVERY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+
+  /* Keep only a Razorpay order reference and state — never address, email,
+     cart lines or payment credentials. This gives the buyer a safe answer if
+     the checkout window closes after a payment attempt. */
+  function readPaymentRecovery() {
+    try {
+      var value = JSON.parse(sessionStorage.getItem(PAYMENT_RECOVERY_KEY) || "null");
+      if (!value || !value.createdAt || Date.now() - Number(value.createdAt) > PAYMENT_RECOVERY_MAX_AGE_MS) {
+        sessionStorage.removeItem(PAYMENT_RECOVERY_KEY);
+        return null;
+      }
+      return value;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function savePaymentRecovery(method, processorOrderId, state) {
+    try {
+      sessionStorage.setItem(
+        PAYMENT_RECOVERY_KEY,
+        JSON.stringify({
+          method: method === "cod" ? "cod" : "razorpay",
+          processorOrderId: String(processorOrderId || "").slice(0, 120),
+          state: String(state || "opened").slice(0, 40),
+          createdAt: Date.now(),
+        })
+      );
+    } catch (_) {}
+  }
+
+  function clearPaymentRecovery() {
+    try { sessionStorage.removeItem(PAYMENT_RECOVERY_KEY); } catch (_) {}
+    var banner = document.getElementById("checkoutPaymentRecovery");
+    if (banner) banner.remove();
+  }
+
+  function paymentRecoveryMessage(recovery) {
+    var ref = recovery && recovery.processorOrderId ? " Reference: " + recovery.processorOrderId + "." : "";
+    if (recovery && recovery.state === "failed") {
+      return "Razorpay reported that this payment did not complete." + ref + " Your cart is still saved; you can start a new payment.";
+    }
+    return "We could not confirm the final payment result." + ref + " If money was debited, do not pay again—share this reference with our studio so we can check it safely.";
+  }
+
+  function paymentSupportUrl(recovery) {
+    var ref = recovery && recovery.processorOrderId ? " Razorpay reference: " + recovery.processorOrderId + "." : "";
+    return "https://wa.me/918824350056?text=" + encodeURIComponent("Hi Craftguru, I need help confirming a checkout payment." + ref);
+  }
+
+  function renderPaymentRecoveryBanner() {
+    var recovery = readPaymentRecovery();
+    var old = document.getElementById("checkoutPaymentRecovery");
+    if (!recovery) {
+      if (old) old.remove();
+      return;
+    }
+    if (!old) {
+      old = document.createElement("section");
+      old.id = "checkoutPaymentRecovery";
+      old.className = "checkout-payment-recovery";
+      old.setAttribute("role", "status");
+      var anchor = els.summaryHint || els.main;
+      if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(old, anchor);
+    }
+    if (!old) return;
+    old.innerHTML = "";
+    var strong = document.createElement("strong");
+    strong.textContent = recovery.state === "failed" ? "Payment was not completed" : "Payment needs confirmation";
+    var msg = document.createElement("p");
+    msg.textContent = paymentRecoveryMessage(recovery);
+    var actions = document.createElement("div");
+    actions.className = "checkout-payment-recovery__actions";
+    if (recovery.state === "failed") {
+      var retry = document.createElement("button");
+      retry.type = "button";
+      retry.textContent = "Start a new payment";
+      retry.addEventListener("click", function () {
+        clearPaymentRecovery();
+        openPayModal();
+      });
+      actions.appendChild(retry);
+    }
+    var support = document.createElement("a");
+    support.href = paymentSupportUrl(recovery);
+    support.target = "_blank";
+    support.rel = "noopener noreferrer";
+    support.textContent = "Contact payment support";
+    actions.appendChild(support);
+    old.appendChild(strong);
+    old.appendChild(msg);
+    old.appendChild(actions);
+  }
 
   function checkoutSessionName() {
     try {
@@ -227,7 +334,10 @@
       container.appendChild(label);
     });
     var first = container.querySelector('input[name="checkoutSavedAddrPick"]');
-    if (first) first.checked = true;
+    var preferred = Array.prototype.slice.call(container.querySelectorAll('input[name="checkoutSavedAddrPick"]')).find(function (input, index) {
+      return !!(list[index] && list[index].isDefault);
+    });
+    if (preferred || first) (preferred || first).checked = true;
     syncAddrPickUi();
   }
 
@@ -307,6 +417,20 @@
     } catch (_) {}
   }
 
+  /* Inline, announced errors keep checkout context intact. Browser alert
+     dialogs interrupted payment recovery and made mobile checkout feel broken. */
+  function showCheckoutProblem(message) {
+    var text = String(message || "Please review the checkout details and try again.");
+    var address = document.getElementById("checkoutAddressMsg");
+    if (address) {
+      address.textContent = text;
+      address.hidden = false;
+      address.classList.add("is-error");
+    }
+    var status = document.getElementById("checkoutPaymentStatusMsg");
+    if (status && checkoutPhase === "payment") status.textContent = text;
+  }
+
   function validateShippingStep() {
     if (!els.form) return false;
     var useSaved = document.getElementById("checkoutAddrModeSaved") && document.getElementById("checkoutAddrModeSaved").checked;
@@ -315,19 +439,35 @@
       var picked = document.querySelector('input[name="checkoutSavedAddrPick"]:checked');
       var idx = picked ? parseInt(picked.value, 10) : -1;
       if (!list.length || !Number.isFinite(idx) || idx < 0 || idx >= list.length) {
-        window.alert("Choose a saved address or add a new one.");
+        showCheckoutProblem("Choose a saved address or add a new one.");
         return false;
       }
       applySavedAddress(list[idx]);
     }
     if (!els.form.checkValidity()) {
+      var firstInvalid = els.form.querySelector(":invalid");
+      if (firstInvalid) {
+        firstInvalid.setAttribute("aria-invalid", "true");
+        firstInvalid.addEventListener("input", function clearInvalid() {
+          this.removeAttribute("aria-invalid");
+          this.removeEventListener("input", clearInvalid);
+        });
+        try { firstInvalid.focus(); } catch (_) {}
+      }
       try {
         els.form.reportValidity();
       } catch (_) {}
       return false;
     }
+    var zip = document.getElementById("zip");
+    if (zip && !/^\d{6}$/.test(String(zip.value || "").trim())) {
+      zip.setAttribute("aria-invalid", "true");
+      showCheckoutProblem("Enter a valid 6-digit Indian pincode to continue.");
+      try { zip.focus(); } catch (_) {}
+      return false;
+    }
     if (!buildBillItemsForApi().length) {
-      window.alert("Your cart is empty.");
+      showCheckoutProblem("Your cart is empty.");
       return false;
     }
     return true;
@@ -348,18 +488,18 @@
       .catch(function (err) {
         var msg = String((err && err.message) || "Could not save address.");
         if (err && err.code === "SIGN_IN_REQUIRED") {
-          window.alert(msg || "Your sign-in session expired. Sign in again.");
+          showCheckoutProblem(msg || "Your sign-in session expired. Sign in again.");
           return;
         }
         if (err && err.code === "EMAIL_MISMATCH") {
-          window.alert(msg || "Use the same email as your sign-in.");
+          showCheckoutProblem(msg || "Use the same email as your sign-in.");
           return;
         }
         if (err && err.code === "USE_LOGIN") {
-          window.alert("This phone or email is linked to another account. Sign in with your email code.");
+          showCheckoutProblem("This phone or email is linked to another account. Sign in with your email code.");
           return;
         }
-        window.alert(msg);
+        showCheckoutProblem(msg);
       })
       .then(function () {
         if (cta) cta.disabled = false;
@@ -751,6 +891,7 @@
               (json && json.devMailSkipped ? "Code is in the API server console. " : "") + "Enter the 6-digit code (5 minutes).",
               "ok"
             );
+            startOtpCooldown(sendSu, msgEl);
           }
         );
       });
@@ -809,6 +950,7 @@
             return;
           }
           checkoutAuthSetMsg(msgEl, "Check your email for the code (5 minutes).", "ok");
+          startOtpCooldown(sendLo, msgEl);
         });
       });
     }
@@ -1193,30 +1335,50 @@
     if (pop) pop.setAttribute("hidden", "hidden");
   }
 
-  function showResultPopup(outcome) {
+  function showResultPopup(outcome, opts) {
+    opts = opts || {};
     var pop = document.getElementById("checkoutResultPopup");
     if (!pop) return;
     var icon = document.getElementById("checkoutResultIcon");
     var title = document.getElementById("checkoutResultTitle");
     var msg = document.getElementById("checkoutResultMsg");
+    var retry = document.getElementById("checkoutResultRetry");
+    var support = document.getElementById("checkoutResultSupport");
     pop.classList.toggle("checkout-result-popup--fail", outcome !== "success");
     if (icon) icon.textContent = outcome === "success" ? "✓" : "!";
-    if (title) {
-      title.textContent =
-        outcome === "success" ? "Your payment is successful" : "Payment not completed";
-    }
+    if (title) title.textContent = outcome === "success" ? "Your payment is successful" : outcome === "recovery" ? "Payment needs confirmation" : "Payment not completed";
     if (msg) {
-      msg.textContent =
-        outcome === "success"
+      msg.textContent = opts.message ||
+        (outcome === "success"
           ? "Your payment was verified with Razorpay. We will confirm your order on WhatsApp +91-8824350056."
-          : "Payment did not complete. Tap Pay now to try Razorpay again, or WhatsApp +91-8824350056 for help.";
+          : "Payment did not complete. Tap Pay now to try Razorpay again, or WhatsApp +91-8824350056 for help.");
+    }
+    if (retry) retry.hidden = outcome !== "recovery" || !opts.allowRetry;
+    if (support) {
+      support.hidden = outcome !== "recovery";
+      support.href = paymentSupportUrl(opts.recovery);
     }
     pop.removeAttribute("hidden");
+  }
+
+  function showPaymentRecovery(state, method, processorOrderId) {
+    savePaymentRecovery(method, processorOrderId, state);
+    var recovery = readPaymentRecovery();
+    if (els.payModal) els.payModal.setAttribute("hidden", "hidden");
+    document.body.style.overflow = "";
+    renderPaymentRecoveryBanner();
+    setPaymentUi("recovery");
+    showResultPopup("recovery", {
+      recovery: recovery,
+      allowRetry: state === "failed" || state === "dismissed",
+      message: paymentRecoveryMessage(recovery),
+    });
   }
 
   /** After successful checkout: persist guest session from server, clear cart, open My orders. */
   function afterPaidCheckoutNavigate(j, opts) {
     opts = opts || {};
+    clearPaymentRecovery();
     var ge = document.getElementById("guestEmail");
     var emailNorm = normalizeCheckoutEmail(ge && ge.value);
     try {
@@ -1269,16 +1431,26 @@
     return r && String(r.value).toLowerCase() === "cod" ? "cod" : "razorpay";
   }
 
+  function couponPreviewDiscount(productValue) {
+    if (!appliedCoupon) return 0;
+    var value = Math.max(0, Number(appliedCoupon.discountValue) || 0);
+    var raw = appliedCoupon.discountType === "percentage" ? productValue * value / 100 : value;
+    return Math.round(Math.min(productValue, raw) * 100) / 100;
+  }
+
   function computeCheckoutTotals(subtotalVal, paymentMethod) {
     var productValue = Math.round(Number(subtotalVal) * 100) / 100;
     var shipping = 0;
+    var couponDiscount = couponPreviewDiscount(productValue);
+    var discountableValue = Math.round(Math.max(0, productValue - couponDiscount) * 100) / 100;
     var prepaidDiscount =
-      paymentMethod === "razorpay" ? Math.round(productValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
-    var afterDiscount = Math.round(Math.max(0, productValue - prepaidDiscount) * 100) / 100;
+      paymentMethod === "razorpay" ? Math.round(discountableValue * PREPAID_DISCOUNT_RATE * 100) / 100 : 0;
+    var afterDiscount = Math.round(Math.max(0, discountableValue - prepaidDiscount) * 100) / 100;
     var split = splitGstFromInclusive(afterDiscount);
     var grand = Math.round((afterDiscount + shipping) * 100) / 100;
     return {
       productValue: productValue,
+      couponDiscount: couponDiscount,
       prepaidDiscount: prepaidDiscount,
       afterDiscount: afterDiscount,
       shipping: shipping,
@@ -1288,6 +1460,88 @@
     };
   }
 
+  function couponMessage(text, isError) {
+    if (!els.couponMessage) return;
+    els.couponMessage.textContent = text || "";
+    els.couponMessage.hidden = !text;
+    els.couponMessage.classList.toggle("is-error", !!isError);
+  }
+
+  function startOtpCooldown(button, msgEl) {
+    if (!button) return;
+    var seconds = 30;
+    button.disabled = true;
+    var original = button.dataset.cgOtpLabel || button.textContent;
+    button.dataset.cgOtpLabel = original;
+    var timer = window.setInterval(function () {
+      seconds -= 1;
+      button.textContent = seconds > 0 ? "Resend in " + seconds + "s" : original;
+      if (seconds > 0) return;
+      window.clearInterval(timer);
+      button.disabled = false;
+      if (msgEl) checkoutAuthSetMsg(msgEl, "You can request another code now.", "ok");
+    }, 1000);
+    button.textContent = "Resend in " + seconds + "s";
+  }
+
+  function applyCoupon() {
+    var code = els.couponCode ? String(els.couponCode.value || "").trim().toUpperCase().replace(/\s+/g, "") : "";
+    var items = buildBillItemsForApi();
+    if (!code) { couponMessage("Enter a coupon code first.", true); return; }
+    if (!items.length) { couponMessage("Your cart is empty.", true); return; }
+    var base = billApiBase();
+    if (!base) { couponMessage("Coupon service is temporarily unavailable.", true); return; }
+    if (els.couponApply) els.couponApply.disabled = true;
+    couponMessage("Checking coupon…", false);
+    pendingCouponRetry = false;
+    fetch(base + "/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, items: items }) })
+      .then(function (res) { return parseApiJson(res); })
+      .then(function (x) {
+        if (!x.okHttp || !x.json.ok || !x.json.coupon) throw new Error((x.json && x.json.error) || "This coupon is not available.");
+        appliedCoupon = x.json.coupon;
+        try { sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, appliedCoupon.code); } catch (_) {}
+        if (els.couponCode) { els.couponCode.value = appliedCoupon.code; els.couponCode.disabled = true; }
+        if (els.couponRemove) els.couponRemove.hidden = false;
+        couponMessage(appliedCoupon.code + " applied — you save " + fmt(couponPreviewDiscount(CART.subtotal())) + ".", false);
+        refreshCheckout();
+      })
+      .catch(function (err) {
+        if (navigator.onLine === false || (err && err.name === "TypeError")) {
+          pendingCouponRetry = true;
+          couponMessage("We could not check this coupon offline. It will retry when you reconnect.", true);
+          return;
+        }
+        couponMessage(String((err && err.message) || "This coupon is not available."), true);
+      })
+      .then(function () { if (els.couponApply) els.couponApply.disabled = false; });
+  }
+
+  function removeCoupon() {
+    appliedCoupon = null;
+    try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
+    if (els.couponCode) { els.couponCode.value = ""; els.couponCode.disabled = false; els.couponCode.focus(); }
+    if (els.couponRemove) els.couponRemove.hidden = true;
+    couponMessage("Coupon removed.", false);
+    refreshCheckout();
+  }
+
+  function restoreCouponAfterReload() {
+    var saved = "";
+    try { saved = String(sessionStorage.getItem(CHECKOUT_COUPON_STORAGE_KEY) || "").trim(); } catch (_) {}
+    if (!saved || !els.couponCode) return;
+    els.couponCode.value = saved;
+    applyCoupon();
+  }
+
+  function clearCouponForCartChange() {
+    if (!appliedCoupon) return;
+    appliedCoupon = null;
+    try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
+    if (els.couponCode) { els.couponCode.value = ""; els.couponCode.disabled = false; }
+    if (els.couponRemove) els.couponRemove.hidden = true;
+    couponMessage("Your cart changed. Re-apply the coupon to refresh the final checkout price.", false);
+  }
+
   function postCodAdvanceOrder(items) {
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
@@ -1295,7 +1549,7 @@
     return fetch(base + "/api/cod-advance-order", {
       method: "POST",
       headers: headers,
-      body: JSON.stringify({ items: items }),
+      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "" }),
     }).then(function (res) {
       return parseApiJson(res).then(function (x) {
         var j = x.json;
@@ -1391,7 +1645,7 @@
     return fetch(base + "/api/razorpay-order", {
       method: "POST",
       headers: headers,
-      body: JSON.stringify({ items: items }),
+      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "" }),
     }).then(function (res) {
       return parseApiJson(res).then(function (x) {
         var j = x.json;
@@ -1442,10 +1696,10 @@
   }
 
   function getLineImage(line) {
-    if (line && line.image) return line.image;
-    if (!D || !D.getProduct || !line || !line.id) return "";
-    var p = D.getProduct(line.id);
-    return p && p.image ? p.image : "";
+    if (!line) return "";
+    var p = D && D.getProduct && line.id ? D.getProduct(line.id) : null;
+    var cover = p && D.getProductCoverImage ? D.getProductCoverImage(p) : p && p.image;
+    return cover || line.image || "";
   }
 
   function lineTotalAmt(line) {
@@ -1570,6 +1824,10 @@
       var imgHtml = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" loading="lazy" width="92" height="92" />'
         : '<div class="checkout-snip__ph" aria-hidden="true"></div>';
+      var customNote =
+        line.lineExtra && String(line.lineExtra.frameInstructions || "").trim()
+          ? '<small class="checkout-line__custom-note">Custom details added</small>'
+          : "";
       wrap.innerHTML =
         '<a class="checkout-snip" href="' +
         escapeAttr(href) +
@@ -1582,6 +1840,7 @@
         "</span>" +
         '<span class="checkout-snip__meta">' +
         escapeHtml(lineDisplayName(line)) +
+        customNote +
         "</span></a>" +
         '<div class="checkout-snip__actions">' +
         '<button type="button" class="checkout-snip__later" data-later-id="' +
@@ -1638,6 +1897,10 @@
           : "product.html?id=" + encodeURIComponent(line.id);
       var li = document.createElement("li");
       li.className = "checkout-line";
+      var customNote =
+        line.lineExtra && String(line.lineExtra.frameInstructions || "").trim()
+          ? '<small class="checkout-line__custom-note">Custom details added</small>'
+          : "";
       li.innerHTML =
         '<a class="checkout-line__link" href="' +
         escapeAttr(href) +
@@ -1656,6 +1919,7 @@
         " · " +
         fmt(line.price) +
         " each</span>" +
+        customNote +
         "</div>" +
         "</a>" +
         '<div class="checkout-line__tail">' +
@@ -1726,12 +1990,17 @@
     if (els.subtotalLabel) {
       els.subtotalLabel.textContent = "Items Total (" + itemCount + ")";
     }
+    var couponRow = document.querySelector(".checkout-total-row--coupon");
+    if (couponRow) couponRow.hidden = totals.couponDiscount <= 0;
+    if (els.couponDiscount) els.couponDiscount.textContent = totals.couponDiscount > 0 ? "− " + fmt(totals.couponDiscount) : fmt(0);
+    if (els.couponLabel) els.couponLabel.textContent = appliedCoupon ? "Coupon " + appliedCoupon.code : "Coupon discount";
     var discRow = document.querySelector(".checkout-total-row--discount");
     if (discRow) discRow.hidden = totals.prepaidDiscount <= 0;
     if (els.valDiscount) els.valDiscount.textContent = totals.prepaidDiscount > 0 ? "− " + fmt(totals.prepaidDiscount) : fmt(0);
     if (els.savingsBanner) {
-      if (totals.prepaidDiscount > 0 && checkoutPhase === "payment" && paymentMethod === "razorpay") {
-        els.savingsBanner.textContent = "Yay! You saved " + fmt(totals.prepaidDiscount) + " on this order.";
+      var allSavings = totals.couponDiscount + totals.prepaidDiscount;
+      if (allSavings > 0 && checkoutPhase === "payment") {
+        els.savingsBanner.textContent = "Yay! You saved " + fmt(allSavings) + " on this order.";
         els.savingsBanner.removeAttribute("hidden");
       } else {
         els.savingsBanner.setAttribute("hidden", "hidden");
@@ -1742,6 +2011,9 @@
     if (els.tax) els.tax.textContent = fmt(totals.gst);
     if (els.total) els.total.textContent = fmt(totals.grand);
     if (els.modalSub) els.modalSub.textContent = fmt(totals.productValue);
+    if (els.modalCouponRow) els.modalCouponRow.hidden = totals.couponDiscount <= 0;
+    if (els.modalCouponDiscount) els.modalCouponDiscount.textContent = totals.couponDiscount > 0 ? "− " + fmt(totals.couponDiscount) : fmt(0);
+    if (els.modalCouponLabel) els.modalCouponLabel.textContent = appliedCoupon ? "Coupon " + appliedCoupon.code : "Coupon discount";
     if (els.modalDiscount && els.modalDiscount.closest("li")) {
       els.modalDiscount.closest("li").hidden = totals.prepaidDiscount <= 0;
     }
@@ -1788,6 +2060,12 @@
       label.textContent = "Payment";
       msg.textContent =
         "Razorpay reported a problem or the window was closed before paying. Try again or WhatsApp +91-8824350056.";
+      return;
+    }
+    if (mode === "recovery") {
+      st.setAttribute("data-state", "fail");
+      label.textContent = "Payment check";
+      msg.textContent = "Keep this page open. If money was debited, do not retry until our studio confirms the payment reference.";
     }
   }
 
@@ -1801,6 +2079,7 @@
     refreshCheckout();
     els.payModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.acquire("payment");
     setPaymentUi("ready");
     try {
       if (els.payModalClose) els.payModalClose.focus();
@@ -1812,6 +2091,7 @@
     if (!els.payModal) return;
     els.payModal.setAttribute("hidden", "hidden");
     document.body.style.overflow = "";
+    if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.release("payment");
     setPaymentUi("idle");
   }
 
@@ -1869,6 +2149,23 @@
 
     bindRemoveDelegation();
     bindSavedAddressCards();
+    if (els.couponApply) els.couponApply.addEventListener("click", applyCoupon);
+    if (els.couponRemove) els.couponRemove.addEventListener("click", removeCoupon);
+    if (els.couponCode) {
+      els.couponCode.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") { event.preventDefault(); applyCoupon(); }
+      });
+      els.couponCode.addEventListener("input", function () { this.value = String(this.value || "").toUpperCase(); });
+    }
+    window.addEventListener("resinCartChanged", function () {
+      clearCouponForCartChange();
+      refreshCheckout();
+    });
+    window.addEventListener("online", function () {
+      if (!pendingCouponRetry || !els.couponCode || !String(els.couponCode.value || "").trim()) return;
+      couponMessage("Back online. Checking your coupon again…", false);
+      applyCoupon();
+    });
 
     var phoneInput = document.getElementById("guestPhone");
     if (phoneInput && !phoneInput.dataset.cgPhoneSanitized) {
@@ -1882,8 +2179,29 @@
       });
     }
 
+    var zipInput = document.getElementById("zip");
+    if (zipInput && !zipInput.dataset.cgZipStatus) {
+      zipInput.dataset.cgZipStatus = "1";
+      var zipStatus = document.createElement("small");
+      zipStatus.className = "checkout-field-help";
+      zipStatus.id = "checkoutZipStatus";
+      zipStatus.setAttribute("role", "status");
+      zipInput.insertAdjacentElement("afterend", zipStatus);
+      zipInput.addEventListener("input", function () {
+        var valid = /^\d{6}$/.test(String(this.value || "").trim());
+        try {
+          if (valid) localStorage.setItem("cgCheckoutPincode", String(this.value || "").trim());
+          else localStorage.removeItem("cgCheckoutPincode");
+        } catch (_) {}
+        this.toggleAttribute("aria-invalid", !!this.value && !valid);
+        zipStatus.textContent = !this.value ? "" : valid ? "Pincode format accepted. Delivery availability and timing are confirmed after order review." : "Enter the 6-digit Indian pincode.";
+      });
+    }
+
     goToDetailsStep();
+    restoreCouponAfterReload();
     checkPaymentReadiness();
+    renderPaymentRecoveryBanner();
 
     if (els.openUpiModal) {
       els.openUpiModal.addEventListener("click", function () {
@@ -1909,11 +2227,11 @@
       els.btnRazorpayCheckout.addEventListener("click", function () {
         var base = billApiBase();
         if (!base) {
-          window.alert("Bill server URL missing. Set data-bill-api-base on <html> (see checkout page default).");
+          showCheckoutProblem("Checkout service is unavailable. Please try again shortly.");
           return;
         }
         if (!els.form || !els.form.checkValidity()) {
-          window.alert("Please fill guest name, email, phone, and full shipping address before paying.");
+          showCheckoutProblem("Please fill guest name, email, phone, and full shipping address before paying.");
           try {
             els.form.reportValidity();
           } catch (_) {}
@@ -1921,16 +2239,18 @@
         }
         var items = buildBillItemsForApi();
         if (!items.length) {
-          window.alert("Your cart is empty.");
+          showCheckoutProblem("Your cart is empty.");
           return;
         }
         if (typeof window.Razorpay !== "function") {
-          window.alert("Razorpay Checkout did not load. Check your network or disable script blocking.");
+          showCheckoutProblem("Razorpay Checkout did not load. Check your network or disable script blocking.");
           return;
         }
         els.btnRazorpayCheckout.disabled = true;
         postRazorpayOrder(items)
           .then(function (order) {
+            savePaymentRecovery("razorpay", order.orderId, "opened");
+            var paymentHandled = false;
             var guestEmail = document.getElementById("guestEmail");
             var guestPhone = document.getElementById("guestPhone");
             var email = guestEmail && guestEmail.value ? guestEmail.value.trim() : "";
@@ -1948,6 +2268,8 @@
                 contact: phoneDigits ? "+91" + phoneDigits : "",
               },
               handler: function (response) {
+                paymentHandled = true;
+                savePaymentRecovery("razorpay", order.orderId, "verifying");
                 var guest = buildGuestPayloadFromForm();
                 var items = buildBillItemsForApi();
                 postRazorpayVerify(response, guest, items)
@@ -1960,18 +2282,27 @@
                     afterPaidCheckoutNavigate(j);
                   })
                   .catch(function (err) {
-                    window.alert(String((err && err.message) || "Could not verify payment on the server."));
+                    showPaymentRecovery("verifying", "razorpay", order.orderId);
+                    showCheckoutProblem("We could not confirm this payment yet. Do not pay again if money was debited. " + String((err && err.message) || "Contact Craftguru with the payment reference."));
                   });
+              },
+              modal: {
+                ondismiss: function () {
+                  window.setTimeout(function () {
+                    if (!paymentHandled) showPaymentRecovery("dismissed", "razorpay", order.orderId);
+                  }, 0);
+                },
               },
             };
             var rzp = new window.Razorpay(options);
             rzp.on("payment.failed", function () {
-              setPaymentUi("fail");
+              paymentHandled = true;
+              showPaymentRecovery("failed", "razorpay", order.orderId);
             });
             rzp.open();
           })
           .catch(function (err) {
-            window.alert(String((err && err.message) || "Could not start Razorpay."));
+            showCheckoutProblem(String((err && err.message) || "Could not start Razorpay."));
           })
           .then(function () {
             els.btnRazorpayCheckout.disabled = false;
@@ -1981,7 +2312,7 @@
     if (els.btnCodCheckout) {
       els.btnCodCheckout.addEventListener("click", function () {
         if (!els.form || !els.form.checkValidity()) {
-          window.alert("Please fill guest name, email, phone, and full shipping address before paying the COD advance.");
+          showCheckoutProblem("Please fill guest name, email, phone, and full shipping address before paying the COD advance.");
           try {
             els.form.reportValidity();
           } catch (_) {}
@@ -1989,22 +2320,24 @@
         }
         var items = buildBillItemsForApi();
         if (!items.length) {
-          window.alert("Your cart is empty.");
+          showCheckoutProblem("Your cart is empty.");
           return;
         }
         var subtotal = CART.subtotal();
         if (Number(subtotal) < COD_MIN_PRODUCT_VALUE) {
-          window.alert("Cash on Delivery is available only when your product total is ₹500 or more.");
+          showCheckoutProblem("Cash on Delivery is available only when your product total is ₹500 or more.");
           return;
         }
         if (typeof window.Razorpay !== "function") {
-          window.alert("Razorpay Checkout did not load. Check your network or disable script blocking.");
+          showCheckoutProblem("Razorpay Checkout did not load. Check your network or disable script blocking.");
           return;
         }
         var guest = buildGuestPayloadFromForm();
         els.btnCodCheckout.disabled = true;
         postCodAdvanceOrder(items)
           .then(function (order) {
+            savePaymentRecovery("cod", order.orderId, "opened");
+            var paymentHandled = false;
             var guestEmail = document.getElementById("guestEmail");
             var guestPhone = document.getElementById("guestPhone");
             var email = guestEmail && guestEmail.value ? guestEmail.value.trim() : "";
@@ -2022,6 +2355,8 @@
                 contact: phoneDigits ? "+91" + phoneDigits : "",
               },
               handler: function (response) {
+                paymentHandled = true;
+                savePaymentRecovery("cod", order.orderId, "verifying");
                 var freshGuest = buildGuestPayloadFromForm();
                 var freshItems = buildBillItemsForApi();
                 postCodAdvanceVerify(response, freshGuest, freshItems)
@@ -2032,18 +2367,27 @@
                     afterPaidCheckoutNavigate(j, { cod: true });
                   })
                   .catch(function (err) {
-                    window.alert(String((err && err.message) || "Could not verify the COD advance."));
+                    showPaymentRecovery("verifying", "cod", order.orderId);
+                    showCheckoutProblem("We could not confirm this COD advance yet. Do not pay again if money was debited. " + String((err && err.message) || "Contact Craftguru with the payment reference."));
                   });
+              },
+              modal: {
+                ondismiss: function () {
+                  window.setTimeout(function () {
+                    if (!paymentHandled) showPaymentRecovery("dismissed", "cod", order.orderId);
+                  }, 0);
+                },
               },
             };
             var rzp = new window.Razorpay(options);
             rzp.on("payment.failed", function () {
-              setPaymentUi("fail");
+              paymentHandled = true;
+              showPaymentRecovery("failed", "cod", order.orderId);
             });
             rzp.open();
           })
           .catch(function (err) {
-            window.alert(String((err && err.message) || "Could not start COD advance payment."));
+            showCheckoutProblem(String((err && err.message) || "Could not start COD advance payment."));
           })
           .then(function () {
             els.btnCodCheckout.disabled = false;
@@ -2070,10 +2414,20 @@
 
     var resPop = document.getElementById("checkoutResultPopup");
     var resOk = document.getElementById("checkoutResultOk");
+    var resRetry = document.getElementById("checkoutResultRetry");
     var resBd = document.getElementById("checkoutResultBackdrop");
     if (resOk) {
       resOk.addEventListener("click", function () {
         closeResultPopup();
+      });
+    }
+    if (resRetry) {
+      resRetry.addEventListener("click", function () {
+        var recovery = readPaymentRecovery();
+        if (!recovery || (recovery.state !== "failed" && recovery.state !== "dismissed")) return;
+        closeResultPopup();
+        clearPaymentRecovery();
+        openPayModal();
       });
     }
     if (resBd) {

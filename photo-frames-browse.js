@@ -51,6 +51,11 @@
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  function productImageSources(product) {
+    var images = D && D.getProductImageCandidates ? D.getProductImageCandidates(product) : [product && product.image];
+    return images.map(imgSrc).filter(Boolean);
+  }
+
   function fmtPrice(n) {
     try {
       if (window.RESIN_CART && typeof window.RESIN_CART.formatMoney === "function") {
@@ -210,7 +215,8 @@
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
       var href = pdpUrlForProductId(m && m.id != null ? m.id : "");
       if (!href) return;
-      var img = m.image ? imgSrc(m.image) : "";
+      var productImages = productImageSources(m);
+      var img = productImages[0] || "";
       var priceLabel = meta.min > 0 ? (showFrom ? "From " : "") + fmtPrice(meta.min) : "";
       var buildCard = PLP && PLP.buildProductCard;
       var card;
@@ -224,6 +230,7 @@
           priceLabel: priceLabel,
           minPrice: meta.min > 0 ? String(meta.min) : "",
           imgSrc: img,
+          imgFallbacks: productImages.slice(1),
           rating: m.ratingScore,
           reviewCount: m.reviewCount,
           wishlistKind: "photo_frame",

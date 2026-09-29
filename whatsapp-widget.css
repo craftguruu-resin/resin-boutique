@@ -107,6 +107,7 @@ body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
 
 .cg-wa-widget.is-open {
   animation: none;
+  z-index: 3;
 }
 
 /* ── Backdrop ── */
@@ -119,7 +120,7 @@ body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.32s ease;
-  z-index: -1;
+  z-index: 0;
 }
 
 .cg-wa-widget.is-open .cg-wa-widget__backdrop {
@@ -153,6 +154,7 @@ body:not(:has(.cg-social-float-stack)) .cg-wa-widget {
     transform 0.38s cubic-bezier(0.22, 1, 0.36, 1),
     visibility 0.34s;
   overflow: hidden;
+  z-index: 2;
 }
 
 .cg-wa-widget__panel-glow {

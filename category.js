@@ -108,6 +108,29 @@
     return D.listProductsAll(cat, null);
   }
 
+  function catalogState() {
+    var M = window.CraftguruCatalogMerge;
+    var failed = !!(M && typeof M.hasLoadFailure === "function" && M.hasLoadFailure());
+    var hasCached = !!(M && typeof M.hasUsableCachedCatalog === "function" && M.hasUsableCachedCatalog());
+    return { failed: failed, stale: failed && hasCached };
+  }
+
+  function retryCatalogButton() {
+    return '<button type="button" class="cg-catalog-recovery__retry" data-cg-retry-catalog>Retry catalogue</button>';
+  }
+
+  function wireCatalogRetry(root) {
+    if (!root) return;
+    var retry = root.querySelector("[data-cg-retry-catalog]");
+    if (!retry) return;
+    retry.addEventListener("click", function () {
+      retry.disabled = true;
+      retry.textContent = "Retrying…";
+      var M = window.CraftguruCatalogMerge;
+      if (M && typeof M.refresh === "function") M.refresh();
+    });
+  }
+
   var activeSubId = "";
   var labelForList = "";
   var subLabelForList = "";
@@ -134,6 +157,11 @@
 
   function imgSrc(rel) {
     return D.imageUrl ? D.imageUrl(rel, 520) : rel;
+  }
+
+  function productImageSources(product) {
+    var images = D.getProductImageCandidates ? D.getProductImageCandidates(product) : [product && product.image];
+    return images.map(imgSrc).filter(Boolean);
   }
 
   function productPageUrl(id) {
@@ -430,9 +458,31 @@
     if (!els.productGrid) return;
     els.productGrid.innerHTML = "";
 
+    var state = catalogState();
+    if (state.stale) {
+      var stale = document.createElement("p");
+      stale.className = "cg-catalog-stale-note";
+      stale.setAttribute("role", "status");
+      stale.textContent = "Showing the last available catalogue while we reconnect. Prices and stock will refresh automatically.";
+      els.productGrid.appendChild(stale);
+    }
+
     if (result.items.length === 0) {
-      els.productGrid.innerHTML =
-        '<p class="band-empty" style="grid-column:1/-1">No products match your search. Try different words in the header.</p>';
+      if (state.failed && !state.stale) {
+        els.productGrid.innerHTML =
+          '<section class="cg-catalog-recovery__panel" role="status" aria-live="polite" style="grid-column:1/-1"><h2>Catalogue temporarily unavailable</h2><p>We could not load the products in ' +
+          escapeHtml(label || "this category") +
+          '. Please retry in a moment or contact our studio for help.</p><div class="cg-catalog-recovery__actions">' +
+          retryCatalogButton() +
+          '<a href="https://wa.me/918824350056?text=Hi%20Craftguru%2C%20I%20need%20help%20with%20the%20catalogue." target="_blank" rel="noopener noreferrer">Chat on WhatsApp</a></div></section>';
+        wireCatalogRetry(els.productGrid);
+      } else if (urlQ) {
+        els.productGrid.innerHTML =
+          '<p class="band-empty" style="grid-column:1/-1">No products match “' + escapeHtml(urlQ) + '”. Try a different search.</p>';
+      } else {
+        els.productGrid.innerHTML =
+          '<p class="band-empty" style="grid-column:1/-1">There are no published products in ' + escapeHtml(label || "this category") + ' yet.</p>';
+      }
       if (els.pager) els.pager.innerHTML = "";
       return;
     }
@@ -444,6 +494,7 @@
       var cardFit = D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
       var buildCard = PLP && PLP.buildProductCard;
       var card;
+      var productImages = productImageSources(p);
       if (buildCard) {
         card = buildCard({
           href: pHref,
@@ -454,7 +505,8 @@
           productUrl: productPageUrl(p.id),
           priceLabel: fromPriceLabel(p),
           minPrice: minP > 0 ? String(minP) : "",
-          imgSrc: imgSrc(p.image),
+          imgSrc: productImages[0] || "",
+          imgFallbacks: productImages.slice(1),
           imgFit: cardFit,
           wishlistKind: "catalog",
           ctaText: "View options →",
@@ -524,6 +576,9 @@
   }
 
   function render() {
+    if (catalogState().failed && D.applyPublishedCategoryFallback) {
+      D.applyPublishedCategoryFallback();
+    }
     labelForList = D.getCategoryLabel(cat);
     mountPlpShellOnce();
     if (els.heading) els.heading.textContent = labelForList;
@@ -678,6 +733,7 @@
   window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogDataMerged);
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogDataMerged);
   window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogDataMerged);
+  window.addEventListener("craftguruCatalogLoadFailed", onCatalogDataMerged);
 
   window.addEventListener("pageshow", function (ev) {
     if (window.CraftguruGuestLayout && window.CraftguruGuestLayout.closeMobileDrawers) {

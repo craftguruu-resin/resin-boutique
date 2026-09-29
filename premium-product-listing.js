@@ -44,23 +44,6 @@
       "Hand-poured personalised resin photo frames — ocean pours, florals, clocks, and bespoke keepsakes.",
   };
 
-  function fnv1a32(str) {
-    var h = 2166136261 >>> 0;
-    var s = String(str || "");
-    for (var i = 0; i < s.length; i++) {
-      h ^= s.charCodeAt(i);
-      h = Math.imul(h, 16777619);
-    }
-    return h >>> 0;
-  }
-
-  function defaultRatingMeta(productId) {
-    var h = fnv1a32(productId);
-    var rating = 4.5 + (h % 6) / 10;
-    var reviews = 12 + (h % 37);
-    return { rating: Math.round(rating * 10) / 10, reviewCount: reviews };
-  }
-
   function resolveRating(opts) {
     if (opts.rating != null && opts.reviewCount != null) {
       var r = parseFloat(String(opts.rating), 10);
@@ -69,8 +52,14 @@
         return { rating: Math.min(5, Math.max(1, r)), reviewCount: c };
       }
     }
-    if (opts.productId) return defaultRatingMeta(opts.productId);
-    return { rating: 4.8, reviewCount: 24 };
+    return null;
+  }
+
+  /* Kept as a public compatibility helper for raw-material and photo-frame
+     listings. Previously the export referenced an undeclared identifier,
+     stopping every product card on those pages from rendering. */
+  function defaultRatingMeta(opts) {
+    return resolveRating(opts || {});
   }
 
   function starsHtml(rating) {
@@ -132,6 +121,17 @@
     var ctaText = opts.ctaText || "View details →";
     var ctaHref = opts.ctaHref || href;
     var meta = resolveRating(opts);
+    var ratingHtml = meta
+      ? '<div class="plp-card__rating">' +
+        '<span class="plp-card__stars" aria-label="Rated ' +
+        escAttr(meta.rating) +
+        ' out of 5">' +
+        starsHtml(meta.rating) +
+        "</span>" +
+        '<span class="plp-card__review-count">(' +
+        esc(meta.reviewCount) +
+        ")</span></div>"
+      : "";
     var showNew = isProductNew({ isNew: opts.isNew, name: name, productId: opts.productId });
     var wishKind = opts.wishlistKind || "catalog";
 
@@ -140,15 +140,16 @@
         ? ' data-image-fit="' + escAttr(opts.imgFit) + '"'
         : "";
 
-    var mediaInner = opts.imgSrc
-      ? '<img src="' +
-        escAttr(opts.imgSrc) +
-        '" alt="' +
-        escAttr(name) +
-        '" loading="lazy" decoding="async"' +
-        fitAttr +
-        " />"
-      : '<div class="plp-card__media-empty" aria-hidden="true"></div>';
+    /* Blank product cards make a catalogue impossible to browse.  Keep a
+       visible branded placeholder when a vendor has not uploaded media. */
+    var initialImage = opts.imgSrc || opts.emptyImageSrc || "media/placeholder-product.svg";
+    var mediaInner = '<img src="' +
+      escAttr(initialImage) +
+      '" alt="' +
+      escAttr(name) +
+      '" loading="lazy" decoding="async"' +
+      fitAttr +
+      " />";
 
     var discountHtml = opts.discountHtml || "";
     var mrpHtml = opts.mrpHtml || "";
@@ -177,21 +178,13 @@
       '<h3 class="plp-card__name">' +
       esc(name) +
       "</h3></div>" +
-      '<div class="plp-card__rating">' +
-      '<span class="plp-card__stars" aria-label="Rated ' +
-      escAttr(meta.rating) +
-      ' out of 5">' +
-      starsHtml(meta.rating) +
-      "</span>" +
-      '<span class="plp-card__review-count">(' +
-      esc(meta.reviewCount) +
-      ")</span></div>" +
+      ratingHtml +
       (priceLabel
         ? '<p class="plp-card__price">' +
           esc(priceLabel) +
           mrpHtml +
           discountHtml +
-          '</p><p class="plp-card__service"><span aria-hidden="true">✓</span> Free shipping</p>'
+          '</p><p class="plp-card__service"><span aria-hidden="true">✓</span> Free delivery in India</p>'
         : "") +
       "</div>" +
       '<div class="plp-card__actions">' +
@@ -209,8 +202,28 @@
 
     wireCardWishlist(card);
     applyCardImageFit(card, opts.imgFit);
+    wireCardImageFallback(card, opts.imgFallbacks, opts.emptyImageSrc);
 
     return card;
+  }
+
+  function wireCardImageFallback(card, fallbacks, emptyImageSrc) {
+    var img = card && card.querySelector(".plp-card__media img");
+    if (!img) return;
+    var queue = (Array.isArray(fallbacks) ? fallbacks : [])
+      .map(function (src) { return String(src || "").trim(); })
+      .filter(Boolean);
+    function onImageError() {
+      var next = queue.shift();
+      if (next) {
+        img.src = next;
+        return;
+      }
+      img.removeEventListener("error", onImageError); /* Never loop if a deployment lacks the SVG. */
+      img.src = emptyImageSrc || "media/placeholder-product.svg";
+      img.alt = "Product image unavailable";
+    }
+    img.addEventListener("error", onImageError);
   }
 
   function applyCardImageFit(card, fit) {

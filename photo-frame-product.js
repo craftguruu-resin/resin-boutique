@@ -246,11 +246,12 @@
     return -1;
   }
 
-  function lineImageFor(material, o) {
-    var entries = galleryEntries(material, o);
-    var ix = Math.min(state.imgIndex, Math.max(0, entries.length - 1));
-    var u = entries[ix] && entries[ix].url;
-    return String(u || "").trim();
+  function lineImageFor(material) {
+    /* Keep cart/checkout on the configured cover rather than the active PDP
+       gallery thumbnail. */
+    if (D && D.getProductCoverImage) return D.getProductCoverImage(material);
+    var opt = (material && material.options) || {};
+    return String(opt.heroImage || (material && material.image) || (opt.galleryImages || [])[0] || "").trim();
   }
 
   var state = {
@@ -261,10 +262,48 @@
     heroZoom: 1,
     _zoomUrl: "",
     _lastHeroResolvedSrc: "",
+    frameInstructions: "",
   };
 
   var pdpFetch = { status: "loading" };
   var productFetchInflight = null;
+  var PDP_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
+  function pdpCacheKey(id) {
+    return "__cgPhotoFramePdp:" + String(id || "").trim();
+  }
+
+  function readCachedMaterial(id) {
+    try {
+      var cached = JSON.parse(localStorage.getItem(pdpCacheKey(id)) || "null");
+      if (!cached || !cached.ts || Date.now() - cached.ts > PDP_CACHE_TTL_MS || !cached.material) return null;
+      return cached.material;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeCachedMaterial(id, material) {
+    try {
+      localStorage.setItem(pdpCacheKey(id), JSON.stringify({ ts: Date.now(), material: material }));
+    } catch (_) {}
+  }
+
+  function syncStalePdpNotice(root) {
+    if (!root) return;
+    var old = root.querySelector(".cg-catalog-stale-note");
+    if (!state.usingStaleCache) {
+      if (old) old.remove();
+      return;
+    }
+    if (old) return;
+    var note = document.createElement("p");
+    note.className = "cg-catalog-stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = "Showing the last available product details while we reconnect. Prices and stock will refresh automatically.";
+    var detail = root.querySelector(".rm-pdp__detail");
+    if (detail) detail.insertBefore(note, detail.firstChild);
+  }
 
   /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
   function applyPdpHtml(root, html, title) {
@@ -389,7 +428,7 @@
         image: lineImageFor(m, state.sel),
         qty: state.lineQty,
         stockMax: inventoryValueForSelection(m, state.sel),
-        lineExtra: { productKind: "photo_frame" },
+        lineExtra: frameLineExtra(),
       };
       var result = activeCart.addItem(item);
       if (!result || !Array.isArray(result)) {
@@ -581,7 +620,7 @@
           image: lineImageFor(m, state.sel),
           qty: state.lineQty,
           stockMax: inventoryValueForSelection(m, state.sel),
-          lineExtra: { productKind: "photo_frame" },
+          lineExtra: frameLineExtra(),
         });
         if (buyNow) {
           window.location.href = "checkout.html";
@@ -591,6 +630,12 @@
           } catch (_) {}
         }
       }
+    });
+
+    root.addEventListener("input", function (ev) {
+      var field = ev.target;
+      if (!field || field.id !== "rmPdpFrameInstructions") return;
+      state.frameInstructions = String(field.value || "").slice(0, 1000);
     });
 
     /* Wheel zoom is desktop-only; touch devices need an unblocked scroll path. */
@@ -677,6 +722,14 @@
     state.lineQty = 1;
     state.heroZoom = 1;
     state._zoomUrl = "";
+    state.frameInstructions = "";
+  }
+
+  function frameLineExtra() {
+    var note = String(state.frameInstructions || "").trim().slice(0, 1000);
+    var extra = { productKind: "photo_frame" };
+    if (note) extra.frameInstructions = note;
+    return extra;
   }
 
   /** Split vendor description on blank lines for readable multi-paragraph layout. */
@@ -932,7 +985,7 @@
             ? P.titleRowHtml({ title: m.name, shareHostId: "rmPdpShareHost", wishId: "rmPdpWishLink" })
             : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>");
     var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
-    var socialProof = P && P.socialProofHtml ? P.socialProofHtml() : "";
+    var socialProof = P && P.socialProofHtml ? P.socialProofHtml(m) : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
@@ -997,6 +1050,7 @@
       sizeHtml +
       qtyHtml +
       colHtml +
+      '<div class="rm-opt-block rm-opt-block--modern"><label class="rm-opt-block__label" for="rmPdpFrameInstructions">Personalisation instructions <span aria-hidden="true">(optional)</span></label><textarea class="rm-pdp__custom-input" id="rmPdpFrameInstructions" rows="3" maxlength="1000" placeholder="Tell us the name, date, photo reference, or design note.">' + esc(state.frameInstructions) + '</textarea><p class="rm-pdp__ship">For photo uploads, our team will contact you after the order to collect the image and confirm the design.</p></div>' +
       '<div class="rm-pdp__cart-row rm-pdp__cart-row--modern">' +
       '<div class="rm-pdp__qty">' +
       '<button type="button" id="rmLineQtyMinus">−</button>' +
@@ -1021,6 +1075,7 @@
       patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
       if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: m.name });
     }
+    syncStalePdpNotice(root);
     wirePdpRootOnce(root);
     bindPdpCartButtons(root);
     syncPurchaseAvailability(root, m);
@@ -1038,6 +1093,7 @@
           qty: state.lineQty,
           variantLabel: variantLabelFrom(m, state.sel),
           price: CART ? CART.formatMoney(effectivePriceInr(m, state.sel)) : effectivePriceInr(m, state.sel),
+          customisation: state.frameInstructions,
         };
       });
     }
@@ -1055,6 +1111,7 @@
     var b = catalogApiBase();
     pdpFetch.status = "loading";
     pdpFetch.error = false;
+    state.usingStaleCache = false;
     render();
 
     if (!id) {
@@ -1082,14 +1139,23 @@
           state.material = null;
         } else {
           state.material = o.j.material;
+          writeCachedMaterial(id, state.material);
           state._lastHeroResolvedSrc = "";
           syncDefaults(state.material);
           document.title = (state.material.name || "Product") + " — Craft guru";
         }
       })
       .catch(function () {
-        state.material = null;
-        pdpFetch.error = true;
+        var cached = readCachedMaterial(id);
+        if (cached) {
+          state.material = cached;
+          state.usingStaleCache = true;
+          syncDefaults(state.material);
+          document.title = (state.material.name || "Product") + " — Craft guru";
+        } else {
+          state.material = null;
+          pdpFetch.error = true;
+        }
       })
       .finally(function () {
         productFetchInflight = null;

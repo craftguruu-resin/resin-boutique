@@ -115,17 +115,10 @@
     return '<p class="cg-pdp__tax-note">Inclusive of all taxes</p>';
   }
 
-  /* This is deliberately modest social proof, rather than a per-product claim.
-     The visual rail stays consistent while real review data can be connected later. */
+  /* Ratings remain hidden until reviews are backed by a real customer-review
+     source; a vendor-entered number alone is not trustworthy social proof. */
   function socialProofHtml() {
-    return (
-      '<div class="cg-pdp__social-proof" aria-label="Customer rating and popularity">' +
-      '<span class="cg-pdp__stars" aria-hidden="true">★★★★★</span>' +
-      '<strong>4.8</strong><span class="cg-pdp__reviews">(124 reviews)</span>' +
-      '<span class="cg-pdp__social-sep" aria-hidden="true"></span>' +
-      '<span class="cg-pdp__sold"><span aria-hidden="true">♧</span> 500+ sold</span>' +
-      "</div>"
-    );
+    return "";
   }
 
   function trustRowHtml(bullets) {
@@ -174,16 +167,16 @@
       '<section class="cg-pdp__service-banner" aria-label="Shopping services">' +
       '<div class="cg-pdp__service-item">' +
       '<span class="cg-pdp__service-icon cg-pdp__service-icon--teal" aria-hidden="true">🚚</span>' +
-      "<div><strong>Estimated Delivery</strong><span>4–7 working days</span></div></div>" +
+      "<div><strong>Delivery details</strong><span>Confirmed after order verification</span></div></div>" +
       '<div class="cg-pdp__service-item">' +
       '<span class="cg-pdp__service-icon cg-pdp__service-icon--pink" aria-hidden="true">↺</span>' +
-      "<div><strong>Easy Returns &amp; Refunds</strong><span>7 days return policy</span></div></div>" +
+      "<div><strong>Returns</strong><span>See product eligibility and returns policy</span></div></div>" +
       '<div class="cg-pdp__service-item">' +
       '<span class="cg-pdp__service-icon cg-pdp__service-icon--green" aria-hidden="true">📦</span>' +
       "<div><strong>Secure Packaging</strong><span>Damage-proof packaging</span></div></div>" +
       '<div class="cg-pdp__service-item">' +
       '<span class="cg-pdp__service-icon cg-pdp__service-icon--orange" aria-hidden="true">♥</span>' +
-      "<div><strong>Loved by 10,000+</strong><span>Happy Customers</span></div></div>" +
+      "<div><strong>Order support</strong><span>Help is available on WhatsApp</span></div></div>" +
       "</section>"
     );
   }
@@ -349,6 +342,8 @@
     if (WA && typeof WA.absoluteUrl === "function") url = WA.absoluteUrl(url);
     var lines = ["Hi, I'd like to buy this product.", "", "Product: " + name];
     if (variant) lines.push("Variant: " + variant);
+    var customisation = String(opts.customisation || "").trim();
+    if (customisation) lines.push("Customisation: " + customisation);
     lines.push("Quantity: " + qty);
     if (price !== "") lines.push("Price: " + price);
     lines.push("URL: " + url);

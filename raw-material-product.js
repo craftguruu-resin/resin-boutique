@@ -254,11 +254,12 @@
     return -1;
   }
 
-  function lineImageFor(material, o) {
-    var entries = galleryEntries(material, o);
-    var ix = Math.min(state.imgIndex, Math.max(0, entries.length - 1));
-    var u = entries[ix] && entries[ix].url;
-    return String(u || "").trim();
+  function lineImageFor(material) {
+    /* Cart imagery represents the product, not whichever PDP thumbnail the
+       shopper most recently opened. */
+    if (D && D.getProductCoverImage) return D.getProductCoverImage(material);
+    var opt = (material && material.options) || {};
+    return String(opt.heroImage || (material && material.image) || (opt.galleryImages || [])[0] || "").trim();
   }
 
   var state = {
@@ -273,6 +274,43 @@
 
   var pdpFetch = { status: "loading" };
   var productFetchInflight = null;
+  var PDP_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+
+  function pdpCacheKey(id) {
+    return "__cgRawMaterialPdp:" + String(id || "").trim();
+  }
+
+  function readCachedMaterial(id) {
+    try {
+      var cached = JSON.parse(localStorage.getItem(pdpCacheKey(id)) || "null");
+      if (!cached || !cached.ts || Date.now() - cached.ts > PDP_CACHE_TTL_MS || !cached.material) return null;
+      return cached.material;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function writeCachedMaterial(id, material) {
+    try {
+      localStorage.setItem(pdpCacheKey(id), JSON.stringify({ ts: Date.now(), material: material }));
+    } catch (_) {}
+  }
+
+  function syncStalePdpNotice(root) {
+    if (!root) return;
+    var old = root.querySelector(".cg-catalog-stale-note");
+    if (!state.usingStaleCache) {
+      if (old) old.remove();
+      return;
+    }
+    if (old) return;
+    var note = document.createElement("p");
+    note.className = "cg-catalog-stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = "Showing the last available product details while we reconnect. Prices and stock will refresh automatically.";
+    var detail = root.querySelector(".rm-pdp__detail");
+    if (detail) detail.insertBefore(note, detail.firstChild);
+  }
 
   /** Full PDP shell replace only — never use document-level view transitions here (they feel like a page refresh when picking colour/size). */
   function applyPdpHtml(root, html, title) {
@@ -940,7 +978,7 @@
             ? P.titleRowHtml({ title: m.name, shareHostId: "rmPdpShareHost", wishId: "rmPdpWishLink" })
             : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>");
     var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
-    var socialProof = P && P.socialProofHtml ? P.socialProofHtml() : "";
+    var socialProof = P && P.socialProofHtml ? P.socialProofHtml(m) : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
@@ -1029,6 +1067,7 @@
       patchPdpView(root, m, entries, idx, mainImg, effPrice, effMrp, pct);
       if (P && P.wirePdpHeader) P.wirePdpHeader(root, { title: m.name });
     }
+    syncStalePdpNotice(root);
     wirePdpRootOnce(root);
     bindPdpCartButtons(root);
     syncPurchaseAvailability(root, m);
@@ -1063,6 +1102,7 @@
     var b = catalogApiBase();
     pdpFetch.status = "loading";
     pdpFetch.error = false;
+    state.usingStaleCache = false;
     render();
 
     if (!id) {
@@ -1090,14 +1130,23 @@
           state.material = null;
         } else {
           state.material = o.j.material;
+          writeCachedMaterial(id, state.material);
           state._lastHeroResolvedSrc = "";
           syncDefaults(state.material);
           document.title = (state.material.name || "Product") + " — Craft guru";
         }
       })
       .catch(function () {
-        state.material = null;
-        pdpFetch.error = true;
+        var cached = readCachedMaterial(id);
+        if (cached) {
+          state.material = cached;
+          state.usingStaleCache = true;
+          syncDefaults(state.material);
+          document.title = (state.material.name || "Product") + " — Craft guru";
+        } else {
+          state.material = null;
+          pdpFetch.error = true;
+        }
       })
       .finally(function () {
         productFetchInflight = null;

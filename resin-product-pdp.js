@@ -177,11 +177,11 @@
     }
     return n;
   }
-  function lineImageFor(material, o) {
-    var entries = galleryEntries(material, o);
-    var ix = Math.min(state.imgIndex, Math.max(0, entries.length - 1));
-    var u = entries[ix] && entries[ix].url;
-    return String(u || "").trim();
+  function lineImageFor(material) {
+    /* The cover is stable; an active gallery item is not suitable cart data. */
+    if (D && D.getProductCoverImage) return D.getProductCoverImage(material);
+    var opt = (material && material.options) || {};
+    return String(opt.heroImage || (material && material.image) || (opt.galleryImages || [])[0] || "").trim();
   }
 
   function parseOptionsRaw(raw) {
@@ -840,7 +840,7 @@
             ? P.titleRowHtml({ title: m.name, shareHostId: "resinPdpShare", wishId: "resinPdpWishLink" })
             : "<h1 class=\"rm-pdp__title\">" + esc(m.name) + "</h1>");
     var taxNote = P && P.priceTaxNoteHtml ? P.priceTaxNoteHtml() : "";
-    var socialProof = P && P.socialProofHtml ? P.socialProofHtml() : "";
+    var socialProof = P && P.socialProofHtml ? P.socialProofHtml(m || p) : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
     var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "resinPdpBuyNow", waBuyId: "resinPdpWaBuy" }) : "";

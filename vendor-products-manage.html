@@ -33,6 +33,7 @@
         </div>
         <div class="vs-topbar__actions">
           <button type="button" class="vs-btn vs-btn--primary" id="vpmAddNew">+ Add product</button>
+          <button type="button" class="vs-btn" id="vpmCoupons">Coupon codes</button>
           <button type="button" class="vs-btn" id="vpmRefresh">Refresh</button>
         </div>
       </header>
@@ -44,6 +45,43 @@
           <a class="vendor-catalog-tabs__link" href="vendor-photo-frames.html">Photo frames</a>
           <a class="vendor-catalog-tabs__link" href="vendor-categories-manage.html">Categories</a>
         </nav>
+        <section class="vs-card" id="vpmCouponPanel" hidden style="margin-bottom: 1rem" aria-labelledby="vpmCouponTitle">
+          <div class="vs-row-actions" style="justify-content: space-between; align-items: flex-start; gap: 0.75rem; flex-wrap: wrap">
+            <div>
+              <h2 class="vs-card__title" id="vpmCouponTitle" style="margin: 0">Coupon codes</h2>
+              <p class="vs-muted" style="margin: 0.35rem 0 0">Create a checkout-only coupon. It applies to the customer&apos;s verified server total, never to the cart.</p>
+            </div>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vpmCouponsClose">Close</button>
+          </div>
+          <div class="vs-grid" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem; align-items: end; margin-top: 1rem">
+            <div class="vs-field" style="margin: 0">
+              <label for="vpmCouponCode">Coupon code name</label>
+              <input id="vpmCouponCode" type="text" maxlength="40" placeholder="FESTIVE10" autocomplete="off" />
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <span class="vs-field__label">Discount type</span>
+              <div class="vpm-coupon-tabs" role="tablist" aria-label="Discount type">
+                <button type="button" class="vpm-coupon-tab is-active" data-coupon-type="percentage" role="tab" aria-selected="true">Percentage</button>
+                <button type="button" class="vpm-coupon-tab" data-coupon-type="flat" role="tab" aria-selected="false">Flat discount</button>
+              </div>
+            </div>
+            <div class="vs-field" style="margin: 0">
+              <label for="vpmCouponValue" id="vpmCouponValueLabel">Percentage value</label>
+              <input id="vpmCouponValue" type="number" min="0.01" max="100" step="0.01" inputmode="decimal" placeholder="10" />
+            </div>
+            <div class="vs-field" style="margin: 0"><label for="vpmCouponMinSubtotal">Minimum cart value (₹)</label><input id="vpmCouponMinSubtotal" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0" /></div>
+            <div class="vs-field" style="margin: 0"><label for="vpmCouponMaxRedemptions">Maximum uses</label><input id="vpmCouponMaxRedemptions" type="number" min="1" step="1" inputmode="numeric" placeholder="Unlimited" /></div>
+            <div class="vs-field" style="margin: 0"><label for="vpmCouponStartsAt">Starts (optional)</label><input id="vpmCouponStartsAt" type="datetime-local" /></div>
+            <div class="vs-field" style="margin: 0"><label for="vpmCouponEndsAt">Ends (optional)</label><input id="vpmCouponEndsAt" type="datetime-local" /></div>
+            <button type="button" class="vs-btn vs-btn--primary" id="vpmCouponSave">Add coupon</button>
+            <button type="button" class="vs-btn vs-btn--ghost" id="vpmCouponCancelEdit" hidden>Cancel edit</button>
+          </div>
+          <p id="vpmCouponMsg" class="vs-muted" role="status" style="margin: 0.75rem 0 0" hidden></p>
+          <div class="vs-table-wrap" style="margin-top: 0.75rem">
+            <table class="vs-table"><thead><tr><th>Code</th><th>Discount & rules</th><th>Usage</th><th>Status</th><th>Action</th></tr></thead><tbody id="vpmCouponTbody"></tbody></table>
+          </div>
+          <p id="vpmCouponEmpty" class="vs-muted" style="margin: 0.75rem 0 0" hidden>No coupon codes yet.</p>
+        </section>
         <div id="vpmAddProductPanel" hidden>
           <div class="vs-card" style="margin-bottom: 1rem">
             <div class="vs-row-actions" style="justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.5rem">
@@ -373,7 +411,7 @@
   <script src="vendor-shell.js"></script>
   <script src="vendor-storefront-add-product.js?v=20260926simple1"></script>
   <script src="vendor-catalog-pdp-options.js"></script>
-  <script src="vendor-products-manage.js?v=20260928lifecycle1"></script>
+  <script src="vendor-products-manage.js?v=20260929coupons2"></script>
   <script src="vendor-form-steps.js"></script>
 </body>
 </html>

@@ -34,6 +34,11 @@
     return D.imageUrl ? D.imageUrl(rel) : rel;
   }
 
+  function productImageSources(product) {
+    var images = D && D.getProductImageCandidates ? D.getProductImageCandidates(product) : [product && product.image];
+    return images.map(imgSrc).filter(Boolean);
+  }
+
   function productPageUrl(id) {
     var path = "product.html?id=" + encodeURIComponent(id);
     try {
@@ -143,6 +148,7 @@
       var priceLabel = fromPriceLabel(p);
       var buildCard = PLP && PLP.buildProductCard;
       var card;
+      var productImages = productImageSources(p);
       if (buildCard) {
         card = buildCard({
           href: pHref,
@@ -153,7 +159,8 @@
           productUrl: productPageUrl(p.id),
           priceLabel: priceLabel,
           minPrice: minP > 0 ? String(minP) : "",
-          imgSrc: p.image ? imgSrc(p.image) : "",
+          imgSrc: productImages[0] || "",
+          imgFallbacks: productImages.slice(1),
           imgFit: D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "",
           wishlistKind: "catalog",
           ctaText: "View options →",

@@ -35,6 +35,30 @@
   var FALLBACK =
     '<svg viewBox="0 0 24 24" fill="none" stroke="#1a2b48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 12h6"/></svg>';
 
+  /* Material taxonomy has its own visual language. Reusing finished-product
+     icons (coasters, Guruji frame, keychain) for supplies was misleading. */
+  var RAW_ICONS = {
+    "basic-resin-material": '<svg viewBox="0 0 24 24" fill="none" stroke="#1e8e84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3h8v3l2 3v10a2 2 0 01-2 2H8a2 2 0 01-2-2V9l2-3V3z"/><path d="M8 6h8M9 14h6"/></svg>',
+    "clock-material": '<svg viewBox="0 0 24 24" fill="none" stroke="#148f7f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="7.5"/><path d="M12 8v4l2.8 2"/></svg>',
+    "cutouts": '<svg viewBox="0 0 24 24" fill="none" stroke="#1e8e84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="2.2"/><circle cx="7" cy="17" r="2.2"/><path d="M9 8.5L18 3M9 15.5L18 21M12 12h7"/></svg>',
+    "dryed-flowers": '<svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21V11"/><path d="M12 14c-5 0-7-3-7-7 4 0 7 2 7 7zM12 11c0-5 3-7 7-7 0 4-2 7-7 7z"/></svg>',
+    "glitters-beads-and-decoration": '<svg viewBox="0 0 24 24" fill="none" stroke="#26a69a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="8" r="2"/><circle cx="16.5" cy="7" r="2"/><circle cx="12" cy="16" r="2.6"/></svg>',
+    "handles": '<svg viewBox="0 0 24 24" fill="none" stroke="#243656" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 17V11a7 7 0 0114 0v6"/><path d="M4 17h3M17 17h3"/></svg>',
+    "jewellery-and-keychain-material": '<svg viewBox="0 0 24 24" fill="none" stroke="#1a2b48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="5.5"/><path d="M9.5 8.2L12 4l2.5 4.2"/></svg>',
+    "packing-material": '<svg viewBox="0 0 24 24" fill="none" stroke="#148f7f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8l8-4 8 4v9l-8 4-8-4V8z"/><path d="M4 8l8 4 8-4M12 12v9"/></svg>',
+    "pouring-and-mixing": '<svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 5h10l-1.4 14H8.4L7 5z"/><path d="M9 9h6M12 2v7"/></svg>',
+    "resin-and-pigments": '<svg viewBox="0 0 24 24" fill="none" stroke="#1e8e84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3s5 5.2 5 9a5 5 0 01-10 0c0-3.8 5-9 5-9z"/><path d="M9.5 15.5c.7.7 1.5 1 2.5 1"/></svg>',
+    "resin-learning-kit": '<svg viewBox="0 0 24 24" fill="none" stroke="#26a69a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7l8-4 8 4-8 4-8-4zM4 7v9l8 5 8-5V7"/><path d="M12 11v10"/></svg>',
+    "safty-and-cleaning-material": '<svg viewBox="0 0 24 24" fill="none" stroke="#243656" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-3 7.7-7 10-4-2.3-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>',
+    "sea-shells": '<svg viewBox="0 0 24 24" fill="none" stroke="#26a69a" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18c0-6 3.4-11 8-11s8 5 8 11H4z"/><path d="M8 18v-6M12 18V9M16 18v-6"/></svg>',
+    "silicon-molds": '<svg viewBox="0 0 24 24" fill="none" stroke="#1e8e84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1.4"/><circle cx="15" cy="9" r="1.4"/><circle cx="9" cy="15" r="1.4"/><circle cx="15" cy="15" r="1.4"/></svg>',
+    "stands-and-hanging-hooks": '<svg viewBox="0 0 24 24" fill="none" stroke="#148f7f" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v8a4 4 0 104 4"/><circle cx="12" cy="3" r="1.5"/></svg>',
+    "stickers-and-cards": '<svg viewBox="0 0 24 24" fill="none" stroke="#1a2b48" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M7 9h10M7 13h6"/></svg>',
+    "stones-and-chips": '<svg viewBox="0 0 24 24" fill="none" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l6 6-6 12L6 9l6-6z"/><path d="M6 9h12M12 3v18"/></svg>',
+    "tools": '<svg viewBox="0 0 24 24" fill="none" stroke="#243656" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 6a5 5 0 00-6 6l-5 5 3 3 5-5a5 5 0 006-6l-3 3-2-2 2-4z"/></svg>',
+    "wooden-raw-frames-special-for-vermala-preservation": '<svg viewBox="0 0 24 24" fill="none" stroke="#1e8e84" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="1"/><rect x="7" y="7" width="10" height="10" rx="1"/></svg>',
+  };
+
   /** Extra shop links / RM taxonomy keys → icon key or inline stroke colour set */
   var ALIAS = {
     "raw-material-shop.html": "resin-coasters",
@@ -76,6 +100,7 @@
 
   function iconSvgFor(idOrKey) {
     var key = normalizeId(idOrKey);
+    if (RAW_ICONS[key]) return RAW_ICONS[key];
     if (ALIAS[key]) key = ALIAS[key];
     if (ICONS[key]) return ICONS[key];
     /* fuzzy: match known catalog id contained in key */

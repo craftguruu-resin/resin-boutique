@@ -21,7 +21,7 @@ function normalizePaymentMethod(raw) {
 
 /**
  * @param {object[]} items — sanitized bill lines
- * @param {{ paymentMethod?: string }} [opts]
+ * @param {{ paymentMethod?: string, couponDiscount?: number }} [opts]
  */
 function computeTotals(items, opts) {
   opts = opts || {};
@@ -36,8 +36,10 @@ function computeTotals(items, opts) {
   /* Product prices are already inclusive of GST and shipping. Never add a
      second shipping charge at checkout or on server-created orders. */
   var ship = 0;
-  var prepaidDiscount = paymentMethod === "razorpay" ? round2(productValue * PREPAID_DISCOUNT_RATE) : 0;
-  var afterDiscount = round2(Math.max(0, productValue - prepaidDiscount));
+  var couponDiscount = round2(Math.min(productValue, Math.max(0, Number(opts.couponDiscount) || 0)));
+  var discountableValue = round2(Math.max(0, productValue - couponDiscount));
+  var prepaidDiscount = paymentMethod === "razorpay" ? round2(discountableValue * PREPAID_DISCOUNT_RATE) : 0;
+  var afterDiscount = round2(Math.max(0, discountableValue - prepaidDiscount));
   var taxable = round2(afterDiscount / (1 + GST));
   var gst = round2(afterDiscount - taxable);
   var grand = round2(afterDiscount + ship);
@@ -45,6 +47,7 @@ function computeTotals(items, opts) {
   return {
     productValue: productValue,
     subtotal: productValue,
+    couponDiscount: couponDiscount,
     prepaidDiscount: prepaidDiscount,
     afterDiscount: afterDiscount,
     taxableValue: taxable,

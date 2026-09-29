@@ -261,12 +261,23 @@
     var sid = String(id || "");
     var ss = String(size || "");
     var ex = leKey == null || leKey === "" ? "" : String(leKey);
+    var removed = null;
     var lines = load().filter(function (l) {
       if (l.id !== sid || l.size !== ss) return true;
-      return lineExtraKey(l.lineExtra) !== ex;
+      if (lineExtraKey(l.lineExtra) !== ex) return true;
+      removed = normalizeLine(l);
+      return false;
     });
     save(lines);
+    if (removed) {
+      try { global.dispatchEvent(new CustomEvent("resinCartLineRemoved", { detail: { line: removed } })); } catch (_) {}
+    }
     return lines;
+  }
+
+  function restoreLine(line) {
+    if (!line) return load();
+    return addItem(line);
   }
 
   function setLineQty(id, size, qty, leKey) {
@@ -888,6 +899,7 @@
     save: save,
     addItem: addItem,
     removeLine: removeLine,
+    restoreLine: restoreLine,
     setLineQty: setLineQty,
     incrementLine: incrementLine,
     lineStockLimit: lineStockLimit,

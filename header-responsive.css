@@ -10,11 +10,17 @@ body.guest-site .site-top {
   isolation: isolate;
 }
 
-@media (min-width: 901px) {
+/*
+ * Desktop is a three-part header: brand/search on the left, the primary
+ * navigation in the visual centre, and account/shop actions on the right.
+ * Do not make the navigation a full-width item in the left grid column — it
+ * was the cause of the off-centre desktop header.
+ */
+@media (min-width: 1500px) {
   body.guest-site .site-top {
-    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
-    grid-template-rows: auto auto;
-    gap: 0.6rem 0.9rem;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) !important;
+    grid-template-rows: auto !important;
+    gap: 0.9rem !important;
   }
 
   body.guest-site .site-top > .brand,
@@ -25,12 +31,12 @@ body.guest-site .site-top {
   }
 
   body.guest-site .site-top > .nav-dock {
-    grid-column: 1;
-    grid-row: 2;
-    justify-self: start;
-    width: 100%;
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+    width: auto;
     min-width: 0;
-    max-width: 100%;
+    max-width: min(100%, 52rem);
     margin-top: 0;
     overflow-x: auto;
     scrollbar-width: none;
@@ -42,8 +48,8 @@ body.guest-site .site-top {
 
   body.guest-site .site-top .site-top-end,
   body.guest-site .site-top .site-top-end--home {
-    grid-column: 2;
-    grid-row: 2;
+    grid-column: 3;
+    grid-row: 1;
     align-self: center;
     justify-self: end;
     min-width: 0;
@@ -52,6 +58,60 @@ body.guest-site .site-top {
     scrollbar-width: none;
   }
 
+  body.guest-site .site-top .site-top-end::-webkit-scrollbar,
+  body.guest-site .site-top .site-top-end--home::-webkit-scrollbar {
+    display: none;
+  }
+
+  body.guest-site .site-top .home-auth-bar {
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+}
+
+/* A single header row would make the long product labels collide with the
+ * account controls on smaller laptops. Keep the same hierarchy there, but
+ * place the centred navigation below the logo/search and right-side actions.
+ */
+@media (min-width: 901px) and (max-width: 1499px) {
+  body.guest-site .site-top {
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    grid-template-rows: auto auto !important;
+    gap: 0.6rem 0.9rem !important;
+  }
+
+  body.guest-site .site-top > .brand,
+  body.guest-site .site-top .guest-top-cluster {
+    grid-column: 1;
+    grid-row: 1;
+    min-width: 0;
+  }
+
+  body.guest-site .site-top .site-top-end,
+  body.guest-site .site-top .site-top-end--home {
+    grid-column: 2;
+    grid-row: 1;
+    align-self: center;
+    justify-self: end;
+    min-width: 0;
+    max-width: min(34rem, 48vw);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .site-top > .nav-dock {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    justify-self: center;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    margin-top: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  body.guest-site .site-top > .nav-dock::-webkit-scrollbar,
   body.guest-site .site-top .site-top-end::-webkit-scrollbar,
   body.guest-site .site-top .site-top-end--home::-webkit-scrollbar {
     display: none;
@@ -154,5 +214,50 @@ body.guest-site .site-top {
   body.guest-site .site-top .site-top-end,
   body.guest-site .site-top .site-top-end--home {
     grid-row: 3 !important;
+  }
+
+  /* On phones, the sign-in sheet already contains the sign-up tab. Showing
+     both actions in the header wastes the narrow action row. */
+  body.page-home .home-auth-bar #homeAuthSignup {
+    display: none !important;
+  }
+
+  body.guest-site .site-top > .nav-dock {
+    gap: 0.25rem !important;
+  }
+
+  body.guest-site .site-top > .nav-dock .nav-dock-link {
+    padding-inline: 0.72rem !important;
+    font-size: 0.72rem !important;
+  }
+}
+
+/* Product choice needs more visual space than a desktop card can provide.
+   This is intentionally scoped to actual listing routes, not homepage category cards. */
+@media (max-width: 480px) {
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-grid,
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-grid.product-grid,
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-grid.rm-grid-cards {
+    grid-template-columns: minmax(0, 1fr) !important;
+    gap: 0.9rem !important;
+  }
+
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-card__media-wrap {
+    aspect-ratio: 1 / 1 !important;
+  }
+
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-card__media {
+    padding: 0.45rem !important;
+  }
+
+  html.guest-responsive-root.storefront-category-listing body.guest-site .plp-card__media img {
+    border-radius: 0.75rem !important;
+  }
+
+  /* Preserve the centered desktop dock. On phones focus the dock on shopping
+     destinations; the complete site map remains available in the footer. */
+  html.guest-responsive-root body.guest-site .nav-dock-link:nth-child(4),
+  html.guest-responsive-root body.guest-site .nav-dock-link:nth-child(5) {
+    display: none !important;
   }
 }

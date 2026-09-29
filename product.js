@@ -10,6 +10,25 @@
   var product = id ? D.getProduct(id) : null;
   var ONLINE_DISCOUNT_RATE = 0.10;
 
+  function syncStaleCatalogNotice() {
+    var root = els && els.root;
+    if (!root) return;
+    var old = root.querySelector(".cg-catalog-stale-note");
+    var M = window.CraftguruCatalogMerge;
+    var stale = !!(M && typeof M.isUsingStaleCatalog === "function" && M.isUsingStaleCatalog());
+    if (!stale) {
+      if (old) old.remove();
+      return;
+    }
+    if (old) return;
+    var note = document.createElement("p");
+    note.className = "cg-catalog-stale-note";
+    note.setAttribute("role", "status");
+    note.textContent = "Showing the last available product details while we reconnect. Prices and stock will refresh automatically.";
+    var target = root.querySelector(".product-overview, .cg-pdp__detail, .product-info") || root.firstElementChild;
+    if (target) target.insertBefore(note, target.firstChild);
+  }
+
   function refreshProductRef() {
     product = id ? D.getProduct(id) : null;
   }
@@ -330,7 +349,7 @@
 
   var PLACEHOLDER_REL = "media/placeholder-product.svg";
 
-  /** Deduped gallery URLs — vendor colour/size images, extra gallery lines, then catalog image. */
+  /** Deduped gallery URLs — the cover first, followed by vendor option/gallery images. */
   function productGalleryUrls(p) {
     if (!p) return [resolveCatalogImg(PLACEHOLDER_REL)];
     var opt = vendorPdpOptions(p);
@@ -339,12 +358,25 @@
     var seen = Object.create(null);
     var out = [];
     galleryState.colorUrlById = Object.create(null);
+    function imageKey(u) {
+      /* The API appends ?v=… when an image is replaced. That cache-buster must
+         not turn the same gallery image into two thumbnails. */
+      return String(u || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .toLowerCase();
+    }
     function push(u) {
+      var key = imageKey(u);
       var abs = resolveCatalogImg(u);
-      if (!abs || seen[abs]) return;
-      seen[abs] = 1;
+      if (!abs || !key || seen[key]) return;
+      seen[key] = 1;
       out.push(abs);
     }
+    /* Always lead with the vendor's cover. This also makes the PDP's initial
+       image agree with cart and checkout. */
+    push(D.getProductCoverImage ? D.getProductCoverImage(p) : p.image);
     if (opt && opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
@@ -363,9 +395,7 @@
         push(u);
       });
     }
-    if (opt && opt.heroImage) {
-      push(opt.heroImage);
-    }
+    if (opt && opt.heroImage) push(opt.heroImage);
     push(p.image);
     extra.forEach(function (x) {
       push(x);
@@ -700,18 +730,8 @@
 
   function cartLineImage() {
     if (!product) return "";
-    var opt = vendorPdpOptions(product);
-    if (selectedColorId && opt && opt.colors) {
-      for (var i = 0; i < opt.colors.length; i++) {
-        if (String(opt.colors[i].id) === String(selectedColorId)) {
-          var u = String(opt.colors[i].image || "").trim();
-          if (u) return resolveCatalogImg(u);
-        }
-      }
-    }
-    var ix = galleryState.idx;
-    if (galleryState.urls && galleryState.urls[ix]) return galleryState.urls[ix];
-    return resolveCatalogImg(product.image);
+    var cover = D.getProductCoverImage ? D.getProductCoverImage(product) : product.image;
+    return resolveCatalogImg(cover || (galleryState.urls && galleryState.urls[0]) || "");
   }
 
   function cartVariantLabel() {
@@ -1011,6 +1031,7 @@
     if (productUsesVendorVariantPdp(product) && window.RESIN_CATALOG_PDP && window.RESIN_CATALOG_PDP.mount) {
       try {
         window.RESIN_CATALOG_PDP.mount(product);
+        syncStaleCatalogNotice();
       } catch (er) {
         void er;
       }
@@ -1260,6 +1281,7 @@
 
     bindProductImageZoom();
     mountClassicPdpEnhancements();
+    syncStaleCatalogNotice();
     if (els.root) els.root.setAttribute("data-pdp-ready", "1");
   }
 

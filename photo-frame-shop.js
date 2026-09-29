@@ -3,6 +3,7 @@
 
   var M = window.CraftguruCatalogMerge;
   var D = window.RESIN_DATA;
+  var PHOTO_FRAME_CACHE_KEY = "cg_photo_frame_catalog_v1";
 
   function apiBase() {
     return M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
@@ -28,6 +29,17 @@
     return base ? base + path : path;
   }
 
+  function readCachedMaterials() {
+    try { var x = JSON.parse(localStorage.getItem(PHOTO_FRAME_CACHE_KEY) || "null"); return x && Array.isArray(x.materials) ? x : null; } catch (_) { return null; }
+  }
+  function saveCachedMaterials(materials) { try { localStorage.setItem(PHOTO_FRAME_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), materials: materials || [] })); } catch (_) {} }
+  function renderStaleNotice(cache) {
+    var old = document.querySelector(".cg-catalog-stale-note"); if (old) old.remove(); if (!cache) return;
+    var grid = document.getElementById("rmGrid"); if (!grid || !grid.parentNode) return;
+    var note = document.createElement("p"); note.className = "cg-catalog-stale-note"; note.setAttribute("role", "status"); note.textContent = "Showing the last available catalogue while we reconnect. Prices and stock will refresh automatically.";
+    grid.parentNode.insertBefore(note, grid);
+  }
+
   function esc(s) {
     var el = document.createElement("div");
     el.textContent = s;
@@ -41,6 +53,11 @@
   function imgSrc(rel) {
     if (!rel) return "";
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
+  }
+
+  function productImageSources(product) {
+    var images = D && D.getProductImageCandidates ? D.getProductImageCandidates(product) : [product && product.image];
+    return images.map(imgSrc).filter(Boolean);
   }
 
   function hubCategoryPreview(c, mats) {
@@ -749,7 +766,8 @@
     }
     rows.forEach(function (m, i) {
       var href = "photo-frame-product.html?id=" + encodeURIComponent(m.id);
-      var img = m.image ? imgSrc(m.image) : "";
+      var productImages = productImageSources(m);
+      var img = productImages[0] || "";
       var meta = minOfferMeta(m);
       var effMrp = effectiveMrpInr(m, meta.sel);
       var showFrom = !!(m.options && (m.options.useSize || m.options.useQty));
@@ -781,6 +799,7 @@
           discountHtml: discountBlock,
           minPrice: meta.min > 0 ? String(meta.min) : "",
           imgSrc: img,
+          imgFallbacks: productImages.slice(1),
           imgFit: D && D.getProductCoverImageFit ? D.getProductCoverImageFit(m) : "",
           rating: m.ratingScore,
           reviewCount: m.reviewCount,
@@ -939,19 +958,20 @@
           })
           .then(function (j) {
             if (!j || !j.ok) {
-              catalogLoadFailed = true;
-              applyMaterials(doc, []);
-              try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
-              return;
+              throw new Error("Catalog unavailable");
             }
             catalogLoadFailed = false;
             applyMaterials(doc, j.materials || []);
+            saveCachedMaterials(j.materials || []);
+            renderStaleNotice(null);
             try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadRecovered")); } catch (_) {}
           });
       })
       .catch(function () {
-        catalogLoadFailed = true;
-        applyMaterials(null, []);
+        var cached = readCachedMaterials();
+        catalogLoadFailed = !cached;
+        applyMaterials(null, cached ? cached.materials : []);
+        renderStaleNotice(cached);
         try { window.dispatchEvent(new CustomEvent("craftguruCatalogLoadFailed")); } catch (_) {}
       });
   }
