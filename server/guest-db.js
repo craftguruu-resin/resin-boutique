@@ -282,6 +282,44 @@ function listGuestAddressesByGuestId(guestId, cb) {
     .catch(cb);
 }
 
+/** Update one saved address owned by the guest. Returns the updated row or null. */
+function updateGuestAddress(guestId, addressId, guest, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () { cb(new Error("Database not configured")); });
+  }
+  var a = normalizedAddressFields(guest || {});
+  pool.query(
+    "UPDATE guest_addresses SET addr_line1 = $1, addr_line2 = $2, city = $3, state = $4, zip = $5, country = $6, address_type = $7 " +
+      "WHERE id = $8 AND guest_id = $9 " +
+      "RETURNING id, addr_line1 AS \"addrLine1\", addr_line2 AS \"addrLine2\", city, state, zip, country, COALESCE(address_type, '') AS \"addressType\", created_at AS \"createdAt\"",
+    [a.line1, a.line2, a.city, a.state, a.zip, a.country, a.addressType, Number(addressId), Number(guestId)]
+  ).then(function (r) {
+    cb(null, r.rows && r.rows[0] ? r.rows[0] : null);
+  }).catch(cb);
+}
+
+/** Delete one saved address owned by the guest. */
+function deleteGuestAddress(guestId, addressId, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () { cb(new Error("Database not configured")); });
+  }
+  pool.query("DELETE FROM guest_addresses WHERE id = $1 AND guest_id = $2 RETURNING id", [Number(addressId), Number(guestId)])
+    .then(function (r) { cb(null, !!(r.rows && r.rows.length)); })
+    .catch(cb);
+}
+
+/** Update the customer-facing display name while keeping email/phone identity immutable. */
+function updateGuestDisplayName(guestId, displayName, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) return process.nextTick(function () { cb(new Error("Database not configured")); });
+  var name = String(displayName || "").trim().slice(0, 200);
+  if (!name) return process.nextTick(function () { cb(new Error("Name is required")); });
+  pool.query("UPDATE guest_customers SET display_name = $1, updated_at = now() WHERE id = $2 RETURNING id, display_name AS \"displayName\", email", [name, Number(guestId)])
+    .then(function (r) { cb(null, r.rows && r.rows[0] ? r.rows[0] : null); }).catch(cb);
+}
+
 module.exports = {
   upsertGuestAndAddress,
   upsertGuestCore,
@@ -290,4 +328,7 @@ module.exports = {
   phoneNormKey,
   saveGuestAddressOnly,
   listGuestAddressesByGuestId: listGuestAddressesByGuestId,
+  updateGuestAddress: updateGuestAddress,
+  deleteGuestAddress: deleteGuestAddress,
+  updateGuestDisplayName: updateGuestDisplayName,
 };

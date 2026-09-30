@@ -6,9 +6,18 @@
   var PLP = window.CraftguruProductListing;
   var grid = document.getElementById("wishlistGrid");
   var emptyEl = document.getElementById("wishlistEmpty");
+  var liveProducts = Object.create(null);
+  var liveProductsKey = "";
+  var liveProductsPending = false;
 
   function imgUrl(rel) {
     return D && D.imageUrl ? D.imageUrl(rel) : rel;
+  }
+
+  function esc(s) {
+    var el = document.createElement("div");
+    el.textContent = s == null ? "" : String(s);
+    return el.innerHTML;
   }
 
   function productHref(id, kind) {
@@ -19,17 +28,53 @@
   }
 
   function resolveCatalogProduct(id) {
-    if (!D || typeof D.getProduct !== "function") return null;
-    return D.getProduct(id);
+    var staticProduct = D && typeof D.getProduct === "function" ? D.getProduct(id) : null;
+    return liveProducts[String(id || "")] || staticProduct || null;
   }
 
   function priceLabelForProduct(p) {
-    if (!p || !D || typeof D.formatStartingFromPrice !== "function") return "";
+    if (!p) return "";
     var fmt = CART && CART.formatMoney ? CART.formatMoney : null;
+    if (p.startingPrice != null && fmt) return "From " + fmt(p.startingPrice);
+    if (!D || typeof D.formatStartingFromPrice !== "function") return "";
     return D.formatStartingFromPrice(p, fmt);
   }
 
-  function paint() {
+  function apiBase() {
+    try {
+      var merge = window.CraftguruCatalogMerge;
+      if (merge && typeof merge.getApiBase === "function") return String(merge.getApiBase() || "").replace(/\/+$/, "");
+    } catch (_) {}
+    try { return String(window.location.origin || "").replace(/\/+$/, ""); } catch (_) { return ""; }
+  }
+
+  function refreshLiveProducts(items) {
+    var ids = (items || []).map(function (row) { return String((row && row.productId) || "").trim(); }).filter(Boolean).sort();
+    var key = ids.join("|");
+    var base = apiBase();
+    if (!key || !base || liveProductsPending || key === liveProductsKey) return;
+    liveProductsPending = true;
+    fetch(base + "/api/catalog/resolve-products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ productIds: ids }),
+    })
+      .then(function (res) { return res.json().then(function (body) { return { okHttp: res.ok, body: body || {} }; }); })
+      .then(function (result) {
+        if (!result.okHttp || !result.body.ok) return;
+        liveProducts = Object.create(null);
+        (result.body.products || []).forEach(function (product) {
+          if (product && product.id) liveProducts[String(product.id)] = product;
+        });
+        liveProductsKey = key;
+        paint(true);
+      })
+      .catch(function () {})
+      .then(function () { liveProductsPending = false; });
+  }
+
+  function paint(skipRefresh) {
     if (!grid) return;
     var WL = window.RESIN_WISHLIST;
     var items = WL && WL.load ? WL.load() : [];
@@ -39,6 +84,7 @@
       return;
     }
     if (emptyEl) emptyEl.setAttribute("hidden", "hidden");
+    if (!skipRefresh) refreshLiveProducts(items);
 
     items.forEach(function (row, i) {
       var id = String((row && row.productId) || "").trim();
@@ -46,7 +92,7 @@
       var kind = String((row && row.kind) || "catalog").toLowerCase();
       var p = resolveCatalogProduct(id);
       var name = p && p.name ? p.name : id;
-      var productImages = p && D && D.getProductImageCandidates ? D.getProductImageCandidates(p) : [p && p.image];
+      var productImages = p && D && D.getProductImageCandidates && !p.startingPrice ? D.getProductImageCandidates(p) : [p && p.image];
       var href = productHref(id, kind);
       var priceLabel = p ? priceLabelForProduct(p) : "";
       var cardFit = p && D.getProductCoverImageFit ? D.getProductCoverImageFit(p) : "";
@@ -83,7 +129,7 @@
         '<a class="plp-card__hit" href="' +
         href +
         '"></a><div class="plp-card__body"><h3 class="plp-card__name">' +
-        name +
+        esc(name) +
         "</h3>" +
         (priceLabel ? "<p class='plp-card__price'>" + priceLabel + "</p>" : "<p class='plp-card__availability' role='status'>This item is no longer available.</p>") +
         "</div>";

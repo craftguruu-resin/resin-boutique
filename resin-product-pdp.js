@@ -32,7 +32,7 @@
     return el.innerHTML;
   }
   function escAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
   function imgSrc(rel) {
     if (!rel) return "";
@@ -126,21 +126,30 @@
     var opt = m.options || {};
     var entries = [];
     var colorUrls = Object.create(null);
+    var seen = Object.create(null);
+    function mediaKey(url) {
+      return String(url || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
+        .toLowerCase();
+    }
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
-        if (!u) return;
+        var key = mediaKey(u);
+        if (!key || seen[key]) return;
+        seen[key] = 1;
         entries.push({ url: u, kind: "color", cid: String(c.id || "") });
-        colorUrls[u] = 1;
+        colorUrls[key] = 1;
       });
     }
-    var seenExtra = Object.create(null);
     function pushExtra(url, meta) {
       url = String(url || "").trim();
-      if (!url) return;
-      if (colorUrls[url]) return;
-      if (seenExtra[url]) return;
-      seenExtra[url] = 1;
+      var key = mediaKey(url);
+      if (!key || colorUrls[key] || seen[key]) return;
+      seen[key] = 1;
       entries.push({ url: url, kind: meta.kind, sid: meta.sid, qid: meta.qid });
     }
     if (opt.sizes && opt.sizes.length) {

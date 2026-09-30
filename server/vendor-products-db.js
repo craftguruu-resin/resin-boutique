@@ -1098,7 +1098,11 @@ function deleteProductPermanently(productId, cb) {
             return client.query("DELETE FROM catalog_price_overrides WHERE product_id = $1", [id]);
           })
           .then(function () {
-            return client.query("UPDATE vendor_inventory_items SET product_id = '' WHERE product_id = $1", [id]);
+            // Product-linked inventory has no meaningful standalone identity once
+            // its catalogue product is removed. Delete it (and its movement
+            // history cascades) rather than leaving a misleading unlinked,
+            // low-stock row in the inventory queue.
+            return client.query("DELETE FROM vendor_inventory_items WHERE product_id = $1", [id]);
           })
           .then(function () {
             return client.query("DELETE FROM products WHERE id = $1", [id]);

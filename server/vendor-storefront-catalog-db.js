@@ -155,6 +155,7 @@ function mapMaterialToCatalogItem(m, kind, omap) {
       productKind: kind,
       sku: m.sku || "",
       isActive: m.isActive !== false,
+      outOfStock: ov.outOfStock === true,
     },
     productOptionsFromSources(m, ov)
   );
@@ -203,6 +204,7 @@ function mapResinCatalogItem(p, omap, aggMap, skuMap) {
       returnGift: isCorp,
       sku: (skuMap && skuMap[p.id]) || "",
       isActive: ov.listed !== false,
+      outOfStock: ov.outOfStock === true,
     },
     ov.options || {}
   );
@@ -330,17 +332,26 @@ function listStorefrontCatalog(opts, cb) {
       });
       vendorProductsDb.listExtraProductsForStorefront(function (eV, extras) {
         if (eV) return cb(eV);
-        var resinList;
-        try {
-          resinList = buildResinCatalogList(omap, supSet, extras);
-        } catch (e3) {
-          return cb(e3);
+        var resinList = [];
+        if (!scope || scope === "resin") {
+          try {
+            resinList = buildResinCatalogList(omap, supSet, extras);
+          } catch (e3) {
+            return cb(e3);
+          }
         }
 
-        rawMaterialsDb.listAll("", function (eRm, rmRows) {
-          if (eRm) return cb(eRm);
-          photoFramesDb.listAll("", function (ePf, pfRows) {
-            if (ePf) return cb(ePf);
+        /* Inventory tabs are mutually exclusive. Avoid loading and mapping
+           the other catalogues before painting the selected tab. */
+        var needResin = !scope || scope === "resin";
+        var needRaw = !scope || scope === "raw";
+        var needPhoto = !scope || scope === "photo";
+        var sourcePending = (needRaw ? 1 : 0) + (needPhoto ? 1 : 0);
+        var sourceFailed = false;
+        var rmRows = [];
+        var pfRows = [];
+        function afterSources() {
+          if (sourceFailed || sourcePending > 0) return;
 
             function finishUnified(allItems) {
               if (activeOnly) {
@@ -392,6 +403,8 @@ function listStorefrontCatalog(opts, cb) {
                       total: total,
                       offset: off,
                       limit: lim,
+                      hasMore: off + slice.length < total,
+                      nextOffset: off + slice.length,
                       items: slice,
                     });
                   });
@@ -399,16 +412,16 @@ function listStorefrontCatalog(opts, cb) {
               });
             }
 
-            var resinItems = resinList.map(function (p) {
+            var resinItems = needResin ? resinList.map(function (p) {
               var ov = omap[p.id] || {};
               return mapResinCatalogItem(p, omap, {}, {});
-            });
-            var rmItems = (rmRows || []).map(function (m) {
+            }) : [];
+            var rmItems = needRaw ? (rmRows || []).map(function (m) {
               return mapMaterialToCatalogItem(m, "raw_material", omap);
-            });
-            var pfItems = (pfRows || []).map(function (m) {
+            }) : [];
+            var pfItems = needPhoto ? (pfRows || []).map(function (m) {
               return mapMaterialToCatalogItem(m, "photo_frame", omap);
-            });
+            }) : [];
             var merged = resinItems.concat(rmItems, pfItems);
             merged.sort(function (a, b) {
               return String(a.name || "").localeCompare(String(b.name || ""), undefined, { sensitivity: "base" });
@@ -418,9 +431,9 @@ function listStorefrontCatalog(opts, cb) {
               return finishUnified(merged);
             }
 
-            var resinIds = resinList.map(function (p) {
+            var resinIds = needResin ? resinList.map(function (p) {
               return p.id;
-            });
+            }) : [];
             vendorExtrasDb.searchProductIdsBySku(q, function (eSku2, skuIds) {
               if (eSku2) return cb(eSku2);
               var seen = Object.create(null);
@@ -443,8 +456,36 @@ function listStorefrontCatalog(opts, cb) {
               });
               finishUnified(filtered);
             });
+          }
+        if (needRaw) {
+          rawMaterialsDb.listAll("", function (eRm, rows) {
+            if (eRm) {
+              if (!sourceFailed) {
+                sourceFailed = true;
+                cb(eRm);
+              }
+              return;
+            }
+            rmRows = rows || [];
+            sourcePending -= 1;
+            afterSources();
           });
-        });
+        }
+        if (needPhoto) {
+          photoFramesDb.listAll("", function (ePf, rows) {
+            if (ePf) {
+              if (!sourceFailed) {
+                sourceFailed = true;
+                cb(ePf);
+              }
+              return;
+            }
+            pfRows = rows || [];
+            sourcePending -= 1;
+            afterSources();
+          });
+        }
+        afterSources();
       });
     });
   });
@@ -579,6 +620,7 @@ function saveStorefrontCatalogPrices(productId, body, cb) {
       stockS: body.stockS !== undefined ? body.stockS : body.stock_s !== undefined ? body.stock_s : undefined,
       stockM: body.stockM !== undefined ? body.stockM : body.stock_m !== undefined ? body.stock_m : undefined,
       stockL: body.stockL !== undefined ? body.stockL : body.stock_l !== undefined ? body.stock_l : undefined,
+      outOfStock: body.outOfStock !== undefined ? !!body.outOfStock : body.out_of_stock !== undefined ? !!body.out_of_stock : undefined,
       listed: body.listed !== undefined ? !!body.listed : undefined,
       returnGift:
         body.returnGift !== undefined
@@ -763,6 +805,7 @@ function getStorefrontCatalogProduct(productId, cb) {
           productKind: kind,
           sku: m.sku || "",
           isActive: item.isActive !== false,
+          outOfStock: item.outOfStock === true,
           options: variantInventory.ensureVendorInventory(opt),
           effectivePrices: item.effectivePrices,
           effectiveCosts: item.effectiveCosts,
@@ -806,6 +849,7 @@ function getStorefrontCatalogProduct(productId, cb) {
             productKind: "catalog",
             sku: (skuMap && skuMap[productId]) || "",
             isActive: item.isActive !== false,
+            outOfStock: item.outOfStock === true,
             returnGift: item.returnGift,
             options: opt,
             effectivePrices: item.effectivePrices,

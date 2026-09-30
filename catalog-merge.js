@@ -111,8 +111,14 @@
      during a short catalog outage. */
   var DURABLE_CACHE_PREFIX = "__cgDurableCatalog:";
   var CACHE_TTL_MS = 5 * 60 * 1000;
-  var DURABLE_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+  /* A stale fallback keeps downtime browsable, but must not masquerade as a
+     * two-week-old live catalogue after a vendor unpublishes an item. */
+  var DURABLE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
   var VISIBILITY_REFRESH_MIN_MS = 2 * 60 * 1000;
+  /* Bump whenever the bootstrap payload shape/visibility semantics change.
+     Old session/localStorage entries are ignored instead of rehydrating a
+     catalog that was produced by an incompatible storefront contract. */
+  var CATALOG_CACHE_VERSION = 2;
   var CATALOG_CHANGE_KEY = "craftguruCatalogChangedAt";
   var usingStaleCatalog = false;
   var staleCatalogAt = 0;
@@ -144,18 +150,21 @@
   }
 
   function writeCatalogJson(key, value) {
-    writeSessionJson(key, value);
+    var stored = value && typeof value === "object"
+      ? Object.assign({}, value, { cacheVersion: CATALOG_CACHE_VERSION })
+      : value;
+    writeSessionJson(key, stored);
     try {
-      localStorage.setItem(DURABLE_CACHE_PREFIX + key, JSON.stringify(value));
+      localStorage.setItem(DURABLE_CACHE_PREFIX + key, JSON.stringify(stored));
     } catch (_) {}
   }
 
   function cacheFresh(entry) {
-    return entry && entry.ts && Date.now() - entry.ts < CACHE_TTL_MS;
+    return entry && entry.cacheVersion === CATALOG_CACHE_VERSION && entry.ts && Date.now() - entry.ts < CACHE_TTL_MS;
   }
 
   function cacheDurable(entry) {
-    return entry && entry.ts && Date.now() - entry.ts < DURABLE_CACHE_TTL_MS;
+    return entry && entry.cacheVersion === CATALOG_CACHE_VERSION && entry.ts && Date.now() - entry.ts < DURABLE_CACHE_TTL_MS;
   }
 
   function bestCatalogCache(key) {
@@ -261,7 +270,7 @@
     var controller = window.AbortController ? new AbortController() : null;
     var timer = window.setTimeout(function () {
       if (controller) controller.abort();
-    }, 4000);
+    }, 8000);
     /* Session storage above is the deliberate short-lived catalog cache.
        Do not let the browser's HTTP cache override it: a category page can
        otherwise receive an older /storefront-bootstrap response for up to a

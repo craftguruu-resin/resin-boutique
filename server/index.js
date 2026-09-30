@@ -195,9 +195,20 @@ function verifyRazorpayOrderAmount(rz, orderId, expectedPaise) {
 var rateBucket = {};
 var RATE_WINDOW_MS = 60 * 60 * 1000;
 var RATE_MAX = 40;
+var lastRateBucketCleanupAt = 0;
 
 function rateOk(ip) {
   var now = Date.now();
+  /* This lightweight limiter is intentionally only a local backstop; prevent
+     unbounded IP keys on a long-lived instance until a shared limiter is
+     configured at the edge. */
+  if (now - lastRateBucketCleanupAt > RATE_WINDOW_MS) {
+    lastRateBucketCleanupAt = now;
+    Object.keys(rateBucket).forEach(function (key) {
+      var entry = rateBucket[key];
+      if (!entry || now - Number(entry.start || 0) > RATE_WINDOW_MS) delete rateBucket[key];
+    });
+  }
   var b = rateBucket[ip];
   if (!b || now - b.start > RATE_WINDOW_MS) {
     rateBucket[ip] = { start: now, n: 1 };
@@ -312,9 +323,13 @@ function finishCheckoutOrder(req, res, opts) {
     },
     function (err, orderRecord) {
       if (err) {
+        var checkoutMsg = String((err && err.message) || err || "Could not create order");
+        if (checkoutMsg.toLowerCase().indexOf("coupon") >= 0) {
+          return res.status(409).json({ ok: false, code: "COUPON_UNAVAILABLE", error: checkoutMsg });
+        }
         return res.status(500).json({
           ok: false,
-          error: String((err && err.message) || err || "Could not create order"),
+          error: checkoutMsg,
         });
       }
       var payload = Object.assign(
@@ -467,6 +482,19 @@ function checkoutSelectionFromKey(raw) {
   return out;
 }
 
+function checkoutAvailableStock(product, raw) {
+  var options = product && product.options && typeof product.options === "object" ? product.options : {};
+  var key = String(raw && raw.sizeKey || "").trim();
+  var variants = options.vendorInventory && options.vendorInventory.variants;
+  var variant = variants && typeof variants === "object" ? variants[key] : null;
+  var variantStock = variant && Number(variant.stock);
+  if (Number.isFinite(variantStock) && variantStock >= 0) return Math.floor(variantStock);
+  var slot = String(raw && raw.stockSlot || "m").trim().toLowerCase();
+  if (slot !== "s" && slot !== "m" && slot !== "l") slot = "m";
+  var stock = product && product.effectiveStock && Number(product.effectiveStock[slot]);
+  return Number.isFinite(stock) && stock >= 0 ? Math.floor(stock) : null;
+}
+
 /**
  * Payment and order totals must be based on the persisted catalog, never a
  * unit price supplied by a browser cart. This also replaces stale product
@@ -484,7 +512,7 @@ function resolveAuthoritativeCheckoutItems(rawItems, cb) {
     var productId = String(raw && raw.productId != null ? raw.productId : "").trim();
     if (!productId) return cb(new Error("A cart item is missing its product reference."));
     vendorStorefrontCatalogDb.getStorefrontCatalogProduct(productId, function (err, product) {
-      if (err || !product || product.isActive === false) {
+      if (err || !product || product.isActive === false || product.outOfStock === true) {
         return cb(new Error("One of the items in your cart is no longer available. Refresh the catalog and try again."));
       }
       var opt = product.options && typeof product.options === "object" ? product.options : {};
@@ -523,7 +551,93 @@ function resolveAuthoritativeCheckoutItems(rawItems, cb) {
       safe.image = String(product.image || safe.image).slice(0, 500);
       safe.sku = String(product.sku || safe.sku).slice(0, 120);
       safe.unitPrice = roundOrderMoney(price);
+      var cost = product.effectiveCosts && Number(product.effectiveCosts[slot]);
+      if (!Number.isFinite(cost)) cost = product.effectiveCosts && Number(product.effectiveCosts.m);
+      safe.unitCostSnapshot = Number.isFinite(cost) && cost >= 0 ? roundOrderMoney(cost) : null;
+      safe.stockMax = checkoutAvailableStock(product, raw);
       out.push(safe);
+      next();
+    });
+  }
+  next();
+}
+
+/* Public cart and wishlist views need the same product identity as checkout.
+ * Keep this deliberately small: prices, names and media are customer-facing,
+ * while costs, supplier data and other vendor fields never leave the server. */
+function publicStorefrontProduct(product) {
+  product = product || {};
+  var prices = product.effectivePrices && typeof product.effectivePrices === "object" ? product.effectivePrices : {};
+  var starting = Object.keys(prices)
+    .map(function (key) { return Number(prices[key]); })
+    .filter(function (value) { return Number.isFinite(value) && value >= 0; })
+    .sort(function (a, b) { return a - b; })[0];
+  return {
+    id: String(product.id || ""),
+    name: String(product.name || ""),
+    image: String(product.image || ""),
+    productKind: String(product.productKind || "catalog"),
+    startingPrice: Number.isFinite(starting) ? starting : 0,
+  };
+}
+
+function resolvePublicStorefrontProducts(ids, cb) {
+  var source = Array.isArray(ids) ? ids : [];
+  var seen = Object.create(null);
+  var clean = source
+    .map(function (id) { return String(id == null ? "" : id).trim().slice(0, 220); })
+    .filter(function (id) {
+      if (!id || seen[id]) return false;
+      seen[id] = true;
+      return true;
+    })
+    .slice(0, 100);
+  var out = [];
+  var lookupErrors = 0;
+  var i = 0;
+  function next() {
+    if (i >= clean.length) return cb(null, out, lookupErrors > 0);
+    var id = clean[i++];
+    vendorStorefrontCatalogDb.getStorefrontCatalogProduct(id, function (err, product) {
+      if (err) lookupErrors += 1;
+      if (!err && product && product.isActive !== false) out.push(publicStorefrontProduct(product));
+      next();
+    });
+  }
+  next();
+}
+
+/* Resolve each cart row independently. A removed listing can be removed from
+ * the browser cart without discarding another valid line or an option a
+ * customer may need to choose again. */
+function reconcileCartItems(rawItems, cb) {
+  var source = Array.isArray(rawItems) ? rawItems : [];
+  var items = [];
+  var issues = [];
+  var i = 0;
+  function next() {
+    if (i >= source.length) return cb(null, { items: items, issues: issues });
+    var raw = source[i++];
+    resolveAuthoritativeCheckoutItems([raw], function (err, resolved) {
+      if (err || !resolved || !resolved[0]) {
+        var message = String((err && err.message) || err || "Cart item could not be refreshed.");
+        issues.push({
+          productId: String((raw && raw.productId) || ""),
+          sizeKey: String((raw && raw.sizeKey) || ""),
+          unavailable: /no longer available/i.test(message),
+          message: message,
+        });
+      } else {
+        var row = resolved[0];
+        items.push({
+          productId: row.productId,
+          sizeKey: row.sizeKey,
+          name: row.name,
+          image: row.image,
+          unitPrice: row.unitPrice,
+          stockMax: row.stockMax,
+        });
+      }
       next();
     });
   }
@@ -916,12 +1030,48 @@ function normalizeGuestParcel(g) {
 
 var app = express();
 httpHardening.applyHttpHardening(app);
-app.use(express.json({ limit: "400kb" }));
 
 app.use("/api", function (_req, res, next) {
+  var requestId = require("crypto").randomBytes(8).toString("hex");
+  res.locals.requestId = requestId;
+  res.setHeader("X-Request-Id", requestId);
   res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
   res.setHeader("Pragma", "no-cache");
+  var sendJson = res.json.bind(res);
+  res.json = function (body) {
+    if (body && typeof body === "object" && body.ok === false && body.requestId == null) {
+      body = Object.assign({ requestId: requestId, code: "API_ERROR" }, body);
+    } else if (body && typeof body === "object" && body.ok === false && body.code == null) {
+      body = Object.assign({ code: "API_ERROR" }, body);
+    }
+    return sendJson(body);
+  };
+  /* Shared response helper keeps newly added endpoints consistent while the
+     legacy handlers continue to expose their existing `error` field. */
+  res.apiError = function (status, code, message, extra) {
+    var body = Object.assign({ ok: false, code: code || "API_ERROR", error: message || "Request failed", requestId: requestId }, extra || {});
+    return res.status(status || 500).json(body);
+  };
   next();
+});
+
+/* Parse bodies after the API request boundary so malformed JSON also receives
+   the same request id and JSON error envelope as every other API failure. */
+app.use(express.json({ limit: "400kb" }));
+
+/** Explicit session revocation prevents a copied browser token remaining usable after sign out. */
+app.post("/api/vendor/logout", function (req, res) {
+  vendorAuth.logoutToken(vendorAuth.vendorAuthToken(req), function (err) {
+    if (err) return res.status(500).json({ ok: false, code: "LOGOUT_FAILED", error: "Could not end the vendor session." });
+    res.json({ ok: true });
+  });
+});
+
+app.post("/api/guest/logout", function (req, res) {
+  guestSessions.revokeGuestToken(readGuestBearer(req), function (err) {
+    if (err) return res.status(500).json({ ok: false, code: "LOGOUT_FAILED", error: "Could not end the customer session." });
+    res.json({ ok: true });
+  });
 });
 
 /** CORS: "*" is wide open. Otherwise merge env list with common Live Server / Vite ports on loopback (fixes vendor login from browser when .env only lists :5500 but Live Server uses :5501, etc.). */
@@ -1011,6 +1161,15 @@ app.get("/health", function (_req, res) {
 app.get("/api/health", function (_req, res) {
   var hasToken = Boolean(TOKEN && PHONE_NUMBER_ID);
   poolMod.ping(function (err, dbOk) {
+    /* Public callers only need a readiness result in production. Provider
+       configuration and database diagnostics remain available in development
+       without disclosing deployment posture on the live storefront. */
+    if (productionDatabaseRequired()) {
+      return res.status(dbOk || !poolMod.isEnabled() ? 200 : 503).json({
+        ok: Boolean(dbOk || !poolMod.isEnabled()),
+        status: dbOk || !poolMod.isEnabled() ? "ok" : "degraded",
+      });
+    }
     res.json({
       ok: true,
       status: "ok",
@@ -1261,7 +1420,7 @@ app.post("/api/razorpay-order", function (req, res) {
   if (!rz) {
     return res.status(503).json({
       ok: false,
-      error: "Razorpay is not configured. Set RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET in server .env",
+      error: "Online payments are temporarily unavailable. Please try again later or contact Craftguru.",
     });
   }
 
@@ -1310,7 +1469,7 @@ app.post("/api/razorpay-verify", function (req, res) {
     return res.status(429).json({ ok: false, error: "Too many requests." });
   }
   if (!RAZORPAY_KEY_SECRET) {
-    return res.status(503).json({ ok: false, error: "Razorpay is not configured on the server." });
+    return res.status(503).json({ ok: false, error: "Online payments are temporarily unavailable. Please try again later or contact Craftguru." });
   }
 
   var b = req.body || {};
@@ -1363,7 +1522,7 @@ app.post("/api/cod-advance-order", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
   if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
   var rz = getRazorpayClient();
-  if (!rz) return res.status(503).json({ ok: false, error: "Razorpay is not configured." });
+  if (!rz) return res.status(503).json({ ok: false, error: "Online payments are temporarily unavailable. Please try again later or contact Craftguru." });
 
   var b = req.body || {};
   var itemsErr = validateItems(b.items);
@@ -1407,7 +1566,7 @@ app.post("/api/cod-advance-order", function (req, res) {
 app.post("/api/cod-advance-verify", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
   if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
-  if (!RAZORPAY_KEY_SECRET) return res.status(503).json({ ok: false, error: "Razorpay is not configured on the server." });
+  if (!RAZORPAY_KEY_SECRET) return res.status(503).json({ ok: false, error: "Online payments are temporarily unavailable. Please try again later or contact Craftguru." });
 
   var b = req.body || {};
   if (!verifyRazorpaySignature(b.razorpay_order_id, b.razorpay_payment_id, b.razorpay_signature)) {
@@ -1852,6 +2011,80 @@ app.get("/api/guest/me", function (req, res) {
   });
 });
 
+function normalizeSavedAddressInput(body) {
+  var a = (body && body.address) || body || {};
+  return {
+    addrLine1: String(a.addrLine1 || "").trim().slice(0, 300),
+    addrLine2: String(a.addrLine2 || "").trim().slice(0, 200),
+    city: String(a.city || "").trim().slice(0, 120),
+    state: String(a.state || "").trim().slice(0, 120),
+    zip: String(a.zip || "").trim().slice(0, 20),
+    country: String(a.country || "IN").trim().toUpperCase().slice(0, 80),
+    addressType: String(a.addressType || "").trim().toLowerCase().slice(0, 24),
+  };
+}
+
+function validateSavedAddressInput(a) {
+  if (!a || !a.addrLine1) return "Enter a street address.";
+  if (!a.city) return "Enter a city.";
+  if (!a.state) return "Enter a state.";
+  if (!a.zip) return "Enter a postal code.";
+  if (a.country !== "IN") return "We currently deliver within India only.";
+  if (a.addressType && ["home", "work", "other"].indexOf(a.addressType) < 0) return "Choose a valid address type.";
+  return null;
+}
+
+/** Update a saved address without allowing cross-account access. */
+app.patch("/api/guest/addresses/:id", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) return res.status(500).json({ ok: false, code: "ADDRESS_UPDATE_FAILED", error: "Could not verify your session." });
+    if (!row) return res.status(401).json({ ok: false, code: "NO_SESSION", error: "Sign in required" });
+    var id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, code: "INVALID_ADDRESS", error: "Invalid address." });
+    var address = normalizeSavedAddressInput(req.body || {});
+    var validation = validateSavedAddressInput(address);
+    if (validation) return res.status(400).json({ ok: false, code: "INVALID_ADDRESS", error: validation });
+    guestDb.updateGuestAddress(row.guestId, id, address, function (e2, updated) {
+      if (e2) return res.status(500).json({ ok: false, code: "ADDRESS_UPDATE_FAILED", error: "Could not update address." });
+      if (!updated) return res.status(404).json({ ok: false, code: "ADDRESS_NOT_FOUND", error: "Address not found." });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, address: updated });
+    });
+  });
+});
+
+/** Delete a saved address without allowing cross-account access. */
+app.delete("/api/guest/addresses/:id", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) return res.status(500).json({ ok: false, code: "ADDRESS_DELETE_FAILED", error: "Could not verify your session." });
+    if (!row) return res.status(401).json({ ok: false, code: "NO_SESSION", error: "Sign in required" });
+    var id = Number(req.params.id);
+    if (!Number.isInteger(id) || id <= 0) return res.status(400).json({ ok: false, code: "INVALID_ADDRESS", error: "Invalid address." });
+    guestDb.deleteGuestAddress(row.guestId, id, function (e2, deleted) {
+      if (e2) return res.status(500).json({ ok: false, code: "ADDRESS_DELETE_FAILED", error: "Could not delete address." });
+      if (!deleted) return res.status(404).json({ ok: false, code: "ADDRESS_NOT_FOUND", error: "Address not found." });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, deletedId: id });
+    });
+  });
+});
+
+/** Update the signed-in guest's display name; account identity fields remain immutable. */
+app.patch("/api/guest/me", function (req, res) {
+  guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
+    if (err) return res.apiError ? res.apiError(500, "PROFILE_UPDATE_FAILED", "Could not verify your session.") : res.status(500).json({ ok: false, error: "Could not verify your session." });
+    if (!row) return res.status(401).json({ ok: false, code: "NO_SESSION", error: "Sign in required" });
+    var name = String((req.body && (req.body.displayName != null ? req.body.displayName : req.body.name)) || "").trim();
+    if (!name || name.length > 200) return res.status(400).json({ ok: false, code: "INVALID_NAME", error: "Enter a name up to 200 characters." });
+    guestDb.updateGuestDisplayName(row.guestId, name, function (e2, profile) {
+      if (e2) return res.apiError ? res.apiError(500, "PROFILE_UPDATE_FAILED", "Could not update your profile.") : res.status(500).json({ ok: false, error: "Could not update your profile." });
+      if (!profile) return res.status(404).json({ ok: false, code: "NO_SESSION", error: "Account not found" });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, displayName: profile.displayName || "" });
+    });
+  });
+});
+
 /** Wishlist for signed-in guest (catalog, raw material, photo frame product ids). */
 app.get("/api/guest/wishlist", function (req, res) {
   guestSessions.verifyGuestToken(readGuestBearer(req), function (err, row) {
@@ -1865,8 +2098,20 @@ app.get("/api/guest/wishlist", function (req, res) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
-      res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true, items: items || [] });
+      resolvePublicStorefrontProducts((items || []).map(function (item) { return item && item.productId; }), function (_lookupErr, visible, lookupFailed) {
+        var active = Object.create(null);
+        (visible || []).forEach(function (item) { active[String(item.id)] = item.productKind || "catalog"; });
+        /* Do not show an actionable saved item after its vendor listing was
+         * unpublished. Existing rows are retained so a temporarily-hidden
+         * product can be restored without losing the customer's preference. */
+        var filtered = (items || []).filter(function (item) {
+          return item && (lookupFailed || active[String(item.productId)]);
+        }).map(function (item) {
+          return Object.assign({}, item, { kind: active[String(item.productId)] || item.kind });
+        });
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, items: filtered });
+      });
     });
   });
 });
@@ -1885,12 +2130,18 @@ app.post("/api/guest/wishlist/toggle", function (req, res) {
     if (!productId) {
       return res.status(400).json({ ok: false, error: "productId required" });
     }
-    guestWishlistDb.toggle(row.guestId, productId, kind, function (e2, out) {
-      if (e2) {
-        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+    vendorStorefrontCatalogDb.getStorefrontCatalogProduct(productId, function (lookupErr, product) {
+      if (lookupErr || !product || product.isActive === false) {
+        return res.status(409).json({ ok: false, code: "PRODUCT_UNAVAILABLE", error: "This product is no longer available to save." });
       }
-      res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true, on: !!(out && out.on), productId: productId, kind: kind });
+      var resolvedKind = String(product.productKind || kind || "catalog");
+      guestWishlistDb.toggle(row.guestId, productId, resolvedKind, function (e2, out) {
+        if (e2) {
+          return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, on: !!(out && out.on), productId: productId, kind: resolvedKind });
+      });
     });
   });
 });
@@ -1904,12 +2155,25 @@ app.post("/api/guest/wishlist/merge", function (req, res) {
       return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
     }
     var items = req.body && req.body.items;
-    guestWishlistDb.mergeItems(row.guestId, items, function (e2, merged) {
-      if (e2) {
-        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
-      }
-      res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true, items: merged || [] });
+    var requestedIds = (Array.isArray(items) ? items : []).map(function (item) {
+      return item && (item.productId || item.id);
+    });
+    resolvePublicStorefrontProducts(requestedIds, function (_lookupErr, activeProducts) {
+      var activeKinds = Object.create(null);
+      (activeProducts || []).forEach(function (product) { activeKinds[String(product.id)] = product.productKind || "catalog"; });
+      var valid = (Array.isArray(items) ? items : []).filter(function (item) {
+        return item && activeKinds[String(item.productId || item.id || "")];
+      }).map(function (item) {
+        var id = String(item.productId || item.id || "");
+        return { productId: id, kind: activeKinds[id] };
+      });
+      guestWishlistDb.mergeItems(row.guestId, valid, function (e2, merged) {
+        if (e2) {
+          return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+        }
+        res.setHeader("Cache-Control", "no-store");
+        res.json({ ok: true, items: merged || [] });
+      });
     });
   });
 });
@@ -1923,7 +2187,13 @@ app.get("/api/guest/orders", function (req, res) {
     if (!row) {
       return res.status(401).json({ ok: false, error: "Sign in required", code: "NO_SESSION" });
     }
-    ordersRepo.listOrdersByGuestId(row.guestId, function (e2, list) {
+    var orderLimit = Number(req.query && req.query.limit);
+    if (!Number.isFinite(orderLimit) || orderLimit < 1) orderLimit = 40;
+    orderLimit = Math.min(Math.floor(orderLimit), 80);
+    var orderOffset = Number(req.query && req.query.offset);
+    if (!Number.isFinite(orderOffset) || orderOffset < 0) orderOffset = 0;
+    orderOffset = Math.floor(orderOffset);
+    ordersRepo.listOrdersByGuestId(row.guestId, { limit: orderLimit, offset: orderOffset }, function (e2, list, page) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
@@ -1938,7 +2208,7 @@ app.get("/api/guest/orders", function (req, res) {
         }
         return out;
       });
-      res.json({ ok: true, orders: customerOrders });
+      res.json({ ok: true, orders: customerOrders, page: { limit: orderLimit, offset: orderOffset, hasMore: !!(page && page.hasMore), nextOffset: page && page.nextOffset != null ? page.nextOffset : orderOffset + customerOrders.length } });
     });
   });
 });
@@ -3106,6 +3376,31 @@ app.get("/api/vendor/audit", function (req, res) {
 /** In-memory + CDN-friendly cache for public catalog GET JSON (60s TTL). */
 app.use("/api/catalog", apiResponseCache.cachePublicJson());
 
+/** Resolve browser-held cart snapshots before rendering or checkout. */
+app.post("/api/catalog/cart-reconcile", function (req, res) {
+  var body = req.body || {};
+  var itemsErr = validateItems(body.items);
+  if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
+  reconcileCartItems(body.items, function (err, result) {
+    if (err) return res.status(500).json({ ok: false, error: "Could not refresh the cart catalogue." });
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, items: result.items, issues: result.issues });
+  });
+});
+
+/** Lightweight live data for wishlist cards, including raw materials and frames. */
+app.post("/api/catalog/resolve-products", function (req, res) {
+  var ids = req.body && req.body.productIds;
+  if (!Array.isArray(ids) || ids.length > 100) {
+    return res.status(400).json({ ok: false, error: "Provide up to 100 product ids." });
+  }
+  resolvePublicStorefrontProducts(ids, function (err, products) {
+    if (err) return res.status(500).json({ ok: false, error: "Could not refresh saved products." });
+    res.setHeader("Cache-Control", "no-store");
+    res.json({ ok: true, products: products });
+  });
+});
+
 /** Public: merged storefront prices (no auth). Cached briefly at CDN/browser. */
 app.get("/api/catalog/price-overrides", function (req, res) {
   vendorCatalogDb.listOverridesMap(function (e, map) {
@@ -3124,6 +3419,7 @@ app.get("/api/catalog/price-overrides", function (req, res) {
       if (x.stockS != null && Number.isFinite(Number(x.stockS))) o.stockS = Number(x.stockS);
       if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
+      o.outOfStock = x.outOfStock === true;
       o.returnGift = !!x.returnGift;
       /* Always send listed so the guest merge never confuses “missing key” with delisting. */
       o.listed = x.listed !== false;
@@ -3285,6 +3581,7 @@ app.get("/api/catalog/storefront-bootstrap", function (_req, res) {
       if (x.stockS != null && Number.isFinite(Number(x.stockS))) o.stockS = Number(x.stockS);
       if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
+      o.outOfStock = x.outOfStock === true;
       o.returnGift = !!x.returnGift;
       o.listed = x.listed !== false;
       if (x.name != null && String(x.name).trim()) o.name = String(x.name).trim().slice(0, 500);
@@ -4435,6 +4732,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
       stockS: b.stockS !== undefined ? b.stockS : b.stock_s !== undefined ? b.stock_s : undefined,
       stockM: b.stockM !== undefined ? b.stockM : b.stock_m !== undefined ? b.stock_m : undefined,
       stockL: b.stockL !== undefined ? b.stockL : b.stock_l !== undefined ? b.stock_l : undefined,
+      outOfStock: b.outOfStock !== undefined ? !!b.outOfStock : b.out_of_stock !== undefined ? !!b.out_of_stock : undefined,
       listed: b.listed !== undefined ? !!b.listed : undefined,
       returnGift: b.returnGift !== undefined ? !!b.returnGift : b.return_gift !== undefined ? !!b.return_gift : undefined,
       sizeLabelS: b.sizeLabelS !== undefined ? b.sizeLabelS : b.size_label_s !== undefined ? b.size_label_s : undefined,
@@ -4817,6 +5115,17 @@ function onServerListen() {
     }
   }
 }
+
+/* Last-resort JSON boundary for API failures. Route handlers still own their
+   validation/status decisions, but an unexpected throw must never leak an
+   HTML stack page to the storefront fetch clients. */
+app.use("/api", function (err, req, res, _next) {
+  var message = String((err && err.message) || "Unexpected server error");
+  if (res.headersSent) return;
+  var requestId = (res.locals && res.locals.requestId) || "";
+  res.status(500).json({ ok: false, code: "INTERNAL_ERROR", error: "Unexpected server error", requestId: requestId });
+  try { console.error("[api]", requestId, req && req.method, req && req.originalUrl, message); } catch (_) {}
+});
 
 var httpServer = null;
 

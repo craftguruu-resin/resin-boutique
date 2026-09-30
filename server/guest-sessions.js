@@ -153,8 +153,18 @@ function verifyGuestToken(token, cb) {
     .catch(cb);
 }
 
+/** Revoke only the current customer session. */
+function revokeGuestToken(token, cb) {
+  var raw = String(token || "").trim();
+  if (!raw || !poolMod.isEnabled()) return process.nextTick(function () { cb(null); });
+  poolMod.getPool().query("DELETE FROM guest_sessions WHERE token_hash = $1", [sha256hex(raw)])
+    .then(function () { cb(null); })
+    .catch(cb);
+}
+
 module.exports = {
   issueGuestSession: issueGuestSession,
   issueGuestTokenForGuestId: issueGuestTokenForGuestId,
   verifyGuestToken: verifyGuestToken,
+  revokeGuestToken: revokeGuestToken,
 };

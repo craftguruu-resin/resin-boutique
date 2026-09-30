@@ -449,6 +449,64 @@ body.page-account .account-orders-panel.checkout-auth-sheet {
   margin-top: 0;
 }
 
+.account-addr-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+
+.account-addr-card__delete {
+  border: 0;
+  background: transparent;
+  color: #b42318;
+  font: inherit;
+  cursor: pointer;
+  padding: 0.45rem 0.65rem;
+}
+
+.account-addr-card__form {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(15, 23, 42, 0.1);
+}
+
+.account-addr-card__form label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin: 0.45rem 0;
+}
+
+.account-addr-card__form input,
+.account-addr-card__form select {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin-top: 0.25rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid rgba(15, 23, 42, 0.16);
+  border-radius: 0.55rem;
+  background: #fff;
+  font: inherit;
+}
+
+.account-addr-card__form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.account-addr-card__error {
+  color: #b42318;
+  min-height: 1.1em;
+  margin: 0.35rem 0 0;
+}
+
+@media (max-width: 520px) {
+  .account-addr-card__form-grid { grid-template-columns: 1fr; gap: 0; }
+}
+
 .account-addr-panel__need-signin {
   font-size: 0.88rem;
   color: rgba(15, 23, 42, 0.55);
@@ -463,6 +521,13 @@ body.page-account .account-orders-panel.checkout-auth-sheet {
   display: inline-block;
   margin-top: 1rem;
 }
+
+.account-profile-edit { margin-top: 0.6rem; }
+.account-profile-form { margin-top: 0.65rem; max-width: 34rem; }
+.account-profile-form > label { display: block; font-size: 0.75rem; font-weight: 700; margin-bottom: 0.25rem; }
+.account-profile-form__row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.account-profile-form input { flex: 1 1 12rem; min-width: 0; border: 1px solid rgba(15, 23, 42, 0.16); border-radius: 0.55rem; padding: 0.55rem 0.65rem; font: inherit; }
+.account-profile-form__status { min-height: 1.1em; margin: 0.35rem 0 0; color: #b42318; }
 
 .account-later-line {
   display: flex;

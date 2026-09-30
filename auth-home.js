@@ -308,6 +308,11 @@
     if (els.loginBtn) els.loginBtn.addEventListener("click", function () { openAuth("login"); });
     if (els.logoutBtn) {
       els.logoutBtn.addEventListener("click", function () {
+        var token = "";
+        try { token = localStorage.getItem(GUEST_TOKEN_KEY) || ""; } catch (_) {}
+        if (token) {
+          fetch(getApiBase() + "/api/guest/logout", { method: "POST", headers: { Authorization: "Bearer " + token }, keepalive: true }).catch(function () {});
+        }
         setSessionEmail("");
         setSessionName("");
         setGuestToken("");

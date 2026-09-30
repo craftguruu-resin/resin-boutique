@@ -62,6 +62,7 @@ function ensureVendorInventoryColumns() {
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS gateway_fee NUMERIC(12, 2) NOT NULL DEFAULT 0",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS paid_at TIMESTAMPTZ",
     "ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_reference VARCHAR(120)",
+    "ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_cost_snapshot NUMERIC(12, 2)",
     "CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_payment_reference_unique ON orders (payment_reference) WHERE payment_reference IS NOT NULL",
     "CREATE TABLE IF NOT EXISTS store_coupons (" +
       "id BIGSERIAL PRIMARY KEY," +

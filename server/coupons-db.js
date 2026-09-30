@@ -50,7 +50,7 @@ function poolOrError(cb) {
   return null;
 }
 
-var COUPON_SELECT = "c.id, c.code, c.discount_type, c.discount_value, c.min_subtotal, c.starts_at, c.ends_at, c.max_redemptions, c.is_active, c.created_at, c.updated_at, COALESCE((SELECT COUNT(*) FROM orders o WHERE o.coupon_code = c.code AND o.payment_status = 'paid'), 0)::int AS redemption_count";
+var COUPON_SELECT = "c.id, c.code, c.discount_type, c.discount_value, c.min_subtotal, c.starts_at, c.ends_at, c.max_redemptions, c.is_active, c.created_at, c.updated_at, COALESCE((SELECT COUNT(*) FROM orders o WHERE o.coupon_code = c.code AND o.payment_status IN ('paid', 'cod_advance_paid')), 0)::int AS redemption_count";
 
 function listCoupons(cb) {
   var pool = poolOrError(cb); if (!pool) return;
@@ -109,7 +109,15 @@ function getPaymentContext(razorpayOrderId, paymentMethod, subtotal, cb) {
   var orderId = String(razorpayOrderId || "").trim().slice(0, 120);
   if (!orderId) return process.nextTick(function () { cb(null, null); });
   var pool = poolOrError(cb); if (!pool) return;
-  pool.query("SELECT coupon_code, coupon_type, coupon_value FROM checkout_payment_contexts WHERE razorpay_order_id = $1 AND payment_method = $2 LIMIT 1", [orderId, paymentMethod === "cod" ? "cod" : "razorpay"]).then(function (r) { var row = r.rows[0]; if (!row || !String(row.coupon_code || "").trim()) return cb(null, null); var coupon = { code: String(row.coupon_code), discountType: String(row.coupon_type || "percentage"), discountValue: Number(row.coupon_value) || 0, isActive: true }; coupon.discount = calculateDiscount(coupon, subtotal); cb(null, coupon); }).catch(cb);
+  pool.query("SELECT coupon_code, coupon_type, coupon_value, coupon_discount FROM checkout_payment_contexts WHERE razorpay_order_id = $1 AND payment_method = $2 LIMIT 1", [orderId, paymentMethod === "cod" ? "cod" : "razorpay"]).then(function (r) {
+    var row = r.rows[0];
+    if (!row || !String(row.coupon_code || "").trim()) return cb(null, null);
+    var coupon = { code: String(row.coupon_code), discountType: String(row.coupon_type || "percentage"), discountValue: Number(row.coupon_value) || 0, isActive: true };
+    /* The payment context is the quote that created the gateway order. Do not
+       let a Vendor Panel coupon edit alter that quote while checkout is open. */
+    coupon.discount = round2(Math.min(Math.max(0, Number(subtotal) || 0), Math.max(0, Number(row.coupon_discount) || 0)));
+    cb(null, coupon);
+  }).catch(cb);
 }
 
 module.exports = { normalizeCode: normalizeCode, validateCouponInput: validateCouponInput, calculateDiscount: calculateDiscount, listCoupons: listCoupons, createCoupon: createCoupon, updateCoupon: updateCoupon, setCouponActive: setCouponActive, resolveCoupon: resolveCoupon, createPaymentContext: createPaymentContext, getPaymentContext: getPaymentContext };

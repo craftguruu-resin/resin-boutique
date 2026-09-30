@@ -594,6 +594,86 @@
     return changed;
   }
 
+  function cartApiBase() {
+    try {
+      var merge = global.CraftguruCatalogMerge;
+      if (merge && typeof merge.getApiBase === "function") return String(merge.getApiBase() || "").replace(/\/+$/, "");
+    } catch (_) {}
+    try {
+      return global.location && global.location.origin ? String(global.location.origin).replace(/\/+$/, "") : "";
+    } catch (_) {}
+    return "";
+  }
+
+  function reconciliationPayload(lines) {
+    return (lines || []).map(function (line) {
+      return {
+        productId: String(line.id || ""),
+        sizeKey: String(line.size || ""),
+        name: String(line.name || "Item"),
+        sizeLabel: String(line.variantLabel || line.size || ""),
+        qty: Math.max(1, Math.floor(Number(line.qty) || 1)),
+        unitPrice: Number(line.price) || 0,
+        image: String(line.image || ""),
+        lineExtra: line.lineExtra && typeof line.lineExtra === "object" ? line.lineExtra : undefined,
+        stockSlot: String(line.stockSlot || "").slice(0, 1),
+      };
+    });
+  }
+
+  /* Browser storage is only a convenience cache. On a live server, refresh
+   * it from the same product resolver used at checkout so vendor edits do not
+   * leave a customer looking at an obsolete price, name, image or listing. */
+  function reconcileWithBackend(done) {
+    var lines = load();
+    var base = cartApiBase();
+    if (!lines.length || !base || typeof global.fetch !== "function") {
+      if (done) done(null, false);
+      return Promise.resolve(false);
+    }
+    return global.fetch(base + "/api/catalog/cart-reconcile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      cache: "no-store",
+      body: JSON.stringify({ items: reconciliationPayload(lines) }),
+    })
+      .then(function (res) { return res.json().then(function (body) { return { okHttp: res.ok, body: body || {} }; }); })
+      .then(function (result) {
+        if (!result.okHttp || !result.body.ok) throw new Error("Cart catalogue unavailable");
+        var live = Object.create(null);
+        (result.body.items || []).forEach(function (item) {
+          live[String(item.productId || "") + "\u0000" + String(item.sizeKey || "").toLowerCase()] = item;
+        });
+        var unavailable = Object.create(null);
+        (result.body.issues || []).forEach(function (issue) {
+          if (issue && issue.unavailable) unavailable[String(issue.productId || "") + "\u0000" + String(issue.sizeKey || "").toLowerCase()] = true;
+        });
+        var changed = false;
+        var next = lines.filter(function (line) {
+          var key = String(line.id || "") + "\u0000" + String(line.size || "").toLowerCase();
+          if (unavailable[key]) { changed = true; return false; }
+          var row = live[key];
+          if (!row) return true;
+          if (row.name && row.name !== line.name) { line.name = row.name; changed = true; }
+          if (row.image && row.image !== line.image) { line.image = row.image; changed = true; }
+          if (row.stockMax != null && Number.isFinite(Number(row.stockMax)) && Number(row.stockMax) !== Number(line.stockMax)) {
+            line.stockMax = Math.max(0, Math.floor(Number(row.stockMax)));
+            if (Number(line.qty) > line.stockMax) line.qty = Math.max(1, line.stockMax);
+            changed = true;
+          }
+          if (Number.isFinite(Number(row.unitPrice)) && Math.abs(Number(row.unitPrice) - Number(line.price || 0)) > 0.009) {
+            line.price = Number(row.unitPrice);
+            changed = true;
+          }
+          return true;
+        });
+        if (changed) save(next);
+        if (done) done(null, changed);
+        return changed;
+      })
+      .catch(function (err) { if (done) done(err, false); return false; });
+  }
+
   function onCatalogPricesMergedForCart() {
     syncCartPricesFromCatalog();
     syncSaveLaterPricesFromCatalog();
@@ -895,6 +975,7 @@
     liveDisplayName: liveDisplayName,
     liveLinePrice: liveLinePrice,
     syncPricesFromCatalog: syncCartPricesFromCatalog,
+    reconcileWithBackend: reconcileWithBackend,
     load: load,
     save: save,
     addItem: addItem,
@@ -918,4 +999,6 @@
     moveLineToSaveLater: moveLineToSaveLater,
     moveSaveLaterToCart: moveSaveLaterToCart,
   };
+  /* Do not block first paint or prevent offline browsing. */
+  setTimeout(function () { reconcileWithBackend(); }, 0);
 })(typeof window !== "undefined" ? window : this);

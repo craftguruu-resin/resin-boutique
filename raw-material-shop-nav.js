@@ -1,6 +1,21 @@
 (function () {
   "use strict";
 
+  var TAXONOMY_CACHE_KEY = "cgRawMaterialTaxonomyLastGood";
+
+  function readCachedTaxonomy() {
+    try {
+      var cached = JSON.parse(localStorage.getItem(TAXONOMY_CACHE_KEY) || "null");
+      return cached && Array.isArray(cached.categories) ? cached : null;
+    } catch (_) { return null; }
+  }
+
+  function saveCachedTaxonomy(taxonomy) {
+    try {
+      if (taxonomy && Array.isArray(taxonomy.categories)) localStorage.setItem(TAXONOMY_CACHE_KEY, JSON.stringify(taxonomy));
+    } catch (_) {}
+  }
+
   function esc(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;")
@@ -67,16 +82,14 @@
           return r.json();
         })
         .then(function (j) {
-          if (j && j.ok && j.taxonomy) return j.taxonomy;
+          if (j && j.ok && j.taxonomy) { saveCachedTaxonomy(j.taxonomy); return j.taxonomy; }
           throw new Error("taxonomy api");
         })
         .catch(function () {
-          /* Git is not allowed to repopulate raw-material categories. */
-          return { version: 1, generatedFrom: "vendor-panel", categories: [] };
+          return readCachedTaxonomy() || { version: 1, generatedFrom: "vendor-panel", categories: [] };
         });
     }
-    /* Without the vendor API, the storefront has no categories by design. */
-    return Promise.resolve({ version: 1, generatedFrom: "vendor-panel", categories: [] });
+    return Promise.resolve(readCachedTaxonomy() || { version: 1, generatedFrom: "vendor-panel", categories: [] });
   }
 
   function hrefParams(href) {

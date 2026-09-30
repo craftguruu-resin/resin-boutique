@@ -298,6 +298,7 @@ CREATE INDEX IF NOT EXISTS idx_catalog_price_overrides_updated ON catalog_price_
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_s NUMERIC(14, 2);
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_m NUMERIC(14, 2);
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS stock_l NUMERIC(14, 2);
+ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS out_of_stock BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS listed BOOLEAN NOT NULL DEFAULT true;
 
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB NOT NULL DEFAULT '{}'::jsonb;
@@ -305,4 +306,5 @@ ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS size_labels JSONB N
 ALTER TABLE catalog_price_overrides ADD COLUMN IF NOT EXISTS name_override VARCHAR(500);
 
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id VARCHAR(220) NOT NULL DEFAULT '';
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS unit_cost_snapshot NUMERIC(12, 2);
 ALTER TABLE order_items ADD COLUMN IF NOT EXISTS size_key VARCHAR(20) NOT NULL DEFAULT '';

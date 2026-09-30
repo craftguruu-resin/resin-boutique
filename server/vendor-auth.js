@@ -182,10 +182,22 @@ function getSessionIdleMs() {
   return IDLE_MS;
 }
 
+/** Revoke the presented session without requiring a second authentication round-trip. */
+function logoutToken(rawToken, cb) {
+  var tok = String(rawToken || "").trim();
+  if (!tok) return process.nextTick(function () { cb(null); });
+  delete vendorSessionsMemory[tok];
+  if (!poolMod.isEnabled()) return process.nextTick(function () { cb(null); });
+  poolMod.getPool().query("DELETE FROM vendor_sessions WHERE token_hash = $1", [sha256hex(tok)])
+    .then(function () { cb(null); })
+    .catch(cb);
+}
+
 module.exports = {
   vendorAuthToken,
   tokenValid,
   login,
+  logoutToken,
   vendorRequireAuth: vendorRequireAuth,
   getSessionIdleMs: getSessionIdleMs,
 };

@@ -29,7 +29,7 @@
   }
 
   function escAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function imgSrc(rel) {
@@ -194,27 +194,36 @@
     var opt = m.options || {};
     var entries = [];
     var colorUrls = Object.create(null);
+    var seen = Object.create(null);
+    function mediaKey(url) {
+      return String(url || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
+        .toLowerCase();
+    }
 
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
-        if (!u || isLandingHeroAsset(u)) return;
+        var key = mediaKey(u);
+        if (!key || isLandingHeroAsset(u) || seen[key]) return;
+        seen[key] = 1;
         entries.push({
           url: u,
           kind: "color",
           cid: String(c.id || ""),
         });
-        colorUrls[u] = 1;
+        colorUrls[key] = 1;
       });
     }
 
-    var seenExtra = Object.create(null);
     function pushExtra(url, meta) {
       url = String(url || "").trim();
-      if (!url || isLandingHeroAsset(url)) return;
-      if (colorUrls[url]) return;
-      if (seenExtra[url]) return;
-      seenExtra[url] = 1;
+      var key = mediaKey(url);
+      if (!key || isLandingHeroAsset(url) || colorUrls[key] || seen[key]) return;
+      seen[key] = 1;
       var o = { url: url, kind: meta.kind };
       if (meta.sid) o.sid = meta.sid;
       if (meta.qid) o.qid = meta.qid;
@@ -274,7 +283,10 @@
 
   var pdpFetch = { status: "loading" };
   var productFetchInflight = null;
-  var PDP_CACHE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
+  /* A product can be unpublished by the vendor; do not resurrect it for two
+     weeks during an outage. */
+  var PDP_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+  var PDP_CACHE_VERSION = 2;
 
   function pdpCacheKey(id) {
     return "__cgRawMaterialPdp:" + String(id || "").trim();
@@ -283,7 +295,7 @@
   function readCachedMaterial(id) {
     try {
       var cached = JSON.parse(localStorage.getItem(pdpCacheKey(id)) || "null");
-      if (!cached || !cached.ts || Date.now() - cached.ts > PDP_CACHE_TTL_MS || !cached.material) return null;
+      if (!cached || cached.version !== PDP_CACHE_VERSION || !cached.ts || Date.now() - cached.ts > PDP_CACHE_TTL_MS || !cached.material) return null;
       return cached.material;
     } catch (_) {
       return null;
@@ -292,7 +304,7 @@
 
   function writeCachedMaterial(id, material) {
     try {
-      localStorage.setItem(pdpCacheKey(id), JSON.stringify({ ts: Date.now(), material: material }));
+      localStorage.setItem(pdpCacheKey(id), JSON.stringify({ version: PDP_CACHE_VERSION, ts: Date.now(), material: material }));
     } catch (_) {}
   }
 

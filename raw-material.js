@@ -4,6 +4,8 @@
   var M = window.CraftguruCatalogMerge;
   var D = window.RESIN_DATA;
   var RAW_MATERIAL_CACHE_KEY = "cg_raw_material_catalog_v1";
+  var RAW_MATERIAL_CACHE_VERSION = 2;
+  var RAW_MATERIAL_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
   function apiBase() {
     return M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
@@ -32,11 +34,12 @@
   function readCachedMaterials() {
     try {
       var x = JSON.parse(localStorage.getItem(RAW_MATERIAL_CACHE_KEY) || "null");
-      return x && Array.isArray(x.materials) ? x : null;
+      if (!x || x.version !== RAW_MATERIAL_CACHE_VERSION || !Array.isArray(x.materials) || !x.savedAt || Date.now() - Number(x.savedAt) > RAW_MATERIAL_CACHE_TTL_MS) return null;
+      return x;
     } catch (_) { return null; }
   }
   function saveCachedMaterials(materials) {
-    try { localStorage.setItem(RAW_MATERIAL_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), materials: materials || [] })); } catch (_) {}
+    try { localStorage.setItem(RAW_MATERIAL_CACHE_KEY, JSON.stringify({ version: RAW_MATERIAL_CACHE_VERSION, savedAt: Date.now(), materials: materials || [] })); } catch (_) {}
   }
   function renderStaleNotice(cache) {
     var old = document.querySelector(".cg-catalog-stale-note");
@@ -56,7 +59,7 @@
   }
 
   function escAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function imgSrc(rel) {

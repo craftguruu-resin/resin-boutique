@@ -133,7 +133,10 @@ function buildLineMetrics(row, ovMap) {
   var gatewayFee = Math.round(orderGateway * share * 100) / 100;
   var netRevenue = Math.round((productValue - couponDiscount - prepaidDiscount - gatewayFee) * 100) / 100;
   var le = parseLineExtra(row.line_extra);
-  var unitCost = resolveUnitCost(row.product_id, row.size_key, row.size_label, le, ovMap[row.product_id]);
+  var snappedCost = Number(row.unit_cost_snapshot);
+  var unitCost = Number.isFinite(snappedCost) && snappedCost >= 0
+    ? snappedCost
+    : resolveUnitCost(row.product_id, row.size_key, row.size_label, le, ovMap[row.product_id]);
   var totalCost = Math.round(unitCost * qty * 100) / 100;
   var profit = Math.round((netRevenue - totalCost) * 100) / 100;
   return {
@@ -176,7 +179,7 @@ function getSalesProfitInsights(period, cb) {
 
   var where = periodSqlFilter(p);
   var qLines =
-    "SELECT oi.product_id, oi.name, oi.size_key, oi.size_label, oi.qty, oi.unit_price, oi.line_extra, " +
+    "SELECT oi.product_id, oi.name, oi.size_key, oi.size_label, oi.qty, oi.unit_price, oi.line_extra, oi.unit_cost_snapshot, " +
     "o.id AS order_id, o.tag_ref, o.created_at, o.payment_method, o.payment_status, " +
     "o.product_value AS order_product_value, o.coupon_discount AS order_coupon_discount, o.prepaid_discount AS order_prepaid_discount, o.gateway_fee AS order_gateway_fee " +
     "FROM order_items oi JOIN orders o ON o.id = oi.order_id " +

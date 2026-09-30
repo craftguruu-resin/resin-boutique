@@ -365,6 +365,7 @@
         .trim()
         .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
         .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
         .toLowerCase();
     }
     function push(u) {
@@ -864,7 +865,7 @@
   }
 
   function escapeAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function fmt(n) {
@@ -1225,6 +1226,7 @@
           image: cartLineImage() || product.image,
           qty: q,
           stockMax: Number(stk),
+          lineExtra: { productKind: "catalog" },
         });
         if (window.RESIN_SHELL) {
           window.RESIN_SHELL.updateBadge();

@@ -306,12 +306,22 @@
     return out;
   }
 
+  function withoutCoverUrl(list, cover) {
+    var coverKey = stripMediaCacheBust(cover).toLowerCase();
+    return uniqueUrls(list).filter(function (url) {
+      return !coverKey || stripMediaCacheBust(url).toLowerCase() !== coverKey;
+    });
+  }
+
   function getGalleryUrls() {
-    return parseGalleryLines((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || "");
+    return withoutCoverUrl(
+      parseGalleryLines((document.getElementById("vpmGallery") && document.getElementById("vpmGallery").value) || ""),
+      getCoverUrlInput()
+    );
   }
 
   function setGalleryUrls(urls) {
-    var list = uniqueUrls(urls);
+    var list = withoutCoverUrl(urls, getCoverUrlInput());
     var gal = document.getElementById("vpmGallery");
     if (gal) gal.value = list.join("\n");
     var optGal = document.getElementById("vpmOptGallery");
@@ -328,6 +338,11 @@
     if (iu) iu.value = stripMediaCacheBust(url);
     var hero = document.getElementById("vpmHero");
     if (hero && stripMediaCacheBust(url)) hero.value = stripMediaCacheBust(url);
+    var cleaned = withoutCoverUrl(getGalleryUrls(), url);
+    var gal = document.getElementById("vpmGallery");
+    if (gal) gal.value = cleaned.join("\n");
+    var optGal = document.getElementById("vpmOptGallery");
+    if (optGal) optGal.value = cleaned.join("\n");
     renderMediaManager();
   }
 
@@ -790,7 +805,7 @@
 
     var galleryFromOpt = p.options && Array.isArray(p.options.galleryImages) ? p.options.galleryImages : [];
     var galleryFromProduct = Array.isArray(p.gallery) ? p.gallery : [];
-    var mergedGal = uniqueUrls(galleryFromOpt.concat(galleryFromProduct).map(stripMediaCacheBust));
+    var mergedGal = withoutCoverUrl(galleryFromOpt.concat(galleryFromProduct).map(stripMediaCacheBust), cover);
     var gal = document.getElementById("vpmGallery");
     if (gal) gal.value = mergedGal.join("\n");
 

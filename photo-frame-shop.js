@@ -4,6 +4,8 @@
   var M = window.CraftguruCatalogMerge;
   var D = window.RESIN_DATA;
   var PHOTO_FRAME_CACHE_KEY = "cg_photo_frame_catalog_v1";
+  var PHOTO_FRAME_CACHE_VERSION = 2;
+  var PHOTO_FRAME_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 
   function apiBase() {
     return M && typeof M.getApiBase === "function" ? M.getApiBase() : "";
@@ -30,9 +32,13 @@
   }
 
   function readCachedMaterials() {
-    try { var x = JSON.parse(localStorage.getItem(PHOTO_FRAME_CACHE_KEY) || "null"); return x && Array.isArray(x.materials) ? x : null; } catch (_) { return null; }
+    try {
+      var x = JSON.parse(localStorage.getItem(PHOTO_FRAME_CACHE_KEY) || "null");
+      if (!x || x.version !== PHOTO_FRAME_CACHE_VERSION || !Array.isArray(x.materials) || !x.savedAt || Date.now() - Number(x.savedAt) > PHOTO_FRAME_CACHE_TTL_MS) return null;
+      return x;
+    } catch (_) { return null; }
   }
-  function saveCachedMaterials(materials) { try { localStorage.setItem(PHOTO_FRAME_CACHE_KEY, JSON.stringify({ savedAt: Date.now(), materials: materials || [] })); } catch (_) {} }
+  function saveCachedMaterials(materials) { try { localStorage.setItem(PHOTO_FRAME_CACHE_KEY, JSON.stringify({ version: PHOTO_FRAME_CACHE_VERSION, savedAt: Date.now(), materials: materials || [] })); } catch (_) {} }
   function renderStaleNotice(cache) {
     var old = document.querySelector(".cg-catalog-stale-note"); if (old) old.remove(); if (!cache) return;
     var grid = document.getElementById("rmGrid"); if (!grid || !grid.parentNode) return;
@@ -47,7 +53,7 @@
   }
 
   function escAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function imgSrc(rel) {

@@ -34,7 +34,7 @@
           <div class="vh-command-card__eyebrow">Storefront control room <span id="vhPublishState" class="vs-pill">Checking live status</span></div>
           <h2 class="vs-card__title">Homepage Hero Studio</h2>
           <p class="vs-muted">
-            Publish a polished campaign sequence from two images upward. The live storefront glides left to right, includes touch controls, and pauses while a customer reads or interacts with it.
+            Choose the default hero, a polished multi-image campaign sequence, or one single offer image. Carousel mode glides left to right, includes touch controls, and pauses while a customer reads or interacts with it.
           </p>
           <div class="vh-mode-picker" role="radiogroup" aria-label="Homepage hero type">
             <label class="vh-mode-option" for="vhModeBuiltin">
@@ -47,8 +47,30 @@
               <span class="vh-mode-option__icon" aria-hidden="true">⇢</span>
               <span><strong>Multi-Image Carousel</strong><small>Publish saved images with a smooth left-to-right transition.</small></span>
             </label>
+            <label class="vh-mode-option" for="vhModeOffer">
+              <input type="radio" name="vhMode" id="vhModeOffer" value="offer" />
+              <span class="vh-mode-option__icon" aria-hidden="true">%</span>
+              <span><strong>Offer Hero</strong><small>Publish one campaign image, such as “40% OFF”, without changing the default hero.</small></span>
+            </label>
           </div>
           <p id="vhCustomHint" class="vs-muted" style="margin: 0; font-size: 0.82rem" hidden></p>
+        </section>
+        <section class="vs-card vh-offer-card" id="vhOfferCard">
+          <p class="vh-section-kicker">Campaign offer</p>
+          <h2 class="vs-card__title">Publish one offer hero image</h2>
+          <p class="vs-muted">Upload one campaign artwork or paste one image URL. Saving it immediately pins that image as the only custom hero; your default hero and carousel slides remain saved and unchanged.</p>
+          <form id="vhOfferForm" class="vs-row-actions" style="flex-wrap: wrap; align-items: flex-end; gap: 0.75rem">
+            <div class="vs-field" style="margin: 0">
+              <label for="vhOfferImage">Campaign image</label>
+              <input type="file" id="vhOfferImage" name="image" accept="image/jpeg,image/png,image/webp" />
+            </div>
+            <div class="vs-field" style="margin: 0; min-width: 20rem; flex: 1 1 20rem">
+              <label for="vhOfferUrl">Or one image URL</label>
+              <input type="url" id="vhOfferUrl" name="imageUrl" placeholder="https://…/40-percent-off.jpg" inputmode="url" />
+            </div>
+            <button type="submit" class="vs-btn vs-btn--primary" id="vhOfferSubmit">Publish offer hero</button>
+          </form>
+          <p id="vhOfferMsg" class="vs-muted" style="display: none; margin-top: 0.65rem"></p>
         </section>
         <section class="vs-card vh-playback-card">
           <div>
@@ -158,6 +180,6 @@
     </div>
   </div>
   <script src="vendor-shell.js"></script>
-  <script src="vendor-hero.js?v=20260929hero-studio3"></script>
+  <script src="vendor-hero.js?v=20260930offerhero1"></script>
 </body>
 </html>

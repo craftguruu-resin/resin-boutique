@@ -1422,7 +1422,7 @@
   }
 
   function escapeAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function getCheckoutPaymentMethod() {
@@ -1808,6 +1808,15 @@
     refreshCheckout();
   }
 
+  function productHrefForLine(line) {
+    var extra = line && line.lineExtra && typeof line.lineExtra === "object" ? line.lineExtra : {};
+    var kind = String(extra.productKind || extra.catalogKind || extra.shopKind || "").trim().toLowerCase();
+    var id = String((line && line.id) || "");
+    if (kind === "photo_frame" || (!kind && id.indexOf("pf-prod--") === 0)) return "photo-frame-product.html?id=" + encodeURIComponent(id);
+    if (kind === "raw_material" || (!kind && id.indexOf("raw-mat--") === 0)) return "raw-material-product.html?id=" + encodeURIComponent(id);
+    return "product.html?id=" + encodeURIComponent(id);
+  }
+
   function renderSnips(lines) {
     if (!els.snipsGrid) return;
     els.snipsGrid.innerHTML = "";
@@ -1815,12 +1824,7 @@
       var imgRel = getLineImage(line);
       var wrap = document.createElement("div");
       wrap.className = "checkout-snip-wrap";
-      var href =
-        String(line.id || "").indexOf("pf-prod--") === 0
-          ? "photo-frame-product.html?id=" + encodeURIComponent(line.id)
-          : String(line.id || "").indexOf("raw-mat--") === 0
-          ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
-          : "product.html?id=" + encodeURIComponent(line.id);
+      var href = productHrefForLine(line);
       var imgHtml = imgRel
         ? '<img src="' + escapeAttr(imgUrl(imgRel)) + '" alt="" loading="lazy" width="92" height="92" />'
         : '<div class="checkout-snip__ph" aria-hidden="true"></div>';
@@ -1889,12 +1893,7 @@
         (D.lineSizeLabel ? D.lineSizeLabel(line.id, line.size) : line.size);
       var lineAmt = (line.price || 0) * (line.qty || 1);
       var imgRel = getLineImage(line);
-      var href =
-        String(line.id || "").indexOf("pf-prod--") === 0
-          ? "photo-frame-product.html?id=" + encodeURIComponent(line.id)
-          : String(line.id || "").indexOf("raw-mat--") === 0
-          ? "raw-material-product.html?id=" + encodeURIComponent(line.id)
-          : "product.html?id=" + encodeURIComponent(line.id);
+      var href = productHrefForLine(line);
       var li = document.createElement("li");
       li.className = "checkout-line";
       var customNote =

@@ -205,11 +205,23 @@
 
     var real = [];
     var placeholder = [];
+    var seen = Object.create(null);
+    function imageKey(value) {
+      return String(value || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
+        .toLowerCase();
+    }
     primary.concat(secondary).forEach(function (candidate) {
       var image = productImageValue(candidate);
       if (!image) return;
+      var key = imageKey(image);
+      if (!key || seen[key]) return;
+      seen[key] = true;
       var target = image.indexOf("placeholder-product") >= 0 ? placeholder : real;
-      if (target.indexOf(image) < 0) target.push(image);
+      target.push(image);
     });
     return real.concat(placeholder);
   }
@@ -245,6 +257,7 @@
          fields, not only prices. This is what makes saved size/colour rows
          available to product.html for both bundled and vendor-added pieces. */
       if (o.name != null && String(o.name).trim()) p.name = String(o.name).trim();
+      p.outOfStock = o.outOfStock === true;
       p.returnGift = o.returnGift === true;
       p.listed = o.listed !== false;
       if (o.sizeLabels && typeof o.sizeLabels === "object") {

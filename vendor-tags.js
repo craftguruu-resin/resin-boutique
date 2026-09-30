@@ -469,7 +469,16 @@
 
   function renderFulEditor(o) {
     var cur = o.fulfillmentStatus || "new";
-    var opts = ["new", "packed", "shipping", "shipped", "delivered", "cancelled"];
+    var transitions = {
+      new: ["packed", "cancelled"],
+      packed: ["shipping", "shipped", "cancelled"],
+      shipping: ["shipped", "delivered"],
+      shipped: ["delivered"],
+      delivered: [],
+      cancelled: [],
+    };
+    var opts = [cur].concat(transitions[cur] || []);
+    var paymentReady = String(o.paymentStatus || "") === "paid" || String(o.paymentStatus || "") === "cod_advance_paid";
     return (
       "<div class='vs-ful-cell'>" +
       "<div class='vs-ful-badge vs-ful-badge--" +
@@ -482,12 +491,13 @@
       opts
         .map(function (x) {
           var on = x === cur ? " vs-ful-pill--active" : "";
+          var unavailable = x !== "cancelled" && x !== cur && !paymentReady;
           return (
             "<button type='button' class='vs-ful-pill" +
             on +
             "' data-val='" +
             esc(x) +
-            "'>" +
+            "'" + (unavailable ? " disabled title='Confirm payment before fulfilment'" : "") + ">" +
             esc(fulLabel(x)) +
             "</button>"
           );

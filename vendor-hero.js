@@ -38,13 +38,24 @@
     el.style.color = isErr ? "#b42318" : "";
   }
 
+  function showOfferMsg(text, isErr) {
+    var el = document.getElementById("vhOfferMsg");
+    if (!el) return;
+    el.textContent = text || "";
+    el.style.display = text ? "block" : "none";
+    el.style.color = isErr ? "#b42318" : "";
+  }
+
   function syncCustomHeroUi(settings) {
     if (!settings) return;
     var customOn = settings.customHeroEnabled !== false;
     var builtinMode = document.getElementById("vhModeBuiltin");
     var carouselMode = document.getElementById("vhModeCarousel");
+    var offerMode = document.getElementById("vhModeOffer");
+    var fixedOffer = customOn && String(settings.displayMode || "").toLowerCase() === "single";
     if (builtinMode) builtinMode.checked = !customOn;
-    if (carouselMode) carouselMode.checked = customOn;
+    if (carouselMode) carouselMode.checked = customOn && !fixedOffer;
+    if (offerMode) offerMode.checked = fixedOffer;
     var hint = document.getElementById("vhCustomHint");
     if (hint) {
       if (!customOn) {
@@ -58,7 +69,7 @@
     }
     var state = document.getElementById("vhPublishState");
     if (state) {
-      state.textContent = customOn ? "Carousel live" : "Default hero live";
+      state.textContent = !customOn ? "Default hero live" : fixedOffer ? "Offer hero live" : "Carousel live";
       state.classList.toggle("vh-publish-state--live", customOn);
     }
   }
@@ -391,14 +402,36 @@
     document.querySelectorAll('input[name="vhMode"]').forEach(function (mode) {
       mode.addEventListener("change", function () {
         if (!mode.checked) return;
-        var customOn = mode.value === "carousel";
+        var modeValue = mode.value;
+        var customOn = modeValue !== "builtin";
+        var isOffer = modeValue === "offer";
+        var pinnedId = lastHeroSettings && lastHeroSettings.singleSlideId != null
+          ? Number(lastHeroSettings.singleSlideId)
+          : NaN;
+        if (isOffer && (!Number.isFinite(pinnedId) || pinnedId < 1)) {
+          showMsg("Add an offer image below first, then select Offer Hero to publish it.", true);
+          if (lastHeroSettings) syncCustomHeroUi(lastHeroSettings);
+          return;
+        }
         showMsg("Saving…", false);
-        putHeroSettings({ customHeroEnabled: customOn })
+        var patch = {
+          customHeroEnabled: customOn,
+          displayMode: isOffer ? "single" : "carousel",
+        };
+        if (isOffer) patch.singleSlideId = pinnedId;
+        putHeroSettings(patch)
           .then(function () {
             return loadSlides({ quiet: true });
           })
           .then(function () {
-            showMsg(customOn ? "Multi-image carousel is live on the guest site." : "Guest site now uses the default hero.", false);
+            showMsg(
+              !customOn
+                ? "Guest site now uses the default hero."
+                : isOffer
+                ? "Offer hero is live — the pinned campaign image is shown by itself."
+                : "Multi-image carousel is live on the guest site.",
+              false
+            );
           })
           .catch(function (e) {
             showMsg(String((e && e.message) || e), true);
@@ -406,6 +439,78 @@
           });
       });
     });
+
+    var offerForm = document.getElementById("vhOfferForm");
+    if (offerForm) {
+      offerForm.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var fileInput = document.getElementById("vhOfferImage");
+        var urlInput = document.getElementById("vhOfferUrl");
+        var file = fileInput && fileInput.files && fileInput.files[0];
+        var imageUrl = String((urlInput && urlInput.value) || "").trim();
+        if (file && imageUrl) {
+          showOfferMsg("Choose either a file or a URL, not both.", true);
+          return;
+        }
+        if (!file && !imageUrl) {
+          showOfferMsg("Choose one campaign image file or paste one https:// image URL.", true);
+          return;
+        }
+        if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+          showOfferMsg("The offer image URL must start with http:// or https://.", true);
+          return;
+        }
+        showOfferMsg("Publishing offer hero…", false);
+        var request;
+        if (file) {
+          var fd = new FormData();
+          fd.set("image", file, file.name);
+          fd.set("animation", "none");
+          var headers = V.authHeaders();
+          delete headers["Content-Type"];
+          request = fetch(base() + "/api/vendor/hero-slides", {
+            method: "POST",
+            headers: headers,
+            body: fd,
+            cache: "no-store",
+          });
+        } else {
+          request = fetch(base() + "/api/vendor/hero-slides", {
+            method: "POST",
+            headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()),
+            body: JSON.stringify({ imageUrl: imageUrl, animation: "none" }),
+            cache: "no-store",
+          });
+        }
+        request
+          .then(function (res) {
+            return res.text().then(function (text) {
+              var j = {};
+              try { j = text ? JSON.parse(text) : {}; } catch (_) {}
+              if (!res.ok || !j.ok || !j.slide || j.slide.id == null) {
+                throw new Error((j && j.error) || res.statusText || "Offer image upload failed");
+              }
+              return j.slide;
+            });
+          })
+          .then(function (slide) {
+            return putHeroSettings({
+              customHeroEnabled: true,
+              displayMode: "single",
+              singleSlideId: Number(slide.id),
+            });
+          })
+          .then(function () {
+            if (fileInput) fileInput.value = "";
+            if (urlInput) urlInput.value = "";
+            showOfferMsg("Offer hero is live. Only this campaign image is shown on the homepage.", false);
+            return loadSlides({ quiet: true });
+          })
+          .catch(function (e) {
+            showOfferMsg(String((e && e.message) || e), true);
+          });
+      });
+    }
 
     var builtinBtn = document.getElementById("vhBuiltinBtn");
     if (builtinBtn) {

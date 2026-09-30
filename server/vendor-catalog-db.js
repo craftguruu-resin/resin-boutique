@@ -150,6 +150,33 @@ function catalogOptionsHasPayload(opt) {
   );
 }
 
+/** Keep PDP media canonical: cover/hero is primary, gallery contains only extra images. */
+function sanitizePdpMediaOptions(opt) {
+  if (!opt || typeof opt !== "object" || Array.isArray(opt)) return {};
+  var out = Object.assign({}, opt);
+  function mediaKey(url) {
+    return String(url || "")
+      .trim()
+      .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+      .replace(/[?&]$/, "")
+      .replace(/#.*$/, "")
+      .toLowerCase();
+  }
+  var seen = Object.create(null);
+  var heroKey = mediaKey(out.heroImage);
+  if (heroKey) seen[heroKey] = true;
+  out.galleryImages = (Array.isArray(out.galleryImages) ? out.galleryImages : [])
+    .map(function (url) { return String(url || "").trim().slice(0, 2000); })
+    .filter(function (url) {
+      var key = mediaKey(url);
+      if (!key || seen[key]) return false;
+      seen[key] = true;
+      return true;
+    })
+    .slice(0, 12);
+  return out;
+}
+
 /** @param {(err: Error|null, map?: object) => void} cb — map[productId] = { s, m, l, stockS, stockM, stockL, listed, returnGift, sizeLabels } */
 function listOverridesMap(cb) {
   var pool = poolMod.getPool();
@@ -162,7 +189,7 @@ function listOverridesMap(cb) {
     if (e0) return cb(e0);
     pool
       .query(
-        "SELECT product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, listed, return_gift, size_labels, options_json, name_override " +
+        "SELECT product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override " +
           "FROM catalog_price_overrides ORDER BY product_id"
       )
       .then(function (r) {
@@ -190,6 +217,7 @@ function listOverridesMap(cb) {
             stockS: row.stock_s != null ? Number(row.stock_s) : null,
             stockM: row.stock_m != null ? Number(row.stock_m) : null,
             stockL: row.stock_l != null ? Number(row.stock_l) : null,
+            outOfStock: row.out_of_stock === true,
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: sl,
@@ -200,7 +228,7 @@ function listOverridesMap(cb) {
             options:
               catalogOptionsHasPayload(oj) ||
               (oj && typeof oj === "object" && Object.prototype.hasOwnProperty.call(oj, "detailBody"))
-                ? oj
+                ? sanitizePdpMediaOptions(oj)
                 : null,
           };
         });
@@ -324,7 +352,7 @@ function mergeStockPatch(cur, patch) {
 
 /**
  * @param {string} productId
- * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, listed?: boolean, returnGift?: boolean, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, sizeLabels?: object, name?: string|null, nameOverride?: string|null, options?: object }} patch
+ * @param {{ s?: number, m?: number, l?: number, stockS?: number|null|string, stockM?: number|null|string, stockL?: number|null|string, outOfStock?: boolean, listed?: boolean, returnGift?: boolean, sizeLabelS?: string, sizeLabelM?: string, sizeLabelL?: string, sizeLabels?: object, name?: string|null, nameOverride?: string|null, options?: object }} patch
  * @param {(err: Error|null, row?: object) => void} cb
  */
 function upsertOverride(productId, patch, cb) {
@@ -360,6 +388,8 @@ function upsertOverride(productId, patch, cb) {
       var patchListed = !!(patch && Object.prototype.hasOwnProperty.call(patch, "listed"));
       var listedInsert = patchListed ? !!patch.listed : cur.listed !== false;
       var listedUpdateParam = patchListed ? !!patch.listed : null;
+      var outOfStock = cur.outOfStock === true;
+      if (patch && Object.prototype.hasOwnProperty.call(patch, "outOfStock")) outOfStock = !!patch.outOfStock;
       var rg = cur.returnGift === true;
       if (patch && Object.prototype.hasOwnProperty.call(patch, "returnGift")) {
         rg = !!patch.returnGift;
@@ -382,6 +412,7 @@ function upsertOverride(productId, patch, cb) {
           }
         }
       }
+      nextOpt = sanitizePdpMediaOptions(nextOpt);
       var optJson = JSON.stringify(nextOpt || {});
       var nameOverride = cur.name != null && String(cur.name).trim() ? String(cur.name).trim().slice(0, 500) : null;
       var nameProvided =
@@ -403,14 +434,14 @@ function upsertOverride(productId, patch, cb) {
             "ON CONFLICT (product_id) DO UPDATE SET price_s = EXCLUDED.price_s, price_m = EXCLUDED.price_m, " +
             "price_l = EXCLUDED.price_l, cost_s = EXCLUDED.cost_s, cost_m = EXCLUDED.cost_m, cost_l = EXCLUDED.cost_l, " +
             "stock_s = EXCLUDED.stock_s, stock_m = EXCLUDED.stock_m, stock_l = EXCLUDED.stock_l, " +
-            "out_of_stock = false, " +
+            "out_of_stock = EXCLUDED.out_of_stock, " +
             "listed = COALESCE($17::boolean, catalog_price_overrides.listed), " +
             "return_gift = EXCLUDED.return_gift, " +
             "size_labels = EXCLUDED.size_labels, " +
             "options_json = EXCLUDED.options_json, " +
             "name_override = EXCLUDED.name_override, " +
             "updated_at = now() RETURNING product_id, price_s, price_m, price_l, cost_s, cost_m, cost_l, stock_s, stock_m, stock_l, out_of_stock, listed, return_gift, size_labels, options_json, name_override, updated_at",
-          [id, eff.s, eff.m, eff.l, ct.s, ct.m, ct.l, st.s, st.m, st.l, false, listedInsert, rg, slJson, optJson, nameOverride, listedUpdateParam]
+          [id, eff.s, eff.m, eff.l, ct.s, ct.m, ct.l, st.s, st.m, st.l, outOfStock, listedInsert, rg, slJson, optJson, nameOverride, listedUpdateParam]
         )
         .then(function (r) {
           var row = r.rows[0];
@@ -432,6 +463,7 @@ function upsertOverride(productId, patch, cb) {
               m: row.stock_m != null ? Number(row.stock_m) : null,
               l: row.stock_l != null ? Number(row.stock_l) : null,
             },
+            outOfStock: row.out_of_stock === true,
             listed: row.listed !== false,
             returnGift: row.return_gift === true,
             sizeLabels: slOut,

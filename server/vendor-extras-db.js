@@ -270,9 +270,12 @@ function getDashboardExtras(cb) {
   }
   Promise.all([
     pool.query("SELECT status, COUNT(*)::int AS n FROM vendor_order_returns GROUP BY status"),
-    pool.query(
-      "SELECT COUNT(*)::int AS n FROM vendor_inventory_items WHERE reorder_point > 0 AND quantity <= reorder_point"
-    ),
+    new Promise(function (resolve, reject) {
+      listInventory(function (err, items) {
+        if (err) return reject(err);
+        resolve(items || []);
+      });
+    }),
   ])
     .then(function (pair) {
       var by = {};
@@ -281,7 +284,9 @@ function getDashboardExtras(cb) {
       });
       cb(null, {
         returnsByStatus: by,
-        lowStockCount: Number(pair[1].rows[0] && pair[1].rows[0].n) || 0,
+        lowStockCount: pair[1].filter(function (item) {
+          return Number(item.reorderPoint) > 0 && Number(item.quantity) <= Number(item.reorderPoint);
+        }).length,
       });
     })
     .catch(cb);
@@ -289,18 +294,58 @@ function getDashboardExtras(cb) {
 
 /** @param {(err: Error|null, list?: object[]) => void} cb */
 function countInventoryRows(cb) {
+  // Keep summary figures in step with the inventory screen. In particular, do
+  // not count an old inventory row whose product was permanently removed.
+  listInventory(function (err, items) {
+    if (err) return cb(err);
+    cb(null, (items || []).length);
+  });
+}
+
+/**
+ * Build the set of product ids that still exist in the vendor catalogue.
+ * Inventory is allowed to contain unlinked supply rows, but a row that is
+ * linked to a deleted or suppressed product must never be shown as stock that
+ * requires attention.
+ *
+ * @param {(err: Error|null, ids?: object) => void} cb
+ */
+function listVisibleCatalogProductIds(cb) {
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
-      cb(null, 0);
+      cb(new Error("Database not configured"));
     });
   }
-  pool
-    .query("SELECT COUNT(*)::int AS n FROM vendor_inventory_items")
-    .then(function (r) {
-      cb(null, Number((r.rows[0] && r.rows[0].n) || 0));
-    })
-    .catch(cb);
+
+  var ids = Object.create(null);
+  try {
+    catalogFromData.getProductsSummary().forEach(function (item) {
+      var id = String((item && item.id) || "").trim();
+      if (id) ids[id] = true;
+    });
+  } catch (e) {
+    return process.nextTick(function () {
+      cb(e);
+    });
+  }
+
+  vendorCatalogDb.listSuppressedProductIds(function (e0, suppressedIds) {
+    if (e0) return cb(e0);
+    pool
+      .query("SELECT id FROM products WHERE is_active = true")
+      .then(function (result) {
+        result.rows.forEach(function (row) {
+          var id = String((row && row.id) || "").trim();
+          if (id) ids[id] = true;
+        });
+        (suppressedIds || []).forEach(function (id) {
+          delete ids[String(id || "").trim()];
+        });
+        cb(null, ids);
+      })
+      .catch(cb);
+  });
 }
 
 function listInventory(optsOrCb, maybeCb) {
@@ -355,12 +400,23 @@ function listInventory(optsOrCb, maybeCb) {
   sql += " ORDER BY v.name ASC";
   withVendorInventorySchema(function (e0) {
     if (e0) return cb(e0);
-    pool
-      .query(sql, params)
-      .then(function (r) {
-        cb(null, r.rows.map(rowInventory));
-      })
-      .catch(cb);
+    listVisibleCatalogProductIds(function (e1, visibleIds) {
+      if (e1) return cb(e1);
+      pool
+        .query(sql, params)
+        .then(function (r) {
+          var rows = r.rows
+            .map(rowInventory)
+            .filter(function (item) {
+              var id = String(item.productId || "").trim();
+              // Blank productId identifies a deliberate standalone supply item.
+              // A nonblank id has to resolve to a current, visible catalogue item.
+              return !id || !!visibleIds[id];
+            });
+          cb(null, rows);
+        })
+        .catch(cb);
+    });
   });
 }
 
@@ -369,12 +425,24 @@ function listInventoryMovements(limit, cb) {
   var pool = poolMod.getPool();
   if (!pool) return process.nextTick(function () { cb(new Error("Database not configured")); });
   var n = Math.max(1, Math.min(100, Number(limit) || 12));
-  pool.query(
-    "SELECT m.id, m.inventory_id, m.previous_quantity, m.quantity_delta, m.next_quantity, m.reason, m.created_at, i.name, i.sku " +
-      "FROM vendor_inventory_movements m JOIN vendor_inventory_items i ON i.id = m.inventory_id ORDER BY m.id DESC LIMIT $1",
-    [n]
-  ).then(function (result) {
-    cb(null, result.rows.map(function (row) {
+  Promise.all([
+    pool.query(
+      "SELECT m.id, m.inventory_id, m.previous_quantity, m.quantity_delta, m.next_quantity, m.reason, m.created_at, i.name, i.sku " +
+        "FROM vendor_inventory_movements m JOIN vendor_inventory_items i ON i.id = m.inventory_id ORDER BY m.id DESC LIMIT $1",
+      [n]
+    ),
+    new Promise(function (resolve, reject) {
+      listInventory(function (err, items) {
+        if (err) return reject(err);
+        resolve(items || []);
+      });
+    }),
+  ]).then(function (pair) {
+    var visibleInventoryIds = Object.create(null);
+    pair[1].forEach(function (item) { visibleInventoryIds[String(item.id)] = true; });
+    cb(null, pair[0].rows.filter(function (row) {
+      return !!visibleInventoryIds[String(row.inventory_id)];
+    }).map(function (row) {
       return {
         id: String(row.id), inventoryId: String(row.inventory_id), name: row.name || "Inventory item", sku: row.sku || "",
         previousQuantity: Number(row.previous_quantity), delta: Number(row.quantity_delta), nextQuantity: Number(row.next_quantity),

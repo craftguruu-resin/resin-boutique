@@ -413,6 +413,10 @@
       if (so) {
         so.addEventListener("click", function (e) {
           e.preventDefault();
+          var token = getToken();
+          if (token) {
+            vendorFetch(vendorApiUrl("/api/vendor/logout"), { method: "POST", headers: authHeaders(), keepalive: true }).catch(function () {});
+          }
           clearToken();
           location.reload();
         });

@@ -8,9 +8,14 @@
   var activeTab = "resin";
   var catalogOffset = 0;
   var catalogQ = "";
-  var catalogLimit = 60;
+  /* Keep the first payload small enough to paint quickly; the existing Load
+     more control continues through the complete catalogue. */
+  var catalogLimit = 24;
   var catalogTotal = 0;
   var catalogRequestSequence = 0;
+  var catalogAbortController = null;
+  var CATALOG_PAGE_CACHE_PREFIX = "craftguruVendorInventoryPage:";
+  var CATALOG_PAGE_CACHE_TTL_MS = 10 * 60 * 1000;
   var viPollTimer = null;
   var studioCategoryFilter = "";
   var studioProductFilter = "";
@@ -181,6 +186,29 @@
   function showDesk(on) {
     var desk = document.getElementById("viDeskSection");
     if (desk) desk.hidden = !on;
+  }
+
+  function catalogPageCacheKey(scope, q, category, offset) {
+    return CATALOG_PAGE_CACHE_PREFIX + [scope || "resin", q || "", category || "", offset || 0].join("|");
+  }
+
+  function readCatalogPageCache(scope, q, category, offset) {
+    try {
+      var raw = sessionStorage.getItem(catalogPageCacheKey(scope, q, category, offset));
+      var item = raw ? JSON.parse(raw) : null;
+      if (!item || !item.savedAt || Date.now() - Number(item.savedAt) > CATALOG_PAGE_CACHE_TTL_MS || !Array.isArray(item.items)) return null;
+      return item;
+    } catch (_) { return null; }
+  }
+
+  function writeCatalogPageCache(scope, q, category, offset, payload) {
+    try {
+      sessionStorage.setItem(catalogPageCacheKey(scope, q, category, offset), JSON.stringify({
+        savedAt: Date.now(), items: payload.items || [], total: Number(payload.total) || 0,
+        productCount: Number(payload.productCount) || 0, overrideCount: Number(payload.overrideCount) || 0,
+        materialSkuCount: Number(payload.materialSkuCount) || 0,
+      }));
+    } catch (_) {}
   }
 
   function stockCellVal(v) {
@@ -1069,6 +1097,20 @@
     var requestSequence = ++catalogRequestSequence;
     var scope = catalogScope;
     var requestOffset = catalogOffset;
+    if (catalogAbortController && typeof catalogAbortController.abort === "function") {
+      try { catalogAbortController.abort(); } catch (_) {}
+    }
+    catalogAbortController = window.AbortController ? new AbortController() : null;
+    if (reset && requestOffset === 0) {
+      var cachedPage = readCatalogPageCache(scope, q, catalogCategoryFilter, requestOffset);
+      if (cachedPage) {
+        catalogTotal = cachedPage.total || cachedPage.items.length;
+        var cachedBody = document.getElementById("viCatalogTbody");
+        if (cachedBody) renderCatalogRows(cachedPage.items, cachedBody, true);
+        var cachedPaging = document.getElementById("viCatalogPaging");
+        if (cachedPaging) cachedPaging.textContent = "Showing cached inventory while live stock refreshes…";
+      }
+    }
     var url = V.vendorApiUrl(
       "/api/vendor/catalog-products?q=" +
         encodeURIComponent(q) +
@@ -1082,7 +1124,9 @@
         "&offset=" +
         requestOffset
     );
-    return vf(url, { headers: V.authHeaders() })
+    var fetchOpts = { headers: V.authHeaders() };
+    if (catalogAbortController) fetchOpts.signal = catalogAbortController.signal;
+    return vf(url, fetchOpts)
       .then(function (res) {
         return V.parseApiJson(res).then(function (x) {
           if (x.status === 401) {
@@ -1114,6 +1158,7 @@
         if (!tb) return;
         var rows = j.items || [];
         renderCatalogRows(rows, tb, reset);
+        writeCatalogPageCache(scope, q, catalogCategoryFilter, requestOffset, j);
         catalogOffset = requestOffset + rows.length;
         var pg = document.getElementById("viCatalogPaging");
         if (pg) {
@@ -1125,6 +1170,7 @@
         }
       })
       .catch(function (e) {
+        if (e && e.name === "AbortError") return;
         if (requestSequence !== catalogRequestSequence || scope !== catalogScope) return;
         window.alert(String((e && e.message) || e));
       });
@@ -1141,7 +1187,12 @@
     /* Inventory data does not depend on the optional category metadata.
        Start loading immediately instead of making the tab wait for it. */
     setTab(startTab);
-    loadOpsQueue();
+    /* The product table is the primary inventory task. Defer the secondary
+       low-stock/movement panels so their full-list query cannot delay the
+       first visible rows. */
+    var runOps = function () { loadOpsQueue(); };
+    if (window.requestIdleCallback) window.requestIdleCallback(runOps, { timeout: 1200 });
+    else window.setTimeout(runOps, 350);
     loadCategories()
       .catch(function () {
         viCategoriesCache = [];
@@ -1306,6 +1357,28 @@
     return out;
   }
 
+  function uniqueGalleryWithoutCover(values, cover) {
+    var seen = Object.create(null);
+    function key(url) {
+      return String(url || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
+        .toLowerCase();
+    }
+    var coverKey = key(cover);
+    if (coverKey) seen[coverKey] = true;
+    return (values || []).map(function (value) {
+      return String(value || "").trim();
+    }).filter(function (url) {
+      var urlKey = key(url);
+      if (!urlKey || seen[urlKey]) return false;
+      seen[urlKey] = true;
+      return true;
+    }).slice(0, 12);
+  }
+
   function buildCreateProductOptions(coverUrl) {
     var cover = String(coverUrl || "").trim();
     var labelEl = document.getElementById("viApCoverColorLabel");
@@ -1363,7 +1436,7 @@
       qtyOptions: [],
       colors: colors,
       heroImage: cover,
-      galleryImages: galleryImages,
+      galleryImages: uniqueGalleryWithoutCover(galleryImages, cover),
       detailBody: descEl ? String(descEl.value || "").trim().slice(0, 8000) : "",
     };
   }

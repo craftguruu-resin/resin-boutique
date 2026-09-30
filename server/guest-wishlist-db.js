@@ -60,16 +60,18 @@ function toggle(guestId, productId, kind, cb) {
   }
   pool
     .query(
-      "SELECT id FROM guest_wishlist_items WHERE guest_id = $1 AND product_id = $2 AND product_kind = $3 LIMIT 1",
-      [guestId, pid, pk]
+      /* Product ids are globally unique across the three storefront types.
+       * Treat a legacy/misclassified kind as the same saved item so a user
+       * can always remove it after a product type migration. */
+      "SELECT id FROM guest_wishlist_items WHERE guest_id = $1 AND product_id = $2 LIMIT 1",
+      [guestId, pid]
     )
     .then(function (r) {
       if (r.rows && r.rows.length) {
         return pool
-          .query("DELETE FROM guest_wishlist_items WHERE guest_id = $1 AND product_id = $2 AND product_kind = $3", [
+          .query("DELETE FROM guest_wishlist_items WHERE guest_id = $1 AND product_id = $2", [
             guestId,
             pid,
-            pk,
           ])
           .then(function () {
             cb(null, { on: false });

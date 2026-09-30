@@ -140,15 +140,26 @@
     };
   }
 
+  function lineExtraText(it) {
+    var x = it && it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : {};
+    if (x.namePlateText) return "Personalisation: " + String(x.namePlateText);
+    if (x.keychainName) return "Personalisation: " + String(x.keychainName);
+    if (x.keychainAlphabet) return "Alphabet: " + String(x.keychainAlphabet);
+    if (x.frameInstructions) return "Instructions: " + String(x.frameInstructions);
+    return "";
+  }
+
   function buildInlineTagBillHtml(order) {
     var g = order.guest || {};
     var items = order.items || [];
     var totals = order.totals || { subtotal: 0, shipping: 0, tax: 0, total: 0 };
     var rows = items
       .map(function (it) {
+        var extra = lineExtraText(it);
         return (
           "<tr><td>" +
           esc(it.name) +
+          (extra ? "<br><small>" + esc(extra) + "</small>" : "") +
           "</td><td>" +
           esc(it.sizeLabel || "") +
           "</td><td style='text-align:center'>" +
@@ -192,6 +203,7 @@
        "<div>Product value " +
        money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
+       (Number(totals.couponDiscount) > 0 ? "<div>Coupon" + (totals.couponCode ? " (" + esc(totals.couponCode) + ")" : "") + " −" + money(totals.couponDiscount) + "</div>" : "") +
        (Number(totals.prepaidDiscount) > 0 ? "<div>Online discount −" + money(totals.prepaidDiscount) + "</div>" : "") +
       (String(order.paymentMethod || "").toLowerCase() === "cod"
         ? "<div>Advance paid now " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +
@@ -215,9 +227,11 @@
     var totals = order.totals || { subtotal: 0, shipping: 0, tax: 0, total: 0 };
     var rows = items
       .map(function (it) {
+        var extra = lineExtraText(it);
         return (
           "<tr><td>" +
           esc(it.name) +
+          (extra ? "<br><small>" + esc(extra) + "</small>" : "") +
           "</td><td>" +
           esc(it.sizeLabel || "") +
           "</td><td style='text-align:center'>" +
@@ -275,6 +289,7 @@
       "<div><strong>Product value</strong> " +
        money(totals.productValue != null ? totals.productValue : totals.subtotal) +
       "</div>" +
+       (Number(totals.couponDiscount) > 0 ? "<div><strong>Coupon" + (totals.couponCode ? " (" + esc(totals.couponCode) + ")" : "") + "</strong> −" + money(totals.couponDiscount) + "</div>" : "") +
        (Number(totals.prepaidDiscount) > 0 ? "<div><strong>Online discount</strong> −" + money(totals.prepaidDiscount) + "</div>" : "") +
        (String(order.paymentMethod || "").toLowerCase() === "cod"
          ? "<div><strong>Advance paid now</strong> " + money(totals.codAdvance != null ? totals.codAdvance : 200) + "</div>" +

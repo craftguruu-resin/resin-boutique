@@ -153,6 +153,29 @@ function resolveSkuMapWithClient(client, items) {
     });
 }
 
+/* Serialize final order creation against the coupon row so max redemptions
+   cannot be exceeded by two customers completing payment at the same time. */
+function ensureCouponCapacity(client, couponCode, paymentReference) {
+  var code = String(couponCode || "").trim().toUpperCase();
+  if (!code) return Promise.resolve();
+  var existing = String(paymentReference || "").trim();
+  var existingCheck = existing
+    ? client.query("SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1", [existing]).then(function (r) { return !!(r.rows && r.rows.length); })
+    : Promise.resolve(false);
+  return existingCheck.then(function (alreadyCreated) {
+    if (alreadyCreated) return null;
+    return client.query("SELECT max_redemptions FROM store_coupons WHERE code = $1 FOR UPDATE", [code]);
+  }).then(function (couponRow) {
+    if (!couponRow) return null;
+    if (!couponRow.rows.length || couponRow.rows[0].max_redemptions == null) return null;
+    var max = Number(couponRow.rows[0].max_redemptions);
+    return client.query("SELECT COUNT(*)::int AS n FROM orders WHERE coupon_code = $1 AND payment_status IN ('paid', 'cod_advance_paid')", [code]).then(function (countRow) {
+      if (Number(countRow.rows[0] && countRow.rows[0].n) >= max) throw new Error("This coupon has reached its redemption limit.");
+      return null;
+    });
+  });
+}
+
 /** Resolve SKUs for bill preview (read-only, no transaction). */
 function resolveSkuMapPool(items, cb) {
   var pool = poolMod.getPool();
@@ -219,7 +242,7 @@ function createCheckoutParcelOrder(opts, cb) {
     })
     .then(function (guestOut) {
       var guestId = guestOut && guestOut.guestId != null ? guestOut.guestId : null;
-      return resolveSkuMapWithClient(client, items).then(function (skuMap) {
+      return ensureCouponCapacity(client, couponCode, paymentReference).then(function () { return resolveSkuMapWithClient(client, items); }).then(function (skuMap) {
         return client
           .query(
             "INSERT INTO orders (tag_ref, guest_id, order_type, product_value, subtotal, coupon_code, coupon_discount, prepaid_discount, shipping, tax, total, gateway_fee, guest_snapshot, payment_status, payment_method, paid_at, payment_reference) " +
@@ -275,8 +298,8 @@ function createCheckoutParcelOrder(opts, cb) {
               var lex = it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : null;
               lineQs.push(
                 client.query(
-                  "INSERT INTO order_items (order_id, line_index, name, size_label, qty, unit_price, image_url, product_id, size_key, sku, line_extra) " +
-                    "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb)",
+                  "INSERT INTO order_items (order_id, line_index, name, size_label, qty, unit_price, image_url, product_id, size_key, sku, line_extra, unit_cost_snapshot) " +
+                    "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11::jsonb, $12)",
                   [
                     orderId,
                     i,
@@ -291,6 +314,7 @@ function createCheckoutParcelOrder(opts, cb) {
                       .slice(0, 200),
                     sku,
                     lex && Object.keys(lex).length ? JSON.stringify(lex) : null,
+                    it.unitCostSnapshot != null && Number.isFinite(Number(it.unitCostSnapshot)) ? Number(it.unitCostSnapshot) : null,
                   ]
                 )
               );
@@ -623,6 +647,14 @@ function getVendorMonthlySummary(cb) {
 }
 
 var FULFILLMENT_OK = { new: 1, packed: 1, shipping: 1, shipped: 1, delivered: 1, cancelled: 1 };
+var FULFILLMENT_NEXT = {
+  new: { packed: 1, cancelled: 1 },
+  packed: { shipping: 1, shipped: 1, cancelled: 1 },
+  shipping: { shipped: 1, delivered: 1 },
+  shipped: { delivered: 1 },
+  delivered: {},
+  cancelled: {},
+};
 
 /** @param {(err: Error|null, out?: object) => void} cb */
 function updateOrderFulfillment(orderId, status, cb) {
@@ -640,9 +672,22 @@ function updateOrderFulfillment(orderId, status, cb) {
     });
   }
   pool
-    .query("UPDATE orders SET fulfillment_status = $1 WHERE id = $2 RETURNING id", [s, id])
+    .query("SELECT fulfillment_status, payment_status FROM orders WHERE id = $1 LIMIT 1", [id])
+    .then(function (found) {
+      if (!found.rows.length) throw new Error("Order not found");
+      var current = String(found.rows[0].fulfillment_status || "new");
+      var payment = String(found.rows[0].payment_status || "");
+      if (current === s) return { rows: [{ id: id }] };
+      if (!FULFILLMENT_NEXT[current] || !FULFILLMENT_NEXT[current][s]) {
+        throw new Error("Cannot change fulfillment from " + current + " to " + s);
+      }
+      if (s !== "cancelled" && payment !== "paid" && payment !== "cod_advance_paid") {
+        throw new Error("Payment must be confirmed before fulfilling this order");
+      }
+      return pool.query("UPDATE orders SET fulfillment_status = $1 WHERE id = $2 AND fulfillment_status = $3 RETURNING id", [s, id, current]);
+    })
     .then(function (r) {
-      if (!r.rows.length) return cb(new Error("Order not found"));
+      if (!r.rows.length) return cb(new Error("Order changed by another user. Refresh and try again."));
       cb(null, { orderId: id, fulfillmentStatus: s });
     })
     .catch(cb);
@@ -752,8 +797,14 @@ function getVendorDashboardSummary(cb) {
     .catch(cb);
 }
 
-/** @param {number} guestId */
-function listOrdersByGuestId(guestId, cb) {
+/** @param {number} guestId @param {{limit?: number, offset?: number}} options */
+function listOrdersByGuestId(guestId, options, cb) {
+  if (typeof options === "function") {
+    cb = options;
+    options = {};
+  }
+  options = options || {};
+  cb = cb || function () {};
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
@@ -766,6 +817,12 @@ function listOrdersByGuestId(guestId, cb) {
       cb(null, []);
     });
   }
+  var limit = Number(options.limit);
+  if (!Number.isFinite(limit) || limit < 1) limit = 80;
+  limit = Math.min(Math.floor(limit), 80);
+  var offset = Number(options.offset);
+  if (!Number.isFinite(offset) || offset < 0) offset = 0;
+  offset = Math.floor(offset);
   pool
     .query(
       "SELECT o.id AS \"orderId\", o.tag_ref AS \"tagRef\", o.created_at AS \"createdAt\", o.paid_at AS \"paidAt\", o.order_type AS \"orderType\", " +
@@ -783,7 +840,7 @@ function listOrdersByGuestId(guestId, cb) {
         "json_agg(" +
         "json_build_object(" +
         "'name', i.name, 'sizeLabel', i.size_label, 'qty', i.qty, 'unitPrice', i.unit_price, " +
-        "'image', i.image_url, 'productId', i.product_id, 'sizeKey', i.size_key, 'sku', i.sku" +
+        "'image', i.image_url, 'productId', i.product_id, 'sizeKey', i.size_key, 'sku', i.sku, 'lineExtra', i.line_extra" +
         ") ORDER BY i.line_index NULLS LAST" +
         ") FILTER (WHERE i.id IS NOT NULL), '[]'::json) AS items " +
         "FROM orders o " +
@@ -791,8 +848,8 @@ function listOrdersByGuestId(guestId, cb) {
         SHIPMENT_JOIN +
         "WHERE o.guest_id = $1 " +
         "GROUP BY o.id " +
-        "ORDER BY o.created_at DESC LIMIT 80",
-      [gid]
+        "ORDER BY o.created_at DESC LIMIT $2 OFFSET $3",
+      [gid, limit + 1, offset]
     )
     .then(function (r) {
       var list = (r.rows || []).map(function (row) {
@@ -816,6 +873,7 @@ function listOrdersByGuestId(guestId, cb) {
             productId: it.productId != null ? String(it.productId) : "",
             sizeKey: it.sizeKey != null ? String(it.sizeKey) : "",
             sku: it.sku != null ? String(it.sku) : "",
+            lineExtra: it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : null,
           };
         });
         return attachShipmentSummary(
@@ -845,7 +903,9 @@ function listOrdersByGuestId(guestId, cb) {
           row
         );
       });
-      cb(null, list);
+      var hasMore = list.length > limit;
+      if (hasMore) list = list.slice(0, limit);
+      cb(null, list, { hasMore: hasMore, nextOffset: offset + list.length });
     })
     .catch(cb);
 }

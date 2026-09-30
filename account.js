@@ -6,10 +6,50 @@
   var SESSION_NAME_KEY = "cg_session_name";
   var pendingHighlightOrderId = "";
   var ordersCache = [];
+  var ordersNextOffset = 0;
+  var ordersHasMore = false;
+  var ordersLoadingMore = false;
+  var ORDER_CACHE_PREFIX = "cgAccountOrdersLastGood:";
   var activeOrderTab = "current";
   var activeAcctSection = "orders";
   var expandedShipmentOrders = Object.create(null);
   var trackingLoadOrders = Object.create(null);
+
+  function orderCacheKey() {
+    var email = String(sessionEmailDisplay() || "").trim().toLowerCase();
+    return email ? ORDER_CACHE_PREFIX + email : "";
+  }
+
+  function saveOrdersCache() {
+    var key = orderCacheKey();
+    if (!key) return;
+    try { sessionStorage.setItem(key, JSON.stringify({ savedAt: Date.now(), orders: ordersCache || [] })); } catch (_) {}
+  }
+
+  function restoreOrdersCache() {
+    var key = orderCacheKey();
+    if (!key) return false;
+    try {
+      var cached = JSON.parse(sessionStorage.getItem(key) || "null");
+      if (!cached || !Array.isArray(cached.orders) || !cached.orders.length) return false;
+      ordersCache = cached.orders;
+      return true;
+    } catch (_) { return false; }
+  }
+
+  function renderCachedOrdersNotice(message) {
+    var list = document.getElementById("accountOrdersList");
+    if (!list) return false;
+    if (!ordersCache.length) restoreOrdersCache();
+    if (!ordersCache.length) return false;
+    setOrderTab(activeOrderTab);
+    renderOrdersFromCache();
+    var note = document.createElement("li");
+    note.className = "account-orders-empty";
+    note.innerHTML = "<p class='account-orders-empty__text'>" + escapeHtml(message) + " Showing your last available orders.</p>";
+    list.insertBefore(note, list.firstChild);
+    return true;
+  }
 
   function billIsStaticDevPage() {
     try {
@@ -207,7 +247,12 @@
   }
 
   function escapeAttr(s) {
-    return String(s).replace(/"/g, "&quot;");
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
   }
 
   function fmtMoney(n) {
@@ -297,10 +342,10 @@
     var expanded = shipmentExpanded(o.orderId);
     var hasTimeline = !!(s.timeline && Array.isArray(s.timeline.steps) && s.timeline.steps.length);
     var staleNote =
-      s.stale && s.lastTrackingSync
-        ? "<p class='account-shipment__stale'>Last synced " +
-          escapeHtml(fmtShortDate(s.lastTrackingSync)) +
-          ". Live tracking updates may be temporarily unavailable.</p>"
+      s.stale
+        ? "<p class='account-shipment__stale'>" +
+          (s.lastTrackingSync ? "Last synced " + escapeHtml(fmtShortDate(s.lastTrackingSync)) + ". " : "") +
+          "Live tracking updates may be temporarily unavailable.</p>"
         : "";
     var statusLabel = s.shipmentStatus || "Processing";
     var timelineInner =
@@ -458,6 +503,9 @@
       .then(function (o) {
         if (!o.x.okHttp || !o.x.json.ok) throw new Error((o.x.json && o.x.json.error) || "Could not refresh tracking");
         var ship = o.x.json.shipment;
+        if (ship && o.x.json.stale) {
+          ship = Object.assign({}, ship, { stale: true, syncError: String(o.x.json.syncError || "") });
+        }
         if (ship) {
           ordersCache.forEach(function (ord, idx) {
             if (String(ord.orderId) === String(orderId)) {
@@ -538,6 +586,11 @@
         if (it.sizeLabel) meta.push(String(it.sizeLabel));
         meta.push(String(Number(it.qty) || 0) + "× @ " + fmtMoney(it.unitPrice));
         if (it.sku) meta.push("SKU " + String(it.sku));
+        var extra = it.lineExtra && typeof it.lineExtra === "object" ? it.lineExtra : {};
+        if (extra.namePlateText) meta.push("Personalisation: " + String(extra.namePlateText));
+        else if (extra.keychainName) meta.push("Personalisation: " + String(extra.keychainName));
+        else if (extra.keychainAlphabet) meta.push("Alphabet: " + String(extra.keychainAlphabet));
+        else if (extra.frameInstructions) meta.push("Instructions: " + String(extra.frameInstructions));
         var imgCell = src
           ? '<div class="account-order-line__img"><img src="' +
             escapeAttr(src) +
@@ -634,7 +687,8 @@
       "</div>" +
       '<div class="account-order-bill__totals">' +
       totalRow("Items total", T.productValue != null ? T.productValue : T.subtotal) +
-      (Number(T.prepaidDiscount) > 0 ? totalRow("Online discount (10%)", "− " + fmtMoney(T.prepaidDiscount)) : "") +
+      (Number(T.couponDiscount) > 0 ? totalRow("Coupon" + (T.couponCode ? " (" + String(T.couponCode) + ")" : "") + " discount", -Number(T.couponDiscount)) : "") +
+      (Number(T.prepaidDiscount) > 0 ? totalRow("Online discount (10%)", -Number(T.prepaidDiscount)) : "") +
       (String(o.paymentMethod || "").toLowerCase() === "cod"
         ? totalRow("COD advance paid", T.codAdvance != null ? T.codAdvance : 200) +
           totalRow("Balance on delivery", T.codBalanceDue != null ? T.codBalanceDue : Math.max(0, Number(grand || 0) - 200))
@@ -882,7 +936,20 @@
         "</strong></p>" +
         "<p>" +
         escapeHtml([a.city, a.state, a.zip, a.country].filter(Boolean).join(", ")) +
-        "</p>";
+        "</p>" +
+        '<div class="account-addr-card__actions">' +
+        '<button type="button" class="checkout-pay-secondary" data-address-edit="' + escapeAttr(a.id) + '">Edit</button>' +
+        '<button type="button" class="account-addr-card__delete" data-address-delete="' + escapeAttr(a.id) + '">Delete</button>' +
+        "</div>" +
+        '<form class="account-addr-card__form" data-address-form="' + escapeAttr(a.id) + '" hidden>' +
+        '<label>Address line 1<input name="addrLine1" required maxlength="300" value="' + escapeAttr(a.addrLine1 || "") + '"></label>' +
+        '<label>Address line 2<input name="addrLine2" maxlength="200" value="' + escapeAttr(a.addrLine2 || "") + '"></label>' +
+        '<div class="account-addr-card__form-grid"><label>City<input name="city" required maxlength="120" value="' + escapeAttr(a.city || "") + '"></label>' +
+        '<label>State<input name="state" required maxlength="120" value="' + escapeAttr(a.state || "") + '"></label></div>' +
+        '<div class="account-addr-card__form-grid"><label>Postal code<input name="zip" required maxlength="20" value="' + escapeAttr(a.zip || "") + '"></label>' +
+        '<label>Type<select name="addressType"><option value=""' + (!a.addressType ? " selected" : "") + '>Other</option><option value="home"' + (a.addressType === "home" ? " selected" : "") + '>Home</option><option value="work"' + (a.addressType === "work" ? " selected" : "") + '>Work</option><option value="other"' + (a.addressType === "other" ? " selected" : "") + '>Other</option></select></label></div>' +
+        '<div class="account-addr-card__actions"><button type="submit" class="checkout-pay-primary">Save address</button><button type="button" class="checkout-pay-secondary" data-address-cancel="' + escapeAttr(a.id) + '">Cancel</button></div>' +
+        '<p class="account-addr-card__error" data-address-error="' + escapeAttr(a.id) + '" role="status"></p></form>';
       list.appendChild(li);
     });
   }
@@ -1078,6 +1145,12 @@
       li.innerHTML = buildOrderBillHtml(o);
       list.appendChild(li);
     });
+    if (ordersHasMore) {
+      var moreLi = document.createElement("li");
+      moreLi.className = "account-orders-load-more";
+      moreLi.innerHTML = '<button type="button" class="checkout-pay-secondary" data-order-load-more>Load older orders</button>';
+      list.appendChild(moreLi);
+    }
     if (pendingHighlightOrderId) {
       var sel = '[data-order-id="' + String(pendingHighlightOrderId).replace(/"/g, "") + '"]';
       var hi = list.querySelector(sel);
@@ -1097,7 +1170,9 @@
     var base = billApiBase();
     var list = document.getElementById("accountOrdersList");
     if (!base || !list) return;
-    fetch(base + "/api/guest/orders", { headers: guestAuthHeaders(), cache: "no-store" })
+    ordersNextOffset = 0;
+    ordersHasMore = false;
+    fetch(base + "/api/guest/orders?limit=40&offset=0", { headers: guestAuthHeaders(), cache: "no-store" })
       .then(function (res) {
         return parseApiJson(res).then(function (x) {
           return { status: res.status, x: x };
@@ -1127,6 +1202,7 @@
           }
           /* Network / 5xx: keep session; show inline error */
           showOrdersCard(true);
+          if (renderCachedOrdersNotice((j && j.error) || "Could not refresh orders.")) return;
           list.innerHTML =
             '<li class="account-orders-empty"><p class="account-orders-empty__text">' +
             escapeHtml((j && j.error) || "Could not load orders. Check your connection and try Refresh.") +
@@ -1141,13 +1217,17 @@
         }
         showOrdersCard(true);
         ordersCache = j.orders || [];
+        ordersHasMore = !!(j.page && j.page.hasMore);
+        ordersNextOffset = Number(j.page && j.page.nextOffset) || ordersCache.length;
+        saveOrdersCache();
         setOrderTab(activeOrderTab);
         renderOrdersFromCache();
       })
       .catch(function (e) {
         /* A temporary outage must not make a signed-in customer look logged
-           out or leave an unexplained blank account panel. */
+        out or leave an unexplained blank account panel. */
         showOrdersCard(true);
+        if (renderCachedOrdersNotice("Could not refresh orders. Check your connection and try Refresh.")) return;
         ordersCache = [];
         list.innerHTML =
           '<li class="account-orders-empty"><p class="account-orders-empty__text">' +
@@ -1157,6 +1237,29 @@
           console.error("loadOrders", e);
         } catch (_) {}
       });
+  }
+
+  function loadMoreOrders() {
+    if (ordersLoadingMore || !ordersHasMore) return;
+    var list = document.getElementById("accountOrdersList");
+    ordersLoadingMore = true;
+    var btn = list && list.querySelector("[data-order-load-more]");
+    if (btn) { btn.disabled = true; btn.textContent = "Loading…"; }
+    fetch(billApiBase() + "/api/guest/orders?limit=40&offset=" + encodeURIComponent(ordersNextOffset), { headers: guestAuthHeaders(), cache: "no-store" })
+      .then(parseApiJson)
+      .then(function (x) {
+        if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not load older orders");
+        var incoming = Array.isArray(x.json.orders) ? x.json.orders : [];
+        ordersCache = ordersCache.concat(incoming);
+        ordersHasMore = !!(x.json.page && x.json.page.hasMore);
+        ordersNextOffset = Number(x.json.page && x.json.page.nextOffset) || (ordersNextOffset + incoming.length);
+        saveOrdersCache();
+        renderOrdersFromCache();
+      })
+      .catch(function (e) {
+        if (window.CraftguruGuestFeedback) window.CraftguruGuestFeedback.notify(e.message || "Could not load older orders");
+      })
+      .finally(function () { ordersLoadingMore = false; });
   }
 
   function afterAuthSuccess(emailNorm, json, nameHint) {
@@ -1450,6 +1553,11 @@
     var outBtn = document.getElementById("acctSignOut");
     if (outBtn) {
       outBtn.addEventListener("click", function () {
+        var token = "";
+        try { token = localStorage.getItem(GUEST_TOKEN_KEY) || ""; } catch (_) {}
+        if (token) {
+          fetch(billApiBase() + "/api/guest/logout", { method: "POST", headers: { Authorization: "Bearer " + token }, keepalive: true }).catch(function () {});
+        }
         try {
           localStorage.removeItem(GUEST_TOKEN_KEY);
         } catch (_) {}
@@ -1466,6 +1574,8 @@
         setAcctNavActive("orders");
         var addrC = document.getElementById("accountAddressesCard");
         var laterC = document.getElementById("accountSaveLaterCard");
+        var profileC = document.getElementById("accountProfileForm");
+        if (profileC) profileC.hidden = true;
         if (addrC) addrC.setAttribute("hidden", "hidden");
         if (laterC) laterC.setAttribute("hidden", "hidden");
         var list = document.getElementById("accountOrdersList");
@@ -1475,6 +1585,40 @@
           ban.textContent = "";
           ban.setAttribute("hidden", "hidden");
         }
+      });
+    }
+
+    var profileEdit = document.getElementById("accountProfileEdit");
+    var profileForm = document.getElementById("accountProfileForm");
+    var profileCancel = document.getElementById("accountProfileCancel");
+    var profileName = document.getElementById("accountProfileName");
+    var profileStatus = document.getElementById("accountProfileStatus");
+    if (profileEdit && profileForm) {
+      profileEdit.addEventListener("click", function () {
+        if (profileName) profileName.value = getSessionName() || (document.getElementById("accountHeroName") || {}).textContent || "";
+        profileForm.hidden = false;
+        if (profileName) profileName.focus();
+      });
+    }
+    if (profileCancel && profileForm) profileCancel.addEventListener("click", function () { profileForm.hidden = true; if (profileStatus) profileStatus.textContent = ""; });
+    if (profileForm) {
+      profileForm.addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var name = String((profileName && profileName.value) || "").trim();
+        if (!name) { if (profileStatus) profileStatus.textContent = "Enter your name."; return; }
+        var save = profileForm.querySelector('button[type="submit"]');
+        if (save) save.disabled = true;
+        if (profileStatus) profileStatus.textContent = "";
+        fetch(billApiBase() + "/api/guest/me", { method: "PATCH", headers: guestAuthHeaders(), body: JSON.stringify({ displayName: name }) })
+          .then(parseApiJson)
+          .then(function (x) {
+            if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not update profile");
+            setSessionName(x.json.displayName || name);
+            refreshAccountHeroName(sessionEmailDisplay(), x.json.displayName || name);
+            profileForm.hidden = true;
+          })
+          .catch(function (e) { if (profileStatus) profileStatus.textContent = e.message || "Could not update profile"; })
+          .finally(function () { if (save) save.disabled = false; });
       });
     }
 
@@ -1507,6 +1651,75 @@
         ev.preventDefault();
         var s = b.getAttribute("data-acct-section");
         if (s) setAccountSection(s);
+      });
+    }
+
+    var addrList = document.getElementById("accountAddrList");
+    if (addrList) {
+      addrList.addEventListener("click", function (ev) {
+        var edit = ev.target && ev.target.closest ? ev.target.closest("[data-address-edit]") : null;
+        if (edit) {
+          var form = addrList.querySelector('[data-address-form="' + edit.getAttribute("data-address-edit") + '"]');
+          if (form) {
+            form.hidden = !form.hidden;
+            if (!form.hidden) {
+              var first = form.querySelector("input");
+              if (first) first.focus();
+            }
+          }
+          return;
+        }
+        var cancel = ev.target && ev.target.closest ? ev.target.closest("[data-address-cancel]") : null;
+        if (cancel) {
+          var cancelForm = addrList.querySelector('[data-address-form="' + cancel.getAttribute("data-address-cancel") + '"]');
+          if (cancelForm) cancelForm.hidden = true;
+          return;
+        }
+        var del = ev.target && ev.target.closest ? ev.target.closest("[data-address-delete]") : null;
+        if (del) {
+          var id = del.getAttribute("data-address-delete");
+          if (del.dataset.armed !== "1") {
+            del.dataset.armed = "1";
+            del.textContent = "Tap again to delete";
+            window.setTimeout(function () {
+              if (del.dataset.armed !== "1") return;
+              delete del.dataset.armed;
+              del.textContent = "Delete";
+            }, 5000);
+            return;
+          }
+          delete del.dataset.armed;
+          del.disabled = true;
+          fetch(billApiBase() + "/api/guest/addresses/" + encodeURIComponent(id), { method: "DELETE", headers: guestAuthHeaders() })
+            .then(parseApiJson)
+            .then(function (x) {
+              if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not delete address");
+              refreshAccountAddresses();
+            })
+            .catch(function (e) {
+              del.disabled = false;
+              if (window.CraftguruGuestFeedback) window.CraftguruGuestFeedback.notify(e.message || "Could not delete address");
+            });
+        }
+      });
+      addrList.addEventListener("submit", function (ev) {
+        var form = ev.target && ev.target.closest ? ev.target.closest("[data-address-form]") : null;
+        if (!form) return;
+        ev.preventDefault();
+        var data = {};
+        Array.prototype.forEach.call(form.elements || [], function (el) { if (el.name) data[el.name] = el.value; });
+        var submit = form.querySelector('button[type="submit"]');
+        var error = form.querySelector("[data-address-error]");
+        if (error) error.textContent = "";
+        if (submit) submit.disabled = true;
+        fetch(billApiBase() + "/api/guest/addresses/" + encodeURIComponent(form.getAttribute("data-address-form")), {
+          method: "PATCH", headers: guestAuthHeaders(), body: JSON.stringify({ address: data })
+        }).then(parseApiJson).then(function (x) {
+          if (!x.okHttp || !x.json.ok) throw new Error((x.json && x.json.error) || "Could not update address");
+          refreshAccountAddresses();
+        }).catch(function (e) {
+          if (error) error.textContent = e.message || "Could not update address";
+        }).finally(function () { if (submit) submit.disabled = false; });
       });
     }
 
@@ -1549,6 +1762,12 @@
     var list = document.getElementById("accountOrdersList");
     if (list) {
       list.addEventListener("click", function (ev) {
+        var more = ev.target && ev.target.closest ? ev.target.closest("[data-order-load-more]") : null;
+        if (more) {
+          ev.preventDefault();
+          loadMoreOrders();
+          return;
+        }
         var dlBtn = ev.target && ev.target.closest ? ev.target.closest("[data-dl-bill-order]") : null;
         if (dlBtn) {
           ev.preventDefault();

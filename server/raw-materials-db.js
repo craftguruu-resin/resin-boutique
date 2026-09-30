@@ -197,14 +197,30 @@ function normalizeOptions(o) {
     variants[slot] = next;
   });
   vendorInventory.variants = variants;
+  function mediaKey(url) {
+    return String(url || "")
+      .trim()
+      .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+      .replace(/[?&]$/, "")
+      .replace(/#.*$/, "")
+      .toLowerCase();
+  }
   var galSrc = Array.isArray(src.galleryImages) ? src.galleryImages : [];
+  var seenGallery = Object.create(null);
+  var coverKey = mediaKey(heroImage);
+  if (coverKey) seenGallery[coverKey] = true;
   var galleryImages = galSrc
     .map(function (u) {
       return String(u || "")
         .trim()
         .slice(0, 2000);
     })
-    .filter(Boolean)
+    .filter(function (url) {
+      var key = mediaKey(url);
+      if (!key || seenGallery[key]) return false;
+      seenGallery[key] = true;
+      return true;
+    })
     .slice(0, 12);
 
   function normList(arr, kind) {

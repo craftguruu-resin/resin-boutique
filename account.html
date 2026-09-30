@@ -17,7 +17,7 @@
   <link rel="stylesheet" href="styles.css?v=20260928recovery2" />
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css?v=20260928recovery1" />
-  <link rel="stylesheet" href="account-page.css" />
+  <link rel="stylesheet" href="account-page.css?v=20260930contract1" />
   <link rel="stylesheet" href="craftguru-theme.css" />
   <script>document.documentElement.classList.add("guest-responsive-root");</script>
   <link rel="stylesheet" href="storefront-fluid.css?v=20260925f11" />
@@ -82,6 +82,12 @@
             <h1 class="account-hero__title">Your account</h1>
             <p class="account-hero__line" id="accountHeroName"></p>
             <p class="account-hero__email" id="accountHeroEmail" hidden></p>
+            <button type="button" class="checkout-pay-secondary account-profile-edit" id="accountProfileEdit">Edit name</button>
+            <form class="account-profile-form" id="accountProfileForm" hidden>
+              <label for="accountProfileName">Display name</label>
+              <div class="account-profile-form__row"><input id="accountProfileName" name="displayName" maxlength="200" autocomplete="name" required><button type="submit" class="checkout-pay-primary">Save</button><button type="button" class="checkout-pay-secondary" id="accountProfileCancel">Cancel</button></div>
+              <p class="account-profile-form__status" id="accountProfileStatus" role="status"></p>
+            </form>
           </div>
 
           <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading">
@@ -171,14 +177,14 @@
 
   <script defer src="cloudinary-delivery.js?v=20260815b"></script>
   <script src="craftguru-api-base.js"></script>
-  <script defer src="data.js?v=20260929images2"></script>
-  <script defer src="catalog-merge.js?v=20260928durable1"></script>
+  <script defer src="data.js?v=20260930contract1"></script>
+  <script defer src="catalog-merge.js?v=20260930contract1"></script>
   <script defer src="cart.js?v=20260928stock2"></script>
   <script defer src="guest-layout.js?v=20260929mobile13"></script>
   <script defer src="auth-db.js"></script>
     <script defer src="google-signin.js"></script>
     <script defer src="auth-home.js"></script>
-  <script defer src="shell.js?v=20260928stock2"></script>
-  <script defer src="account.js?v=20260928recovery1"></script>
+  <script defer src="shell.js?v=20260930contract1"></script>
+  <script defer src="account.js?v=20260930contract1"></script>
 </body>
 </html>

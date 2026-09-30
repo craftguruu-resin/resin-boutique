@@ -57,7 +57,10 @@ function bootstrapVendorUserPromise(p) {
   var hash = bcrypt.hashSync(pass, 10);
   return p.query(
     "INSERT INTO vendor_users (username, password_hash) VALUES ($1, $2) " +
-      "ON CONFLICT (username) DO UPDATE SET password_hash = EXCLUDED.password_hash",
+      /* Migrations must never silently reset an operator's password just
+         because deployment environment variables changed. Password rotation
+         belongs to an explicit authenticated admin action. */
+      "ON CONFLICT (username) DO NOTHING",
     [user, hash]
   );
 }

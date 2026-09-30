@@ -919,7 +919,7 @@
     document.getElementById("vpfBadge").value = opt.badge || "";
     document.getElementById("vpfTrust").value = (opt.trustBullets || []).join("\n");
     var gg = document.getElementById("vpfGalleryImages");
-    if (gg) gg.value = (opt.galleryImages || []).join("\n");
+    if (gg) gg.value = galleryWithoutCover(opt.galleryImages || [], opt.heroImage).join("\n");
     var vi = opt.vendorInventory || {};
     var sq = document.getElementById("vpfStockQty");
     var sn = document.getElementById("vpfStockNote");
@@ -961,6 +961,28 @@
     btn.classList.toggle("vpm-img-fit-btn--on", f === "contain");
   }
 
+  function galleryWithoutCover(values, cover) {
+    var seen = Object.create(null);
+    function key(url) {
+      return String(url || "")
+        .trim()
+        .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+        .replace(/[?&]$/, "")
+        .replace(/#.*$/, "")
+        .toLowerCase();
+    }
+    var coverKey = key(cover);
+    if (coverKey) seen[coverKey] = true;
+    return (values || []).map(function (value) {
+      return String(value || "").trim();
+    }).filter(function (url) {
+      var urlKey = key(url);
+      if (!urlKey || seen[urlKey]) return false;
+      seen[urlKey] = true;
+      return true;
+    }).slice(0, 12);
+  }
+
   function readOptionsFromForm() {
     var uS = document.getElementById("vpfUseSize").checked;
     var uQ = document.getElementById("vpfUseQty").checked;
@@ -985,17 +1007,18 @@
           .filter(Boolean)
           .slice(0, 12)
       : [];
+    var heroImage = document.getElementById("vpfHero").value.trim();
     var o = {
       useSize: uS,
       useQty: uQ,
       useColor: uC,
       badge: document.getElementById("vpfBadge").value.trim(),
-      heroImage: document.getElementById("vpfHero").value.trim(),
+      heroImage: heroImage,
       trustBullets: trust,
       sizes: uS ? readRows("#vpfSizeRows", "size") : [],
       qtyOptions: uQ ? readRows("#vpfQtyRows", "qty") : [],
       colors: uC ? readRows("#vpfColorRows", "color") : [],
-      galleryImages: galleryImages,
+      galleryImages: galleryWithoutCover(galleryImages, heroImage),
       vendorInventory: {
         qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
         note: sn ? sn.value.trim().slice(0, 500) : "",
