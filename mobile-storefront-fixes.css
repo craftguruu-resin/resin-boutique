@@ -341,9 +341,6 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   html.guest-responsive-root body .plp-filter-toggle,
   html.guest-responsive-root body .filter-toggle,
   html.guest-responsive-root body .sort-select { min-height: 2.75rem; }
-  html.guest-responsive-root body .plp-grid:empty::before,
-  html.guest-responsive-root body .rm-grid-cards:empty::before { content: "Loading products…"; display: block; grid-column: 1 / -1; min-height: 12rem; padding: 4rem 1rem; border-radius: 1rem; background: #f1f5f4; color: #52666d; font: 800 .85rem/1 system-ui,sans-serif; text-align: center; }
-
   /* Account, empty and offline screens need the same readable gutters as the
      catalogue; otherwise their desktop panels feel stranded on a phone. */
   html.guest-responsive-root body .account-shell,

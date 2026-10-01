@@ -210,7 +210,6 @@ body.guest-site .plp-grid { align-items: stretch; }
 body.guest-site .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: .5rem; margin-top: 2rem; }
 body.guest-site .pagination button,
 body.guest-site .pagination a { min-width: 2.5rem; min-height: 2.5rem; border-radius: .7rem; }
-body.guest-site .plp-grid:empty::before { content: "No pieces are available here yet."; display: block; grid-column: 1 / -1; padding: 3rem 1rem; text-align: center; color: var(--cg-ink-soft); }
 body.guest-site .plp-grid[aria-busy="true"] { opacity: .68; pointer-events: none; }
 body.guest-site .plp-grid > .is-new,
 body.guest-site .featured-collections-grid > .is-new { animation: cg-card-enter .35s ease both; }

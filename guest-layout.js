@@ -954,8 +954,8 @@
     var versionedHref = href;
     if (href === "mobile-quality.css") versionedHref += "?v=20260925m3";
     if (href === "storefront-fluid.css") versionedHref += "?v=20260925f11";
-    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20260929mobile12css";
-    if (href === "storefront-polish.css") versionedHref += "?v=20261001ui-polish4";
+    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20261001mobile13css";
+    if (href === "storefront-polish.css") versionedHref += "?v=20261001ui-polish5";
     /* Social controls must refresh together with their touch-event fixes,
        rather than remaining behind a cache-first service worker entry. */
     if (href === "social-float-stack.css") versionedHref += "?v=20260929social7";
@@ -1041,12 +1041,11 @@
   function ensureCatalogExperienceScript() {
     if (!document.body || !document.body.classList.contains("guest-site")) return;
     if (!document.body.classList.contains("page-category") &&
-        !document.body.classList.contains("page-product") &&
         !document.body.classList.contains("page-wishlist") &&
-        !document.querySelector("#rmGrid, #rgGrid, .rm-pdp-gallery, #productCatalogGallery")) return;
+        !document.querySelector("#rmGrid, #rgGrid")) return;
     if (document.querySelector('script[src*="catalog-experience.js"]')) return;
     var script = document.createElement("script");
-    script.src = "catalog-experience.js?v=20261001catalog5";
+    script.src = "catalog-experience.js?v=20261001catalog7";
     script.defer = true;
     document.head.appendChild(script);
   }
@@ -1058,26 +1057,6 @@
     script.src = "customer-ui-finish.js?v=20261001uifinish2";
     script.defer = true;
     document.head.appendChild(script);
-  }
-
-  function ensureProductPdpRecovery() {
-    if (!document.body || !document.body.classList.contains("page-product")) return;
-    var root = document.getElementById("productRoot");
-    if (!root || root.dataset.cgPdpRecovery === "1") return;
-    root.dataset.cgPdpRecovery = "1";
-    var retry = function () {
-      if (!root || root.dataset.pdpReady === "1") return;
-      if (!root.querySelector("[data-pdp-phase='loading']")) {
-        var loader = window.CRAFTGURU_PDP_LOAD;
-        root.innerHTML = loader && typeof loader.catalogLoadingHtml === "function"
-          ? loader.catalogLoadingHtml("Preparing this piece…")
-          : '<div class="pdp-load-shell product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading"><div class="pdp-loading-skel" aria-hidden="true"><div class="pdp-loading-skel__media"></div></div><h1>Loading</h1><p>Preparing this piece…</p></div>';
-        root.setAttribute("data-pdp-ready", "1");
-      }
-      try { window.dispatchEvent(new CustomEvent("craftguruPdpRetryRequested")); } catch (_) {}
-    };
-    window.setTimeout(retry, 700);
-    window.setTimeout(retry, 2200);
   }
 
   var mobileDrawerCloseAll = null;
@@ -2074,7 +2053,6 @@
     ensureLayoutResponsiveStyles();
     ensureCatalogExperienceScript();
     ensureCustomerUiFinishScript();
-    ensureProductPdpRecovery();
     ensureIconRailStyles();
     ensureRailIconsLoaded(function () {
       injectCategoryRail();

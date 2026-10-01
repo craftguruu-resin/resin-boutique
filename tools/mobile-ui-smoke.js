@@ -16,7 +16,7 @@ const customerPages = [
   "checkout.html", "account.html", "about.html", "policies.html", "return-gifts.html"
 ];
 
-customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20261001mobile15", "Current mobile shell"));
+customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20261001mobile17", "Current mobile shell"));
 requireText("guest-layout.js", "ensureMobileHeaderNavigation", "Mobile navigation");
 requireText("guest-layout.js", "ensureMobileCatalogQuickBar", "Mobile catalogue controls");
 requireText("guest-layout.js", "ensureMobilePdpPurchaseBar", "Mobile purchase bar");

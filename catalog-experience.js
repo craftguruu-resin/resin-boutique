@@ -34,7 +34,13 @@
     }
     var cards = visibleCards();
     var params = activeParams();
-    var label = cards.length ? cards.length + (cards.length === 1 ? " piece shown" : " pieces shown") : "No pieces shown";
+    /* Loading and true empty states are owned by their catalogue renderer.
+       Do not inject another generic blank-state block above the grid. */
+    if (!cards.length) {
+      if (meta) meta.remove();
+      return;
+    }
+    var label = cards.length + (cards.length === 1 ? " piece shown" : " pieces shown");
     meta.innerHTML = "<span class='cg-catalog-meta__count'>" + label + "</span>" +
       (params.length ? "<span class='cg-catalog-meta__state'>Filters active</span><span class='cg-catalog-meta__chips'></span><button type='button' class='cg-catalog-meta__clear'>Clear filters</button>" : "");
     var chips = meta.querySelector(".cg-catalog-meta__chips");
@@ -149,11 +155,15 @@
         var thumbs = gallery.querySelectorAll(".product-catalog-gallery__thumb, .rm-pdp__thumb, button[data-idx]");
         var active = gallery.querySelector(".product-catalog-gallery__thumb.is-active, .rm-pdp__thumb.is-active, button[data-idx].is-active");
         var index = active ? Array.prototype.indexOf.call(thumbs, active) + 1 : 1;
+        var label;
         if (count.classList.contains("cg-mobile-gallery-count")) {
-          count.textContent = thumbs.length > 1 ? index + " of " + thumbs.length : "";
+          label = thumbs.length > 1 ? index + " of " + thumbs.length : "";
         } else {
-          count.textContent = thumbs.length > 1 ? index + " / " + thumbs.length : "";
+          label = thumbs.length > 1 ? index + " / " + thumbs.length : "";
         }
+        /* This observer watches the gallery child list. Writing an identical
+           value back would create another child mutation and lock the PDP. */
+        if (count.textContent !== label) count.textContent = label;
       };
       new MutationObserver(sync).observe(gallery, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden"] });
       sync();

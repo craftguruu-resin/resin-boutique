@@ -1033,10 +1033,13 @@
       try {
         window.RESIN_CATALOG_PDP.mount(product);
         syncStaleCatalogNotice();
+        return;
       } catch (er) {
-        void er;
+        /* A malformed vendor option must never hide the entire product page.
+           Restore the ordinary PDP markup and continue through its proven
+           renderer below. */
+        restoreProductLayout();
       }
-      return;
     }
 
     if (els.root && els.root.querySelector("[data-resin-pdp]") && productPageLayoutHtml) {
@@ -1519,14 +1522,6 @@
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogMergeComplete);
   window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogMergeProgress);
   window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogMergeProgress);
-  window.addEventListener("craftguruPdpRetryRequested", function () {
-    if (!id) return;
-    catalogMergeComplete = false;
-    applyCachedCatalogOverrides();
-    refreshProductRef();
-    if (product) paintProductAfterCatalog(false);
-    catchUpCatalogPaint();
-  });
 
   /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {
