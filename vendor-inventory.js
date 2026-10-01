@@ -211,6 +211,26 @@
     } catch (_) {}
   }
 
+  /* Inventory rows are a short-lived performance cache, never the source of
+     truth.  Clear every cached page after a mutation so a subsequent reload
+     cannot paint the old stock first (especially when the vendor changed a
+     product in another panel/tab). */
+  function clearCatalogPageCache() {
+    try {
+      var keys = [];
+      for (var i = 0; i < sessionStorage.length; i++) {
+        var key = sessionStorage.key(i);
+        if (key && key.indexOf(CATALOG_PAGE_CACHE_PREFIX) === 0) keys.push(key);
+      }
+      keys.forEach(function (key) { sessionStorage.removeItem(key); });
+    } catch (_) {}
+  }
+
+  function refreshAfterCatalogMutation() {
+    clearCatalogPageCache();
+    loadCatalogPage(true);
+  }
+
   function stockCellVal(v) {
     if (v == null || !Number.isFinite(Number(v))) return "";
     var n = Math.round(Number(v) * 100) / 100;
@@ -1499,6 +1519,23 @@
     loadCatalogPage(true);
   });
 
+  /* Product manager, raw-materials and photo-frame screens broadcast a
+     catalog change after a successful save.  Keep an open Inventory tab in
+     sync instead of waiting for its ten-minute page-cache TTL. */
+  function onVendorCatalogChanged() {
+    clearCatalogPageCache();
+    loadCatalogPage(true);
+  }
+  window.addEventListener("storage", function (ev) {
+    if (!ev || (ev.key !== "craftguruCatalogChangedAt" && ev.key !== "craftguruRawMaterialsChangedAt" && ev.key !== "craftguruPhotoFramesChangedAt")) return;
+    onVendorCatalogChanged();
+  });
+  window.addEventListener("craftguruRawMaterialsChanged", onVendorCatalogChanged);
+  window.addEventListener("craftguruPhotoFramesChanged", onVendorCatalogChanged);
+  window.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") onVendorCatalogChanged();
+  });
+
   var catTb = document.getElementById("viCatalogTbody");
   if (catTb) {
     catTb.addEventListener("click", function (ev) {
@@ -1539,7 +1576,7 @@
           })
           .then(function () {
             btn.textContent = "Saved";
-            return loadCatalogPage(true);
+            return refreshAfterCatalogMutation();
           })
           .catch(function (e) {
             window.alert(String((e && e.message) || e));
@@ -1588,7 +1625,7 @@
           setTimeout(function () {
             btn.textContent = "Save";
           }, 1400);
-          loadCatalogPage(true);
+          refreshAfterCatalogMutation();
         })
         .catch(function (e) {
           window.alert(String((e && e.message) || e));

@@ -28,7 +28,10 @@ function decrementCatalogSlot(client, pid, sk, qty, name) {
   if (!pid || (sk !== "s" && sk !== "m" && sk !== "l")) return Promise.resolve(false);
   var col = sk === "s" ? "stock_s" : sk === "m" ? "stock_m" : "stock_l";
   return client
-    .query("SELECT stock_s, stock_m, stock_l FROM catalog_price_overrides WHERE product_id = $1", [pid])
+    /* The order transaction must lock the row before checking and decrementing
+       stock. Without this, two simultaneous checkouts can both observe the
+       same quantity and oversell it. */
+    .query("SELECT stock_s, stock_m, stock_l FROM catalog_price_overrides WHERE product_id = $1 FOR UPDATE", [pid])
     .then(function (r) {
       if (!r.rows.length) {
         throw new Error("Product is out of stock or inventory is not configured: " + String(name || pid));
@@ -77,7 +80,7 @@ function parseOptionsCell(raw) {
 function decrementVariantStock(client, table, pid, sizeKey, qty, name) {
   var key = String(sizeKey || "").trim();
   if (!key || key === "s" || key === "m" || key === "l") return Promise.resolve(false);
-  return client.query("SELECT options_json FROM " + table + " WHERE id = $1", [pid]).then(function (r) {
+  return client.query("SELECT options_json FROM " + table + " WHERE id = $1 FOR UPDATE", [pid]).then(function (r) {
     if (!r.rows.length) return false;
     var opt = parseOptionsCell(r.rows[0].options_json);
     if (!opt) return false;
@@ -112,7 +115,7 @@ function decrementCatalogVariantStock(client, pid, sizeKey, qty, name) {
   var key = String(sizeKey || "").trim();
   if (!key || key === "s" || key === "m" || key === "l") return Promise.resolve(false);
   return client
-    .query("SELECT options_json FROM catalog_price_overrides WHERE product_id = $1", [pid])
+    .query("SELECT options_json FROM catalog_price_overrides WHERE product_id = $1 FOR UPDATE", [pid])
     .then(function (r) {
       if (!r.rows.length) return false;
       var opt = parseOptionsCell(r.rows[0].options_json);
@@ -145,7 +148,7 @@ function decrementCatalogVariantStock(client, pid, sizeKey, qty, name) {
 }
 
 function decrementJsonQtyOnHand(client, table, pid, qty, name) {
-  return client.query("SELECT options_json FROM " + table + " WHERE id = $1", [pid]).then(function (r) {
+  return client.query("SELECT options_json FROM " + table + " WHERE id = $1 FOR UPDATE", [pid]).then(function (r) {
     if (!r.rows.length) return false;
     var opt = r.rows[0].options_json;
     if (opt == null) return false;

@@ -169,7 +169,18 @@ function parseGalleryPaths(row) {
     .slice(0, 24);
 }
 
-function normalizeGalleryLines(text) {
+function galleryMediaKey(value) {
+  return String(value || "")
+    .trim()
+    /* The storefront appends ?v=... cache-busters when a product changes;
+       those must not turn the same photo into a second gallery entry. */
+    .replace(/([?&])v=[^&#]*(&|$)/gi, "$1")
+    .replace(/[?&]$/, "")
+    .replace(/#.*$/, "")
+    .toLowerCase();
+}
+
+function normalizeGalleryLines(text, cover) {
   var lines = String(text || "")
     .split(/\r?\n/)
     .map(function (s) {
@@ -178,27 +189,31 @@ function normalizeGalleryLines(text) {
     .filter(Boolean);
   var out = [];
   var seen = Object.create(null);
+  var coverKey = galleryMediaKey(cover);
   for (var i = 0; i < lines.length && out.length < 24; i++) {
     var u = normalizeHttpsImageUrl(lines[i]);
-    if (u && !seen[u]) {
-      seen[u] = 1;
-      out.push(u);
+    var candidate = u || (String(lines[i] || "").trim().indexOf("media/") === 0 ? String(lines[i] || "").trim() : "");
+    var key = galleryMediaKey(candidate);
+    if (candidate && key && key !== coverKey && !seen[key]) {
+      seen[key] = 1;
+      out.push(candidate);
       continue;
     }
     var p = String(lines[i] || "").trim();
-    if (p.indexOf("media/") === 0 && p.length < 500 && !seen[p]) {
-      seen[p] = 1;
+    var pathKey = galleryMediaKey(p);
+    if (p.indexOf("media/") === 0 && p.length < 500 && pathKey !== coverKey && !seen[pathKey]) {
+      seen[pathKey] = 1;
       out.push(p);
     }
   }
   return JSON.stringify(out);
 }
 
-function galleryJsonFromOpts(opts) {
+function galleryJsonFromOpts(opts, cover) {
   if (opts && Array.isArray(opts.gallery)) {
-    return normalizeGalleryLines(opts.gallery.map(String).join("\n"));
+    return normalizeGalleryLines(opts.gallery.map(String).join("\n"), cover);
   }
-  return normalizeGalleryLines(String((opts && opts.galleryText) != null ? opts.galleryText : ""));
+  return normalizeGalleryLines(String((opts && opts.galleryText) != null ? opts.galleryText : ""), cover);
 }
 
 function uploadedGalleryFiles(opts) {
@@ -439,7 +454,15 @@ function mapRowToClient(row) {
   if (row.listing_listed === false || row.listed === false) {
     out.listed = false;
   }
-  var gallery = parseGalleryPaths(row);
+  /* Normalize on read as well as on write: older rows may already contain a
+     cover URL in gallery_paths, and that should never render twice on the
+     customer PDP. */
+  var gallery = [];
+  try {
+    gallery = JSON.parse(normalizeGalleryLines(parseGalleryPaths(row).join("\n"), out.image));
+  } catch (_) {
+    gallery = [];
+  }
   if (gallery.length) {
     out.gallery = gallery.map(function (g) {
       return appendMediaCacheBust(g, row.updated_at);
@@ -601,7 +624,7 @@ function createVendorProductAfterSchema(opts, cb) {
 
     var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
     var sizeLabelsJson = JSON.stringify(buildSizeLabelsObject(opts));
-    var galleryPathsJson = galleryJsonFromOpts(opts);
+    var galleryPathsJson = galleryJsonFromOpts(opts, extUrl);
     var galleryFiles = uploadedGalleryFiles(opts);
     var longDescription = normalizeProductDescription(opts && opts.description);
 
@@ -695,7 +718,7 @@ function createVendorProductAfterSchema(opts, cb) {
         }
         var existingGallery = [];
         try { existingGallery = JSON.parse(galleryPathsJson); } catch (_) {}
-        galleryPathsJson = normalizeGalleryLines(existingGallery.concat(relPaths || []).join("\n"));
+        galleryPathsJson = normalizeGalleryLines(existingGallery.concat(relPaths || []).join("\n"), imagePathVal);
         commitInsert(imagePathVal, (rollbackPaths || []).concat(absPaths || []), cb);
       });
     }
@@ -1249,12 +1272,13 @@ function updateVendorProductById(productId, opts, cb) {
               : row.size_labels || {}
         );
         var pricesJson = JSON.stringify({ s: priceS, m: priceM, l: priceL });
-        var galleryPathsJson = JSON.stringify(parseGalleryPaths(row));
+        var extUrl = normalizeHttpsImageUrl(opts && opts.imageUrl);
+        var currentCover = extUrl || String(row.image_path || "").trim();
+        var galleryPathsJson = normalizeGalleryLines(parseGalleryPaths(row).join("\n"), currentCover);
         if (opts && Object.prototype.hasOwnProperty.call(opts, "gallery")) {
-          galleryPathsJson = normalizeGalleryLines(String(opts.gallery || ""));
+          galleryPathsJson = normalizeGalleryLines(String(opts.gallery || ""), currentCover);
         }
         var buf = opts && opts.imageBuffer;
-        var extUrl = normalizeHttpsImageUrl(opts && opts.imageUrl);
         var imageUrlRaw = opts && opts.imageUrl != null ? String(opts.imageUrl).trim() : "";
         if (imageUrlRaw && !extUrl && !(buf && Buffer.isBuffer(buf) && buf.length >= 32)) {
           throw new Error("Invalid image URL. Use a full https:// link (e.g. from Cloudinary).");
