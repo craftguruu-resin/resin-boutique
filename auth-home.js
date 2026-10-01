@@ -313,13 +313,17 @@
         if (token) {
           fetch(getApiBase() + "/api/guest/logout", { method: "POST", headers: { Authorization: "Bearer " + token }, keepalive: true }).catch(function () {});
         }
+        setGuestToken("");
+        /* Clear the bearer token first. setSessionEmail dispatches the auth
+           event, and the header must observe the signed-out state immediately
+           rather than one event late. */
         setSessionEmail("");
         setSessionName("");
-        setGuestToken("");
         if (window.RESIN_CART && typeof window.RESIN_CART.onAccountLogout === "function") {
           window.RESIN_CART.onAccountLogout();
         }
         renderAuthBar();
+        try { window.dispatchEvent(new CustomEvent("craftguruAuthChanged")); } catch (_) {}
       });
     }
     if (els.modal) {

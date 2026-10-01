@@ -1,0 +1,307 @@
+/* Focused polish for the first two vendor tabs only:
+   Dashboard and Orders. No inventory/catalog/storefront selectors belong here. */
+
+body.vendor-saas[data-vendor-nav="dashboard"],
+body.vendor-saas[data-vendor-nav="tags"] {
+  --top-ink: #142640;
+  --top-muted: #64748b;
+  --top-teal: #087f73;
+  --top-teal-soft: #e8f7f3;
+  --top-line: rgba(20, 38, 64, .11);
+  --top-card: rgba(255, 255, 255, .96);
+  --top-shadow: 0 12px 32px rgba(20, 38, 64, .07);
+}
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-main,
+body.vendor-saas[data-vendor-nav="tags"] .vs-main { min-width: 0; }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar,
+body.vendor-saas[data-vendor-nav="tags"] .vs-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 15;
+  border-bottom: 1px solid var(--top-line);
+  background: rgba(255, 255, 255, .92);
+  box-shadow: 0 6px 22px rgba(20, 38, 64, .06);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar__title,
+body.vendor-saas[data-vendor-nav="tags"] .vs-topbar__title { color: var(--top-ink); letter-spacing: -.025em; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar__sub,
+body.vendor-saas[data-vendor-nav="tags"] .vs-topbar__sub { max-width: 70ch; color: var(--top-muted); line-height: 1.55; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar__actions,
+body.vendor-saas[data-vendor-nav="tags"] .vs-topbar__actions { flex-wrap: wrap; }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-content,
+body.vendor-saas[data-vendor-nav="tags"] .vs-content { width: min(100%, 1480px); margin-inline: auto; }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-breadcrumb,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: .5rem;
+  margin: .15rem 0 .85rem;
+  color: var(--top-muted);
+  font-size: .78rem;
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-breadcrumb a,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-breadcrumb a { color: inherit; text-decoration: none; }
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-breadcrumb a:hover,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-breadcrumb a:hover { color: var(--top-teal); }
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-breadcrumb strong,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-breadcrumb strong { color: var(--top-ink); }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-command-strip,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-command-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(8, 127, 115, .16);
+  border-radius: 1rem;
+  background: linear-gradient(115deg, #effaf7 0%, #ffffff 72%);
+  box-shadow: 0 10px 26px rgba(20, 38, 64, .055);
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-command-strip strong,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-command-strip strong { display: block; color: var(--top-ink); font-size: 1rem; }
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-command-strip span,
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-command-strip span { display: block; margin-top: .2rem; color: var(--top-muted); font-size: .78rem; }
+.cg-vendor-command-strip__actions { display: flex; align-items: center; gap: .65rem; }
+.cg-vendor-last-updated { color: var(--top-muted); font-size: .76rem; white-space: nowrap; }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-attention {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--top-line);
+  border-radius: 1rem;
+  background: var(--top-card);
+  box-shadow: var(--top-shadow);
+}
+.cg-vendor-attention__head,
+.cg-vendor-order-summary__head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+.cg-vendor-eyebrow { margin: 0 0 .25rem; color: var(--top-teal); font-size: .68rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+.cg-vendor-attention h2,
+.cg-vendor-order-summary h2 { margin: 0; color: var(--top-ink); font-size: 1.15rem; letter-spacing: -.02em; }
+.cg-vendor-attention__head > a { color: var(--top-teal); font-size: .8rem; font-weight: 800; text-decoration: none; }
+.cg-vendor-attention__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .65rem; margin-top: .85rem; }
+.cg-vendor-attention__item { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: .65rem; min-width: 0; padding: .8rem; border: 1px solid var(--top-line); border-radius: .8rem; color: var(--top-ink); text-decoration: none; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.cg-vendor-attention__item:hover { transform: translateY(-2px); border-color: rgba(8, 127, 115, .3); box-shadow: 0 10px 22px rgba(20, 38, 64, .08); }
+.cg-vendor-attention__icon { display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: .65rem; background: var(--top-teal-soft); color: var(--top-teal); font-weight: 900; }
+.cg-vendor-attention__item strong,
+.cg-vendor-attention__item small { display: block; }
+.cg-vendor-attention__item small { margin-top: .15rem; color: var(--top-muted); font-size: .72rem; }
+
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-order-summary {
+  margin-bottom: 1rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid rgba(8, 127, 115, .16);
+  border-radius: 1rem;
+  background: linear-gradient(115deg, #effaf7 0%, #ffffff 72%);
+  box-shadow: 0 10px 26px rgba(20, 38, 64, .055);
+}
+.cg-vendor-order-summary__views { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .6rem; margin-top: .85rem; }
+.cg-vendor-view { min-width: 0; padding: .75rem; border: 1px solid var(--top-line); border-radius: .8rem; background: #fff; color: var(--top-ink); text-align: left; cursor: pointer; transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.cg-vendor-view:hover, .cg-vendor-view:focus-visible { transform: translateY(-2px); border-color: rgba(8, 127, 115, .32); box-shadow: 0 10px 22px rgba(20, 38, 64, .08); outline: none; }
+.cg-vendor-view strong, .cg-vendor-view small { display: block; }
+.cg-vendor-view small { margin-top: .2rem; color: var(--top-muted); font-size: .7rem; }
+
+@media (max-width: 980px) {
+  .cg-vendor-order-summary__views { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 640px) {
+  body.vendor-saas[data-vendor-nav="dashboard"] .cg-vendor-command-strip,
+  body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-command-strip { align-items: flex-start; flex-direction: column; }
+  .cg-vendor-command-strip__actions { width: 100%; justify-content: space-between; }
+  .cg-vendor-command-strip__actions .vs-btn { flex: 1 1 auto; }
+  .cg-vendor-attention__grid { grid-template-columns: 1fr; }
+  .cg-vendor-order-summary__views { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .cg-vendor-order-summary__head { align-items: flex-start; flex-direction: column; gap: .35rem; }
+}
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-row { gap: .85rem; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card {
+  position: relative;
+  min-height: 7.6rem;
+  overflow: hidden;
+  border: 1px solid var(--top-line);
+  border-radius: 1rem;
+  background: var(--top-card);
+  box-shadow: var(--top-shadow);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card::after {
+  background: linear-gradient(135deg, rgba(8, 127, 115, .1), transparent 62%);
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card:hover,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(8, 127, 115, .32);
+  box-shadow: 0 18px 36px rgba(20, 38, 64, .12);
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card__label { color: var(--top-muted); letter-spacing: .04em; text-transform: uppercase; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card__value { color: var(--top-ink); font-variant-numeric: tabular-nums; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card__sub { color: var(--top-muted); }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__toolbar,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-panel,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ops-queue,
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-notify {
+  border-color: var(--top-line);
+  border-radius: 1rem;
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__toolbar {
+  position: sticky;
+  top: 5.4rem;
+  z-index: 8;
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 7px 20px rgba(20, 38, 64, .05);
+  backdrop-filter: blur(12px);
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__tab,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-period-tab {
+  min-height: 2.5rem;
+  border-radius: .7rem;
+  font-weight: 750;
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__tab--active,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__tab[aria-selected="true"] {
+  color: #fff;
+  background: var(--top-teal);
+  box-shadow: 0 6px 14px rgba(8, 127, 115, .2);
+}
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-chart-wrap--tall,
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-chart-wrap { min-height: 19rem; }
+body.vendor-saas[data-vendor-nav="dashboard"] canvas { max-width: 100%; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-bar-row { min-height: 2.35rem; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-bar-row__label { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-bar-row__val { font-variant-numeric: tabular-nums; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-notify__item { border-color: var(--top-line); padding: .85rem 1rem; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-notify__title { color: var(--top-ink); }
+
+/* Orders: make the controls scan in the order payment → fulfilment → shipment. */
+body.vendor-saas[data-vendor-nav="tags"] .vs-card--toolbar {
+  position: sticky;
+  top: 5.4rem;
+  z-index: 10;
+  border: 1px solid var(--top-line);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, .94);
+  box-shadow: var(--top-shadow);
+  backdrop-filter: blur(14px);
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-toolbar-heading { color: var(--top-ink); letter-spacing: .05em; text-transform: uppercase; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill-row { gap: .45rem; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill {
+  min-height: 2.35rem;
+  border: 1px solid var(--top-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--top-muted);
+  font-weight: 700;
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill:hover,
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill:focus-visible,
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill--active,
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill.is-active {
+  border-color: rgba(8, 127, 115, .35);
+  background: var(--top-teal-soft);
+  color: var(--top-teal);
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-field input,
+body.vendor-saas[data-vendor-nav="tags"] .vs-field select,
+body.vendor-saas[data-vendor-nav="tags"] .vs-field textarea {
+  min-height: 2.75rem;
+  border-radius: .7rem;
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-split { align-items: start; gap: 1rem; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-table-wrap {
+  border: 1px solid var(--top-line);
+  border-radius: 1rem;
+  background: var(--top-card);
+  box-shadow: var(--top-shadow);
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-table { min-width: 980px; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  color: var(--top-ink);
+  background: #eff9f7;
+  font-size: .72rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+body.vendor-saas[data-vendor-nav="tags"] .vs-table td { vertical-align: middle; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-table tr:hover td { background: rgba(232, 247, 243, .55); }
+body.vendor-saas[data-vendor-nav="tags"] .vt-sort { min-height: 2rem; color: inherit; font-weight: 800; }
+body.vendor-saas[data-vendor-nav="tags"] .vt-sort::after { content: "↕"; margin-left: .35rem; opacity: .45; }
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail {
+  position: sticky;
+  top: 5.4rem;
+  border: 1px solid var(--top-line);
+  border-radius: 1rem;
+  background: var(--top-card);
+  box-shadow: var(--top-shadow);
+}
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__head { border-bottom-color: var(--top-line); }
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__title { color: var(--top-ink); }
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__close { margin-left: .35rem; }
+body.vendor-saas[data-vendor-nav="tags"] .cg-vendor-result-count { margin: .7rem 0 .45rem; font-size: .78rem; font-variant-numeric: tabular-nums; }
+body.vendor-saas[data-vendor-nav="tags"] #vtTbody tr:has(.vt-open) { cursor: pointer; }
+body.vendor-saas[data-vendor-nav="tags"] #vtTbody tr:has(.vt-open):focus-within td { background: rgba(232, 247, 243, .7); }
+body.vendor-saas[data-vendor-nav="tags"] .vs-ful-cell { min-width: 12rem; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-ful-pill { min-height: 2.2rem; border-radius: 999px; }
+body.vendor-saas[data-vendor-nav="tags"] .vs-badge { border-radius: 999px; font-weight: 800; }
+body.vendor-saas[data-vendor-nav="tags"] .cg-ship-panel { border-color: var(--top-line); border-radius: .9rem; background: #f8fcfb; }
+body.vendor-saas[data-vendor-nav="tags"] #returns { border-color: var(--top-line); border-radius: 1rem; box-shadow: var(--top-shadow); }
+body.vendor-saas[data-vendor-nav="tags"] #returns .vs-table-wrap { box-shadow: none; }
+
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-btn,
+body.vendor-saas[data-vendor-nav="tags"] .vs-btn { min-height: 2.6rem; border-radius: .7rem; font-weight: 750; }
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-btn:focus-visible,
+body.vendor-saas[data-vendor-nav="tags"] .vs-btn:focus-visible,
+body.vendor-saas[data-vendor-nav="dashboard"] .vs-pill:focus-visible,
+body.vendor-saas[data-vendor-nav="tags"] .vs-pill:focus-visible,
+body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__tab:focus-visible,
+body.vendor-saas[data-vendor-nav="tags"] .vt-sort:focus-visible {
+  outline: 3px solid rgba(8, 127, 115, .3);
+  outline-offset: 2px;
+}
+
+@media (max-width: 980px) {
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-ledger__toolbar,
+  body.vendor-saas[data-vendor-nav="tags"] .vs-card--toolbar,
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail { position: static; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-main-grid { grid-template-columns: 1fr; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-split { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar,
+  body.vendor-saas[data-vendor-nav="tags"] .vs-topbar { padding: .9rem 1rem; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar__actions,
+  body.vendor-saas[data-vendor-nav="tags"] .vs-topbar__actions { width: 100%; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vs-topbar__actions .vs-btn,
+  body.vendor-saas[data-vendor-nav="tags"] .vs-topbar__actions .vs-btn { flex: 1 1 auto; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card { min-height: 6.7rem; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-kpi-card__chart { display: none; }
+  body.vendor-saas[data-vendor-nav="dashboard"] .vd-chart-wrap--tall,
+  body.vendor-saas[data-vendor-nav="dashboard"] .vs-chart-wrap { min-height: 14rem; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-card--toolbar { padding: .85rem; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-pill-row { overflow-x: auto; flex-wrap: nowrap; padding-bottom: .15rem; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-pill { flex: 0 0 auto; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-table-wrap { margin-inline: -.2rem; border-inline: 0; border-radius: .85rem; }
+  body.vendor-saas[data-vendor-nav="tags"] .vs-table { min-width: 860px; }
+  body.vendor-saas[data-vendor-nav="tags"] #returns { margin-top: 1rem !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.vendor-saas[data-vendor-nav="dashboard"] *,
+  body.vendor-saas[data-vendor-nav="tags"] * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

@@ -1519,6 +1519,14 @@
   window.addEventListener("craftguruCatalogPricesMerged", onCatalogMergeComplete);
   window.addEventListener("craftguruCatalogVendorProductsMerged", onCatalogMergeProgress);
   window.addEventListener("craftguruCatalogCategoriesMerged", onCatalogMergeProgress);
+  window.addEventListener("craftguruPdpRetryRequested", function () {
+    if (!id) return;
+    catalogMergeComplete = false;
+    applyCachedCatalogOverrides();
+    refreshProductRef();
+    if (product) paintProductAfterCatalog(false);
+    catchUpCatalogPaint();
+  });
 
   /** BFCache restore: swap product without full page reload when URL id changed. */
   window.addEventListener("pageshow", function (ev) {

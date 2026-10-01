@@ -181,15 +181,22 @@
       },
     };
     /* Product, cart and checkout validation used blocking browser dialogs.
-       Keep their existing call sites, but make the customer experience non-blocking. */
-    window.alert = function (message) {
-      var text = String(message == null ? "" : message);
-      if (/stock|size|colour|color|cart|product/i.test(text) && document.body.classList.contains("page-product")) {
-        window.CraftguruGuestFeedback.productProblem(text);
-      } else {
-        window.CraftguruGuestFeedback.notify(text);
-      }
-    };
+       Keep their existing call sites, but make the customer experience
+       non-blocking on every guest page. */
+    if (!window.__cgGuestAlertBridge) {
+      var nativeAlert = window.alert;
+      window.__cgGuestAlertBridge = true;
+      window.alert = function (message) {
+        var text = String(message == null ? "" : message).trim();
+        if (!text) return;
+        if (/stock|size|colour|color|cart|product|inventory|option|try again|unavailable/i.test(text)) {
+          window.CraftguruGuestFeedback.productProblem(text);
+        } else {
+          window.CraftguruGuestFeedback.notify(text);
+        }
+      };
+      window.__cgNativeAlert = nativeAlert;
+    }
   }
 
   function escapeHtml(s) {
@@ -948,6 +955,7 @@
     if (href === "mobile-quality.css") versionedHref += "?v=20260925m3";
     if (href === "storefront-fluid.css") versionedHref += "?v=20260925f11";
     if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20260929mobile12css";
+    if (href === "storefront-polish.css") versionedHref += "?v=20261001ui-polish4";
     /* Social controls must refresh together with their touch-event fixes,
        rather than remaining behind a cache-first service worker entry. */
     if (href === "social-float-stack.css") versionedHref += "?v=20260929social7";
@@ -1024,9 +1032,52 @@
     ensureStylesheet("mobile-quality.css");
     ensureStylesheet("storefront-fluid.css");
     ensureStylesheet("mobile-storefront-fixes.css");
+    ensureStylesheet("storefront-polish.css");
     try {
       document.documentElement.classList.add("guest-responsive-root");
     } catch (_) {}
+  }
+
+  function ensureCatalogExperienceScript() {
+    if (!document.body || !document.body.classList.contains("guest-site")) return;
+    if (!document.body.classList.contains("page-category") &&
+        !document.body.classList.contains("page-product") &&
+        !document.body.classList.contains("page-wishlist") &&
+        !document.querySelector("#rmGrid, #rgGrid, .rm-pdp-gallery, #productCatalogGallery")) return;
+    if (document.querySelector('script[src*="catalog-experience.js"]')) return;
+    var script = document.createElement("script");
+    script.src = "catalog-experience.js?v=20261001catalog5";
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  function ensureCustomerUiFinishScript() {
+    if (!document.body || !document.body.classList.contains("guest-site")) return;
+    if (document.querySelector('script[src*="customer-ui-finish.js"]')) return;
+    var script = document.createElement("script");
+    script.src = "customer-ui-finish.js?v=20261001uifinish2";
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+
+  function ensureProductPdpRecovery() {
+    if (!document.body || !document.body.classList.contains("page-product")) return;
+    var root = document.getElementById("productRoot");
+    if (!root || root.dataset.cgPdpRecovery === "1") return;
+    root.dataset.cgPdpRecovery = "1";
+    var retry = function () {
+      if (!root || root.dataset.pdpReady === "1") return;
+      if (!root.querySelector("[data-pdp-phase='loading']")) {
+        var loader = window.CRAFTGURU_PDP_LOAD;
+        root.innerHTML = loader && typeof loader.catalogLoadingHtml === "function"
+          ? loader.catalogLoadingHtml("Preparing this piece…")
+          : '<div class="pdp-load-shell product-page-awaiting-catalog" role="status" aria-live="polite" data-pdp-phase="loading"><div class="pdp-loading-skel" aria-hidden="true"><div class="pdp-loading-skel__media"></div></div><h1>Loading</h1><p>Preparing this piece…</p></div>';
+        root.setAttribute("data-pdp-ready", "1");
+      }
+      try { window.dispatchEvent(new CustomEvent("craftguruPdpRetryRequested")); } catch (_) {}
+    };
+    window.setTimeout(retry, 700);
+    window.setTimeout(retry, 2200);
   }
 
   var mobileDrawerCloseAll = null;
@@ -1605,6 +1656,37 @@
     ensureCartDialog();
   }
 
+  /* Small, page-agnostic quality-of-life improvements. These only annotate
+     existing controls and improve link safety; they do not change any
+     catalogue, cart, checkout, or API behavior. */
+  function ensureStorefrontMicroUX() {
+    if (window.__cgStorefrontMicroUX) return;
+    window.__cgStorefrontMicroUX = true;
+    document.documentElement.classList.add("cg-ux-polished");
+
+    var currentPath = window.location.pathname.split("/").pop() || "index.html";
+    document.querySelectorAll(".nav-dock a[href]").forEach(function (link) {
+      var href = String(link.getAttribute("href") || "").split("#")[0].split("?")[0];
+      var linkPath = href.split("/").pop() || "index.html";
+      if (linkPath === currentPath || (currentPath === "index.html" && linkPath === "")) {
+        link.setAttribute("aria-current", "page");
+      }
+    });
+
+    document.querySelectorAll('a[target="_blank"]').forEach(function (link) {
+      var rel = String(link.getAttribute("rel") || "").split(/\s+/).filter(Boolean);
+      if (rel.indexOf("noopener") < 0) rel.push("noopener");
+      if (rel.indexOf("noreferrer") < 0) rel.push("noreferrer");
+      link.setAttribute("rel", rel.join(" "));
+    });
+
+    document.querySelectorAll(".cart-count, .cg-mobile-header-cart-count").forEach(function (count) {
+      count.setAttribute("aria-live", "polite");
+      count.setAttribute("aria-atomic", "true");
+    });
+
+  }
+
   function ensureMobileFooterAccordions() {
     if (!window.matchMedia("(max-width: 640px)").matches) return;
     document.querySelectorAll(".site-footer .footer-sitemap__col").forEach(function (col, index) {
@@ -1782,7 +1864,7 @@
     actions.className = "cg-mobile-header-actions";
     actions.innerHTML =
       '<button type="button" class="cg-mobile-header-action" data-cg-mobile-cart aria-label="Open shopping cart">' +
-      '<span aria-hidden="true">Bag</span><span class="cg-mobile-header-cart-count" id="cgMobileHeaderCartCount">0</span></button>' +
+      '<span aria-hidden="true">Bag</span><span class="cg-mobile-header-cart-count" id="cgMobileHeaderCartCount" aria-live="polite" aria-atomic="true">0</span></button>' +
       '<button type="button" class="cg-mobile-header-action cg-mobile-header-action--menu" data-cg-mobile-menu aria-expanded="false" aria-controls="cgMobileHeaderDrawer">' +
       '<span class="cg-mobile-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="visually-hidden">Open menu</span></button>';
     top.appendChild(actions);
@@ -1971,6 +2053,7 @@
     document.body.classList.add("guest-site");
     ensureGuestFeedback();
     ensureGuestAccessibility();
+    ensureStorefrontMicroUX();
     ensureMobileFooterAccordions();
     ensureMobileCatalogQuickBar();
     ensureMobileCriticalMedia();
@@ -1989,6 +2072,9 @@
       window.CraftguruCategoryScroll.resetPageScroll();
     }
     ensureLayoutResponsiveStyles();
+    ensureCatalogExperienceScript();
+    ensureCustomerUiFinishScript();
+    ensureProductPdpRecovery();
     ensureIconRailStyles();
     ensureRailIconsLoaded(function () {
       injectCategoryRail();
@@ -2006,6 +2092,12 @@
     try { injectStorefrontAuthChrome(); } catch (_) {}
     enforceHeaderAccountLabel();
     window.addEventListener("craftguruAuthChanged", enforceHeaderAccountLabel);
+    window.addEventListener("storage", function (ev) {
+      if (!ev || ev.key === "craftguruGuestToken" || ev.key === "cg_session_email" || ev.key === "cg_session_name") {
+        enforceHeaderAccountLabel();
+      }
+    });
+    window.addEventListener("pageshow", enforceHeaderAccountLabel);
     window.setTimeout(enforceHeaderAccountLabel, 0);
     window.setTimeout(enforceHeaderAccountLabel, 150);
     try { wireHeaderWishlistLink(); } catch (_) {}

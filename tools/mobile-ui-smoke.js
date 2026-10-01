@@ -16,10 +16,12 @@ const customerPages = [
   "checkout.html", "account.html", "about.html", "policies.html", "return-gifts.html"
 ];
 
-customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20260929mobile13", "Current mobile shell"));
+customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20261001mobile15", "Current mobile shell"));
 requireText("guest-layout.js", "ensureMobileHeaderNavigation", "Mobile navigation");
 requireText("guest-layout.js", "ensureMobileCatalogQuickBar", "Mobile catalogue controls");
 requireText("guest-layout.js", "ensureMobilePdpPurchaseBar", "Mobile purchase bar");
+requireText("guest-layout.js", "ensureCustomerUiFinishScript", "Customer UI completion layer");
+requireText("customer-ui-finish.js", "cg-ui-finish-ready", "Customer UI accessibility/media layer");
 requireText("guest-layout.js", "if (proxy.textContent !== label)", "Purchase-bar mutation-loop guard");
 requireText("guest-layout.js", "max-width: 640px", "Mobile-only purchase bar");
 requireText("guest-layout.js", "cg-social-fallback", "Social fallback");

@@ -249,6 +249,7 @@
       if (n.stockMax != null) hit.stockMax = n.stockMax;
       var mergedQty = clampLineQty(hit, safeNumber(hit.qty, 1) + safeNumber(n.qty, 1));
       if (mergedQty > 0) hit.qty = mergedQty;
+      else lines = lines.filter(function (line) { return line !== hit; });
     } else {
       n.qty = clampLineQty(n, n.qty);
       if (n.qty > 0) lines.push(n);

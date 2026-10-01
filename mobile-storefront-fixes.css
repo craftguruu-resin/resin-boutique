@@ -269,7 +269,6 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   html.guest-responsive-root body.guest-site .cart-item__remove,
   html.guest-responsive-root body.guest-site .cart-item__qty { min-width: 2.75rem; min-height: 2.75rem; }
   html.guest-responsive-root body.guest-site .cart-item { align-items: flex-start; }
-  html.guest-responsive-root body.guest-site .cart-item__status { margin: .18rem 0 0; color: #4b6b67; font-size: .68rem; font-weight: 650; line-height: 1.25; }
   html.guest-responsive-root body.guest-site .cg-cart-saved-later { display: inline-flex; align-items: center; min-height: 2.55rem; margin-top: .45rem; color: #075f56; font-size: .8rem; font-weight: 800; text-decoration: underline; text-underline-offset: .15rem; }
 
   /* Large, reliable controls on every product-detail family. */
