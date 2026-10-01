@@ -196,11 +196,31 @@
         .toLowerCase();
     }
 
+    /* The vendor-selected cover is always the first PDP image. This keeps the
+       photo-frame page aligned with cart/checkout and avoids a cover URL being
+       rendered again when it is also present in a colour row. */
+    var cover = D && D.getProductCoverImage
+      ? D.getProductCoverImage(m)
+      : String(opt.heroImage || m.image || "").trim();
+    var coverKey = mediaKey(cover);
+    if (coverKey) {
+      seen[coverKey] = 1;
+      entries.push({ url: String(cover).trim(), kind: "hero" });
+    }
+
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
         var key = mediaKey(u);
-        if (!key || seen[key]) return;
+        if (!key) return;
+        if (seen[key]) {
+          colorUrls[key] = 1;
+          if (key === coverKey && c.id && entries[0] && mediaKey(entries[0].url) === key) {
+            entries[0].kind = "color";
+            entries[0].cid = String(c.id);
+          }
+          return;
+        }
         seen[key] = 1;
         entries.push({
           url: u,

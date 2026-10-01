@@ -204,11 +204,34 @@
         .toLowerCase();
     }
 
+    /*
+     * Keep the configured cover first. The old colour-first ordering meant a
+     * gallery could open on an arbitrary swatch even when the vendor had
+     * explicitly selected a cover image; if that same URL also existed in the
+     * colour rows it could appear twice after the options were merged.
+     */
+    var cover = D && D.getProductCoverImage
+      ? D.getProductCoverImage(m)
+      : String(opt.heroImage || m.image || "").trim();
+    var coverKey = mediaKey(cover);
+    if (coverKey && !isLandingHeroAsset(cover)) {
+      seen[coverKey] = 1;
+      entries.push({ url: String(cover).trim(), kind: "hero" });
+    }
+
     if (opt.useColor && opt.colors && opt.colors.length) {
       opt.colors.forEach(function (c) {
         var u = String(c.image || "").trim();
         var key = mediaKey(u);
-        if (!key || isLandingHeroAsset(u) || seen[key]) return;
+        if (!key || isLandingHeroAsset(u)) return;
+        if (seen[key]) {
+          colorUrls[key] = 1;
+          if (key === coverKey && c.id && entries[0] && mediaKey(entries[0].url) === key) {
+            entries[0].kind = "color";
+            entries[0].cid = String(c.id);
+          }
+          return;
+        }
         seen[key] = 1;
         entries.push({
           url: u,
