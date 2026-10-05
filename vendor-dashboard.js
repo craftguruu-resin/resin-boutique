@@ -10,6 +10,7 @@
   var chartJsLoading = false;
   var chartJsWaiters = [];
   var chartPeriod = "monthly";
+  var dashboardLoadSequence = 0;
 
   function ensureChartJs(cb) {
     if (typeof Chart !== "undefined") {
@@ -372,6 +373,7 @@
   }
 
   function loadDash() {
+    var requestId = ++dashboardLoadSequence;
     var base = V.apiBase();
     var errEl = document.getElementById("vdErr");
     showErr(errEl, "");
@@ -394,17 +396,22 @@
       }),
     ])
       .then(function (pair) {
+        /* Ignore an older response when a period change or refresh has already
+           started a newer request. This prevents duplicate chart work. */
+        if (requestId !== dashboardLoadSequence) return;
         var ins = pair[0];
         var sum = pair[1];
         fillKpis(ins);
         renderCategoryBars(ins);
         renderNotify(sum.notifications || []);
         ensureChartJs(function () {
+          if (requestId !== dashboardLoadSequence) return;
           renderDonuts(ins);
           renderMainChart(ins);
         });
       })
       .catch(function (e) {
+        if (requestId !== dashboardLoadSequence) return;
         showErr(errEl, String((e && e.message) || e));
       });
   }

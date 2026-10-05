@@ -149,9 +149,14 @@
       var rows = Array.prototype.filter.call(tbody.querySelectorAll("tr"), function (row) {
         return !row.querySelector(".vs-err, .vs-muted") || row.querySelector(".vt-open");
       });
-      count.textContent = rows.length + (rows.length === 1 ? " order shown" : " orders shown");
+      /* This function runs from the desk MutationObserver. Writing the same
+         count on every pass creates a childList mutation of our own, which
+         used to make the Orders screen loop until it became unresponsive. */
+      var countText = rows.length + (rows.length === 1 ? " order shown" : " orders shown");
+      if (count.textContent !== countText) count.textContent = countText;
       var summaryCount = document.getElementById("cgVendorOrderSummaryCount");
-      if (summaryCount) summaryCount.textContent = rows.length + (rows.length === 1 ? " order in view" : " orders in view");
+      var summaryText = rows.length + (rows.length === 1 ? " order in view" : " orders in view");
+      if (summaryCount && summaryCount.textContent !== summaryText) summaryCount.textContent = summaryText;
     }
     if (tbody && !tbody.dataset.cgRowOpen) {
       tbody.dataset.cgRowOpen = "1";
@@ -164,21 +169,35 @@
     }
   }
 
-  function boot() {
-    if (nav === "dashboard") addDashboardCommandCenter();
-    if (nav === "tags") addOrdersCommandCenter();
+  var refreshQueued = false;
+  function refreshEnhancements() {
+    refreshQueued = false;
     syncStates();
     annotateStatus();
     enhanceOrders();
+  }
+
+  function scheduleEnhancementRefresh() {
+    if (refreshQueued) return;
+    refreshQueued = true;
+    var run = function () { refreshEnhancements(); };
+    if (window.requestAnimationFrame) window.requestAnimationFrame(run);
+    else window.setTimeout(run, 0);
+  }
+
+  function boot() {
+    if (nav === "dashboard") addDashboardCommandCenter();
+    if (nav === "tags") addOrdersCommandCenter();
+    refreshEnhancements();
     var host = nav === "dashboard" ? document.getElementById("vdDeskSection") : document.getElementById("vtDeskSection");
     if (host && window.MutationObserver) {
-      new MutationObserver(function () {
-        syncStates();
-        annotateStatus();
-        enhanceOrders();
-      }).observe(host, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden", "aria-sort"] });
+      new MutationObserver(scheduleEnhancementRefresh).observe(host, { subtree: true, childList: true, attributes: true, attributeFilter: ["class", "hidden", "aria-sort"] });
     }
   }
+
+  /* Modules can request one coalesced refresh after rendering their data,
+     rather than relying on a cascade of DOM mutations. */
+  window.CraftguruVendorTopTabs = { refresh: scheduleEnhancementRefresh };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

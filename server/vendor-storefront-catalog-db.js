@@ -370,12 +370,33 @@ function listStorefrontCatalog(opts, cb) {
               var sliceIds = slice.map(function (p) {
                 return p.id;
               });
-              vendorExtrasDb.aggregateSellableStockByProductIds(sliceIds, function (eAgg, aggMap) {
-                if (eAgg) return cb(eAgg);
-                aggMap = aggMap || {};
-                vendorExtrasDb.getSkuMapForProductIds(sliceIds, function (eSku, skuMap) {
-                  if (eSku) return cb(eSku);
-                  skuMap = skuMap || {};
+              /* These three reads are independent. Running them in series
+                 held the first Inventory paint behind multiple round trips
+                 to Postgres; request them together and compose one page. */
+              Promise.all([
+                new Promise(function (resolve, reject) {
+                  vendorExtrasDb.aggregateSellableStockByProductIds(sliceIds, function (eAgg, aggMap) {
+                    if (eAgg) return reject(eAgg);
+                    resolve(aggMap || {});
+                  });
+                }),
+                new Promise(function (resolve, reject) {
+                  vendorExtrasDb.getSkuMapForProductIds(sliceIds, function (eSku, skuMap) {
+                    if (eSku) return reject(eSku);
+                    resolve(skuMap || {});
+                  });
+                }),
+                new Promise(function (resolve, reject) {
+                  vendorExtrasDb.countInventoryRows(function (eMat, matCount) {
+                    if (eMat) return reject(eMat);
+                    resolve(matCount);
+                  });
+                }),
+              ])
+                .then(function (parts) {
+                  var aggMap = parts[0] || {};
+                  var skuMap = parts[1] || {};
+                  var matCount = parts[2];
                   slice = slice.map(function (p) {
                     if (p.productKind !== "catalog") return p;
                     return mapResinCatalogItem(
@@ -393,23 +414,20 @@ function listStorefrontCatalog(opts, cb) {
                       skuMap
                     );
                   });
-                  vendorExtrasDb.countInventoryRows(function (eMat, matCount) {
-                    if (eMat) return cb(eMat);
-                    cb(null, {
-                      productCount: allItems.length,
-                      overrideCount: Object.keys(omap).length,
-                      materialSkuCount: matCount,
-                      scope: scope || "all",
-                      total: total,
-                      offset: off,
-                      limit: lim,
-                      hasMore: off + slice.length < total,
-                      nextOffset: off + slice.length,
-                      items: slice,
-                    });
+                  cb(null, {
+                    productCount: allItems.length,
+                    overrideCount: Object.keys(omap).length,
+                    materialSkuCount: matCount,
+                    scope: scope || "all",
+                    total: total,
+                    offset: off,
+                    limit: lim,
+                    hasMore: off + slice.length < total,
+                    nextOffset: off + slice.length,
+                    items: slice,
                   });
-                });
-              });
+                })
+                .catch(cb);
             }
 
             var resinItems = needResin ? resinList.map(function (p) {
@@ -566,14 +584,17 @@ function saveMaterialCatalogPrices(kind, productId, body, cb) {
     if (!m) return cb(new Error("Unknown product id"));
 
     var opt = JSON.parse(JSON.stringify(m.options || {}));
-    var note = (opt.vendorInventory && opt.vendorInventory.note) || "";
     var base = Number(m.priceInr) || 0;
     var nextBase = applyTierPatchToOptions(opt, body, base);
     var qty = qtyFromStockBody(body);
-    opt.vendorInventory = {
-      qtyOnHand: qty,
-      note: String(note || "").slice(0, 500),
-    };
+    /* A product-details save normally contains no stock fields. Preserve all
+       inventory metadata (including variant stock) in that case. */
+    if (qty != null) {
+      var currentInventory =
+        opt.vendorInventory && typeof opt.vendorInventory === "object" ? opt.vendorInventory : {};
+      currentInventory.qtyOnHand = qty;
+      opt.vendorInventory = currentInventory;
+    }
 
     var payload = {
       name: m.name,

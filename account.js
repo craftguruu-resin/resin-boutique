@@ -10,10 +10,15 @@
   var ordersHasMore = false;
   var ordersLoadingMore = false;
   var ORDER_CACHE_PREFIX = "cgAccountOrdersLastGood:";
-  var activeOrderTab = "current";
+  /* A customer expects My orders to include delivered orders too.  Keep the
+     narrower Current and Unpaid views as optional filters, not the default
+     view that can make a real order look as though it has disappeared. */
+  var activeOrderTab = "all";
   var activeAcctSection = "orders";
   var expandedShipmentOrders = Object.create(null);
   var trackingLoadOrders = Object.create(null);
+  var observedGuestToken = "";
+  var accountAuthSyncTimer = null;
 
   function orderCacheKey() {
     var email = String(sessionEmailDisplay() || "").trim().toLowerCase();
@@ -138,15 +143,23 @@
     return "http://127.0.0.1:" + (billApiPortOverride() || "3847");
   }
 
-  function guestAuthHeaders() {
+  function guestAuthHeaders(tokenOverride) {
     var h = { "Content-Type": "application/json" };
     try {
-      var t = localStorage.getItem(GUEST_TOKEN_KEY);
+      var t = tokenOverride != null ? tokenOverride : localStorage.getItem(GUEST_TOKEN_KEY);
       if (t) {
         h.Authorization = "Bearer " + t;
       }
     } catch (_) {}
     return h;
+  }
+
+  function currentGuestToken() {
+    try {
+      return String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
   }
 
   function parseApiJson(res) {
@@ -850,7 +863,7 @@
   }
 
   function setOrderTab(tab) {
-    activeOrderTab = tab || "current";
+    activeOrderTab = tab || "all";
     var host = document.getElementById("accountOrderTabs");
     if (host) {
       host.querySelectorAll(".account-order-tab").forEach(function (b) {
@@ -1170,9 +1183,10 @@
     var base = billApiBase();
     var list = document.getElementById("accountOrdersList");
     if (!base || !list) return;
+    var token = currentGuestToken();
     ordersNextOffset = 0;
     ordersHasMore = false;
-    fetch(base + "/api/guest/orders?limit=40&offset=0", { headers: guestAuthHeaders(), cache: "no-store" })
+    fetch(base + "/api/guest/orders?limit=40&offset=0", { headers: guestAuthHeaders(token), cache: "no-store" })
       .then(function (res) {
         return parseApiJson(res).then(function (x) {
           return { status: res.status, x: x };
@@ -1183,7 +1197,7 @@
         var j = x.json || {};
         if (!x.okHttp || !j.ok) {
           var needReauth = o.status === 401 || j.code === "NO_SESSION" || String(j.error || "").toLowerCase().indexOf("sign in") >= 0;
-          if (needReauth) {
+          if (needReauth && currentGuestToken() === token) {
             try {
               localStorage.removeItem(GUEST_TOKEN_KEY);
             } catch (_) {}
@@ -1200,6 +1214,7 @@
             list.innerHTML = "";
             return;
           }
+          if (needReauth) return;
           /* Network / 5xx: keep session; show inline error */
           showOrdersCard(true);
           if (renderCachedOrdersNotice((j && j.error) || "Could not refresh orders.")) return;
@@ -1305,10 +1320,7 @@
 
   /** If a guest token exists, hide sign-in and show orders after /api/guest/me succeeds. */
   function hydrateSessionFromToken() {
-    var token = null;
-    try {
-      token = localStorage.getItem(GUEST_TOKEN_KEY);
-    } catch (_) {}
+    var token = currentGuestToken();
     if (!token) {
       showAccountAuth(true);
       showSessionBar(false);
@@ -1352,7 +1364,10 @@
           o.status === 401 ||
           (j && j.code === "NO_SESSION") ||
           String((j && j.error) || "").toLowerCase().indexOf("sign in") >= 0;
-        if (needReauth) {
+        /* Do not let an older request erase a token that was issued by a
+           newer sign-in in this same browser. This race was the source of
+           intermittent apparent logouts and the sign-in panel reappearing. */
+        if (needReauth && currentGuestToken() === token) {
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
           } catch (_) {}
@@ -1379,8 +1394,31 @@
       });
   }
 
+  function bindAccountAuthStateSync() {
+    if (window.__cgAccountAuthStateSyncBound) return;
+    window.__cgAccountAuthStateSyncBound = true;
+    window.addEventListener("craftguruAuthChanged", function () {
+      var token = currentGuestToken();
+      if (token === observedGuestToken) return;
+      observedGuestToken = token;
+      if (accountAuthSyncTimer) window.clearTimeout(accountAuthSyncTimer);
+      accountAuthSyncTimer = window.setTimeout(function () {
+        accountAuthSyncTimer = null;
+        hydrateSessionFromToken();
+      }, 0);
+    });
+    window.addEventListener("pageshow", function () {
+      var token = currentGuestToken();
+      if (token === observedGuestToken) return;
+      observedGuestToken = token;
+      hydrateSessionFromToken();
+    });
+  }
+
   function boot() {
     pendingHighlightOrderId = consumePaidQueryBanner();
+    observedGuestToken = currentGuestToken();
+    bindAccountAuthStateSync();
 
     var base = billApiBase();
     var tabSu = document.getElementById("acctTabSu");

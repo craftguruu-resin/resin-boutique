@@ -32,6 +32,21 @@
     return q * u;
   }
 
+  function parcelSkuSummary(items) {
+    var seen = Object.create(null);
+    var lines = [];
+    (items || []).forEach(function (it) {
+      var sku = String((it && it.sku) || "").trim();
+      if (!sku) return;
+      var qty = Math.max(1, Math.floor(Number(it && it.qty) || 1));
+      var key = sku + "|" + qty;
+      if (seen[key]) return;
+      seen[key] = true;
+      lines.push(sku + " ×" + qty);
+    });
+    return lines.join(" · ") || "—";
+  }
+
   function formatLineExtraBits(le) {
     if (!le || typeof le !== "object") return [];
     var out = [];
@@ -179,6 +194,9 @@
       "<p><strong>Pincode</strong></p><p>" +
       esc(g.zip || "—") +
       "</p>" +
+      "<p><strong>SKU(s)</strong></p><p>" +
+      esc(parcelSkuSummary(items)) +
+      "</p>" +
       "<p><strong>Note</strong> — Make unboxing video for claim.</p>" +
       "</div>" +
       "<div class='vendor-inline-bill'>" +
@@ -269,6 +287,9 @@
       "</p>" +
       "<p><strong>Pincode</strong></p><p>" +
       esc(g.zip || "—") +
+      "</p>" +
+      "<p><strong>SKU(s)</strong></p><p>" +
+      esc(parcelSkuSummary(items)) +
       "</p>" +
       "<p><strong>Note</strong> — Make unboxing video for claim. Thank you.</p>" +
       "<p style='margin-top:16px;font-size:12px;color:#444;'><strong>FROM</strong> CRAFTGURU · Jaipur</p></section>" +

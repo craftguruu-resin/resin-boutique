@@ -165,6 +165,20 @@
         window.location.href = "index.html?q=" + encodeURIComponent(v) + "#categories";
       });
     }
+
+    /* Listing pages filter as the shopper types. Detail pages do not load
+       that controller, so submit their top-nav search to the correct listing
+       rather than leaving it inert. */
+    if ((mode === "raw-material" || mode === "photo-frame") && query) {
+      query.addEventListener("keydown", function (e) {
+        if (e.key !== "Enter") return;
+        var v = String(query.value || "").trim();
+        if (!v) return;
+        e.preventDefault();
+        var target = mode === "photo-frame" ? "photo-frames.html" : "raw-material-shop.html";
+        window.location.href = target + "?q=" + encodeURIComponent(v);
+      });
+    }
   }
 
   window.GLOBAL_FIND = {

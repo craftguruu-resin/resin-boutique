@@ -78,7 +78,18 @@
   }
 
   function productSearchHaystack(p) {
-    var bits = [(p.name || "").toLowerCase()];
+    /* Keep the listing search aligned with the shared header search. A buyer
+       can use a product ID, SKU, category term, description or keyword—not
+       only the visible product name. */
+    var bits = [
+      p.name || "",
+      p.id || "",
+      p.sku || "",
+      p.category || "",
+      p.subcategory || "",
+      p.description || "",
+      p.searchKeywords || "",
+    ].map(function (part) { return String(part).toLowerCase(); });
     var mp = minPrice(p);
     bits.push(String(mp));
     if (CART.formatMoney) {

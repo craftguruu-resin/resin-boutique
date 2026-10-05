@@ -7,6 +7,16 @@
   var rawList = [];
   var vrmTaxonomy = null;
   var listingStatusFilter = "all";
+  var editingVendorInventory = null;
+
+  function cloneVendorInventory(value) {
+    if (!value || typeof value !== "object") return {};
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_) {
+      return Object.assign({}, value);
+    }
+  }
 
   /* Raw-material products have a separate public API from the Resin Home
      catalog. Notify open guest tabs after every successful mutation so they
@@ -198,10 +208,10 @@
         var qEl = document.getElementById("vrmInvQty");
         var nEl = document.getElementById("vrmInvNote");
         var qv = qEl && qEl.value.trim() !== "" ? Number(qEl.value) : null;
-        opt.vendorInventory = {
-          qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
-          note: nEl ? nEl.value.trim().slice(0, 500) : "",
-        };
+        var inventory = cloneVendorInventory(opt.vendorInventory);
+        inventory.qtyOnHand = Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null;
+        inventory.note = nEl ? nEl.value.trim().slice(0, 500) : "";
+        opt.vendorInventory = inventory;
         var ibv = ib.value.trim();
         var isv = isu.disabled ? "" : isu.value.trim();
         var payload = {
@@ -914,6 +924,7 @@
   }
 
   function fillEditorsFromOptions(opt) {
+    editingVendorInventory = cloneVendorInventory(opt && opt.vendorInventory);
     document.getElementById("vrmUseSize").checked = !!opt.useSize;
     document.getElementById("vrmUseQty").checked = !!opt.useQty;
     document.getElementById("vrmUseColor").checked = !!opt.useColor;
@@ -1021,10 +1032,12 @@
       qtyOptions: uQ ? readRows("#vrmQtyRows", "qty") : [],
       colors: uC ? readRows("#vrmColorRows", "color") : [],
       galleryImages: galleryWithoutCover(galleryImages, heroImage),
-      vendorInventory: {
-        qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
-        note: sn ? sn.value.trim().slice(0, 500) : "",
-      },
+      vendorInventory: (function () {
+        var inventory = cloneVendorInventory(editingVendorInventory);
+        inventory.qtyOnHand = Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null;
+        inventory.note = sn ? sn.value.trim().slice(0, 500) : "";
+        return inventory;
+      })(),
     };
     var heroFitBtn = document.getElementById("vrmHeroFitBtn");
     if (heroFitBtn) {
@@ -1035,6 +1048,7 @@
   }
 
   function resetForm() {
+    editingVendorInventory = null;
     document.getElementById("vrmEditingId").value = "";
     document.getElementById("vrmFormTitle").textContent = "Add raw material product";
     document.getElementById("vrmSubmit").textContent = "Save product";

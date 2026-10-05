@@ -4,7 +4,14 @@ var crypto = require("crypto");
 var poolMod = require("./db/pool.js");
 var guestDb = require("./guest-db.js");
 
-var GUEST_SESSION_DAYS = Number(process.env.GUEST_SESSION_DAYS) || 30;
+/* Customer sessions are deliberately long-lived on a personal browser.
+   They still expire and can be explicitly revoked on sign-out, but a normal
+   shopper should not be asked to authenticate again every few weeks. */
+var GUEST_SESSION_DAYS = Math.min(365, Math.max(1, Number(process.env.GUEST_SESSION_DAYS) || 90));
+var GUEST_SESSION_RENEW_WINDOW_MS = Math.min(
+  30 * 24 * 60 * 60 * 1000,
+  Math.max(24 * 60 * 60 * 1000, Math.floor((GUEST_SESSION_DAYS * 24 * 60 * 60 * 1000) / 3))
+);
 
 function sha256hex(s) {
   return crypto.createHash("sha256").update(String(s), "utf8").digest("hex");
@@ -133,7 +140,7 @@ function verifyGuestToken(token, cb) {
   var th = sha256hex(raw);
   pool
     .query(
-      "SELECT g.id AS guest_id, g.email, g.display_name, g.phone_norm " +
+      "SELECT g.id AS guest_id, g.email, g.display_name, g.phone_norm, s.expires_at " +
         "FROM guest_sessions s JOIN guest_customers g ON g.id = s.guest_id " +
         "WHERE s.token_hash = $1 AND s.expires_at > now() LIMIT 1",
       [th]
@@ -143,12 +150,22 @@ function verifyGuestToken(token, cb) {
         return cb(null, null);
       }
       var row = r.rows[0];
-      cb(null, {
+      var out = {
         guestId: Number(row.guest_id),
         email: row.email != null ? String(row.email) : "",
         displayName: row.display_name != null ? String(row.display_name) : "",
         phoneNorm: row.phone_norm != null ? String(row.phone_norm) : "",
-      });
+      };
+      var expiresAt = new Date(row.expires_at).getTime();
+      if (!Number.isFinite(expiresAt) || expiresAt - Date.now() > GUEST_SESSION_RENEW_WINDOW_MS) {
+        return cb(null, out);
+      }
+      /* Sliding renewal only happens after a token has already verified. A
+         renewal failure must not turn a valid customer visit into a logout. */
+      var renewedAt = new Date(Date.now() + GUEST_SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
+      pool.query("UPDATE guest_sessions SET expires_at = $1 WHERE token_hash = $2", [renewedAt, th])
+        .then(function () { cb(null, out); })
+        .catch(function () { cb(null, out); });
     })
     .catch(cb);
 }

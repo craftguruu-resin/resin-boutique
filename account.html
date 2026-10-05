@@ -42,7 +42,6 @@
       <a href="raw-material-shop.html" class="nav-dock-link">Resin raw material</a>
       <a href="photo-frames.html" class="nav-dock-link">Photo frames</a>
       <a href="return-gifts.html" class="nav-dock-link">Corporate Gifting</a>
-      <a href="checkout.html" class="nav-dock-link">Checkout</a>
       <a href="account.html" class="nav-dock-link nav-dock-link--active">Account</a>
     </nav>
     <div class="site-top-end">
@@ -90,7 +89,7 @@
             </form>
           </div>
 
-          <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading">
+          <div class="auth-modal__sheet checkout-auth-sheet account-dock" id="accountAuthCard" aria-labelledby="accountAuthHeading" hidden>
             <div class="auth-modal__head checkout-auth-sheet__head">
               <h2 id="accountAuthHeading" style="margin: 0; font-size: 1.15rem">Account</h2>
             </div>
@@ -142,9 +141,9 @@
               </p>
             </div>
             <div class="account-order-tabs" id="accountOrderTabs" role="tablist" aria-label="Order filters">
-              <button type="button" class="account-order-tab is-active" role="tab" aria-selected="true" data-order-tab="current">Current</button>
+              <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="current">Current</button>
               <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="unpaid">Unpaid</button>
-              <button type="button" class="account-order-tab" role="tab" aria-selected="false" data-order-tab="all">All orders</button>
+              <button type="button" class="account-order-tab is-active" role="tab" aria-selected="true" data-order-tab="all">All orders</button>
             </div>
             <ul class="account-orders-list" id="accountOrdersList"></ul>
           </div>
@@ -177,14 +176,14 @@
 
   <script defer src="cloudinary-delivery.js?v=20260815b"></script>
   <script src="craftguru-api-base.js"></script>
-  <script defer src="data.js?v=20260930contract1"></script>
+  <script defer src="data.js?v=20261005customer1"></script>
   <script defer src="catalog-merge.js?v=20260930contract1"></script>
   <script defer src="cart.js?v=20260928stock2"></script>
-  <script defer src="guest-layout.js?v=20261001mobile17"></script>
+  <script defer src="guest-layout.js?v=20261005search2"></script>
   <script defer src="auth-db.js"></script>
     <script defer src="google-signin.js"></script>
-    <script defer src="auth-home.js"></script>
+    <script defer src="auth-home.js?v=20261005customer1"></script>
   <script defer src="shell.js?v=20260930contract1"></script>
-  <script defer src="account.js?v=20260930contract1"></script>
+  <script defer src="account.js?v=20261005customer2"></script>
 </body>
 </html>

@@ -242,6 +242,12 @@ function createCheckoutParcelOrder(opts, cb) {
     })
     .then(function (guestOut) {
       var guestId = guestOut && guestOut.guestId != null ? guestOut.guestId : null;
+      /* A paid checkout must never be written without its customer owner:
+         otherwise it can succeed in the vendor portal yet be invisible in
+         the buyer's My account. Roll back the entire parcel instead. */
+      if (!Number.isFinite(Number(guestId)) || Number(guestId) < 1) {
+        throw new Error("Could not link this checkout to the customer account");
+      }
       return ensureCouponCapacity(client, couponCode, paymentReference).then(function () { return resolveSkuMapWithClient(client, items); }).then(function (skuMap) {
         return client
           .query(
@@ -910,6 +916,44 @@ function listOrdersByGuestId(guestId, options, cb) {
     .catch(cb);
 }
 
+/**
+ * Repair historic checkout records from before customer linking was enforced.
+ * The caller already holds a verified guest session; only records with that
+ * exact normalized checkout email may be attached to the session's guest id.
+ * Older databases may contain duplicate guest rows for a single email, so
+ * reconcile those orders as well as NULL guest_id rows.
+ *
+ * @param {number} guestId
+ * @param {string} email
+ * @param {(err: Error|null, out?: {attached: number}) => void} cb
+ */
+function reconcileUnlinkedOrdersForGuest(guestId, email, cb) {
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  var gid = Number(guestId);
+  var normalizedEmail = String(email || "").trim().toLowerCase();
+  if (!Number.isFinite(gid) || gid < 1 || normalizedEmail.indexOf("@") < 1) {
+    return process.nextTick(function () {
+      cb(null, { attached: 0 });
+    });
+  }
+  pool
+    .query(
+      "UPDATE orders SET guest_id = $1 " +
+        "WHERE guest_id IS DISTINCT FROM $1 " +
+        "AND LOWER(TRIM(COALESCE(guest_snapshot->>'email', ''))) = $2",
+      [gid, normalizedEmail]
+    )
+    .then(function (r) {
+      cb(null, { attached: Number(r.rowCount) || 0 });
+    })
+    .catch(cb);
+}
+
 /** Guest order tracking (must belong to guest). */
 function getGuestOrderTracking(guestId, orderId, cb) {
   var pool = poolMod.getPool();
@@ -1014,6 +1058,7 @@ module.exports = {
   updateOrderFulfillment,
   markOrderPaymentReceived,
   listOrdersByGuestId,
+  reconcileUnlinkedOrdersForGuest,
   getGuestOrderTracking,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,

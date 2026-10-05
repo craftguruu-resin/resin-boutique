@@ -323,6 +323,8 @@
       if (row.gallery || row.galleryImages) p.gallery = row.gallery || row.galleryImages;
       if (row.options) p.options = normalizeOptionsOverride(row.options);
       if (row.description) p.description = String(row.description);
+      if (row.sku) p.sku = String(row.sku);
+      if (row.searchKeywords) p.searchKeywords = String(row.searchKeywords);
       var idx = -1;
       for (var i = 0; i < PRODUCTS.length; i++) if (PRODUCTS[i].id === p.id) { idx = i; break; }
       if (idx >= 0) PRODUCTS[idx] = p; else PRODUCTS.push(p);
@@ -365,18 +367,41 @@
   }
 
   function searchCatalogPartial(q, limit) {
-    q = String(q || "").toLowerCase().trim();
+    q = String(q || "").toLowerCase().trim().replace(/\s+/g, " ");
     if (!q) return [];
-    return PRODUCTS.filter(function (p) {
-      if (SUPPRESSED[p.id] || p.listed === false) return false;
-      var hay = [p && p.name, p && p.id, p && p.category, p && p.subcategory]
+    var parts = q.split(" ").filter(Boolean);
+    var hits = PRODUCTS.reduce(function (out, p) {
+      if (!p || SUPPRESSED[p.id] || p.listed === false) return out;
+      var name = String(p.name || "").toLowerCase();
+      var id = String(p.id || "").toLowerCase();
+      var sku = String(p.sku || "").toLowerCase();
+      var hay = [name, id, sku, p.category, p.subcategory, p.description, p.searchKeywords]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
-      return q.split(/\s+/).every(function (part) {
-        return hay.indexOf(part) >= 0;
-      });
-    }).slice(0, limit || 12);
+      if (!parts.every(function (part) { return hay.indexOf(part) >= 0; })) return out;
+
+      /* A product-name match should never be buried below a category/id
+         match. Rank exact and prefix matches first, then stable alphabetical
+         order, so the same query gives the same useful result every time. */
+      var score = 50;
+      if (name === q) score = 0;
+      else if (name.indexOf(q) === 0) score = 5;
+      else if ((" " + name).indexOf(" " + q) >= 0) score = 10;
+      else if (id === q || sku === q) score = 15;
+      else if (id.indexOf(q) === 0 || sku.indexOf(q) === 0) score = 20;
+      else if (name.indexOf(q) >= 0) score = 25;
+      else if (parts.every(function (part) { return name.indexOf(part) >= 0; })) score = 30;
+      else if (sku && parts.every(function (part) { return sku.indexOf(part) >= 0; })) score = 35;
+      out.push({ product: p, score: score, name: name, id: id });
+      return out;
+    }, []);
+    return hits
+      .sort(function (a, b) {
+        return a.score - b.score || a.name.localeCompare(b.name, undefined, { sensitivity: "base" }) || a.id.localeCompare(b.id);
+      })
+      .slice(0, limit || 12)
+      .map(function (hit) { return hit.product; });
   }
 
   function searchCategoriesPartial(q, limit) {
@@ -387,7 +412,12 @@
     }).slice(0, limit || 12);
   }
 
-  function productSearchHaystack(p) { return [p && p.name, p && p.id, p && p.category, p && p.subcategory].filter(Boolean).join(" ").toLowerCase(); }
+  function productSearchHaystack(p) {
+    return [p && p.name, p && p.id, p && p.sku, p && p.category, p && p.subcategory, p && p.description, p && p.searchKeywords]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+  }
   function partialTokenMatch(h, q) {
     q = String(q || "").toLowerCase().trim();
     return !q || q.split(/\s+/).every(function (x) { return String(h || "").toLowerCase().indexOf(x) >= 0; });

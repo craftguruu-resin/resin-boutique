@@ -341,9 +341,10 @@
            result must never reuse the storefront landing hero. */
         base: (u.searchParams.get("base") || u.searchParams.get("category") || u.searchParams.get("cat") || "").trim(),
         sub: (u.searchParams.get("sub") || "").trim(),
+        needle: (u.searchParams.get("q") || "").trim(),
       };
     } catch (_) {
-      return { base: "", sub: "" };
+      return { base: "", sub: "", needle: "" };
     }
   }
 
@@ -738,10 +739,10 @@
     var g = document.getElementById("rmGrid");
     if (!g) return;
     var par = qsParams();
-    var needle = "";
+    var needle = String(par.needle || "").trim();
     try {
       var gq = document.getElementById("globalFindQuery");
-      if (gq) needle = String(gq.value || "").trim();
+      if (gq && String(gq.value || "").trim()) needle = String(gq.value || "").trim();
     } catch (_) {}
     updateRmPlpHeader(par, needle);
     g.innerHTML = "";
@@ -839,10 +840,10 @@
         materials: allMaterials,
       });
     }
-    var needle = "";
+    var needle = String(par.needle || "").trim();
     try {
       var gq = document.getElementById("globalFindQuery");
-      if (gq) needle = String(gq.value || "").trim();
+      if (gq && String(gq.value || "").trim()) needle = String(gq.value || "").trim();
     } catch (_) {}
     if (isRawMaterialShopHome() && !needle) {
       var gHome = document.getElementById("rmGrid");
@@ -928,6 +929,8 @@
     var gq = document.getElementById("globalFindQuery");
     if (!gq || gq.dataset.rmNeedleWired === "1") return;
     gq.dataset.rmNeedleWired = "1";
+    var initialNeedle = String(qsParams().needle || "").trim();
+    if (initialNeedle && !String(gq.value || "").trim()) gq.value = initialNeedle;
     var t = null;
     gq.addEventListener("input", function () {
       var y = window.scrollY || 0;

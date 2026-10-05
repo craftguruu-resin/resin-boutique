@@ -557,6 +557,25 @@ body.pdp-ethereal .rm-shop-layout--pdp > .rm-shop-layout__main {
   width: 100%;
 }
 
+/* Raw-material customers need the catalogue rail while comparing supplies.
+   Keep the reference PDP's single-column layout for photo frames, but restore
+   the already-present raw-material rail. */
+body.pdp-ethereal .rm-shop-layout--raw-pdp {
+  display: grid;
+  grid-template-columns: var(--cg-sidebar-col, minmax(13rem, 17rem)) minmax(0, 1fr);
+  align-items: start;
+}
+
+body.pdp-ethereal .rm-shop-layout--raw-pdp > .rm-nav-tree-wrap {
+  display: block !important;
+}
+
+@media (max-width: 900px) {
+  body.pdp-ethereal .rm-shop-layout--raw-pdp {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 body.pdp-ethereal.page-product .product-layout--split,
 body.pdp-ethereal .rm-pdp--modern.cg-pdp-shell {
   grid-template-columns: minmax(0, 1.62fr) minmax(25rem, 1fr);

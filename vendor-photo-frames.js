@@ -7,6 +7,16 @@
   var rawList = [];
   var vpfNav = null;
   var listingStatusFilter = "all";
+  var editingVendorInventory = null;
+
+  function cloneVendorInventory(value) {
+    if (!value || typeof value !== "object") return {};
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_) {
+      return Object.assign({}, value);
+    }
+  }
 
   function notifyGuestPhotoFramesRefresh() {
     try {
@@ -196,10 +206,10 @@
         var qEl = document.getElementById("vpfInvQty");
         var nEl = document.getElementById("vpfInvNote");
         var qv = qEl && qEl.value.trim() !== "" ? Number(qEl.value) : null;
-        opt.vendorInventory = {
-          qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
-          note: nEl ? nEl.value.trim().slice(0, 500) : "",
-        };
+        var inventory = cloneVendorInventory(opt.vendorInventory);
+        inventory.qtyOnHand = Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null;
+        inventory.note = nEl ? nEl.value.trim().slice(0, 500) : "";
+        opt.vendorInventory = inventory;
         var ibv = ib.value.trim();
         var isv = isu.disabled ? "" : isu.value.trim();
         var payload = {
@@ -912,6 +922,7 @@
   }
 
   function fillEditorsFromOptions(opt) {
+    editingVendorInventory = cloneVendorInventory(opt && opt.vendorInventory);
     document.getElementById("vpfUseSize").checked = !!opt.useSize;
     document.getElementById("vpfUseQty").checked = !!opt.useQty;
     document.getElementById("vpfUseColor").checked = !!opt.useColor;
@@ -1019,10 +1030,12 @@
       qtyOptions: uQ ? readRows("#vpfQtyRows", "qty") : [],
       colors: uC ? readRows("#vpfColorRows", "color") : [],
       galleryImages: galleryWithoutCover(galleryImages, heroImage),
-      vendorInventory: {
-        qtyOnHand: Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null,
-        note: sn ? sn.value.trim().slice(0, 500) : "",
-      },
+      vendorInventory: (function () {
+        var inventory = cloneVendorInventory(editingVendorInventory);
+        inventory.qtyOnHand = Number.isFinite(qv) && qv >= 0 ? Math.floor(qv) : null;
+        inventory.note = sn ? sn.value.trim().slice(0, 500) : "";
+        return inventory;
+      })(),
     };
     var heroFitBtn = document.getElementById("vpfHeroFitBtn");
     if (heroFitBtn) {
@@ -1033,6 +1046,7 @@
   }
 
   function resetForm() {
+    editingVendorInventory = null;
     document.getElementById("vpfEditingId").value = "";
     document.getElementById("vpfFormTitle").textContent = "Add photo frame product";
     document.getElementById("vpfSubmit").textContent = "Save product";

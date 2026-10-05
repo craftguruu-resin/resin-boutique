@@ -185,9 +185,12 @@ body.vendor-saas[data-vendor-nav="dashboard"] .vs-notify__title { color: var(--t
 
 /* Orders: make the controls scan in the order payment → fulfilment → shipment. */
 body.vendor-saas[data-vendor-nav="tags"] .vs-card--toolbar {
-  position: sticky;
-  top: 5.4rem;
-  z-index: 10;
+  /* Payment / fulfilment controls are part of the normal Orders document.
+     Keeping this tall card sticky trapped the first part of the panel while
+     the table scrolled beneath it. */
+  position: static;
+  top: auto;
+  z-index: auto;
   border: 1px solid var(--top-line);
   border-radius: 1rem;
   background: rgba(255, 255, 255, .94);
@@ -304,4 +307,163 @@ body.vendor-saas[data-vendor-nav="tags"] .vt-sort:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   body.vendor-saas[data-vendor-nav="dashboard"] *,
   body.vendor-saas[data-vendor-nav="tags"] * { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}
+
+/* Orders must use the page scrollbar, not a clipped mini-panel. The previous
+   fixed-height detail card hid content and made shipment/billing controls look
+   unscrollable on common laptop viewport heights. */
+body.vendor-saas .vs-sidebar {
+  height: 100vh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail {
+  position: relative;
+  top: auto;
+  max-height: none;
+  overflow: visible;
+  padding: 1rem;
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__head {
+  align-items: flex-start;
+  gap: .85rem;
+  padding-bottom: .85rem;
+  border-bottom: 1px solid var(--top-line);
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__title {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__meta {
+  max-width: 48rem;
+  font-size: .78rem;
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__actions {
+  display: flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: .45rem;
+}
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail__body {
+  overflow: visible;
+  padding-top: .95rem;
+}
+
+.vt-order-overview {
+  display: grid;
+  gap: .85rem;
+  margin-bottom: 1rem;
+}
+
+.vt-order-overview__stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.vt-order-stat,
+.vt-order-info-card,
+.vt-order-items-card,
+.vt-detail-preview-card {
+  border: 1px solid var(--top-line);
+  border-radius: .85rem;
+  background: #fff;
+}
+
+.vt-order-stat {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .25rem;
+  padding: .75rem;
+}
+
+.vt-order-stat > span:first-child,
+.vt-order-stat small,
+.vt-order-info-card__eyebrow {
+  margin: 0;
+  color: var(--top-muted);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+
+.vt-order-stat > strong { color: var(--top-ink); font-size: 1rem; }
+.vt-order-stat .vs-badge { max-width: 100%; }
+
+.vt-order-overview__grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: .55rem;
+}
+
+.vt-order-info-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: .32rem;
+  padding: .8rem;
+}
+
+.vt-order-info-card > strong,
+.vt-order-info-card > a,
+.vt-order-info-card > span {
+  overflow-wrap: anywhere;
+}
+
+.vt-order-info-card > strong { color: var(--top-ink); font-size: .84rem; line-height: 1.4; }
+.vt-order-info-card > a,
+.vt-order-info-card > span { color: var(--top-muted); font-size: .76rem; line-height: 1.45; }
+.vt-order-info-card > a { color: var(--top-teal); text-decoration: none; }
+.vt-order-info-card > a:hover { text-decoration: underline; }
+.vt-order-info-card--address { background: linear-gradient(135deg, #f2fbf9, #fff); }
+
+.vt-order-items-card { padding: .85rem; }
+.vt-order-items-card__head { display: flex; align-items: flex-end; justify-content: space-between; gap: .75rem; margin-bottom: .6rem; }
+.vt-order-items-card__head strong { color: var(--top-ink); font-size: .88rem; }
+.vt-order-items-card__head > span { color: var(--top-teal); font-size: .75rem; font-weight: 800; white-space: nowrap; }
+
+.vt-order-lines { display: grid; gap: .45rem; margin: 0; padding: 0; list-style: none; }
+.vt-order-lines__item { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) auto; align-items: center; gap: .6rem; padding: .5rem 0; border-top: 1px solid rgba(20, 38, 64, .08); }
+.vt-order-lines__image { display: block; width: 2.6rem; height: 2.6rem; border-radius: .55rem; object-fit: cover; background: #eff8f6; }
+.vt-order-lines__image--empty { display: grid; place-items: center; color: var(--top-teal); }
+.vt-order-lines__copy { display: grid; min-width: 0; gap: .12rem; }
+.vt-order-lines__copy strong { overflow-wrap: anywhere; color: var(--top-ink); font-size: .78rem; line-height: 1.35; }
+.vt-order-lines__copy span,
+.vt-order-lines__amount span { color: var(--top-muted); font-size: .7rem; }
+.vt-order-lines__amount { display: grid; justify-items: end; gap: .12rem; white-space: nowrap; font-size: .75rem; }
+
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail-layout--redesign {
+  grid-template-columns: minmax(0, 1fr) minmax(21rem, .9fr);
+  gap: .85rem;
+}
+
+.vt-detail-preview-card { padding: .8rem; }
+.vt-detail-section-head { margin-bottom: .65rem; }
+.vt-detail-section-head strong { color: var(--top-ink); font-size: .86rem; }
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail-preview-card .vendor-inline-tag { margin-bottom: .65rem; }
+body.vendor-saas[data-vendor-nav="tags"] .vt-detail-preview-card .vendor-inline-bill { margin-bottom: .65rem; }
+
+@media (max-width: 1180px) {
+  body.vendor-saas[data-vendor-nav="tags"] .vt-order-overview__grid,
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail-layout--redesign { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  body.vendor-saas .vs-sidebar { height: auto; overflow: visible; }
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail { padding: .8rem; }
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail__head { flex-direction: column; }
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail__actions { width: 100%; justify-content: stretch; }
+  body.vendor-saas[data-vendor-nav="tags"] .vt-detail__actions .vs-btn { flex: 1 1 10rem; }
+  .vt-order-overview__stats,
+  .vt-order-overview__grid { grid-template-columns: 1fr; }
 }

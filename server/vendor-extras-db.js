@@ -101,12 +101,18 @@ function searchProductIdsBySku(qLower, cb) {
       cb(null, []);
     });
   }
-  var like = "%" + q.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
+  var terms = q.split(/\s+/).filter(Boolean).slice(0, 8);
+  var params = terms.map(function (term) {
+    return "%" + term.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_") + "%";
+  });
+  var skuTerms = terms.map(function (_, index) {
+    return "LOWER(TRIM(sku)) LIKE $" + (index + 1) + " ESCAPE '\\'";
+  });
   pool
     .query(
       "SELECT DISTINCT product_id FROM vendor_inventory_items " +
-        "WHERE COALESCE(TRIM(product_id), '') <> '' AND LOWER(TRIM(sku)) LIKE $1 ESCAPE '\\' LIMIT 120",
-      [like]
+        "WHERE COALESCE(TRIM(product_id), '') <> '' AND " + skuTerms.join(" AND ") + " LIMIT 120",
+      params
     )
     .then(function (r) {
       var out = [];
@@ -294,11 +300,25 @@ function getDashboardExtras(cb) {
 
 /** @param {(err: Error|null, list?: object[]) => void} cb */
 function countInventoryRows(cb) {
-  // Keep summary figures in step with the inventory screen. In particular, do
-  // not count an old inventory row whose product was permanently removed.
-  listInventory(function (err, items) {
+  /* This is a display-only “Studio SKUs” total. It previously called the
+     complete filtered inventory loader, which repeated catalog visibility
+     lookups and made the first Inventory page wait on an entire second
+     dataset. Count the inventory records directly instead. Availability and
+     low-stock decisions still use listInventory(), the authoritative path. */
+  var pool = poolMod.getPool();
+  if (!pool) {
+    return process.nextTick(function () {
+      cb(new Error("Database not configured"));
+    });
+  }
+  withVendorInventorySchema(function (err) {
     if (err) return cb(err);
-    cb(null, (items || []).length);
+    pool
+      .query("SELECT COUNT(*)::int AS n FROM vendor_inventory_items")
+      .then(function (result) {
+        cb(null, Number(result.rows[0] && result.rows[0].n) || 0);
+      })
+      .catch(cb);
   });
 }
 

@@ -89,6 +89,21 @@ function iLikeContainsPattern(needle) {
   return "%" + t + "%";
 }
 
+/* Search terms should work in any word order: "gold foil" must find
+   "Foil, Gold" just as reliably as an exact phrase. */
+function iLikeContainsPatterns(needle) {
+  return String(needle || "")
+    .trim()
+    .slice(0, 200)
+    .replace(/[%_]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 8)
+    .map(function (term) {
+      return "%" + term + "%";
+    });
+}
+
 function resolveSkuForInsert(pool, opts, cb) {
   var raw = opts && opts.sku != null ? String(opts.sku).trim() : "";
   var norm = "";
@@ -364,7 +379,7 @@ function listActive(filter, cb) {
     .toLowerCase()
     .replace(/[^a-z0-9-]/g, "")
     .slice(0, 80);
-  var pat = iLikeContainsPattern(String(f.q || f.query || "").trim());
+  var patterns = iLikeContainsPatterns(String(f.q || f.query || "").trim());
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
@@ -384,7 +399,7 @@ function listActive(filter, cb) {
     params.push(sub);
     sql += " AND subcategory_slug = $" + params.length;
   }
-  if (pat) {
+  patterns.forEach(function (pat) {
     params.push(pat);
     var n = params.length;
     sql +=
@@ -397,7 +412,7 @@ function listActive(filter, cb) {
       " OR COALESCE(description, '') ILIKE $" +
       n +
       ")";
-  }
+  });
   sql += " ORDER BY updated_at DESC";
   pool
     .query(sql, params)
@@ -439,11 +454,11 @@ function listAll(search, cb) {
     "SELECT id, sku, name, description, image_path, note, is_active, price_inr, mrp_inr, options_json, updated_at, base_category_slug, subcategory_slug FROM raw_materials";
   var params = [];
   var wh = [];
-  var pat = iLikeContainsPattern(needle);
-  if (pat) {
+  var patterns = iLikeContainsPatterns(needle);
+  patterns.forEach(function (pat) {
     params.push(pat);
     wh.push("(name ILIKE $" + params.length + " OR sku ILIKE $" + params.length + " OR id ILIKE $" + params.length + " OR description ILIKE $" + params.length + ")");
-  }
+  });
   if (base) {
     params.push(base);
     wh.push("base_category_slug = $" + params.length);

@@ -383,18 +383,45 @@ body.page-checkout .checkout-panel {
   color: rgba(15, 23, 42, 0.75);
 }
 
+.ck-addr-card__select {
+  display: block;
+  cursor: pointer;
+  padding-right: 0.25rem;
+}
+
+.ck-addr-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.ck-addr-card__use,
 .ck-addr-card__edit {
-  position: absolute;
-  top: 0.75rem;
-  right: 0.75rem;
+  position: static;
+  min-height: 2.2rem;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(16, 125, 115, 0.3);
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--ck-teal);
-  background: none;
-  border: none;
+  background: #fff;
   cursor: pointer;
   font-family: inherit;
-  padding: 0;
+}
+
+.ck-addr-card__edit {
+  color: var(--ck-teal-deep);
+  border-color: var(--ck-teal);
+}
+
+.ck-addr-card__use:hover,
+.ck-addr-card__use:focus-visible,
+.ck-addr-card__edit:hover,
+.ck-addr-card__edit:focus-visible {
+  border-color: var(--ck-teal-deep);
+  background: var(--ck-teal-soft);
 }
 
 .ck-add-addr-dash {

@@ -188,6 +188,14 @@
     } catch (_) {}
   }
 
+  function currentGuestToken() {
+    try {
+      return String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim();
+    } catch (_) {
+      return "";
+    }
+  }
+
   var els = {};
   var wired = false;
 
@@ -293,7 +301,10 @@
     }
     if (els.signupBtn) els.signupBtn.classList.toggle("is-hidden", inAuth);
     if (els.loginBtn) els.loginBtn.classList.toggle("is-hidden", inAuth);
-    if (els.logoutBtn) els.logoutBtn.classList.toggle("is-hidden", !inAuth);
+    /* The storefront header has one signed-in destination: My Account.
+       Sign out remains available inside My Account, so the blue shop header
+       never shows a competing Log out action beside it. */
+    if (els.logoutBtn) els.logoutBtn.classList.add("is-hidden");
     if (els.ordersLink) els.ordersLink.classList.add("is-hidden");
   }
 
@@ -308,8 +319,7 @@
     if (els.loginBtn) els.loginBtn.addEventListener("click", function () { openAuth("login"); });
     if (els.logoutBtn) {
       els.logoutBtn.addEventListener("click", function () {
-        var token = "";
-        try { token = localStorage.getItem(GUEST_TOKEN_KEY) || ""; } catch (_) {}
+        var token = currentGuestToken();
         if (token) {
           fetch(getApiBase() + "/api/guest/logout", { method: "POST", headers: { Authorization: "Bearer " + token }, keepalive: true }).catch(function () {});
         }
@@ -336,17 +346,14 @@
     var base = getApiBase();
 
     (function hydrateFromGuestToken() {
-      var tok = "";
-      try {
-        tok = localStorage.getItem(GUEST_TOKEN_KEY) || "";
-      } catch (_) {}
+      var tok = currentGuestToken();
       if (!tok) return;
       fetch(base + "/api/guest/me", {
         headers: { Authorization: "Bearer " + tok },
         cache: "no-store",
       })
         .then(function (res) {
-          if (res.status === 401) {
+          if (res.status === 401 && currentGuestToken() === tok) {
             setGuestToken("");
             setSessionEmail("");
             setSessionName("");

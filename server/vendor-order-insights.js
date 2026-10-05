@@ -2,6 +2,17 @@
 
 var poolMod = require("./db/pool.js");
 
+/* Vendor graphs are aggregate, read-only reporting data. A short process
+   cache prevents a tab click or dashboard refresh from re-running the same
+   expensive report against a cold serverless Postgres connection. */
+var INSIGHTS_CACHE_MS = Math.max(5_000, Number(process.env.VENDOR_INSIGHTS_CACHE_MS) || 30_000);
+var insightCache = Object.create(null);
+var insightPending = Object.create(null);
+
+function cloneReport(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 /**
  * @param {string} period — daily | weekly | monthly (chart preset)
  * @param {(err: Error|null, data?: object) => void} cb
@@ -9,10 +20,35 @@ var poolMod = require("./db/pool.js");
 function getVendorOrderInsights(period, cb) {
   var p = String(period || "monthly").toLowerCase();
   if (p !== "daily" && p !== "weekly" && p !== "monthly" && p !== "yearly") p = "monthly";
+  var cached = insightCache[p];
+  if (cached && cached.expiresAt > Date.now()) {
+    return process.nextTick(function () {
+      cb(null, cloneReport(cached.data));
+    });
+  }
+  /* The server warms the monthly graph after boot. Without coalescing, a
+     vendor arriving during that warm-up opened a second expensive Neon query
+     and both requests made the Dashboard look stalled. Share the same report
+     work and give every caller its own cloned result. */
+  if (insightPending[p]) {
+    insightPending[p].push(cb);
+    return;
+  }
+  insightPending[p] = [cb];
+  function finish(err, value) {
+    var waiters = insightPending[p] || [];
+    delete insightPending[p];
+    if (!err && value) {
+      insightCache[p] = { expiresAt: Date.now() + INSIGHTS_CACHE_MS, data: cloneReport(value) };
+    }
+    waiters.forEach(function (waiter) {
+      waiter(err || null, err ? null : cloneReport(value));
+    });
+  }
   var pool = poolMod.getPool();
   if (!pool) {
     return process.nextTick(function () {
-      cb(new Error("Database not configured"));
+      finish(new Error("Database not configured"));
     });
   }
 
@@ -23,22 +59,25 @@ function getVendorOrderInsights(period, cb) {
   var istWeek =
     "(timezone('Asia/Kolkata', o.created_at))::date >= (timezone('Asia/Kolkata', now()))::date - interval '6 days'";
 
-  var qTodayPaid =
-    "SELECT COUNT(*)::int AS c, COALESCE(SUM(o.total), 0)::numeric AS s FROM orders o WHERE o.payment_status = 'paid' AND " +
-    istToday;
-  var qTodayAll = "SELECT COUNT(*)::int AS c FROM orders o WHERE " + istToday;
-  var qWeekPaid =
-    "SELECT COUNT(*)::int AS c, COALESCE(SUM(o.total), 0)::numeric AS s FROM orders o WHERE o.payment_status = 'paid' AND " +
-    istWeek;
-  var qMonthPaid =
-    "SELECT COUNT(*)::int AS c, COALESCE(SUM(o.total), 0)::numeric AS s FROM orders o WHERE o.payment_status = 'paid' AND " +
-    istMonth;
   var istYear =
     "date_trunc('year', timezone('Asia/Kolkata', o.created_at)) = date_trunc('year', timezone('Asia/Kolkata', now()))";
-  var qYearPaid =
-    "SELECT COUNT(*)::int AS c, COALESCE(SUM(o.total), 0)::numeric AS s FROM orders o WHERE o.payment_status = 'paid' AND " +
-    istYear;
-  var qPending = "SELECT COUNT(*)::int AS c FROM orders o WHERE o.payment_status IN ('pending_payment', 'cod_advance_paid')";
+  /* Dashboard used to fan out into twelve separate pool queries on every
+     period change. On a waking serverless Postgres connection that made the
+     whole tab look frozen. One aggregate query provides every KPI. */
+  var qSummary =
+    "SELECT " +
+    "COUNT(*) FILTER (WHERE o.payment_status = 'paid' AND " + istToday + ") AS paid_today_count, " +
+    "COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND " + istToday + "), 0)::numeric AS paid_today_sum, " +
+    "COUNT(*) FILTER (WHERE " + istToday + ") AS orders_today_count, " +
+    "COUNT(*) FILTER (WHERE o.payment_status = 'paid' AND " + istWeek + ") AS paid_week_count, " +
+    "COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND " + istWeek + "), 0)::numeric AS paid_week_sum, " +
+    "COUNT(*) FILTER (WHERE o.payment_status = 'paid' AND " + istMonth + ") AS paid_month_count, " +
+    "COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND " + istMonth + "), 0)::numeric AS paid_month_sum, " +
+    "COUNT(*) FILTER (WHERE o.payment_status = 'paid' AND " + istYear + ") AS paid_year_count, " +
+    "COALESCE(SUM(o.total) FILTER (WHERE o.payment_status = 'paid' AND " + istYear + "), 0)::numeric AS paid_year_sum, " +
+    "COUNT(*) FILTER (WHERE o.payment_status IN ('pending_payment', 'cod_advance_paid')) AS pending_count, " +
+    "to_char(timezone('Asia/Kolkata', now()), 'FMMonth YYYY') AS month_label " +
+    "FROM orders o";
 
   var qCat =
     "SELECT COALESCE(NULLIF(TRIM(p.category_id), ''), '') AS cid, " +
@@ -51,9 +90,6 @@ function getVendorOrderInsights(period, cb) {
     "WHERE o.payment_status = 'paid' AND " +
     istMonth +
     " GROUP BY 1, 2 ORDER BY amt DESC NULLS LAST LIMIT 10";
-
-  var qMonthLabel =
-    "SELECT to_char(timezone('Asia/Kolkata', now()), 'FMMonth YYYY') AS ml";
 
   var qChartDaily =
     "SELECT to_char(g.d, 'YYYY-MM-DD') AS d_key, COUNT(DISTINCT o.id)::int AS oc, COALESCE(SUM(o.total), 0)::numeric AS amt " +
@@ -91,52 +127,62 @@ function getVendorOrderInsights(period, cb) {
     "LEFT JOIN orders o ON date_trunc('month', timezone('Asia/Kolkata', o.created_at)) = g.m AND o.payment_status = 'paid' " +
     "GROUP BY g.m ORDER BY g.m";
 
-  Promise.all([
-    pool.query(qTodayPaid),
-    pool.query(qTodayAll),
-    pool.query(qWeekPaid),
-    pool.query(qMonthPaid),
-    pool.query(qYearPaid),
-    pool.query(qPending),
-    pool.query(qCat),
-    pool.query(qMonthLabel),
-    pool.query(qChartDaily),
-    pool.query(qChartMonthDays),
-    pool.query(qChartWeekly),
-    pool.query(qChartYearly),
-  ])
+  var qChart = p === "daily" ? qChartDaily : p === "weekly" ? qChartWeekly : p === "yearly" ? qChartYearly : qChartMonthDays;
+  var client = null;
+  pool
+    .connect()
+    .then(function (connected) {
+      client = connected;
+      /* One checked-out connection avoids a thundering herd of cold Neon
+         connections. Keep these requests explicitly sequential: newer
+         node-postgres versions reject concurrent client.query calls. */
+      return client.query(qSummary).then(function (summaryRows) {
+        return client.query(qCat).then(function (categoryRows) {
+          return client.query(qChart).then(function (chartRows) {
+            return [summaryRows, categoryRows, chartRows];
+          });
+        });
+      });
+    })
     .then(function (rows) {
-      var tp = rows[0].rows[0] || {};
-      var ta = rows[1].rows[0] || {};
-      var wp = rows[2].rows[0] || {};
-      var mp = rows[3].rows[0] || {};
-      var yp = rows[4].rows[0] || {};
-      var pend = rows[5].rows[0] || {};
-      var cats = rows[6].rows;
-      var ml = rows[7].rows[0] || {};
-      var chD = rows[8].rows;
-      var chM = rows[9].rows;
-      var chW = rows[10].rows;
-      var chY = rows[11].rows;
-
-      var paidToday = Number(tp.c) || 0;
-      var allToday = Number(ta.c) || 0;
+      if (client) {
+        client.release();
+        client = null;
+      }
+      var summary = rows[0].rows[0] || {};
+      var cats = rows[1].rows;
+      var chartRows = rows[2].rows;
+      var paidToday = Number(summary.paid_today_count) || 0;
+      var allToday = Number(summary.orders_today_count) || 0;
       var unpaidToday = Math.max(0, allToday - paidToday);
+      var chartLabels = chartRows.map(function (r) {
+        if (p === "weekly") return String(r.wk || "").slice(5);
+        if (p === "yearly") return String(r.d_key || "").trim();
+        if (p === "daily") return String(r.d_key || "").slice(-2);
+        return String(r.d_key || "");
+      });
+      var selectedChart = {
+        labels: chartLabels,
+        orderCounts: chartRows.map(function (r) { return Number(r.oc) || 0; }),
+        amounts: chartRows.map(function (r) { return Number(r.amt) || 0; }),
+      };
+      var charts = {};
+      charts[p] = selectedChart;
 
-      cb(null, {
+      var data = {
         period: p,
-        monthLabelIST: String(ml.ml || "").trim(),
+        monthLabelIST: String(summary.month_label || "").trim(),
         paidOrdersToday: paidToday,
         ordersTodayAll: allToday,
         unpaidOrdersToday: unpaidToday,
-        paidAmountToday: Number(tp.s) || 0,
-        paidOrdersWeek: Number(wp.c) || 0,
-        paidAmountWeek: Number(wp.s) || 0,
-        paidOrdersMonth: Number(mp.c) || 0,
-        paidAmountMonth: Number(mp.s) || 0,
-        paidOrdersYear: Number(yp.c) || 0,
-        paidAmountYear: Number(yp.s) || 0,
-        pendingPaymentOrders: Number(pend.c) || 0,
+        paidAmountToday: Number(summary.paid_today_sum) || 0,
+        paidOrdersWeek: Number(summary.paid_week_count) || 0,
+        paidAmountWeek: Number(summary.paid_week_sum) || 0,
+        paidOrdersMonth: Number(summary.paid_month_count) || 0,
+        paidAmountMonth: Number(summary.paid_month_sum) || 0,
+        paidOrdersYear: Number(summary.paid_year_count) || 0,
+        paidAmountYear: Number(summary.paid_year_sum) || 0,
+        pendingPaymentOrders: Number(summary.pending_count) || 0,
         topCategories: (cats || []).map(function (r) {
           return {
             categoryId: r.cid || "",
@@ -145,55 +191,16 @@ function getVendorOrderInsights(period, cb) {
             amount: Number(r.amt) || 0,
           };
         }),
-        charts: {
-          daily: {
-            labels: chD.map(function (r) {
-              return String(r.d_key || "").slice(-2);
-            }),
-            orderCounts: chD.map(function (r) {
-              return Number(r.oc) || 0;
-            }),
-            amounts: chD.map(function (r) {
-              return Number(r.amt) || 0;
-            }),
-          },
-          monthly: {
-            labels: chM.map(function (r) {
-              return String(r.d_key || "");
-            }),
-            orderCounts: chM.map(function (r) {
-              return Number(r.oc) || 0;
-            }),
-            amounts: chM.map(function (r) {
-              return Number(r.amt) || 0;
-            }),
-          },
-          weekly: {
-            labels: chW.map(function (r) {
-              return String(r.wk || "").slice(5);
-            }),
-            orderCounts: chW.map(function (r) {
-              return Number(r.oc) || 0;
-            }),
-            amounts: chW.map(function (r) {
-              return Number(r.amt) || 0;
-            }),
-          },
-          yearly: {
-            labels: chY.map(function (r) {
-              return String(r.d_key || "").trim();
-            }),
-            orderCounts: chY.map(function (r) {
-              return Number(r.oc) || 0;
-            }),
-            amounts: chY.map(function (r) {
-              return Number(r.amt) || 0;
-            }),
-          },
-        },
-      });
+        charts: charts,
+      };
+      finish(null, data);
     })
-    .catch(cb);
+    .catch(function (err) {
+      if (client) {
+        try { client.release(); } catch (_) {}
+      }
+      finish(err);
+    });
 }
 
 module.exports = { getVendorOrderInsights };

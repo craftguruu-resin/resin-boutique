@@ -115,6 +115,163 @@ var NODE_ENV = String(process.env.NODE_ENV || "").trim();
 var BILL_API_SECRET = process.env.BILL_API_SECRET || "";
 var RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || "";
 var RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || "";
+var VENDOR_DASHBOARD_CACHE_MS = Math.max(5_000, Number(process.env.VENDOR_DASHBOARD_CACHE_MS) || 30_000);
+var vendorDashboardCache = { expiresAt: 0, value: null, waiters: null };
+var VENDOR_INSIGHTS_PAYLOAD_CACHE_MS = Math.max(5_000, Number(process.env.VENDOR_INSIGHTS_CACHE_MS) || 30_000);
+var vendorInsightsPayloadCache = Object.create(null);
+/* The Inventory landing page is a vendor-only projection assembled from
+   catalogue, SKU and stock tables. Keep a very short server cache so a
+   reload or two open tabs do not repeat the same database fan-out. Every
+   inventory/catalogue save invalidates it immediately below. */
+var VENDOR_INVENTORY_CATALOG_CACHE_MS = Math.max(5_000, Number(process.env.VENDOR_INVENTORY_CATALOG_CACHE_MS) || 20_000);
+var VENDOR_INVENTORY_CATALOG_STALE_MS = Math.max(
+  VENDOR_INVENTORY_CATALOG_CACHE_MS,
+  Number(process.env.VENDOR_INVENTORY_CATALOG_STALE_MS) || 5 * 60_000
+);
+var vendorInventoryCatalogCache = Object.create(null);
+
+function cloneVendorDashboard(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+/** Combine the dashboard summary and its inventory/returns extras once per
+ * short interval. This is vendor-only data; it remains server-side and never
+ * becomes browser/CDN cacheable. */
+function getVendorDashboardPayload(cb) {
+  if (vendorDashboardCache.value && vendorDashboardCache.expiresAt > Date.now()) {
+    return process.nextTick(function () {
+      cb(null, cloneVendorDashboard(vendorDashboardCache.value));
+    });
+  }
+  if (vendorDashboardCache.waiters) {
+    vendorDashboardCache.waiters.push(cb);
+    return;
+  }
+  vendorDashboardCache.waiters = [cb];
+  function finish(err, value) {
+    var waiters = vendorDashboardCache.waiters || [];
+    vendorDashboardCache.waiters = null;
+    if (!err && value) {
+      vendorDashboardCache.value = cloneVendorDashboard(value);
+      vendorDashboardCache.expiresAt = Date.now() + VENDOR_DASHBOARD_CACHE_MS;
+    }
+    waiters.forEach(function (waiter) {
+      waiter(err || null, err ? null : cloneVendorDashboard(value));
+    });
+  }
+  ordersRepo.getVendorDashboardSummary(function (orderErr, summary) {
+    if (orderErr) return finish(orderErr);
+    vendorExtrasDb.getDashboardExtras(function (extrasErr, extras) {
+      if (extrasErr) return finish(extrasErr);
+      summary.lowStockCount = extras.lowStockCount || 0;
+      summary.returnsByStatus = extras.returnsByStatus || {};
+      summary.returnsPending = (extras.returnsByStatus && extras.returnsByStatus.pending) || 0;
+      finish(null, summary);
+    });
+  });
+}
+
+/**
+ * The order report and its inventory/return badges come from separate data
+ * sources. Cache and coalesce the combined payload so a Dashboard chart
+ * refresh cannot wait on the slow extras query after the graph is ready.
+ */
+function getVendorInsightsPayload(period, cb) {
+  var p = String(period || "monthly").toLowerCase();
+  if (p !== "daily" && p !== "weekly" && p !== "monthly" && p !== "yearly") p = "monthly";
+  var cached = vendorInsightsPayloadCache[p];
+  if (cached && cached.expiresAt > Date.now()) {
+    return process.nextTick(function () {
+      cb(null, cloneVendorDashboard(cached.value));
+    });
+  }
+  if (cached && cached.waiters) {
+    cached.waiters.push(cb);
+    return;
+  }
+  var entry = { expiresAt: 0, value: null, waiters: [cb] };
+  vendorInsightsPayloadCache[p] = entry;
+  function finish(err, value) {
+    var waiters = entry.waiters || [];
+    entry.waiters = null;
+    if (!err && value) {
+      entry.value = cloneVendorDashboard(value);
+      entry.expiresAt = Date.now() + VENDOR_INSIGHTS_PAYLOAD_CACHE_MS;
+    } else {
+      delete vendorInsightsPayloadCache[p];
+    }
+    waiters.forEach(function (waiter) {
+      waiter(err || null, err ? null : cloneVendorDashboard(value));
+    });
+  }
+  ordersRepo.getVendorOrderInsights(p, function (orderErr, data) {
+    if (orderErr) return finish(orderErr);
+    vendorExtrasDb.getDashboardExtras(function (extrasErr, extras) {
+      if (extrasErr) return finish(extrasErr);
+      data.lowStockCount = extras.lowStockCount || 0;
+      data.returnsPending = (extras.returnsByStatus && extras.returnsByStatus.pending) || 0;
+      finish(null, data);
+    });
+  });
+}
+
+function invalidateVendorInventoryCatalogCache() {
+  vendorInventoryCatalogCache = Object.create(null);
+}
+
+function refreshVendorInventoryCatalogEntry(key, safe, entry) {
+  vendorStorefrontCatalogDb.listStorefrontCatalog(safe, function (err, payload) {
+    var waiters = entry.waiters || [];
+    entry.waiters = null;
+    if (!err && payload) {
+      entry.value = cloneVendorDashboard(payload);
+      entry.expiresAt = Date.now() + VENDOR_INVENTORY_CATALOG_CACHE_MS;
+      entry.staleUntil = Date.now() + VENDOR_INVENTORY_CATALOG_STALE_MS;
+    } else if (!entry.value && vendorInventoryCatalogCache[key] === entry) {
+      delete vendorInventoryCatalogCache[key];
+    }
+    waiters.forEach(function (waiter) {
+      waiter(err || null, err ? null : cloneVendorDashboard(payload));
+    });
+  });
+}
+
+function getVendorInventoryCatalog(opts, forceFresh, cb) {
+  var safe = {
+    q: String((opts && opts.q) || "").toLowerCase().trim(),
+    categoryId: String((opts && opts.categoryId) || "").trim(),
+    scope: String((opts && opts.scope) || "").trim(),
+    activeOnly: !!(opts && opts.activeOnly),
+    limit: Math.min(200, Math.max(1, Number((opts && opts.limit) || 80) || 80)),
+    offset: Math.max(0, Number((opts && opts.offset) || 0) || 0),
+  };
+  var key = JSON.stringify(safe);
+  var current = vendorInventoryCatalogCache[key];
+  if (!forceFresh && current && current.value && current.expiresAt > Date.now()) {
+    return process.nextTick(function () {
+      cb(null, cloneVendorDashboard(current.value));
+    });
+  }
+  /* A stale snapshot is still useful to paint the vendor's table instantly.
+     Refresh it in the background; a stock/catalogue mutation clears this
+     cache, so a vendor never sees their own saved change as stale data. */
+  if (!forceFresh && current && current.value && current.staleUntil > Date.now()) {
+    if (!current.waiters) {
+      current.waiters = [];
+      refreshVendorInventoryCatalogEntry(key, safe, current);
+    }
+    return process.nextTick(function () {
+      cb(null, cloneVendorDashboard(current.value));
+    });
+  }
+  if (!forceFresh && current && current.waiters) {
+    current.waiters.push(cb);
+    return;
+  }
+  var entry = { expiresAt: 0, staleUntil: 0, value: null, waiters: [cb] };
+  vendorInventoryCatalogCache[key] = entry;
+  refreshVendorInventoryCatalogEntry(key, safe, entry);
+}
 
 var Razorpay = null;
 try {
@@ -2193,22 +2350,30 @@ app.get("/api/guest/orders", function (req, res) {
     var orderOffset = Number(req.query && req.query.offset);
     if (!Number.isFinite(orderOffset) || orderOffset < 0) orderOffset = 0;
     orderOffset = Math.floor(orderOffset);
-    ordersRepo.listOrdersByGuestId(row.guestId, { limit: orderLimit, offset: orderOffset }, function (e2, list, page) {
-      if (e2) {
-        return res.status(500).json({ ok: false, error: String(e2.message || e2) });
+    /* Historic checkout records created before account linking was enforced
+       may have a NULL guest_id. The customer has already authenticated here,
+       so safely repair only exact email matches before listing My orders. */
+    ordersRepo.reconcileUnlinkedOrdersForGuest(row.guestId, row.email, function (repairErr) {
+      if (repairErr) {
+        return res.status(500).json({ ok: false, error: String(repairErr.message || repairErr) });
       }
-      res.setHeader("Cache-Control", "no-store");
-      var customerOrders = (list || []).map(function (order) {
-        var out = Object.assign({}, order);
-        if (order && order.totals && typeof order.totals === "object") {
-          out.totals = Object.assign({}, order.totals);
-          // Gateway cost and shipping accounting stay server-side/vendor-only.
-          delete out.totals.gatewayFee;
-          delete out.totals.shipping;
+      ordersRepo.listOrdersByGuestId(row.guestId, { limit: orderLimit, offset: orderOffset }, function (e2, list, page) {
+        if (e2) {
+          return res.status(500).json({ ok: false, error: String(e2.message || e2) });
         }
-        return out;
+        res.setHeader("Cache-Control", "no-store");
+        var customerOrders = (list || []).map(function (order) {
+          var out = Object.assign({}, order);
+          if (order && order.totals && typeof order.totals === "object") {
+            out.totals = Object.assign({}, order.totals);
+            // Gateway cost and shipping accounting stay server-side/vendor-only.
+            delete out.totals.gatewayFee;
+            delete out.totals.shipping;
+          }
+          return out;
+        });
+        res.json({ ok: true, orders: customerOrders, page: { limit: orderLimit, offset: orderOffset, hasMore: !!(page && page.hasMore), nextOffset: page && page.nextOffset != null ? page.nextOffset : orderOffset + customerOrders.length } });
       });
-      res.json({ ok: true, orders: customerOrders, page: { limit: orderLimit, offset: orderOffset, hasMore: !!(page && page.hasMore), nextOffset: page && page.nextOffset != null ? page.nextOffset : orderOffset + customerOrders.length } });
     });
   });
 });
@@ -2472,20 +2637,12 @@ app.get("/api/vendor/dashboard-summary", function (req, res) {
     if (!ok) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
-    ordersRepo.getVendorDashboardSummary(function (e2, summary) {
+    getVendorDashboardPayload(function (e2, summary) {
       if (e2) {
         return res.status(500).json({ ok: false, error: String(e2.message || e2) });
       }
-      vendorExtrasDb.getDashboardExtras(function (e3, extras) {
-        if (e3) {
-          return res.status(500).json({ ok: false, error: String(e3.message || e3) });
-        }
-        summary.lowStockCount = extras.lowStockCount || 0;
-        summary.returnsByStatus = extras.returnsByStatus || {};
-        summary.returnsPending = (extras.returnsByStatus && extras.returnsByStatus.pending) || 0;
-        res.setHeader("Cache-Control", "no-store");
-        res.json({ ok: true, summary: summary });
-      });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, summary: summary });
     });
   });
 });
@@ -2646,24 +2803,17 @@ app.get("/api/vendor/analytics/order-insights", function (req, res) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
     var period = String((req.query && req.query.period) || "monthly").toLowerCase();
-    if (period !== "daily" && period !== "weekly" && period !== "monthly") {
+    if (period !== "daily" && period !== "weekly" && period !== "monthly" && period !== "yearly") {
       period = "monthly";
     }
-    ordersRepo.getVendorOrderInsights(period, function (e2, data) {
+    getVendorInsightsPayload(period, function (e2, data) {
       if (e2) {
         var msg = String((e2 && e2.message) || e2);
         var code = msg.indexOf("not configured") >= 0 ? 503 : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
-      vendorExtrasDb.getDashboardExtras(function (e3, extras) {
-        if (e3) {
-          return res.status(500).json({ ok: false, error: String((e3 && e3.message) || e3) });
-        }
-        data.lowStockCount = extras.lowStockCount || 0;
-        data.returnsPending = (extras.returnsByStatus && extras.returnsByStatus.pending) || 0;
-        res.setHeader("Cache-Control", "no-store");
-        res.json({ ok: true, insights: data });
-      });
+      res.setHeader("Cache-Control", "no-store");
+      res.json({ ok: true, insights: data });
     });
   });
 });
@@ -3261,6 +3411,7 @@ app.post("/api/vendor/inventory", function (req, res) {
         var code = msg.indexOf("not configured") >= 0 ? 503 : msg.indexOf("required") >= 0 ? 400 : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
+      invalidateVendorInventoryCatalogCache();
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, item: row });
     });
@@ -3281,6 +3432,7 @@ app.patch("/api/vendor/inventory/:id", function (req, res) {
         var code = msg.indexOf("not configured") >= 0 ? 503 : msg.indexOf("Not found") >= 0 ? 404 : 400;
         return res.status(code).json({ ok: false, error: msg });
       }
+      invalidateVendorInventoryCatalogCache();
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, item: row });
     });
@@ -3927,8 +4079,9 @@ app.post("/api/vendor/products/:productId/active", function (req, res) {
         var code = msg.indexOf("Built-in") >= 0 || msg.indexOf("not found") >= 0 ? 400 : 500;
         return res.status(code).json({ ok: false, error: msg });
       }
+      invalidateVendorInventoryCatalogCache();
       res.setHeader("Cache-Control", "no-store");
-      res.json({ ok: true });
+      res.json({ ok: true, product: { id: productId, isActive: active } });
     });
   });
 });
@@ -4622,11 +4775,9 @@ app.get("/api/vendor/catalog-products", function (req, res) {
     if (!ok) {
       return res.status(401).json({ ok: false, error: "Unauthorized" });
     }
-    vendorStorefrontCatalogDb.listStorefrontCatalog(
+    getVendorInventoryCatalog(
       {
-        q: String((req.query && req.query.q) || "")
-          .toLowerCase()
-          .trim(),
+        q: String((req.query && req.query.q) || "").toLowerCase().trim(),
         categoryId: String((req.query && req.query.categoryId) || "").trim(),
         scope: String((req.query && req.query.scope) || "").trim(),
         /* Inventory is deliberately restricted to sellable listings. Product
@@ -4635,6 +4786,7 @@ app.get("/api/vendor/catalog-products", function (req, res) {
         limit: Math.min(200, Math.max(1, parseInt(String((req.query && req.query.limit) || "80"), 10) || 80)),
         offset: Math.max(0, parseInt(String((req.query && req.query.offset) || "0"), 10) || 0),
       },
+      String((req.query && req.query.fresh) || "") === "1",
       function (e2, payload) {
         if (e2) {
           return res.status(500).json({ ok: false, error: String(e2.message || e2) });
@@ -4699,6 +4851,7 @@ app.patch("/api/vendor/catalog-products/:productId/variants", function (req, res
       try {
         catalogFromData.invalidateCache();
       } catch (_) {}
+      invalidateVendorInventoryCatalogCache();
       res.setHeader("Cache-Control", "no-store");
       res.json({ ok: true, row: row });
     });
@@ -4755,6 +4908,7 @@ app.put("/api/vendor/catalog-products/:productId/prices", function (req, res) {
         try {
           catalogFromData.invalidateCache();
         } catch (_) {}
+        invalidateVendorInventoryCatalogCache();
         res.setHeader("Cache-Control", "no-store");
         res.json({ ok: true, row: row });
       }
@@ -5141,6 +5295,20 @@ function startHttpServer() {
   httpServer = app.listen(PORT, HOST, function () {
     onServerListen();
     httpHardening.wireGracefulShutdown(httpServer, { getPool: poolMod.getPool });
+    /* Warm the two reports the vendor opens first. It runs in the background
+       after listen, so health checks are never blocked by a cold database. */
+    if (poolMod.isEnabled()) {
+      var warmTimer = setTimeout(function () {
+        getVendorDashboardPayload(function () {});
+        getVendorInsightsPayload("monthly", function () {});
+        getVendorInventoryCatalog(
+          { q: "", categoryId: "", scope: "resin", activeOnly: true, limit: 24, offset: 0 },
+          false,
+          function () {}
+        );
+      }, 250);
+      if (warmTimer && typeof warmTimer.unref === "function") warmTimer.unref();
+    }
   });
   if (httpServer && typeof httpServer.keepAliveTimeout === "number") {
     // Cloud Run / LB idle timeouts — keep connections warm a bit longer than proxy.

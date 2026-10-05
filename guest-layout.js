@@ -564,7 +564,10 @@
       var staleHtml = stale
         ? '<p class="guest-header-search__stale" role="status">Showing the last available catalogue while we reconnect.</p>'
         : "";
-      res.innerHTML = staleHtml + sectionHtml + catHtml + productHtml;
+      /* Search is primarily a product-finding control. Keep matching products
+         ahead of category and cross-catalog shortcuts so the first actionable
+         result is the item the customer searched for. */
+      res.innerHTML = staleHtml + productHtml + catHtml + sectionHtml;
       res.hidden = false;
     }
 
@@ -685,18 +688,48 @@
       if (e.key === "Escape") { res.hidden = true; activeSearchResult = -1; return; }
       if (e.key !== "Enter") return;
       var v = String(inp.value || "").trim();
-      syncGuestSearchToPageFilter(v);
-      var gf = document.getElementById("globalFindQuery");
-      if (!gf) return;
-      try {
-        gf.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-      } catch (_) {
-        try {
-          var ev = document.createEvent("KeyboardEvent");
-          ev.initKeyboardEvent("keydown", true, true, window, "Enter", 0, "", false, "");
-          gf.dispatchEvent(ev);
-        } catch (_2) {}
+      if (!v) return;
+      e.preventDefault();
+
+      /* Respect an explicit keyboard selection in the result list. */
+      var selectedLinks = searchResultLinks();
+      if (activeSearchResult >= 0 && selectedLinks[activeSearchResult] && selectedLinks[activeSearchResult].href) {
+        window.location.href = selectedLinks[activeSearchResult].href;
+        return;
       }
+
+      /* The home page's old off-screen filter only filters category cards.
+         Passing Enter to it made a precise product query look like a failed
+         search. Search must instead take the buyer to the matching product
+         (or, for the supply catalogues, their filtered listing). */
+      if (headerSearchUsesRawMaterialsApi()) {
+        var pnEnter = currentPageName();
+        var isPhotoEnter =
+          pnEnter === "photo-frame-shop.html" ||
+          pnEnter === "photo-frame-product.html" ||
+          pnEnter === "photo-frames.html";
+        window.location.href =
+          (isPhotoEnter ? "photo-frames.html?q=" : "raw-material-shop.html?q=") + encodeURIComponent(v);
+        return;
+      }
+
+      var D3 = window.RESIN_DATA;
+      var product =
+        D3 && typeof D3.searchCatalogPartial === "function" ? D3.searchCatalogPartial(v, 1)[0] : null;
+      if (product && product.id) {
+        window.location.href = "product.html?id=" + encodeURIComponent(product.id);
+        return;
+      }
+      var category =
+        D3 && typeof D3.searchCategoriesPartial === "function" ? D3.searchCategoriesPartial(v, 1)[0] : null;
+      if (category && category.id) {
+        window.location.href = "category.html?cat=" + encodeURIComponent(category.id) + "&q=" + encodeURIComponent(v);
+        return;
+      }
+
+      /* Keep the useful no-match message open instead of silently handing
+         the query to a page that cannot show product-level results. */
+      runSearch();
     });
     inp.addEventListener("focus", function () {
       if (String(inp.value || "").trim()) runSearch();
@@ -1410,7 +1443,9 @@
     if (signup) signup.classList.toggle("is-hidden", signedIn);
     if (login) login.classList.toggle("is-hidden", signedIn);
     if (orders) orders.classList.add("is-hidden");
-    if (logout) logout.classList.toggle("is-hidden", !signedIn);
+    /* My Account is the only customer-account control in the storefront
+       header. Signing out is intentionally kept inside the account page. */
+    if (logout) logout.classList.add("is-hidden");
   }
 
   function normalizeFooterNavigation() {

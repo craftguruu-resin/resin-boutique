@@ -468,12 +468,40 @@ function markOrderPaymentReceived(orderId, cb) {
   });
 }
 
-function listOrdersByGuestId(guestId, cb) {
+/**
+ * @param {number} guestId
+ * @param {{limit?: number, offset?: number}|((err: Error|null, list?: object[], page?: object) => void)} options
+ * @param {(err: Error|null, list?: object[], page?: object) => void} [cb]
+ */
+function listOrdersByGuestId(guestId, options, cb) {
+  if (typeof options === "function") {
+    cb = options;
+    options = {};
+  }
+  options = options || {};
+  cb = cb || function () {};
   if (poolMod.isEnabled()) {
-    return ordersDb.listOrdersByGuestId(guestId, cb);
+    return ordersDb.listOrdersByGuestId(guestId, options, cb);
   }
   process.nextTick(function () {
-    cb(null, []);
+    cb(null, [], { hasMore: false, nextOffset: Number(options.offset) || 0 });
+  });
+}
+
+/**
+ * Attach legacy orders only after the customer has authenticated with the
+ * exact checkout email. File-backed development mode has no guest identity
+ * graph, so it intentionally performs no repair.
+ * @param {number} guestId
+ * @param {string} email
+ * @param {(err: Error|null, out?: {attached: number}) => void} cb
+ */
+function reconcileUnlinkedOrdersForGuest(guestId, email, cb) {
+  if (poolMod.isEnabled()) {
+    return ordersDb.reconcileUnlinkedOrdersForGuest(guestId, email, cb);
+  }
+  process.nextTick(function () {
+    cb(null, { attached: 0 });
   });
 }
 
@@ -535,6 +563,7 @@ module.exports = {
   updateOrderFulfillment,
   markOrderPaymentReceived,
   listOrdersByGuestId,
+  reconcileUnlinkedOrdersForGuest,
   getGuestOrderTracking,
   loadPaidOrderForGuestBill,
   cancelGuestOrder,

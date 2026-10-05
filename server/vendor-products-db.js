@@ -793,6 +793,19 @@ function manageRowHaystack(p) {
   ).toLowerCase();
 }
 
+function manageSearchMatches(haystack, query) {
+  var tokens = String(query || "")
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (!tokens.length) return true;
+  haystack = String(haystack || "").toLowerCase();
+  return tokens.every(function (token) {
+    return haystack.indexOf(token) !== -1;
+  });
+}
+
 function pushStaticManageRow(p, omap, skuMap, out) {
   var ov = omap[p.id] || {};
   var listed = ov.listed !== false;
@@ -951,7 +964,7 @@ function filterManageOutByQuery(out, ql, skuMap) {
       (p.subcategory || "") +
       " " +
       (p.sku || skuMap[p.id] || "");
-    return hay.toLowerCase().indexOf(ql) !== -1;
+    return manageSearchMatches(hay, ql);
   });
 }
 
@@ -1011,20 +1024,27 @@ function listAllProductsForManage(opts, cb) {
       }
 
       var staticById = Object.create(null);
+      var vendorById = Object.create(null);
       staticList.forEach(function (p) {
         staticById[p.id] = p;
       });
+      vendorList.forEach(function (p) {
+        vendorById[p.id] = p;
+      });
       var staticWork = staticList.filter(function (p) {
-        return manageRowHaystack(p).indexOf(ql) !== -1;
+        return manageSearchMatches(manageRowHaystack(p), ql);
       });
       var vendorWork = vendorList.filter(function (p) {
-        return manageRowHaystack(p).indexOf(ql) !== -1;
+        return manageSearchMatches(manageRowHaystack(p), ql);
       });
       vendorExtrasDb.searchProductIdsBySku(ql, function (eSku, skuIds) {
         if (eSku) return cb(eSku);
         (skuIds || []).forEach(function (pid) {
           if (staticById[pid] && staticWork.indexOf(staticById[pid]) < 0) {
             staticWork.push(staticById[pid]);
+          }
+          if (vendorById[pid] && vendorWork.indexOf(vendorById[pid]) < 0) {
+            vendorWork.push(vendorById[pid]);
           }
         });
         finishWithSlices(staticWork, vendorWork);
@@ -1193,13 +1213,10 @@ function setVendorProductActive(productId, isActive, cb) {
       if (!r.rowCount) {
         throw new Error("Product not found");
       }
-      if (!isActive) {
-        try {
-          catalogFromData.invalidateCache();
-        } catch (_) {}
-        return cb(null);
-      }
-      vendorCatalogDb.upsertOverride(id, { listed: true }, function (e3) {
+      /* Keep the product table and the storefront listing override in the
+         same state. A previously saved override could otherwise contradict a
+         later discontinue/reactivate action after a cache refresh. */
+      return vendorCatalogDb.upsertOverride(id, { listed: !!isActive }, function (e3) {
         if (e3) return cb(e3);
         try {
           catalogFromData.invalidateCache();

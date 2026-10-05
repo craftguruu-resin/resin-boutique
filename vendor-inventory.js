@@ -228,7 +228,7 @@
 
   function refreshAfterCatalogMutation() {
     clearCatalogPageCache();
-    loadCatalogPage(true);
+    loadCatalogPage(true, true);
   }
 
   function stockCellVal(v) {
@@ -1110,7 +1110,7 @@
     );
   }
 
-  function loadCatalogPage(reset) {
+  function loadCatalogPage(reset, forceFresh) {
     if (reset) catalogOffset = 0;
     var base = V.apiBase();
     var q = catalogQ;
@@ -1142,7 +1142,8 @@
         "&limit=" +
         catalogLimit +
         "&offset=" +
-        requestOffset
+        requestOffset +
+        (forceFresh ? "&fresh=1" : "")
     );
     var fetchOpts = { headers: V.authHeaders() };
     if (catalogAbortController) fetchOpts.signal = catalogAbortController.signal;

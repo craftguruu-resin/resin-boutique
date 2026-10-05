@@ -2,6 +2,13 @@
 
 var poolMod = require("./pool.js");
 
+/* The hotfix contains idempotent DDL for older installations. It is required
+   during startup, but running dozens of ALTER/INDEX checks for every
+   Inventory read turns a simple product table into a multi-second request.
+   Share one boot-time run and return its resolved promise thereafter. */
+var inventorySchemaReady = false;
+var inventorySchemaPromise = null;
+
 /**
  * Run one idempotent DDL statement; log and continue if it fails so later steps still run.
  * @param {import("pg").Pool} p
@@ -21,7 +28,7 @@ function runHotfixQuery(p, sql) {
  * Each statement is isolated so one failure does not skip the rest (e.g. products.size_labels).
  * @returns {Promise<void>}
  */
-function ensureVendorInventoryColumns() {
+function ensureVendorInventoryColumnsUncached() {
   var p = poolMod.getPool();
   if (!p) return Promise.resolve();
 
@@ -269,6 +276,23 @@ function ensureVendorInventoryColumns() {
           console.warn("[db] catalog suppression seed:", err && err.message ? err.message : err);
         });
     });
+}
+
+function ensureVendorInventoryColumns() {
+  if (inventorySchemaReady) return Promise.resolve();
+  if (inventorySchemaPromise) return inventorySchemaPromise;
+  inventorySchemaPromise = ensureVendorInventoryColumnsUncached().then(
+    function () {
+      inventorySchemaReady = true;
+    },
+    function (err) {
+      /* Do not permanently cache a failed migration check: a temporary
+         database outage should be allowed to recover on the next call. */
+      inventorySchemaPromise = null;
+      throw err;
+    }
+  );
+  return inventorySchemaPromise;
 }
 
 module.exports = { ensureVendorInventoryColumns };

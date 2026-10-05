@@ -639,6 +639,22 @@
       opt = Object.assign({}, editingProductOptions);
     }
 
+    /* Stock is edited in the Inventory workspace, not in the product-options
+       form. The form only returns customer-facing fields, so carry its opaque
+       inventory block forward during a normal product edit. */
+    if (
+      !opt.vendorInventory &&
+      editingProductOptions &&
+      editingProductOptions.vendorInventory &&
+      typeof editingProductOptions.vendorInventory === "object"
+    ) {
+      try {
+        opt.vendorInventory = JSON.parse(JSON.stringify(editingProductOptions.vendorInventory));
+      } catch (_) {
+        opt.vendorInventory = Object.assign({}, editingProductOptions.vendorInventory);
+      }
+    }
+
     var cover = stripMediaCacheBust(coverOverride || getCoverUrlInput() || editingCoverFallback);
     var heroField = stripMediaCacheBust((document.getElementById("vpmHero") && document.getElementById("vpmHero").value) || "");
     if (cover) opt.heroImage = cover;
@@ -944,6 +960,7 @@
           throw new Error((j && j.error) || res.statusText || "Update failed");
         }
         refreshGuestCatalogMerge();
+        return j.product || { id: id, isActive: !!active };
       });
     });
   }
@@ -1290,6 +1307,8 @@
         if (!window.confirm("Discontinue this product? It will disappear from the guest storefront and from the main Inventory screen until you set it active again.")) {
           return;
         }
+        btn.disabled = true;
+        btn.textContent = "Updating…";
         setActive(id, false)
           .then(function () {
             return loadList();
@@ -1298,11 +1317,15 @@
             showMsg("Product discontinued. It is hidden from the storefront and available under the Discontinued filter.", false);
           })
           .catch(function (e) {
+            btn.disabled = false;
+            btn.textContent = "Discontinue";
             window.alert(String((e && e.message) || e));
           });
         return;
       }
       if (btn.classList.contains("vpm-react")) {
+        btn.disabled = true;
+        btn.textContent = "Updating…";
         setActive(id, true)
           .then(function () {
             return loadList();
@@ -1311,6 +1334,8 @@
             showMsg("Product is active again and will return to the storefront.", false);
           })
           .catch(function (e) {
+            btn.disabled = false;
+            btn.textContent = "Set active";
             window.alert(String((e && e.message) || e));
           });
         return;

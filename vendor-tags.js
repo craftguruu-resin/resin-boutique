@@ -128,6 +128,22 @@
     }
   }
 
+  function fmtOrderDateTime(iso) {
+    if (!iso) return "—";
+    try {
+      return new Date(iso).toLocaleString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZone: "Asia/Kolkata",
+      });
+    } catch (_) {
+      return "—";
+    }
+  }
+
   function shipmentBadge(o) {
     var st = String(o.shipmentStatus || "").trim();
     var code = String(o.shipmentStatusCode || "").toLowerCase();
@@ -286,6 +302,69 @@
       esc(syncButtonLabelForCourier(courierSel)) +
       "</button>" +
       "</div></div>"
+    );
+  }
+
+  function buildOrderLineItemsHtml(order) {
+    var items = Array.isArray(order && order.items) ? order.items : [];
+    if (!items.length) {
+      return "<p class='vs-muted' style='margin:0'>No line items were recorded for this order.</p>";
+    }
+    return (
+      "<ul class='vt-order-lines'>" +
+      items
+        .map(function (item) {
+          var image = String(item.image || "").trim();
+          var imageMarkup = image
+            ? "<img class='vt-order-lines__image' src='" + esc(image) + "' alt='' loading='lazy' />"
+            : "<span class='vt-order-lines__image vt-order-lines__image--empty' aria-hidden='true'>✦</span>";
+          var size = String(item.sizeLabel || "").trim();
+          var sku = String(item.sku || "").trim();
+          return (
+            "<li class='vt-order-lines__item'>" +
+            imageMarkup +
+            "<div class='vt-order-lines__copy'><strong>" + esc(item.name || "Item") + "</strong>" +
+            "<span>" + esc([size, sku ? "SKU " + sku : ""].filter(Boolean).join(" · ") || "Standard") + "</span></div>" +
+            "<div class='vt-order-lines__amount'><strong>×" + esc(String(item.qty || 1)) + "</strong><span>₹" + esc(money(B.lineAmt(item))) + "</span></div>" +
+            "</li>"
+          );
+        })
+        .join("") +
+      "</ul>"
+    );
+  }
+
+  function buildOrderOverviewHtml(order) {
+    var g = (order && order.guest) || {};
+    var totals = (order && order.totals) || {};
+    var itemCount = (order.items || []).reduce(function (sum, item) {
+      return sum + Math.max(1, Number(item && item.qty) || 1);
+    }, 0);
+    var address = B.fullAddr(g);
+    var coupon = String(totals.couponCode || "").trim();
+    var discount = Number(totals.couponDiscount) || 0;
+    return (
+      "<section class='vt-order-overview' aria-label='Order overview'>" +
+      "<div class='vt-order-overview__stats'>" +
+      "<div class='vt-order-stat'><span>Order value</span><strong>₹" + esc(money(totals.total)) + "</strong></div>" +
+      "<div class='vt-order-stat'><span>Payment</span>" + payBadge(order.paymentStatus) + "<small>" + esc(payMethodLabel(order.paymentMethod)) + "</small></div>" +
+      "<div class='vt-order-stat'><span>Fulfilment</span><strong>" + esc(fulLabel(order.fulfillmentStatus)) + "</strong><small>" + esc(itemCount + (itemCount === 1 ? " item" : " items")) + "</small></div>" +
+      "</div>" +
+      "<div class='vt-order-overview__grid'>" +
+      "<section class='vt-order-info-card'><p class='vt-order-info-card__eyebrow'>Customer</p><strong>" + esc(g.name || "Customer") + "</strong>" +
+      "<a href='mailto:" + esc(g.email || "") + "'>" + esc(g.email || "No email recorded") + "</a>" +
+      "<a href='tel:" + esc(String(g.phone || "").replace(/[^+0-9]/g, "")) + "'>" + esc(g.phone || "No phone recorded") + "</a></section>" +
+      "<section class='vt-order-info-card vt-order-info-card--address'><p class='vt-order-info-card__eyebrow'>Ship to</p><strong>" + esc(address || "Address not recorded") + "</strong>" +
+      "<span>PIN " + esc(g.zip || "—") + " · " + esc(g.country || "India") + "</span></section>" +
+      "<section class='vt-order-info-card'><p class='vt-order-info-card__eyebrow'>Order reference</p><strong>#" + esc(String(order.orderId || "—")) + " · " + esc(order.tagRef || "—") + "</strong>" +
+      "<span>Placed " + esc(fmtOrderDateTime(order.createdAt)) + "</span>" +
+      (coupon && discount > 0 ? "<span>Coupon " + esc(coupon) + " · −₹" + esc(money(discount)) + "</span>" : "") +
+      "</section>" +
+      "</div>" +
+      "<section class='vt-order-items-card'><div class='vt-order-items-card__head'><div><p class='vt-order-info-card__eyebrow'>Items ordered</p><strong>What this order contains</strong></div><span>" + esc(itemCount + (itemCount === 1 ? " piece" : " pieces")) + "</span></div>" +
+      buildOrderLineItemsHtml(order) +
+      "</section>" +
+      "</section>"
     );
   }
 
@@ -566,7 +645,7 @@
           renderFulEditor(o) +
           "</td><td><button type='button' class='vs-btn vs-btn--primary vt-open' data-oid='" +
           esc(String(o.orderId)) +
-          "'>Tag</button></td></tr>"
+          "'>Open order</button></td></tr>"
         );
       })
       .join("");
@@ -584,6 +663,9 @@
       });
     });
     syncToolbar();
+    if (window.CraftguruVendorTopTabs && typeof window.CraftguruVendorTopTabs.refresh === "function") {
+      window.CraftguruVendorTopTabs.refresh();
+    }
     scheduleRangeRollup();
   }
 
@@ -646,11 +728,16 @@
   }
 
   function openDetail(orderId) {
-    var base = V.apiBase();
     var panel = document.getElementById("vtDetail");
     var body = document.getElementById("vtDetailBody");
     var meta = document.getElementById("vtDetailMeta");
+    var title = document.getElementById("vtDetailTitle");
+    if (!panel || !body) return;
     panel.removeAttribute("hidden");
+    panel.setAttribute("aria-busy", "true");
+    lastOrder = null;
+    if (title) title.textContent = "Order detail";
+    if (meta) meta.textContent = "Loading order information…";
     body.innerHTML = "<p class='vs-muted'>Loading…</p>";
     vf(V.vendorApiUrl("/api/vendor/order/" + encodeURIComponent(orderId)), { headers: V.authHeaders() })
       .then(function (res) {
@@ -661,16 +748,15 @@
       })
       .then(function (order) {
         lastOrder = order;
+        panel.removeAttribute("aria-busy");
+        if (title) title.textContent = "Order #" + String(order.orderId || "—");
         if (meta) {
-          meta.innerHTML =
-            esc(order.tagRef || "") +
+          meta.textContent =
+            (order.tagRef || "No tag reference") +
+            " · placed " +
+            fmtOrderDateTime(order.createdAt) +
             " · " +
-            esc(order.paymentStatus || "") +
-            " · " +
-            esc(payMethodLabel(order.paymentMethod)) +
-            " · <strong>" +
-            esc(B.money(order.totals && order.totals.total)) +
-            "</strong>";
+            payMethodLabel(order.paymentMethod);
         }
         var markHtml = "";
         if (
@@ -687,13 +773,14 @@
         }
         body.innerHTML =
           markHtml +
-          "<div class='vt-detail-layout'>" +
-          "<div class='vt-detail-layout__tag'>" +
+          buildOrderOverviewHtml(order) +
+          "<div class='vt-detail-layout vt-detail-layout--redesign'>" +
+          "<section class='vt-detail-layout__tag vt-detail-preview-card'><div class='vt-detail-section-head'><p class='vt-order-info-card__eyebrow'>Parcel tag &amp; bill preview</p><strong>One print-ready parcel sheet</strong></div>" +
           B.buildInlineTagBillHtml(order) +
-          "</div>" +
-          "<div class='vt-detail-layout__ship'>" +
+          "</section>" +
+          "<section class='vt-detail-layout__ship'>" +
           buildShipmentForm(order) +
-          "</div>" +
+          "</section>" +
           "</div>";
         var saveBtn = document.getElementById("vtSaveShipmentBtn");
         if (saveBtn) {
@@ -714,15 +801,25 @@
             patchPaymentReceived(markBtn.getAttribute("data-oid"));
           });
         }
+        if (window.CraftguruVendorTopTabs && typeof window.CraftguruVendorTopTabs.refresh === "function") {
+          window.CraftguruVendorTopTabs.refresh();
+        }
       })
       .catch(function (e) {
+        panel.removeAttribute("aria-busy");
+        if (meta) meta.textContent = "Order detail could not be loaded.";
         body.innerHTML = "<p class='vs-err'>" + esc(String((e && e.message) || e)) + "</p>";
         lastOrder = null;
       });
   }
 
-  on("vtPrintBtn", "click", function () {
-    if (!lastOrder) return;
+  function printOrder() {
+    if (!lastOrder) {
+      window.alert("Open an order before printing.");
+      return;
+    }
+    /* Open synchronously from the click so browsers do not treat it as an
+       unsolicited pop-up. The document itself has no remote dependencies. */
     var html = B.buildPrintHtml(lastOrder);
     var w = window.open("", "_blank");
     if (!w) {
@@ -737,7 +834,11 @@
         w.focus();
         w.print();
       } catch (_) {}
-    }, 300);
+    }, 80);
+  }
+
+  on("vtPrintParcelBtn", "click", function () {
+    printOrder();
   });
 
   function loadOrders() {

@@ -410,6 +410,15 @@ function upsertOverride(productId, patch, cb) {
           if (!Object.prototype.hasOwnProperty.call(incoming, "detailBody") && curOpt.detailBody != null) {
             nextOpt.detailBody = curOpt.detailBody;
           }
+          /* The Product Manager submits display options only. Omitting this
+             separate inventory block must preserve existing stock. */
+          if (
+            !Object.prototype.hasOwnProperty.call(incoming, "vendorInventory") &&
+            curOpt.vendorInventory &&
+            typeof curOpt.vendorInventory === "object"
+          ) {
+            nextOpt.vendorInventory = curOpt.vendorInventory;
+          }
         }
       }
       nextOpt = sanitizePdpMediaOptions(nextOpt);

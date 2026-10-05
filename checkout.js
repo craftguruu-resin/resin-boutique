@@ -77,6 +77,8 @@
 
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var GUEST_SESSION_NAME_KEY = "cg_session_name";
+  var checkoutSessionRefreshId = 0;
+  var editingSavedAddressId = "";
   var PAYMENT_RECOVERY_KEY = "cgPaymentRecoveryV1";
   var PAYMENT_RECOVERY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
 
@@ -196,10 +198,10 @@
     } catch (_) {}
   }
 
-  function guestAuthHeaders() {
+  function guestAuthHeaders(tokenOverride) {
     var h = { "Content-Type": "application/json" };
     try {
-      var t = localStorage.getItem(GUEST_TOKEN_KEY);
+      var t = tokenOverride != null ? tokenOverride : localStorage.getItem(GUEST_TOKEN_KEY);
       if (t) {
         h.Authorization = "Bearer " + t;
       }
@@ -212,9 +214,11 @@
     if (!base) {
       return Promise.resolve(null);
     }
+    var token = "";
+    try { token = String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim(); } catch (_) {}
     return fetch(base + "/api/guest/me", {
       method: "GET",
-      headers: guestAuthHeaders(),
+      headers: guestAuthHeaders(token),
       cache: "no-store",
     })
       .then(function (res) {
@@ -227,6 +231,9 @@
         var j = o.x.json;
         if (o.x.okHttp && j.ok) return j;
         if (o.status === 401 || (j && j.code === "NO_SESSION")) {
+          var stillSameToken = false;
+          try { stillSameToken = String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim() === token; } catch (_) {}
+          if (!stillSameToken) return null;
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
             localStorage.removeItem(GUEST_SESSION_EMAIL_KEY);
@@ -313,25 +320,34 @@
     }
     container.hidden = false;
     list.forEach(function (a, i) {
-      var label = document.createElement("label");
-      label.className = "ck-addr-card";
+      var card = document.createElement("article");
+      card.className = "ck-addr-card";
       var tag = addrTypeLabel(a);
-      label.innerHTML =
-        '<input type="radio" name="checkoutSavedAddrPick" value="' +
+      var radioId = "checkoutSavedAddrPick-" + i;
+      card.innerHTML =
+        '<input type="radio" id="' +
+        radioId +
+        '" name="checkoutSavedAddrPick" value="' +
         i +
         '" />' +
-        '<span class="ck-addr-card__tag">' +
+        '<label class="ck-addr-card__select" for="' +
+        radioId +
+        '"><span class="ck-addr-card__tag">' +
         (tag === "Work" ? "💼" : "🏠") +
         " " +
         escapeHtml(tag) +
         "</span>" +
         '<div class="ck-addr-card__body">' +
         escapeHtml(formatAddrCardBody(a)) +
-        "</div>" +
+        "</div></label>" +
+        '<div class="ck-addr-card__actions">' +
+        '<button type="button" class="ck-addr-card__use" data-addr-use="' +
+        i +
+        '">Use this address</button>' +
         '<button type="button" class="ck-addr-card__edit" data-addr-edit="' +
         i +
-        '">Edit</button>';
-      container.appendChild(label);
+        '">Edit address</button></div>';
+      container.appendChild(card);
     });
     var first = container.querySelector('input[name="checkoutSavedAddrPick"]');
     var preferred = Array.prototype.slice.call(container.querySelectorAll('input[name="checkoutSavedAddrPick"]')).find(function (input, index) {
@@ -343,12 +359,22 @@
 
   function syncAddrPickUi() {
     var useNew = !document.querySelector('input[name="checkoutSavedAddrPick"]:checked');
+    if (!useNew) editingSavedAddressId = "";
     var modeNew = document.getElementById("checkoutAddrModeNew");
     var modeSaved = document.getElementById("checkoutAddrModeSaved");
     if (modeNew) modeNew.checked = useNew;
     if (modeSaved) modeSaved.checked = !useNew;
     if (els.addNewAddrBox) {
       els.addNewAddrBox.classList.toggle("is-selected", useNew);
+      var addTitle = els.addNewAddrBox.querySelector(".ck-add-addr-dash__title");
+      var addSub = els.addNewAddrBox.querySelector(".ck-add-addr-dash__sub");
+      if (editingSavedAddressId) {
+        if (addTitle) addTitle.textContent = "Editing saved address";
+        if (addSub) addSub.textContent = "Update the fields below, then continue to payment";
+      } else {
+        if (addTitle) addTitle.textContent = "+ Add New Address";
+        if (addSub) addSub.textContent = "Enter address manually";
+      }
     }
     if (els.addrFormFields) {
       if (useNew) {
@@ -369,7 +395,8 @@
     });
   }
 
-  function selectNewAddressMode() {
+  function selectNewAddressMode(addressIdBeingEdited) {
+    editingSavedAddressId = String(addressIdBeingEdited || "").trim();
     document.querySelectorAll('input[name="checkoutSavedAddrPick"]').forEach(function (inp) {
       inp.checked = false;
     });
@@ -481,8 +508,11 @@
     if (!validateShippingStep()) return;
     var cta = els.openUpiModal;
     if (cta) cta.disabled = true;
-    postSaveGuestAddress()
+    saveOrUpdateCheckoutAddress()
       .then(function () {
+        /* Re-fetch so the saved-address cards reflect an edit before the
+           customer returns to checkout. */
+        refreshGuestCheckoutUi();
         unlockPaymentSection();
       })
       .catch(function (err) {
@@ -615,19 +645,31 @@
       });
       els.savedAddrCards.addEventListener("click", function (e) {
         var editBtn = e.target && e.target.closest ? e.target.closest("[data-addr-edit]") : null;
-        if (!editBtn) return;
+        var useBtn = e.target && e.target.closest ? e.target.closest("[data-addr-use]") : null;
+        if (!editBtn && !useBtn) return;
         e.preventDefault();
-        var idx = parseInt(editBtn.getAttribute("data-addr-edit"), 10);
+        var actionBtn = editBtn || useBtn;
+        var idx = parseInt(actionBtn.getAttribute(editBtn ? "data-addr-edit" : "data-addr-use"), 10);
         var list = getSavedAddressesList();
         if (list[idx]) {
+          if (useBtn) {
+            var pick = els.savedAddrCards.querySelector('input[name="checkoutSavedAddrPick"][value="' + idx + '"]');
+            if (pick) pick.checked = true;
+            syncAddrPickUi();
+            return;
+          }
           applySavedAddress(list[idx]);
-          selectNewAddressMode();
+          selectNewAddressMode(list[idx].id);
+          var firstField = document.getElementById("addrLine1");
+          if (firstField) {
+            try { firstField.focus(); } catch (_) {}
+          }
         }
       });
     }
     if (els.addNewAddrBox) {
       els.addNewAddrBox.addEventListener("click", function () {
-        selectNewAddressMode();
+        selectNewAddressMode("");
         var a1 = document.getElementById("addrLine1");
         if (a1) {
           try {
@@ -639,7 +681,7 @@
     var addLink = document.getElementById("checkoutAddNewAddrLink");
     if (addLink) {
       addLink.addEventListener("click", function () {
-        selectNewAddressMode();
+        selectNewAddressMode("");
       });
     }
     var signInLink = document.getElementById("checkoutSignInLink");
@@ -657,12 +699,16 @@
   }
 
   function refreshGuestCheckoutUi() {
+    var refreshId = ++checkoutSessionRefreshId;
     var bar = document.getElementById("checkoutGuestSessionBar");
     var txt = document.getElementById("checkoutGuestSessionText");
     var fs = document.getElementById("checkoutSavedAddrFieldset");
     var guestEmail = document.getElementById("guestEmail");
     var guestPhone = document.getElementById("guestPhone");
     loadGuestSession().then(function (me) {
+      /* Ignore a response for an earlier anonymous/expired session. A later
+         sign-in must own the checkout UI instead of being overwritten by it. */
+      if (refreshId !== checkoutSessionRefreshId) return;
       if (me && me.email) {
         if (bar) {
           bar.hidden = false;
@@ -1031,7 +1077,10 @@
   function formatIndiaPhoneDisplay10(ten) {
     var d = String(ten || "");
     if (d.length !== 10 || !/^\d{10}$/.test(d)) return "";
-    return "+91 " + d.slice(0, 5) + " " + d.slice(5);
+    /* The checkout UI already renders a non-editable +91 prefix beside this
+       input. Keep the field itself to ten digits so a restored signed-in
+       phone never displays as “+91 +91 …”. */
+    return d;
   }
 
   function partialHayMatch(hay, queryRaw) {
@@ -1328,6 +1377,29 @@
         }
         throw err;
       });
+  }
+
+  function saveOrUpdateCheckoutAddress() {
+    var addressId = String(editingSavedAddressId || "").trim();
+    if (!addressId) return postSaveGuestAddress();
+    var base = billApiBase();
+    if (!base) return Promise.reject(new Error("Bill API URL missing. Please try again."));
+    return fetch(base + "/api/guest/addresses/" + encodeURIComponent(addressId), {
+      method: "PATCH",
+      headers: guestAuthHeaders(),
+      body: JSON.stringify({ address: buildGuestPayloadFromForm() }),
+    }).then(function (res) {
+      return parseApiJson(res).then(function (x) {
+        var j = x.json || {};
+        if (!x.okHttp || !j.ok) {
+          var er = new Error(j.error || res.statusText || "Could not update address");
+          er.code = j.code || "";
+          throw er;
+        }
+        editingSavedAddressId = "";
+        return j;
+      });
+    });
   }
 
   function closeResultPopup() {
