@@ -1079,7 +1079,7 @@
     ensureStylesheet("storefront-fluid.css");
     ensureStylesheet("mobile-storefront-fixes.css");
     ensureStylesheet("storefront-polish.css");
-    ensureStylesheet("mobile-product-cleanup.css?v=20261009m4");
+    ensureStylesheet("mobile-product-cleanup.css?v=20261009m6");
     injectScriptOnce("mobile-product-cleanup.js?v=20261009m4", true);
     try {
       document.documentElement.classList.add("guest-responsive-root");
@@ -1422,10 +1422,16 @@
     if (window.__cgGlobalCartRouteBound) return;
     window.__cgGlobalCartRouteBound = true;
     document.addEventListener("click", function (ev) {
-      var btn = ev.target && ev.target.closest ? ev.target.closest("#cartToggle, .btn-cart") : null;
+      var btn = ev.target && ev.target.closest ? ev.target.closest("#cartToggle, .btn-cart, [data-cg-mobile-cart]") : null;
       if (!btn) return;
       ev.preventDefault();
       ev.stopPropagation();
+      /* Phone Bag opens the existing guest address/payment checkout, rather
+         than leaving shoppers in a drawer under the product purchase bar. */
+      if (window.matchMedia("(max-width: 640px)").matches && !document.body.classList.contains("page-checkout")) {
+        window.location.href = "checkout.html";
+        return;
+      }
       if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
         window.RESIN_SHELL.openDrawer();
         return;
@@ -1894,7 +1900,7 @@
     actions.id = "cgMobileHeaderActions";
     actions.className = "cg-mobile-header-actions";
     actions.innerHTML =
-      '<button type="button" class="cg-mobile-header-action" data-cg-mobile-cart aria-label="Open shopping cart">' +
+      '<button type="button" class="cg-mobile-header-action" data-cg-mobile-cart aria-label="Go to checkout">' +
       '<span aria-hidden="true">Bag</span><span class="cg-mobile-header-cart-count" id="cgMobileHeaderCartCount" aria-live="polite" aria-atomic="true">0</span></button>' +
       '<button type="button" class="cg-mobile-header-action cg-mobile-header-action--menu" data-cg-mobile-menu aria-expanded="false" aria-controls="cgMobileHeaderDrawer">' +
       '<span class="cg-mobile-menu-lines" aria-hidden="true"><i></i><i></i><i></i></span><span class="visually-hidden">Open menu</span></button>';

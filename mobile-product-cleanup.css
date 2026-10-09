@@ -1,7 +1,7 @@
 /* Requested phone fixes only; the existing storefront supplies
    all colours, typography, cards, galleries and purchase-bar styling. */
 @media (max-width: 640px) {
-  /* Keep the first category button inside the existing swipeable dock. */
+  /* Keep the existing navigation dock swipeable. */
   html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top > .nav-dock {
     justify-content: flex-start !important;
     flex-wrap: nowrap !important;
@@ -13,6 +13,12 @@
   html.guest-responsive-root body.guest-site .site-top > .nav-dock > :is(.nav-dock-link, .cg-mobile-category-trigger) {
     flex: 0 0 auto !important;
     white-space: nowrap !important;
+  }
+
+  /* Remove only the category option from phone navigation. */
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock .cg-mobile-category-trigger,
+  html.guest-responsive-root body.guest-site .cg-mobile-header-drawer__categories {
+    display: none !important;
   }
 
   /* Remove the large category introduction and generic assurance panels
@@ -29,6 +35,11 @@
   }
 
   html.guest-responsive-root body.guest-site.page-product:has(#cgMobilePdpPurchaseBar:not([hidden])) .cg-pdp__buy-row {
+    display: none !important;
+  }
+
+  /* Cart review has its own checkout action; keep product actions beneath it. */
+  html.guest-responsive-root body.guest-site:has(#cartDrawer.is-open) #cgMobilePdpPurchaseBar {
     display: none !important;
   }
 
