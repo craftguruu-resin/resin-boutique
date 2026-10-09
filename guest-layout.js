@@ -980,14 +980,27 @@
     document.head.appendChild(script);
   }
 
+  function takeMobileFirstPaintSheet(href) {
+    if (!window.matchMedia("(max-width: 640px)").matches) return null;
+    var link = document.querySelector('link[data-cg-mobile-first-paint][href*="' + href + '"]');
+    if (!link) return null;
+    link.removeAttribute("media");
+    link.removeAttribute("data-cg-mobile-first-paint");
+    return link;
+  }
+
   function ensureStylesheet(href) {
-    if (document.querySelector('link[href*="' + href + '"]')) return;
+    /* Reuse the loaded phone sheet at its normal cascade position. Desktop
+       keeps the existing loader; phone-to-desktop resizing keeps full CSS. */
+    if (document.querySelector('link[href*="' + href + '"]:not([data-cg-mobile-first-paint])')) return;
+    var firstPaint = takeMobileFirstPaintSheet(href);
+    if (firstPaint) { document.head.appendChild(firstPaint); return; }
     var link = document.createElement("link");
     link.rel = "stylesheet";
     var versionedHref = href;
     if (href === "mobile-quality.css") versionedHref += "?v=20260925m3";
     if (href === "storefront-fluid.css") versionedHref += "?v=20260925f11";
-    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20261009mobile1";
+    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20261009mobile2";
     if (href === "storefront-polish.css") versionedHref += "?v=20261001ui-polish5";
     /* Social controls must refresh together with their touch-event fixes,
        rather than remaining behind a cache-first service worker entry. */
@@ -1066,6 +1079,8 @@
     ensureStylesheet("storefront-fluid.css");
     ensureStylesheet("mobile-storefront-fixes.css");
     ensureStylesheet("storefront-polish.css");
+    ensureStylesheet("mobile-product-cleanup.css?v=20261009m4");
+    injectScriptOnce("mobile-product-cleanup.js?v=20261009m4", true);
     try {
       document.documentElement.classList.add("guest-responsive-root");
     } catch (_) {}
@@ -1087,7 +1102,7 @@
     if (!document.body || !document.body.classList.contains("guest-site")) return;
     if (document.querySelector('script[src*="customer-ui-finish.js"]')) return;
     var script = document.createElement("script");
-    script.src = "customer-ui-finish.js?v=20261001uifinish2";
+    script.src = "customer-ui-finish.js?v=20261009uifinish3";
     script.defer = true;
     document.head.appendChild(script);
   }
@@ -1336,14 +1351,14 @@
 
   function ensureScrollPerfStyles() {
     if (!document.querySelector("link[data-cg-scroll-perf]")) {
-      var link = document.createElement("link");
+      var link = takeMobileFirstPaintSheet("scroll-perf.css") || document.createElement("link");
       link.rel = "stylesheet";
       link.href = "scroll-perf.css";
       link.setAttribute("data-cg-scroll-perf", "1");
       document.head.appendChild(link);
     }
     if (!document.querySelector("link[data-cg-storefront-perf]")) {
-      var perf = document.createElement("link");
+      var perf = takeMobileFirstPaintSheet("storefront-perf.css") || document.createElement("link");
       perf.rel = "stylesheet";
       perf.href = "storefront-perf.css?v=20260925hero6";
       perf.setAttribute("data-cg-storefront-perf", "1");
@@ -2043,28 +2058,43 @@
   /* Keep the real add-to-cart handler and inventory checks in charge. The
      mobile bar is only a clear, always-reachable proxy after the PDP renders. */
   function ensureMobilePdpPurchaseBar() {
-    if (!window.matchMedia("(max-width: 640px)").matches || !document.body.classList.contains("page-product") || document.getElementById("cgMobilePdpPurchaseBar")) return;
+    var phones = window.matchMedia("(max-width: 640px)");
+    if (!phones.matches || !document.body.classList.contains("page-product") || document.getElementById("cgMobilePdpPurchaseBar")) return;
     var bar = document.createElement("div");
     bar.id = "cgMobilePdpPurchaseBar";
     bar.className = "cg-mobile-pdp-purchase";
     bar.hidden = true;
-    bar.innerHTML = '<span class="cg-mobile-pdp-purchase__price" aria-live="polite"></span><span class="cg-mobile-pdp-purchase__selection" aria-live="polite"></span><button type="button" class="cg-mobile-pdp-purchase__cta">Add to cart</button><button type="button" class="cg-mobile-pdp-purchase__buy">Buy now</button>';
+    bar.innerHTML = '<span class="cg-mobile-pdp-purchase__price" aria-live="polite"></span><span class="cg-mobile-pdp-purchase__selection" aria-live="polite"></span><button type="button" class="cg-mobile-pdp-purchase__cta" disabled>Add to cart</button><button type="button" class="cg-mobile-pdp-purchase__buy" disabled>Buy now</button>';
     document.body.appendChild(bar);
     var proxy = bar.querySelector("button");
     var price = bar.querySelector(".cg-mobile-pdp-purchase__price");
     var selection = bar.querySelector(".cg-mobile-pdp-purchase__selection");
     var buyNow = bar.querySelector(".cg-mobile-pdp-purchase__buy");
+    var productRoot = document.querySelector("#productRoot, #rmPdpRoot");
+    var syncFrame = 0;
     function sourceButton() {
       return document.querySelector("#addToCartBtn, #resinPdpAdd, #rmAddCart");
     }
+    function unavailable(source) {
+      return !source || !!source.disabled || /out of stock/i.test(String(source.textContent || ""));
+    }
     function sync() {
+      if (!phones.matches) return;
       var source = sourceButton();
-      if (!source) return;
+      /* A static template can contain an enabled button before stock arrives.
+         Reveal the mobile actions only after the real renderer is ready. */
+      if (!source || (productRoot && !productRoot.hasAttribute("data-pdp-ready"))) {
+        if (!bar.hidden) bar.hidden = true;
+        if (!proxy.disabled) proxy.disabled = true;
+        if (buyNow && !buyNow.disabled) buyNow.disabled = true;
+        return;
+      }
       if (bar.hidden) bar.hidden = false;
       var label = String(source.textContent || "Add to cart").trim();
       if (proxy.textContent !== label) proxy.textContent = label;
-      var disabled = !!source.disabled || /out of stock/i.test(label);
+      var disabled = unavailable(source);
       if (proxy.disabled !== disabled) proxy.disabled = disabled;
+      if (buyNow && buyNow.disabled !== disabled) buyNow.disabled = disabled;
       var priceEl = document.querySelector("#productPrice, #resinPdpPrice, #rmPdpPrice");
       var priceText = priceEl ? String(priceEl.textContent || "").trim() : "";
       if (price && price.textContent !== priceText) price.textContent = priceText;
@@ -2076,12 +2106,12 @@
     }
     if (proxy) proxy.addEventListener("click", function () {
       var source = sourceButton();
-      if (source && !source.disabled) source.click();
+      if (!unavailable(source)) source.click();
     });
     if (buyNow) buyNow.addEventListener("click", function () {
       var before = window.RESIN_CART && window.RESIN_CART.countItems ? window.RESIN_CART.countItems() : 0;
       var source = sourceButton();
-      if (!source || source.disabled) return;
+      if (unavailable(source)) return;
       var completed = false;
       var goToCheckout = function () {
         if (completed) return;
@@ -2101,9 +2131,22 @@
         else window.removeEventListener("resinCartChanged", onCartChanged);
       }, 1200);
     });
-    var observer = new MutationObserver(sync);
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["disabled", "class", "hidden"] });
-    window.addEventListener("pagehide", function () { observer.disconnect(); }, { once: true });
+    function scheduleSync() {
+      if (!phones.matches || syncFrame) return;
+      syncFrame = requestAnimationFrame(function () { syncFrame = 0; sync(); });
+    }
+    var observer = new MutationObserver(scheduleSync);
+    function observeProduct() {
+      observer.observe(productRoot || document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["disabled", "class", "hidden", "data-pdp-ready"] });
+    }
+    observeProduct();
+    window.addEventListener("pagehide", function () {
+      observer.disconnect();
+      if (syncFrame) { cancelAnimationFrame(syncFrame); syncFrame = 0; }
+    });
+    window.addEventListener("pageshow", function () { observeProduct(); scheduleSync(); });
+    if (phones.addEventListener) phones.addEventListener("change", scheduleSync);
+    else if (phones.addListener) phones.addListener(scheduleSync);
     sync();
   }
 

@@ -112,6 +112,11 @@
   <link rel="stylesheet" href="storefront-fluid.css?v=20260925f11" />
   <link rel="stylesheet" href="header-responsive.css?v=20260928c" />
   <link rel="stylesheet" href="storefront-hero-carousel.css?v=20260929studio2" />
+  <!-- Load the existing phone styles before first paint; desktop keeps its normal cascade. -->
+  <link rel="stylesheet" href="mobile-quality.css?v=20260925m3" media="(max-width: 640px)" data-cg-mobile-first-paint />
+  <link rel="stylesheet" href="mobile-storefront-fixes.css?v=20261009mobile2" media="(max-width: 640px)" data-cg-mobile-first-paint />
+  <link rel="stylesheet" href="storefront-polish.css?v=20261001ui-polish5" media="(max-width: 640px)" data-cg-mobile-first-paint />
+  <link rel="stylesheet" href="mobile-product-cleanup.css?v=20261009m4" media="(max-width: 640px)" data-cg-mobile-first-paint />
 </head>
 <body id="top" class="page-home guest-site">
   <div class="mesh-gradient" aria-hidden="true"></div>
@@ -654,7 +659,7 @@
   <script src="premium-category-cards.js?v=20260930contract1"></script>
   <script src="app.js?v=20260930contract1"></script>
   <script defer src="home-self-heal.js?v=20260929catalog-state2"></script>
-  <script defer src="guest-layout.js?v=20261005search2"></script>
+  <script defer src="guest-layout.js?v=20261009mobilecleanup4"></script>
   <script defer src="shell.js?v=20260930contract1"></script>
   <script defer src="header.js?v=20260928newsletter2"></script>
   <script defer src="global-find.js?v=20260815b"></script>

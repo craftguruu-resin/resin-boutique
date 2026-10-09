@@ -1,0 +1,48 @@
+/* Requested phone fixes only; the existing storefront supplies
+   all colours, typography, cards, galleries and purchase-bar styling. */
+@media (max-width: 640px) {
+  /* Keep the first category button inside the existing swipeable dock. */
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top > .nav-dock {
+    justify-content: flex-start !important;
+    flex-wrap: nowrap !important;
+    transform: none !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock > :is(.nav-dock-link, .cg-mobile-category-trigger) {
+    flex: 0 0 auto !important;
+    white-space: nowrap !important;
+  }
+
+  /* Remove the large category introduction and generic assurance panels
+     from listing/detail pages, retaining product information and options. */
+  html.guest-responsive-root body.guest-site:not(.page-home) :is(.plp-header, .plp-trust-bar, .cg-category-section__trust, .rm-cat-hub__head),
+  html.guest-responsive-root body.guest-site.page-product :is(.cg-pdp__bottom, .cg-pdp__trust-row, .cg-pdp__feature-pills, .cg-pdp__service-banner, .cg-pdp__quality-banner) {
+    display: none !important;
+  }
+
+  /* The existing bottom bar still clicks these source buttons, so keep
+     their DOM nodes and handlers while hiding the duplicate inline area. */
+  html.guest-responsive-root body.guest-site.page-product:has(#cgMobilePdpPurchaseBar:not([hidden])) :is(.rm-pdp__cart-row, .product-qty-bar, #addToCartBtn, .rm-pdp__buy-now) {
+    display: none !important;
+  }
+
+  html.guest-responsive-root body.guest-site.page-product:has(#cgMobilePdpPurchaseBar:not([hidden])) .cg-pdp__buy-row {
+    display: none !important;
+  }
+
+  /* Purchase via WhatsApp is hidden on every phone PDP family. */
+  html.guest-responsive-root body.guest-site .cg-pdp__wa-buy {
+    display: none !important;
+  }
+
+  /* Both bottom actions use the same unavailable-stock state. */
+  html.guest-responsive-root body.guest-site #cgMobilePdpPurchaseBar button:disabled {
+    background: #cbd5e1;
+    border-color: #cbd5e1;
+    color: #64748b;
+    box-shadow: none;
+    cursor: not-allowed;
+  }
+}

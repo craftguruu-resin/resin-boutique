@@ -282,20 +282,10 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   body.page-product .rm-color-swatch,
   body.page-product .cg-pdp__wishlist-link,
   body.page-product .product-share-bar__toggle { min-width: 2.75rem; min-height: 2.75rem; }
-  body.page-product { padding-bottom: calc(6.9rem + env(safe-area-inset-bottom)); }
   body.page-product #productCatalogGallery,
   body.page-product .rm-pdp-gallery { touch-action: pan-y pinch-zoom; }
   body.page-product #productCatalogGallery.cg-mobile-gallery-zoomed img,
   body.page-product .rm-pdp-gallery.cg-mobile-gallery-zoomed .rm-pdp__hero img { transform: scale(1.55); cursor: zoom-out; }
-
-  .cg-mobile-pdp-purchase[hidden] { display: none !important; }
-  .cg-mobile-pdp-purchase { position: fixed; z-index: 10010; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .45rem .6rem; align-items: center; padding: .65rem 1rem max(.65rem, env(safe-area-inset-bottom)); border-top: 1px solid rgba(15,23,42,.13); background: rgba(255,255,255,.98); }
-  .cg-mobile-pdp-purchase__price { overflow: hidden; color: #173b48; font-size: .95rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
-  .cg-mobile-pdp-purchase__selection { overflow: hidden; color: #64748b; font-size: .72rem; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-  .cg-mobile-pdp-purchase__cta, .cg-mobile-pdp-purchase__buy { min-height: 3rem; border: 0; border-radius: .78rem; font: 800 .88rem/1 system-ui, sans-serif; cursor: pointer; }
-  .cg-mobile-pdp-purchase__cta { background: #00796b; color: #fff; }
-  .cg-mobile-pdp-purchase__buy { border: 1px solid #00796b; background: #fff; color: #00685e; }
-  .cg-mobile-pdp-purchase__cta:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
 
   /* Home category imagery is an actual browsing decision, not decoration.
      One clear tile per row keeps its image, title and touch target legible on
@@ -535,4 +525,17 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   html.guest-responsive-root body.guest-site .cg-ig-widget__fab-core {
     box-shadow: 0 4px 12px rgba(188, 24, 136, .25), 0 0 18px rgba(225, 48, 108, .35);
   }
+}
+
+/* Use the existing purchase bar across the same phone range as its JS. */
+@media (max-width: 640px) {
+  body.page-product { padding-bottom: calc(6.9rem + env(safe-area-inset-bottom)); }
+  .cg-mobile-pdp-purchase[hidden] { display: none !important; }
+  .cg-mobile-pdp-purchase { position: fixed; z-index: 10010; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .45rem .6rem; align-items: center; padding: .65rem 1rem max(.65rem, env(safe-area-inset-bottom)); border-top: 1px solid rgba(15,23,42,.13); background: rgba(255,255,255,.98); }
+  .cg-mobile-pdp-purchase__price { overflow: hidden; color: #173b48; font-size: .95rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-mobile-pdp-purchase__selection { overflow: hidden; color: #64748b; font-size: .72rem; font-weight: 650; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
+  .cg-mobile-pdp-purchase__cta, .cg-mobile-pdp-purchase__buy { min-height: 3rem; border: 0; border-radius: .78rem; font: 800 .88rem/1 system-ui, sans-serif; cursor: pointer; }
+  .cg-mobile-pdp-purchase__cta { background: #00796b; color: #fff; }
+  .cg-mobile-pdp-purchase__buy { border: 1px solid #00796b; background: #fff; color: #00685e; }
+  .cg-mobile-pdp-purchase__cta:disabled { background: #cbd5e1; color: #64748b; cursor: not-allowed; }
 }

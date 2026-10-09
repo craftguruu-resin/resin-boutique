@@ -80,6 +80,7 @@
     wireInvalidFeedback();
     removeEmptyEventBlocks();
     if (window.MutationObserver) {
+      var phones = window.matchMedia("(max-width: 640px)");
       var scheduled = false;
       var refresh = function () {
         if (scheduled) return;
@@ -94,7 +95,16 @@
         if (window.requestAnimationFrame) window.requestAnimationFrame(run);
         else window.setTimeout(run, 0);
       };
-      new MutationObserver(refresh).observe(body, { childList: true, subtree: true });
+      new MutationObserver(function (records) {
+        /* Price/stock text in the phone bar already has its own controller.
+           Updating it must not rescan every image, form and node on the page. */
+        if (phones.matches && records.length && records.every(function (record) {
+          var target = record.target;
+          if (target && target.nodeType !== 1) target = target.parentElement;
+          return target && target.closest && target.closest("#cgMobilePdpPurchaseBar");
+        })) return;
+        refresh();
+      }).observe(body, { childList: true, subtree: true });
     }
   }
 
