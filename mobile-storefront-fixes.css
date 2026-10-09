@@ -6,6 +6,7 @@
 .cg-mobile-header-actions,
 .cg-mobile-header-drawer,
 .cg-mobile-header-backdrop,
+.cg-mobile-category-trigger,
 .cg-mobile-pdp-purchase {
   display: none;
 }
@@ -33,8 +34,8 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
     grid-template-columns: minmax(0, 1fr) auto !important;
     grid-template-rows: auto !important;
     align-items: center;
-    gap: 0.7rem !important;
-    padding: 0.72rem 1rem !important;
+    gap: .35rem .65rem !important;
+    padding: .5rem .75rem !important;
   }
 
   html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top .guest-top-cluster {
@@ -95,6 +96,7 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   .cg-mobile-header-drawer[hidden] { display: none !important; }
   .cg-mobile-header-backdrop[hidden] { display: none !important; }
   .cg-mobile-header-backdrop {
+    display: block;
     position: fixed;
     inset: 0;
     z-index: 10019;
@@ -103,11 +105,14 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
     cursor: pointer;
   }
   .cg-mobile-header-drawer {
+    display: block;
     position: fixed;
     inset: 0 0 auto 0;
     z-index: 10020;
-    max-height: min(88vh, 46rem);
+    max-height: min(calc(100vh - 9rem), 46rem);
+    max-height: min(calc(100dvh - 9rem), 46rem);
     overflow: auto;
+    overscroll-behavior: contain;
     padding: max(1rem, env(safe-area-inset-top)) 1rem max(1.2rem, env(safe-area-inset-bottom));
     border-bottom: 1px solid rgba(15, 23, 42, 0.13);
     border-radius: 0 0 1.15rem 1.15rem;
@@ -130,12 +135,6 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
   .cg-mobile-header-drawer__category.is-active { background: #dff4f0; color: #075f56; }
   .cg-mobile-header-drawer__empty { margin: .4rem 0; color: #64748b; font-size: .82rem; }
   body.cg-mobile-header-open { overflow: hidden; }
-  /* The open navigation owns the whole phone screen; the social shortcuts
-     return as soon as it closes and cannot sit above the menu/backdrop. */
-  body.cg-mobile-header-open .cg-social-float-stack {
-    opacity: 0 !important;
-    pointer-events: none !important;
-  }
 
   /* Checkout remains task-focused: no global dock, only home/exit and cart. */
   html.guest-responsive-root body.page-checkout .site-top {
@@ -362,4 +361,178 @@ html.cg-low-data body.guest-site .rm-pdp__hero-zoom img { animation: none !impor
     min-height: 3.2rem;
   }
   body.page-checkout .checkout-auth-details__summary { min-height: 2.9rem; display: flex; align-items: center; }
+}
+
+/* Phone corrections: keep all desktop presentation rules above intact. */
+@media (max-width: 640px) {
+  html.guest-responsive-root body.guest-site .site-top {
+    padding: .5rem .75rem !important;
+    gap: .35rem .65rem !important;
+  }
+
+  html.guest-responsive-root body.guest-site .site-top .brand {
+    width: auto;
+    height: 2.75rem;
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+    overflow: visible;
+  }
+
+  html.guest-responsive-root body.guest-site .brand__logo-img {
+    width: 2.75rem;
+    height: 2.75rem;
+    max-width: 2.75rem;
+    max-height: 2.75rem;
+    box-shadow: none;
+  }
+
+  /* The Home artwork already carries the logo; use a compact home wordmark. */
+  html.guest-responsive-root body.page-home .site-top .brand__logo-img {
+    display: none;
+  }
+  html.guest-responsive-root body.page-home .site-top .brand::before {
+    content: "Craftguru";
+    color: #173b48;
+    font: 700 1.25rem/1.2 Georgia, serif;
+  }
+
+  html.guest-responsive-root body.guest-site:not(.page-checkout) .site-top > .nav-dock {
+    display: flex !important;
+    grid-column: 1 / -1 !important;
+    grid-row: 2 !important;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    justify-self: stretch;
+    justify-content: flex-start;
+    align-items: center;
+    gap: .35rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    scroll-snap-type: none;
+    touch-action: pan-x pan-y;
+  }
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock::-webkit-scrollbar { display: none; }
+
+  html.guest-responsive-root body.guest-site .site-top > .nav-dock .nav-dock-link,
+  html.guest-responsive-root body.guest-site .cg-mobile-category-trigger {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding: .4rem .7rem;
+    border: 0;
+    border-radius: .65rem;
+    background: #eef7f5;
+    color: #173b48;
+    font: 700 .72rem/1.2 var(--font-ui, system-ui, sans-serif);
+    letter-spacing: 0;
+    text-transform: none;
+    white-space: nowrap;
+    overflow-wrap: normal;
+    box-shadow: none;
+    cursor: pointer;
+  }
+  html.guest-responsive-root body.guest-site .cg-mobile-category-trigger {
+    background: #00796b;
+    color: #fff;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-mobile-header-drawer .guest-header-search {
+    display: flex !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 0 1rem;
+  }
+
+  html.guest-responsive-root body.guest-site .cg-mobile-catalog-quickbar {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .5rem;
+    width: 100%;
+    min-width: 0;
+    margin: .5rem 0 .75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+  html.guest-responsive-root body.guest-site .cg-mobile-catalog-quickbar button {
+    flex: 1 1 5.5rem;
+    min-width: 0;
+    min-height: 2.75rem;
+    padding: .5rem .75rem;
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
+  .cg-mobile-catalog-count { flex: 1 0 100%; }
+  .cg-mobile-catalog-count:empty { display: none; }
+
+  /* Only the two circles receive taps. Their shared positioning wrapper has
+     no painted surface or containment that can turn the backdrop into a box. */
+  html.guest-responsive-root body.guest-site .cg-social-float-stack {
+    --cg-float-fab: 3.25rem;
+    --cg-float-gap: 1rem;
+    gap: 1rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    contain: none;
+    transform: none;
+    overflow: visible;
+    pointer-events: none !important;
+    opacity: 1 !important;
+  }
+  html.guest-responsive-root body.guest-site #cgWhatsAppWidget,
+  html.guest-responsive-root body.guest-site #cgInstagramWidget {
+    width: var(--cg-float-fab);
+    height: var(--cg-float-fab);
+    padding: 0;
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: none !important;
+  }
+  html.guest-responsive-root body.guest-site .cg-wa-widget__fab,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__fab {
+    width: var(--cg-float-fab) !important;
+    height: var(--cg-float-fab) !important;
+    border-radius: 50%;
+    background: transparent;
+    box-shadow: none;
+    pointer-events: auto !important;
+  }
+  html.guest-responsive-root body.guest-site .cg-wa-widget__backdrop { display: none; }
+  html.guest-responsive-root body.guest-site .cg-wa-widget__glow,
+  html.guest-responsive-root body.guest-site .cg-ig-widget__glow {
+    display: block;
+    inset: -8px;
+    pointer-events: none;
+  }
+  html.guest-responsive-root body.guest-site .cg-wa-widget__fab-core {
+    box-shadow: 0 4px 12px rgba(18, 140, 78, .28), 0 0 18px rgba(47, 208, 110, .4);
+  }
+  html.guest-responsive-root body.guest-site .cg-ig-widget__fab-core {
+    box-shadow: 0 4px 12px rgba(188, 24, 136, .25), 0 0 18px rgba(225, 48, 108, .35);
+  }
 }

@@ -987,7 +987,7 @@
     var versionedHref = href;
     if (href === "mobile-quality.css") versionedHref += "?v=20260925m3";
     if (href === "storefront-fluid.css") versionedHref += "?v=20260925f11";
-    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20261001mobile13css";
+    if (href === "mobile-storefront-fixes.css") versionedHref += "?v=20261009mobile1";
     if (href === "storefront-polish.css") versionedHref += "?v=20261001ui-polish5";
     /* Social controls must refresh together with their touch-event fixes,
        rather than remaining behind a cache-first service worker entry. */
@@ -1740,7 +1740,9 @@
     var toolbar = document.querySelector(".category-toolbar, .rm-filter-toolbar, .catalog-toolbar");
     var search = document.querySelector("#globalFindQuery, .category-toolbar input[type='search'], .rm-filter-toolbar input[type='search']");
     var sort = document.querySelector("#globalFindSort, .category-toolbar select, .rm-filter-toolbar select");
-    if (!toolbar && !search && !sort) return;
+    /* Only expose shortcuts to an actual listing toolbar. Category pages
+       filter through the menu search; their hidden legacy sort has no UI. */
+    if (!toolbar) return;
     var bar = document.createElement("div");
     bar.id = "cgMobileCatalogQuickBar";
     bar.className = "cg-mobile-catalog-quickbar";
@@ -1938,59 +1940,101 @@
     var searchAnchor = document.createComment("cg-mobile-search-anchor");
     cluster.insertBefore(searchAnchor, search);
 
+    var categoryBtn = document.createElement("button");
+    categoryBtn.type = "button";
+    categoryBtn.className = "cg-mobile-category-trigger";
+    categoryBtn.textContent = "Shop categories";
+    categoryBtn.setAttribute("aria-controls", drawer.id);
+    categoryBtn.setAttribute("aria-expanded", "false");
+
     function syncCartCount() {
       var source = document.getElementById("cartCount");
-      if (count && source) count.textContent = String(source.textContent || "0").trim() || "0";
+      var value = source ? String(source.textContent || "0").trim() || "0" : "0";
+      if (count && count.textContent !== value) count.textContent = value;
     }
-    function close() {
+    var returnFocus = menuBtn;
+    function close(restoreFocus) {
+      var focusedInDrawer = document.activeElement && drawer.contains(document.activeElement);
       drawer.hidden = true;
       backdrop.hidden = true;
       document.body.classList.remove("cg-mobile-header-open");
       if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.release("mobile-menu");
       if (menuBtn) menuBtn.setAttribute("aria-expanded", "false");
-      if (document.activeElement && drawer.contains(document.activeElement) && menuBtn) menuBtn.focus();
+      categoryBtn.setAttribute("aria-expanded", "false");
+      if (restoreFocus !== false && focusedInDrawer && returnFocus) returnFocus.focus({ preventScroll: true });
+    }
+    function open(showCategories) {
+      if (!mql.matches) return;
+      if (window.CraftguruGuestLayout) window.CraftguruGuestLayout.closeMobileDrawers();
+      drawer.hidden = false;
+      backdrop.hidden = false;
+      document.body.classList.add("cg-mobile-header-open");
+      if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.acquire("mobile-menu");
+      menuBtn.setAttribute("aria-expanded", "true");
+      categoryBtn.setAttribute("aria-expanded", "true");
+      returnFocus = showCategories ? categoryBtn : menuBtn;
+      var categoryList = drawer.querySelector(".cg-mobile-header-drawer__categories");
+      if (showCategories && categoryList) categoryList.open = true;
+      /* Focus a control without opening the phone keyboard over the menu. */
+      closeBtn.focus({ preventScroll: true });
+      if (showCategories && categoryList) categoryList.scrollIntoView({ block: "nearest" });
+      else drawer.scrollTop = 0;
     }
     function placeForViewport() {
       if (mql.matches) {
+        if (!categoryBtn.isConnected) nav.insertBefore(categoryBtn, nav.firstChild);
         if (searchSlot && search.parentElement !== searchSlot) searchSlot.appendChild(search);
         syncCartCount();
       } else {
         close();
+        categoryBtn.remove();
         if (search.parentElement !== cluster) cluster.insertBefore(search, searchAnchor.nextSibling);
       }
     }
     if (menuBtn) menuBtn.addEventListener("click", function () {
-      var opening = drawer.hidden;
-      drawer.hidden = !opening;
-      backdrop.hidden = !opening;
-      document.body.classList.toggle("cg-mobile-header-open", opening);
-      if (window.CraftguruOverlayLock) {
-        if (opening) window.CraftguruOverlayLock.acquire("mobile-menu");
-        else window.CraftguruOverlayLock.release("mobile-menu");
-      }
-      menuBtn.setAttribute("aria-expanded", opening ? "true" : "false");
-      if (opening) {
-        var input = drawer.querySelector("#guestCatalogSearchInput");
-        if (input) window.setTimeout(function () { input.focus(); }, 0);
-      }
+      if (drawer.hidden) open(false);
+      else close();
     });
+    categoryBtn.addEventListener("click", function () { open(true); });
     if (cartBtn) cartBtn.addEventListener("click", function () {
+      close(false);
       var original = document.getElementById("cartToggle");
       if (original) original.click();
     });
     if (closeBtn) closeBtn.addEventListener("click", close);
     backdrop.addEventListener("click", close);
     drawer.addEventListener("click", function (ev) {
-      if (ev.target && ev.target.closest && ev.target.closest("a")) close();
+      /* Keep the tapped link rendered until its default navigation completes. */
+      if (ev.target && ev.target.closest && ev.target.closest("a")) {
+        window.setTimeout(function () { close(false); }, 0);
+      }
     });
     document.addEventListener("keydown", function (ev) {
-      if (ev.key === "Escape" && !drawer.hidden) close();
+      if (drawer.hidden || !mql.matches) return;
+      if (ev.key === "Escape") close();
+      if (ev.key === "Tab") {
+        var controls = Array.prototype.slice.call(drawer.querySelectorAll("a[href], button, input, summary, select"))
+          .filter(function (el) { return !el.disabled && el.getClientRects().length; });
+        var first = controls[0];
+        var last = controls[controls.length - 1];
+        if (ev.shiftKey && document.activeElement === first) {
+          ev.preventDefault();
+          if (last) last.focus();
+        } else if (!ev.shiftKey && document.activeElement === last) {
+          ev.preventDefault();
+          if (first) first.focus();
+        }
+      }
     });
     window.addEventListener("popstate", function () {
       if (!drawer.hidden) close();
     });
-    var observeCount = window.setInterval(syncCartCount, 500);
-    window.addEventListener("pagehide", function () { window.clearInterval(observeCount); }, { once: true });
+    /* A navigation or bfcache restore must never retain the menu's scroll lock. */
+    window.addEventListener("pagehide", function () { close(false); });
+    window.addEventListener("pageshow", function () { close(false); syncCartCount(); });
+    var countSource = document.getElementById("cartCount");
+    if (countSource) new MutationObserver(syncCartCount).observe(countSource, { childList: true, characterData: true, subtree: true });
+    window.addEventListener("resinCartChanged", syncCartCount);
     if (mql.addEventListener) mql.addEventListener("change", placeForViewport);
     else if (mql.addListener) mql.addListener(placeForViewport);
     placeForViewport();
