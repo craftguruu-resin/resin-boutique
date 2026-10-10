@@ -118,7 +118,7 @@ function checkout(options = {}) {
   const sdk = [];
   const requests = [];
   const lines = [{ id: "resin-test", size: "m", name: "Test", price: 3200, qty: 1 }];
-  const values = new Map();
+  const values = new Map(options.storageValues);
   if (signedIn) values.set("craftguruGuestToken", "signed-in-token");
   if (options.savedCoupon) values.set("cg_checkout_coupon_code", options.savedCoupon);
   const sessionStorage = {
@@ -681,6 +681,44 @@ test("page restoration replaces an old pending offer with one fresh history chec
 });
 
 for (const coarse of [true, false]) for (const method of ["razorpay", "cod"]) {
+  test(`${coarse ? "touch" : "desktop"} ${method}: refreshing clears cancellation and restores coupons for Continue`, async () => {
+    const options = { coarse, method, profile: signedProfile, savedCoupon: "FLAT300", offers: welcomePreview };
+    const page = checkout(options);
+    await startPayment(page);
+    page.sdk[0].options.modal.ondismiss();
+    await tick();
+    assert.equal(page.elements.checkoutResultTitle.textContent, "Payment cancelled");
+    assert.equal(page.elements.checkoutResultPopup.hidden, false);
+    assert.equal(page.api.readPaymentRecovery().state, "cancelled");
+    assert.ok(page.elements.checkoutPaymentRecovery);
+
+    // A refresh creates a new document with the same browser storage.
+    const refreshed = checkout({ ...options, savedCoupon: undefined, storageValues: page.values });
+    await tick();
+    assert.equal(refreshed.api.readPaymentRecovery(), null);
+    assert.equal(refreshed.values.has("cgPaymentRecoveryV1"), false);
+    assert.equal(refreshed.elements.checkoutPaymentRecovery, undefined);
+    assert.equal(refreshed.elements.checkoutResultPopup.hidden, true);
+    assert.equal(refreshed.lines.length, 1);
+    assert.equal(refreshed.values.get("cg_checkout_coupon_code"), "FLAT300");
+    assert.equal(refreshed.elements.valCouponDiscount.textContent, "− ₹400");
+    assert.equal(offerRequests(refreshed).length, 1);
+    assert.equal(refreshed.requests.some(request => request.route === "/api/checkout/payment-cancel"), false);
+
+    refreshed.elements.checkoutOpenUpiModal.click();
+    await tick();
+    assert.equal(refreshed.elements.ckSectionPayment.hidden, false);
+    assert.equal(refreshed.elements.checkoutSummaryCtaText.textContent, "Pay now");
+    refreshed.elements.checkoutOpenUpiModal.click();
+    assert.equal(refreshed.elements.checkoutPayModal.hidden, false);
+    (method === "cod" ? refreshed.elements.btnCodCheckout : refreshed.elements.btnRazorpayCheckout).click();
+    await tick();
+    assert.equal(refreshed.sdk.length, 1);
+    const order = refreshed.requests.find(request => request.route === (method === "cod" ? "/api/cod-advance-order" : "/api/razorpay-order"));
+    assert.equal(order.body.couponCode, "WELCOME100+FLAT300");
+    assert.equal(refreshed.elements.checkoutResultPopup.hidden, true);
+  });
+
   test(`${coarse ? "touch" : "desktop"} ${method}: cancellation unlocks navigation and retry clears old UI`, async () => {
     const page = checkout({ coarse, method });
     await startPayment(page);
@@ -820,6 +858,51 @@ test("cart changes or navigation during payment creation cannot open an outdated
     assert.match(page.elements.checkoutAddressMsg.textContent, /Checkout changed/);
     assert.equal(page.requests.some(req => req.route.endsWith("payment-cancel")), true);
     assert.equal(page.elements.checkoutResultPopup.hidden, true);
+  }
+});
+
+test("refresh keeps unresolved payment references and checks before starting another payment", async () => {
+  for (const state of ["opened", "checking", "failed", "unconfirmed", "verifying"]) {
+    const recovery = { method: "razorpay", processorOrderId: "order_previous", state, createdAt: Date.now() };
+    const page = checkout({
+      storageValues: [["cgPaymentRecoveryV1", JSON.stringify(recovery)]],
+      cancel: () => response({ ok: true, canRetry: false }),
+    });
+    await tick();
+    assert.equal(page.api.readPaymentRecovery().state, state);
+    assert.equal(page.api.readPaymentRecovery().processorOrderId, recovery.processorOrderId);
+    assert.ok(page.elements.checkoutPaymentRecovery);
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    page.elements.btnRazorpayCheckout.click();
+    await tick();
+    assert.equal(page.sdk.length, 0);
+    assert.equal(page.api.readPaymentRecovery().processorOrderId, recovery.processorOrderId);
+    assert.equal(page.requests.filter(request => request.route === "/api/checkout/payment-cancel").length, 1);
+  }
+});
+
+test("Safari page restoration clears a confirmed cancellation even when storage is blocked", async () => {
+  for (const storageBlocked of [true, false]) {
+    const page = checkout({ storageBlocked });
+    await startPayment(page);
+    page.sdk[0].options.modal.ondismiss();
+    await tick();
+    assert.equal(page.api.readPaymentRecovery().state, "cancelled");
+    assert.equal(page.elements.checkoutResultPopup.hidden, false);
+    page.windowEvents.emit("pagehide");
+    page.windowEvents.emit("pageshow", { persisted: true });
+    await tick();
+    assert.equal(page.api.readPaymentRecovery(), null);
+    assert.equal(page.elements.checkoutPaymentRecovery, undefined);
+    assert.equal(page.elements.checkoutResultPopup.hidden, true);
+    assert.equal(page.locks.size, 0);
+    assert.equal(page.lines.length, 1);
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    page.elements.btnRazorpayCheckout.click();
+    await tick();
+    assert.equal(page.sdk.length, 2);
   }
 });
 

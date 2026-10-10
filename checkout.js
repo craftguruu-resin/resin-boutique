@@ -155,6 +155,13 @@
     if (banner) banner.remove();
   }
 
+  function clearCancelledPaymentNotice() {
+    // Confirmed cancellation notices belong to the current visit only.
+    // Keep unresolved payment references so retries still check their status.
+    var recovery = readPaymentRecovery();
+    if (recovery && recovery.state === "cancelled") clearPaymentRecovery();
+  }
+
   function paymentRecoveryMessage(recovery) {
     var ref = recovery && recovery.processorOrderId ? " Reference: " + recovery.processorOrderId + "." : "";
     if (recovery && recovery.state === "cancelled") {
@@ -2610,6 +2617,7 @@
   }
 
   function boot() {
+    clearCancelledPaymentNotice();
     if (CART.countItems() === 0) {
       window.location.href = "index.html";
       return;
@@ -2645,6 +2653,7 @@
     window.addEventListener("pageshow", function (event) {
       if (!event.persisted) return;
       closePayModal();
+      clearCancelledPaymentNotice();
       clearCouponForCartChange(true);
       refreshCheckout();
       renderPaymentRecoveryBanner();
