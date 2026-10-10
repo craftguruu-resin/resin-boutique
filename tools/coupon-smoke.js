@@ -69,7 +69,7 @@ function vendor(fetchImpl) {
   return { api: window.test, elements };
 }
 
-function checkout(fetchImpl, price = 1000, id = "resin-test", customer = null) {
+function checkout(fetchImpl, price = 1000, id = "resin-test", customer = null, token = "") {
   const elements = Object.fromEntries(["checkoutCouponCode", "checkoutCouponApply", "checkoutCouponRemove", "checkoutCouponMessage", "valCouponDiscount", "valCouponLabel", "valTotal", "valDiscount", "checkoutModalCouponDiscount", "checkoutModalCouponLabel", "checkoutModalGrand", "checkoutModalCouponRow"].map(id => [id, element()]));
   const rows = { ".checkout-total-row--coupon": element(), ".checkout-total-row--discount": element() };
   if (customer) {
@@ -88,7 +88,9 @@ function checkout(fetchImpl, price = 1000, id = "resin-test", customer = null) {
   };
   const document = { getElementById: id => elements[id] || null, querySelectorAll: () => [], querySelector: selector => rows[selector] || null };
   const source = read("checkout.js").replace("  boot();\n})();", "  window.test = { applyCoupon, requestCouponQuote, refreshCustomerCoupons, removeCoupon, clearCouponForCartChange, restoreCouponAfterReload, computeCheckoutTotals, buildBillItemsForApi, postRazorpayOrder, postCodAdvanceOrder, refreshCheckout };\n})();");
-  vm.runInNewContext(source, { window, document, fetch: fetchImpl, navigator: { onLine: true }, sessionStorage, localStorage: storage() });
+  const localStorage = storage();
+  if (token) localStorage.setItem("craftguruGuestToken", token);
+  vm.runInNewContext(source, { window, document, fetch: fetchImpl, navigator: { onLine: true }, sessionStorage, localStorage });
   return { api: window.test, elements, lines, rows, sessionStorage };
 }
 
@@ -96,7 +98,7 @@ function response(body, ok = true) {
   return { ok, text: async () => JSON.stringify(body), json: async () => body };
 }
 
-function couponApi(db, unitPrice = 1000, gatewayState = {}) {
+function couponApi(db, unitPrice = 1000, gatewayState = {}, customer = null) {
   /* Exercise the real preview and gateway-order handlers with isolated catalog/payment adapters. */
   const handlers = {};
   const source = read("server/index.js");
@@ -105,7 +107,9 @@ function couponApi(db, unitPrice = 1000, gatewayState = {}) {
     couponsDb: db, orderPricing: pricing,
     app: { post: (route, handler) => { handlers[route] = handler; } },
     rateOk: () => true, validateItems: () => null,
-    resolveAuthoritativeCheckoutItems: (items, cb) => cb(null, items.map(item => ({ ...item, unitPrice }))),
+    readGuestBearer: req => String(req.headers.Authorization || "").replace(/^Bearer\s+/i, ""),
+    guestSessions: { verifyGuestToken: (token, cb) => customer instanceof Error ? cb(customer) : cb(null, token === "fresh-signup-token" ? customer : null) },
+    resolveAuthoritativeCheckoutItems: (items, cb) => cb(null, items.map(item => ({ ...item, unitPrice: typeof unitPrice === "function" ? unitPrice() : unitPrice }))),
     checkInventoryBeforePayment: (items, cb) => cb(null),
     getRazorpayClient: () => ({ orders: {
       create: async order => { const value = { ...order, id: "order_" + gatewayOrders.size, status: "created", amount_paid: 0 }; gatewayOrders.set(value.id, value); return value; },
@@ -122,7 +126,7 @@ function couponApi(db, unitPrice = 1000, gatewayState = {}) {
   ]) vm.runInNewContext(source.slice(source.indexOf(start), source.indexOf(end)), sandbox);
   return (url, options) => new Promise(resolve => {
     const res = { statusCode: 200, setHeader() {}, status(code) { this.statusCode = code; return this; }, json(body) { resolve(response(body, this.statusCode < 400)); } };
-    handlers[new URL(url).pathname]({ body: JSON.parse(options.body), ip: "test" }, res);
+    handlers[new URL(url).pathname]({ body: JSON.parse(options.body), headers: options.headers || {}, ip: "test" }, res);
   });
 }
 
@@ -301,6 +305,98 @@ test("payment context keeps the quoted coupon amount after a vendor edit", async
 });
 
 const newCustomer = { email: "new@example.test", phone: "+91 98765 43210" };
+
+test("email-only signup automatically previews welcome above ₹500 and stacks one eligible flat offer", async () => {
+  const { db } = couponStore(true);
+  const customer = { email: newCustomer.email, phoneNorm: "h_email_only" };
+  for (const [price, code, discount] of [[500, "", 0], [500.01, "", 100], [2000.01, "FLAT150", 250], [2500.01, "FLAT200", 300], [3000.01, "FLAT300", 400]]) {
+    const page = checkout(couponApi(db, () => page.lines[0].price, {}, customer), price, "resin-test", { email: customer.email, phone: "" }, "fresh-signup-token");
+    await page.api.restoreCouponAfterReload();
+    if (code) { page.elements.checkoutCouponCode.value = code; await page.api.applyCoupon(); }
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+    assert.equal(page.elements.valCouponDiscount.textContent, discount ? "− ₹" + discount : "₹0");
+    assert.match(page.elements.checkoutWelcomeOffer.innerHTML, price > 500 ? /Automatically applied.*before payment/ : /Shop above ₹500/);
+    page.lines[0].price = 500;
+    await page.api.clearCouponForCartChange();
+    assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  }
+});
+
+test("verified account history blocks welcome even if preview submits a different email", async () => {
+  const { db, identities } = couponStore(true);
+  identities.add(newCustomer.email);
+  const api = couponApi(db, 3200, {}, { email: newCustomer.email, phoneNorm: "h_email_only" });
+  const result = await (await api("http://coupon.test/api/coupons/offers", { headers: { Authorization: "Bearer fresh-signup-token" }, body: JSON.stringify({ code: "FLAT300", items: [{ qty: 1 }], guest: { email: "different@example.test", phone: "" } }) })).json();
+  assert.equal(result.welcome.firstOrder, false);
+  assert.equal(result.coupon.code, "FLAT300");
+  assert.equal(result.coupon.discount, 300);
+});
+
+test("a saved or newly entered previously used mobile removes the signup gift", async () => {
+  const { db, identities } = couponStore(true);
+  identities.add("9876543210");
+  const customer = { email: newCustomer.email, phoneNorm: "h_email_only" };
+  const page = checkout(couponApi(db, 3200, {}, customer), 3200, "resin-test", { email: newCustomer.email, phone: "" }, "fresh-signup-token");
+  page.elements.checkoutCouponCode.value = "FLAT200";
+  await page.api.applyCoupon();
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹300");
+  page.elements.guestPhone.value = newCustomer.phone;
+  await page.api.refreshCustomerCoupons();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹200");
+  const savedPage = checkout(couponApi(db, 3200, {}, { ...customer, phoneNorm: "+91 98765 43210" }), 3200, "resin-test", { email: newCustomer.email, phone: "" }, "fresh-signup-token");
+  await savedPage.api.restoreCouponAfterReload();
+  assert.equal(savedPage.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(savedPage.elements.valCouponDiscount.textContent, "₹0");
+  const changedPhone = checkout(couponApi(db, 3200, {}, { ...customer, phoneNorm: "+91 98765 43210" }), 3200, "resin-test", { email: newCustomer.email, phone: "9988776655" }, "fresh-signup-token");
+  await changedPhone.api.restoreCouponAfterReload();
+  assert.equal(changedPhone.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(changedPhone.elements.valCouponDiscount.textContent, "₹0");
+});
+
+test("a failed account history check cannot grant an email-only gift", async () => {
+  const { db } = couponStore(true);
+  const api = couponApi(db, 3200, {}, new Error("Database unavailable"));
+  const result = await (await api("http://coupon.test/api/coupons/offers", { headers: { Authorization: "Bearer fresh-signup-token" }, body: JSON.stringify({ items: [{ qty: 1 }], guest: { email: newCustomer.email, phone: "" } }) })).json();
+  assert.equal(result.ok, false);
+  assert.match(result.error, /Could not check first-order eligibility/);
+  assert.equal(result.coupon, undefined);
+});
+
+test("unverified and expired sessions cannot enable email-only welcome with client flags", async () => {
+  const { db } = couponStore(true);
+  const api = couponApi(db, 3200, {}, { email: newCustomer.email });
+  for (const headers of [{}, { Authorization: "Bearer expired" }]) {
+    const result = await (await api("http://coupon.test/api/coupons/offers", { headers, body: JSON.stringify({ items: [{ qty: 1 }], guest: { email: newCustomer.email, phone: "", allowEmailOnlyWelcome: true }, allowEmailOnlyWelcome: true }) })).json();
+    assert.equal(result.coupon, null);
+    assert.equal(result.welcome.firstOrder, null);
+  }
+});
+
+test("payment never redeems an email-only preview and rechecks both identifiers for online and COD", async () => {
+  const { db, identities } = couponStore(true);
+  const api = couponApi(db, 3200, {}, { email: newCustomer.email, phoneNorm: "h_email_only" });
+  const headers = { Authorization: "Bearer fresh-signup-token" };
+  const items = [{ qty: 1 }];
+  const preview = await (await api("http://coupon.test/api/coupons/offers", { headers, body: JSON.stringify({ items, guest: { email: newCustomer.email, phone: "" }, code: "FLAT200" }) })).json();
+  assert.equal(preview.coupon.code, "WELCOME100+FLAT200");
+  for (const route of ["/api/razorpay-order", "/api/cod-advance-order"]) {
+    const missing = await (await api("http://coupon.test" + route, { headers, body: JSON.stringify({ items, guest: { email: newCustomer.email, phone: "" }, couponCode: preview.coupon.code }) })).json();
+    assert.equal(missing.ok, false);
+    assert.match(missing.error, /valid mobile/);
+    identities.add("9876543210");
+    const returning = await (await api("http://coupon.test" + route, { headers, body: JSON.stringify({ items, guest: newCustomer, couponCode: preview.coupon.code }) })).json();
+    assert.equal(returning.ok, false);
+    assert.match(returning.error, /first transaction/);
+    identities.delete("9876543210");
+    const fresh = await (await api("http://coupon.test" + route, { headers, body: JSON.stringify({ items, guest: newCustomer, couponCode: preview.coupon.code }) })).json();
+    assert.equal(fresh.ok, true);
+    assert.equal(fresh.totals.coupon.code, "WELCOME100+FLAT200");
+    assert.equal(fresh.totals.couponDiscount, 300);
+    await call(db.cancelPaymentContext, fresh.orderId, route.includes("cod") ? "cod" : "razorpay", newCustomer);
+  }
+  await assert.rejects(call(db.createPaymentContext, "email_preview", "razorpay", preview.coupon, { email: newCustomer.email }), /valid mobile/);
+});
 
 test("first-order history stays separate from the cart threshold and coupon pairing", async () => {
   const { db } = couponStore(true);

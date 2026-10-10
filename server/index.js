@@ -400,7 +400,7 @@ function productValueForItems(items) {
   );
 }
 
-function resolveCouponTotals(items, paymentMethod, couponCode, guest, cb) {
+function resolveCouponTotals(items, paymentMethod, couponCode, guest, cb, options) {
   var productValue = productValueForItems(items);
   couponsDb.resolveCheckoutCoupons(couponCode, productValue, guest, function (err, coupon, welcome) {
     if (err) return cb(err);
@@ -410,7 +410,7 @@ function resolveCouponTotals(items, paymentMethod, couponCode, guest, cb) {
       : null;
     totals.welcome = welcome;
     cb(null, totals, coupon);
-  });
+  }, options);
 }
 
 function totalsFromPaymentContext(items, paymentMethod, razorpayOrderId, guest, cb) {
@@ -1530,15 +1530,27 @@ function previewCheckoutCoupons(req, res) {
   var body = req.body || {};
   var itemsErr = validateItems(body.items);
   if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
+  res.setHeader("Cache-Control", "no-store");
   resolveAuthoritativeCheckoutItems(body.items, function (priceErr, items) {
     if (priceErr) return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
-    resolveCouponTotals(items, "razorpay", body.codes || body.code, body.guest, function (couponErr, totals, coupon) {
-      if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
-      couponsDb.listCoupons(function (listErr, offers) {
-        if (listErr) return res.status(503).json({ ok: false, error: "Could not load checkout offers." });
-        res.json({ ok: true, coupon: coupon ? totals.coupon : null, productValue: totals.productValue, welcome: totals.welcome, offers: offers.filter(function (offer) { return offer.isSystem; }) });
-      });
-    });
+    function quoteForCustomer(sessionErr, customer) {
+      if (sessionErr) return res.status(503).json({ ok: false, error: "Could not check first-order eligibility. Please try again." });
+      var guest = Object.assign({}, body.guest || {});
+      if (customer) {
+        guest.email = customer.email;
+        if (!couponsDb.normalizeIdentity(guest).phone) guest.phone = couponsDb.normalizeIdentity({ phone: customer.phoneNorm }).phone;
+      }
+      resolveCouponTotals(items, "razorpay", body.codes || body.code, guest, function (couponErr, totals, coupon) {
+        if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
+        couponsDb.listCoupons(function (listErr, offers) {
+          if (listErr) return res.status(503).json({ ok: false, error: "Could not load checkout offers." });
+          res.json({ ok: true, coupon: coupon ? totals.coupon : null, productValue: totals.productValue, welcome: totals.welcome, offers: offers.filter(function (offer) { return offer.isSystem; }) });
+        });
+      }, { allowEmailOnlyWelcome: !!customer, accountPhone: customer && customer.phoneNorm });
+    }
+    var token = readGuestBearer(req);
+    if (token) guestSessions.verifyGuestToken(token, quoteForCustomer);
+    else quoteForCustomer(null, null);
   });
 }
 app.post("/api/coupons/validate", previewCheckoutCoupons);

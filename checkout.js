@@ -24,6 +24,8 @@
   var checkoutNavigationId = 0;
   var googlePlacesReady = false;
   var paymentsAvailable = true;
+  var paymentAvailabilityMessage = "";
+  var shippingSavePending = false;
   var appliedCoupon = null;
   var couponProductValue = null;
   var couponChecking = false;
@@ -482,6 +484,8 @@
   }
 
   function navigateCheckoutStep(key) {
+    // Repeated payment clicks must not cancel the address save in progress.
+    if (key === "payment" && checkoutPhase === "shipping" && shippingSavePending) return;
     checkoutNavigationId++;
     closePayModal();
     if (key === "payment") {
@@ -519,6 +523,7 @@
     }
     updateCheckoutStepper();
     refreshCheckout();
+    syncSummaryPaymentAvailability();
     focusCheckoutSection(els.sectionPayment);
   }
 
@@ -526,14 +531,25 @@
      dialogs interrupted payment recovery and made mobile checkout feel broken. */
   function showCheckoutProblem(message) {
     var text = String(message || "Please review the checkout details and try again.");
-    var address = document.getElementById("checkoutAddressMsg");
-    if (address) {
+    ["checkoutAddressMsg", "checkoutSummaryMsg"].forEach(function (id) {
+      var address = document.getElementById(id);
+      if (!address) return;
       address.textContent = text;
       address.hidden = false;
       address.classList.add("is-error");
-    }
+    });
     var status = document.getElementById("checkoutPaymentStatusMsg");
     if (status && checkoutPhase === "payment") status.textContent = text;
+  }
+
+  function clearCheckoutProblem() {
+    ["checkoutAddressMsg", "checkoutSummaryMsg"].forEach(function (id) {
+      var message = document.getElementById(id);
+      if (!message) return;
+      message.hidden = true;
+      message.textContent = "";
+      message.classList.remove("is-error");
+    });
   }
 
   function validateShippingStep() {
@@ -551,6 +567,7 @@
     }
     if (!els.form.checkValidity()) {
       var firstInvalid = els.form.querySelector(":invalid");
+      showCheckoutProblem("Please complete your contact and shipping details before continuing to payment.");
       if (firstInvalid) {
         firstInvalid.setAttribute("aria-invalid", "true");
         firstInvalid.addEventListener("input", function clearInvalid() {
@@ -575,6 +592,7 @@
       showCheckoutProblem("Your cart is empty.");
       return false;
     }
+    clearCheckoutProblem();
     return true;
   }
 
@@ -583,11 +601,12 @@
       openPayModal();
       return;
     }
+    if (shippingSavePending) return;
     if (!validateShippingStep()) return;
-    var cta = els.openUpiModal;
-    if (cta && cta.disabled) return;
     var navigationId = checkoutNavigationId;
-    if (cta) cta.disabled = true;
+    shippingSavePending = true;
+    if (els.summaryCta) els.summaryCta.textContent = "Saving address…";
+    syncSummaryPaymentAvailability();
     return saveOrUpdateCheckoutAddress()
       .then(function () {
         /* Re-fetch so the saved-address cards reflect an edit before the
@@ -612,7 +631,9 @@
         showCheckoutProblem(msg);
       })
       .then(function () {
-        if (cta) cta.disabled = false;
+        shippingSavePending = false;
+        if (els.summaryCta) els.summaryCta.textContent = checkoutPhase === "payment" ? "Pay now" : "Continue to Payment";
+        syncSummaryPaymentAvailability();
       });
   }
 
@@ -1328,14 +1349,29 @@
     return "http://127.0.0.1:3847";
   }
 
+  function syncSummaryPaymentAvailability() {
+    if (!els.openUpiModal) return;
+    var unavailable = checkoutPhase === "payment" && !paymentsAvailable;
+    els.openUpiModal.disabled = shippingSavePending || unavailable;
+    els.openUpiModal.setAttribute("aria-disabled", els.openUpiModal.disabled ? "true" : "false");
+    els.openUpiModal.title = unavailable ? paymentAvailabilityMessage : "";
+  }
+
   function setPaymentAvailability(available, message) {
     paymentsAvailable = available;
-    [els.openUpiModal, els.btnRazorpayCheckout, els.btnCodCheckout].forEach(function (button) {
+    paymentAvailabilityMessage = message || "";
+    syncSummaryPaymentAvailability();
+    [els.btnRazorpayCheckout, els.btnCodCheckout].forEach(function (button) {
       if (!button) return;
-      button.disabled = !available;
-      button.setAttribute("aria-disabled", available ? "false" : "true");
+      button.disabled = !available || paymentAttemptBusy || (button === els.btnCodCheckout && Number(CART.subtotal()) < COD_MIN_PRODUCT_VALUE);
+      button.setAttribute("aria-disabled", button.disabled ? "true" : "false");
       button.title = available ? "" : message;
     });
+    var inline = document.getElementById("checkoutInlinePaymentAvailability");
+    if (inline) {
+      inline.hidden = available;
+      inline.textContent = available ? "" : message;
+    }
     var host = document.getElementById("checkoutRazorPanel");
     if (!host) return;
     var status = document.getElementById("checkoutPaymentAvailability");
@@ -1762,6 +1798,7 @@
       }
       var hasWelcome = appliedCoupon && appliedCoupon.code.split("+").indexOf("WELCOME100") >= 0;
       var message = hasWelcome ? '✓ Automatically applied · You save ₹100' : value <= 500 ? 'Shop above ₹500 to unlock your first-order gift.' : '₹100 off your first transaction, automatically.';
+      if (hasWelcome && welcomeStatus.pendingMobileVerification) message = '✓ Automatically applied · Mobile eligibility is confirmed before payment.';
       if (selectedCouponCode && couponOffers.every(function (offer) { return offer.code !== selectedCouponCode; })) message = 'WELCOME100 pairs with FLAT150, FLAT200 or FLAT300. Choose one to keep your first-order gift.';
       els.welcomeOffer.classList.toggle("is-applied", !!hasWelcome);
       els.welcomeOffer.innerHTML = '<span class="checkout-welcome__icon" aria-hidden="true">✦</span><div><strong>WELCOME100 <span class="checkout-welcome__badge">First order gift</span></strong><p>' + escapeAttr(message) + '</p></div><span class="checkout-welcome__amount">₹100 OFF</span>';
@@ -2035,7 +2072,7 @@
     var codEligible = Number(CART.subtotal()) >= COD_MIN_PRODUCT_VALUE;
     document.querySelectorAll('input[name="checkoutPaymentMethod"]').forEach(function (inp) {
       var isCod = String(inp.value || "").toLowerCase() === "cod";
-      inp.disabled = isCod ? !codEligible : false;
+      inp.disabled = checkoutPhase !== "payment" || (isCod && !codEligible);
       var card = inp.closest ? inp.closest(".checkout-payment-option, label, .ck-payment-option") : null;
       if (card) {
         card.classList.toggle("is-disabled", isCod && !codEligible);
@@ -2043,8 +2080,9 @@
       }
     });
     if (els.btnCodCheckout) {
-      els.btnCodCheckout.disabled = !codEligible;
-      els.btnCodCheckout.title = codEligible
+      els.btnCodCheckout.disabled = !paymentsAvailable || paymentAttemptBusy || !codEligible;
+      els.btnCodCheckout.setAttribute("aria-disabled", els.btnCodCheckout.disabled ? "true" : "false");
+      els.btnCodCheckout.title = !paymentsAvailable ? paymentAvailabilityMessage : codEligible
         ? "Pay ₹200 advance to confirm COD"
         : "COD requires a minimum product value of ₹500";
     }
@@ -2232,6 +2270,7 @@
     if (els.summaryHint) els.summaryHint.textContent = "Complete contact & shipping, then choose how to pay.";
     updateCheckoutStepper();
     refreshCheckout();
+    syncSummaryPaymentAvailability();
   }
 
   function productHrefForLine(line) {
@@ -2500,6 +2539,7 @@
       continueToPayment();
       return;
     }
+    if (!paymentsAvailable) { showCheckoutProblem(paymentAvailabilityMessage); return; }
     if (!validateShippingStep()) return;
     if (!els.payModal) return;
     closeResultPopup();
@@ -2658,7 +2698,6 @@
 
     if (els.openUpiModal) {
       els.openUpiModal.addEventListener("click", function () {
-        if (!paymentsAvailable) return;
         if (checkoutPhase === "shipping") {
           continueToPayment();
         } else {
@@ -2684,13 +2723,7 @@
           showCheckoutProblem("Checkout service is unavailable. Please try again shortly.");
           return;
         }
-        if (!els.form || !els.form.checkValidity()) {
-          showCheckoutProblem("Please fill guest name, email, phone, and full shipping address before paying.");
-          try {
-            els.form.reportValidity();
-          } catch (_) {}
-          return;
-        }
+        if (!paymentsAvailable || !validateShippingStep()) return;
         var items = buildBillItemsForApi();
         if (!items.length) {
           showCheckoutProblem("Your cart is empty.");
@@ -2771,20 +2804,15 @@
           })
           .then(function () {
             paymentAttemptBusy = false;
-            els.btnRazorpayCheckout.disabled = false;
+            setPaymentAvailability(paymentsAvailable, paymentAvailabilityMessage);
+            updatePaymentPanelVisibility();
           });
       });
     }
     if (els.btnCodCheckout) {
       els.btnCodCheckout.addEventListener("click", function () {
         if (paymentAttemptBusy) return;
-        if (!els.form || !els.form.checkValidity()) {
-          showCheckoutProblem("Please fill guest name, email, phone, and full shipping address before paying the COD advance.");
-          try {
-            els.form.reportValidity();
-          } catch (_) {}
-          return;
-        }
+        if (!paymentsAvailable || !validateShippingStep()) return;
         var items = buildBillItemsForApi();
         if (!items.length) {
           showCheckoutProblem("Your cart is empty.");
@@ -2868,7 +2896,8 @@
           })
           .then(function () {
             paymentAttemptBusy = false;
-            els.btnCodCheckout.disabled = false;
+            setPaymentAvailability(paymentsAvailable, paymentAvailabilityMessage);
+            updatePaymentPanelVisibility();
           });
       });
     }

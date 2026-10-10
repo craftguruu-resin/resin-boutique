@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css?v=20260928recovery1" />
   <link rel="stylesheet" href="craftguru-theme.css" />
-  <link rel="stylesheet" href="checkout.css?v=20261010checkout7" />
+  <link rel="stylesheet" href="checkout.css?v=20261010checkout9" />
   <script>document.documentElement.classList.add("guest-responsive-root");</script>
   <link rel="stylesheet" href="storefront-fluid.css?v=20260925f11" />
   <link rel="stylesheet" href="header-responsive.css?v=20260928b" />
@@ -267,6 +267,7 @@
                       <div class="checkout-payment-provider">Advance payment powered by <strong>Razorpay</strong></div>
                     </label>
                   </div>
+                  <p class="checkout-address-msg is-error" id="checkoutInlinePaymentAvailability" role="status" hidden></p>
                 </section>
 
                 <fieldset class="checkout-fieldset" id="checkoutSavedAddrFieldset" hidden aria-hidden="true">
@@ -274,6 +275,10 @@
                   <input type="radio" name="checkoutAddrMode" value="new" id="checkoutAddrModeNew" checked hidden />
                   <input type="radio" name="checkoutAddrMode" value="saved" id="checkoutAddrModeSaved" hidden />
                 </fieldset>
+
+                <button type="submit" class="visually-hidden" id="checkoutAddAddressBtn" tabindex="-1" aria-hidden="true">Save address</button>
+                <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
+              </form>
 
                 <details class="checkout-auth-details" id="checkoutAuthOptional">
                   <summary class="checkout-auth-details__summary">Sign in with email code (saved addresses &amp; order history)</summary>
@@ -321,10 +326,6 @@
                     </div>
                   </div>
                 </details>
-
-                <button type="submit" class="visually-hidden" id="checkoutAddAddressBtn" tabindex="-1" aria-hidden="true">Save address</button>
-                <p class="checkout-address-msg" id="checkoutAddressMsg" role="status" aria-live="polite" hidden></p>
-              </form>
             </div>
           </div>
 
@@ -375,6 +376,7 @@
               <span id="checkoutSummaryCtaText">Continue to Payment</span>
               <span aria-hidden="true">→</span>
             </button>
+            <p class="checkout-address-msg" id="checkoutSummaryMsg" role="status" aria-live="polite" hidden></p>
             <p class="checkout-summary-pay-hint" id="checkoutSummaryHint">Complete contact &amp; shipping, then choose how to pay.</p>
             <div class="ck-trust-icons" aria-label="Order benefits">
               <div class="ck-trust-icon">
@@ -649,6 +651,6 @@
   <script defer src="auth-db.js"></script>
   <script defer src="google-signin.js?v=20260929local1"></script>
   <script defer src="auth-home.js?v=20261005customer1"></script>
-  <script defer src="checkout.js?v=20261010checkout7"></script>
+  <script defer src="checkout.js?v=20261010checkout9"></script>
 </body>
 </html>

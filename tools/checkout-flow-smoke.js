@@ -75,25 +75,44 @@ function checkout(options = {}) {
   for (const id of [
     "checkoutMain", "checkoutForm", "checkoutStepFill", "checkoutCartSection", "ckSectionPayment", "checkoutStepper", "ckStepLinePayment", "ckStepLineReview",
     "checkoutPayModal", "checkoutPayModalBackdrop", "checkoutPayModalClose", "checkoutOpenUpiModal", "checkoutSummaryCtaText", "checkoutSummaryHint",
-    "btnRazorpayCheckout", "btnCodCheckout", "checkoutPaymentCancelBtn", "checkoutPaymentCancelBtnCod", "checkoutAddressMsg",
+    "btnRazorpayCheckout", "btnCodCheckout", "checkoutPaymentCancelBtn", "checkoutPaymentCancelBtnCod", "checkoutAddressMsg", "checkoutSummaryMsg", "checkoutInlinePaymentAvailability",
     "checkoutPaymentStatus", "checkoutPaymentStatusLabel", "checkoutPaymentStatusMsg", "checkoutResultPopup", "checkoutResultTitle", "checkoutResultMsg",
     "checkoutResultRetry", "checkoutResultSupport", "checkoutResultOk", "checkoutResultBackdrop",
   ]) element(id);
   elements.checkoutStepper.querySelectorAll = () => Object.values(steps);
-  elements.checkoutForm.checkValidity = () => options.valid !== false;
-  elements.checkoutForm.reportValidity = () => { elements.checkoutForm.reported = true; };
+  const formMarkup = read("checkout.html").match(/<form\b[^>]*id="checkoutForm"[^>]*>([\s\S]*?)<\/form>/)[1];
+  const formFields = [...formMarkup.matchAll(/<(?:input|select|textarea)\b[^>]*\bid="([^"]+)"[^>]*>/g)];
+  function validField(match) {
+    const el = elements[match[1]];
+    if (!el || el.disabled || el.readOnly) return true;
+    const value = String(el.value || "");
+    if (/\brequired\b/.test(match[0]) && !value) return false;
+    if (/type="email"/.test(match[0]) && value && !/^[^\s@]+@[^\s@]+$/.test(value)) return false;
+    const pattern = match[0].match(/\bpattern="([^"]+)"/);
+    return !pattern || !value || new RegExp("^(?:" + pattern[1] + ")$").test(value);
+  }
+  elements.checkoutForm.checkValidity = () => options.valid !== false && formFields.every(validField);
+  elements.checkoutForm.reportValidity = () => { elements.checkoutForm.reported = true; return elements.checkoutForm.checkValidity(); };
+  elements.checkoutForm.querySelector = selector => selector === ":invalid" ? elements[(formFields.find(match => !validField(match)) || [])[1]] || null : null;
   elements.checkoutMain.parentNode = document.body;
   elements.checkoutSummaryHint.parentNode = document.body;
-  for (const id of ["checkoutPayModal", "checkoutResultPopup", "ckSectionPayment"]) elements[id].hidden = true;
-  const signedIn = !!(options.profile || options.me);
-  if (signedIn) {
+  for (const id of ["checkoutPayModal", "checkoutResultPopup", "ckSectionPayment", "checkoutSummaryMsg", "checkoutInlinePaymentAvailability"]) elements[id].hidden = true;
+  const accountUi = !!(options.profile || options.me);
+  const signedIn = accountUi && !options.anonymous;
+  if (accountUi) {
     for (const id of ["checkoutGuestSessionBar", "checkoutGuestSessionText", "checkoutAuthOptional", "checkoutSignInLink", "checkoutWelcomeOffer", "checkoutCouponOffers", "checkoutCouponMessage", "checkoutCouponCode", "checkoutCouponApply", "checkoutCouponRemove", "valCouponDiscount", "valCouponLabel"]) element(id);
     elements.checkoutWelcomeOffer.hidden = true;
   }
   element("guestName", signedIn ? "" : "First Customer");
   element("guestEmail", signedIn ? "" : "first@example.test");
   element("guestPhone", signedIn ? "" : "9876543210");
+  element("addrLine1", "Test street");
+  element("city", "Jaipur");
+  element("state", "Rajasthan");
   element("zip", "302001");
+  element("country", "IN");
+  element("checkoutAuthEmailLo");
+  element("checkoutAuthEmailSu");
   const windowEvents = element();
   const locks = new Set();
   const sdk = [];
@@ -113,7 +132,7 @@ function checkout(options = {}) {
     const body = init.body ? JSON.parse(init.body) : null;
     requests.push({ route, body, headers: init.headers });
     if (route === "/api/guest/me") return options.me ? options.me(init) : response(options.profile);
-    if (route === "/api/razorpay-status") return response({ configured: true });
+    if (route === "/api/razorpay-status") return options.readiness ? options.readiness() : response({ configured: true });
     if (route === "/api/coupons/offers" || route === "/api/coupons/validate") return options.offers ? options.offers(body) : response({ ok: true, coupon: null, totals: { productValue: 3200 } });
     if (route === "/api/save-guest-address") return options.saveAddress ? options.saveAddress() : response({ ok: true });
     if (route === "/api/razorpay-order" || route === "/api/cod-advance-order") {
@@ -130,7 +149,7 @@ function checkout(options = {}) {
     location: { origin: "http://checkout.test", protocol: "http:", hostname: "checkout.test", port: "" },
     CraftguruApiBase: { get: () => "http://checkout.test" }, RESIN_DATA: {},
     CraftguruOverlayLock: { acquire: name => locks.add(name), release: name => locks.delete(name) },
-    RESIN_CART: { load: () => lines, countItems: () => lines.length, subtotal: () => lines.reduce((sum, row) => sum + row.qty * row.price, 0), formatMoney: n => "₹" + n, clear: () => { lines.length = 0; } },
+    RESIN_CART: { load: () => lines, countItems: () => lines.length, subtotal: () => lines.reduce((sum, row) => sum + row.qty * row.price, 0), formatMoney: n => "₹" + n, clear: () => { lines.length = 0; }, onAccountLogin: () => windowEvents.emit("resinCartChanged") },
     Razorpay: function (config) {
       this.options = config; this.callbacks = {};
       this.on = (name, cb) => { this.callbacks[name] = cb; };
@@ -138,7 +157,7 @@ function checkout(options = {}) {
     },
   };
   const nameUpdates = [];
-  if (signedIn) window.CRAFT_AUTH_DB = {
+  if (accountUi) window.CRAFT_AUTH_DB = {
     getSessionName: () => values.get("cg_session_name") || "",
     setSessionName(value) {
       nameUpdates.push(value);
@@ -147,8 +166,8 @@ function checkout(options = {}) {
       window.dispatchEvent({ type: "craftguruAuthChanged" });
     },
   };
-  const source = read("checkout.js").replace("  boot();\n})();", "  boot();\n  window.test = { readPaymentRecovery, preparePaymentAttempt, refreshGuestCheckoutUi, requestCouponQuote, refreshCustomerCoupons, removeCoupon };\n})();");
-  vm.runInNewContext(source, { window, document, fetch, sessionStorage, localStorage: sessionStorage, setTimeout, navigator: { onLine: true } });
+  const source = read("checkout.js").replace("  boot();\n})();", "  boot();\n  window.test = { readPaymentRecovery, preparePaymentAttempt, refreshGuestCheckoutUi, requestCouponQuote, refreshCustomerCoupons, removeCoupon, checkoutAfterVerifySuccess };\n})();");
+  vm.runInNewContext(source, { window, document, fetch, sessionStorage, localStorage: sessionStorage, setTimeout, CustomEvent: function (type) { this.type = type; }, navigator: { onLine: true } });
   return { window, document, elements, steps, locks, sdk, requests, totals, lines, events, windowEvents, options, values, nameUpdates, api: window.test };
 }
 
@@ -162,17 +181,141 @@ async function startPayment(page) {
   assert.equal(page.sdk.length, 1);
 }
 
+test("desktop and touch Continue opens both payment choices even with unfinished optional sign-in", async () => {
+  for (const coarse of [false, true]) {
+    const page = checkout({ coarse });
+    await tick();
+    page.elements.checkoutAuthEmailLo.value = "unfinished";
+    page.elements.checkoutAuthEmailSu.value = "unfinished";
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    assert.equal(page.elements.ckSectionPayment.hidden, false);
+    assert.equal(page.elements.ckSectionPayment.classList.contains("is-locked"), false);
+    assert.equal(page.elements.onlineRadio.disabled, false);
+    assert.equal(page.elements.codRadio.disabled, false);
+    assert.equal(page.elements.checkoutSummaryCtaText.textContent, "Pay now");
+    assert.equal(page.requests.filter(req => req.route === "/api/save-guest-address").length, 1);
+    assert.equal(page.elements.checkoutPayModal.hidden, true);
+    page.elements.codRadio.checked = true;
+    page.elements.onlineRadio.checked = false;
+    page.elements.codRadio.emit("change");
+    page.elements.checkoutOpenUpiModal.click();
+    assert.equal(page.elements.checkoutPayModal.hidden, false);
+    assert.equal(page.requests.some(req => req.route.endsWith("-order")), false);
+  }
+});
+
+test("Continue exposes visible validation feedback beside the desktop and mobile action", async () => {
+  for (const coarse of [false, true]) {
+    const page = checkout({ coarse });
+    await tick();
+    page.elements.guestPhone.value = "";
+    page.elements.checkoutOpenUpiModal.click();
+    assert.equal(page.elements.ckSectionPayment.hidden, true);
+    assert.equal(page.elements.checkoutSummaryMsg.hidden, false);
+    assert.match(page.elements.checkoutSummaryMsg.textContent, /contact|mobile|shipping/i);
+    assert.equal(page.elements.guestPhone.getAttribute("aria-invalid"), "true");
+    assert.equal(page.requests.some(req => req.route === "/api/save-guest-address"), false);
+    page.elements.guestPhone.value = "9876543210";
+    page.elements.guestPhone.emit("input");
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    assert.equal(page.elements.ckSectionPayment.hidden, false);
+    assert.equal(page.elements.checkoutSummaryMsg.hidden, true);
+  }
+});
+
+test("payment-service readiness cannot disable shipping Continue or hide payment choices", async () => {
+  for (const coarse of [false, true]) {
+    const page = checkout({ coarse, readiness: () => response({ configured: false }, 503) });
+    await tick();
+    assert.equal(page.elements.checkoutOpenUpiModal.disabled, false);
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    assert.equal(page.elements.ckSectionPayment.hidden, false);
+    assert.equal(page.elements.checkoutInlinePaymentAvailability.hidden, false);
+    assert.match(page.elements.checkoutInlinePaymentAvailability.textContent, /unavailable/i);
+    assert.equal(page.elements.checkoutOpenUpiModal.disabled, true);
+    assert.equal(page.elements.btnRazorpayCheckout.disabled, true);
+    assert.equal(page.elements.btnCodCheckout.disabled, true);
+    assert.equal(page.sdk.length, 0);
+  }
+});
+
+test("readiness completing during an address save cannot re-enable Continue or duplicate the save", async () => {
+  let finishReadiness, finishSave;
+  const page = checkout({ readiness: () => new Promise(resolve => { finishReadiness = resolve; }), saveAddress: () => new Promise(resolve => { finishSave = resolve; }) });
+  await tick();
+  page.elements.checkoutOpenUpiModal.click();
+  assert.equal(page.elements.checkoutOpenUpiModal.disabled, true);
+  assert.equal(page.elements.checkoutSummaryCtaText.textContent, "Saving address…");
+  finishReadiness(response({ configured: true }));
+  await tick();
+  assert.equal(page.elements.checkoutOpenUpiModal.disabled, true);
+  page.steps.payment.click();
+  page.elements.checkoutForm.emit("submit");
+  assert.equal(page.requests.filter(req => req.route === "/api/save-guest-address").length, 1);
+  finishSave(response({ ok: true }));
+  await tick();
+  assert.equal(page.elements.checkoutOpenUpiModal.disabled, false);
+  assert.equal(page.elements.checkoutSummaryCtaText.textContent, "Pay now");
+  assert.equal(page.elements.ckSectionPayment.hidden, false);
+});
+
+test("failed address saving shows a visible error and Continue can be retried", async () => {
+  let failed = true;
+  const page = checkout({ saveAddress: () => failed ? response({ ok: false, error: "Could not save address. Try again." }, 503) : response({ ok: true }) });
+  await tick();
+  page.elements.checkoutOpenUpiModal.click();
+  await tick();
+  assert.equal(page.elements.ckSectionPayment.hidden, true);
+  assert.equal(page.elements.checkoutSummaryMsg.hidden, false);
+  assert.match(page.elements.checkoutSummaryMsg.textContent, /Could not save address/);
+  assert.equal(page.elements.checkoutSummaryCtaText.textContent, "Continue to Payment");
+  assert.equal(page.elements.checkoutOpenUpiModal.disabled, false);
+  failed = false;
+  page.elements.checkoutOpenUpiModal.click();
+  await tick();
+  assert.equal(page.elements.ckSectionPayment.hidden, false);
+  assert.equal(page.elements.checkoutSummaryMsg.hidden, true);
+  assert.equal(page.requests.filter(req => req.route === "/api/save-guest-address").length, 2);
+});
+
+test("a readiness response during payment creation leaves both eligible payment actions usable", async () => {
+  for (const method of ["razorpay", "cod"]) {
+    let finishReadiness, finishQuote;
+    const page = checkout({ method, readiness: () => new Promise(resolve => { finishReadiness = resolve; }), quote: order => new Promise(resolve => { finishQuote = () => resolve(response(order)); }) });
+    await tick();
+    page.elements.checkoutOpenUpiModal.click();
+    await tick();
+    page.elements.checkoutOpenUpiModal.click();
+    (method === "cod" ? page.elements.btnCodCheckout : page.elements.btnRazorpayCheckout).click();
+    await tick();
+    finishReadiness(response({ configured: true }));
+    await tick();
+    assert.equal(page.elements.btnRazorpayCheckout.disabled, true);
+    assert.equal(page.elements.btnCodCheckout.disabled, true);
+    finishQuote();
+    await tick();
+    assert.equal(page.sdk.length, 1);
+    assert.equal(page.elements.btnRazorpayCheckout.disabled, false);
+    assert.equal(page.elements.btnCodCheckout.disabled, false);
+    assert.equal(page.elements.btnCodCheckout.getAttribute("aria-disabled"), "false");
+  }
+});
+
 const signedProfile = { ok: true, email: "first@example.test", phoneNorm: "+91 98765 43210", displayName: "First Customer", addresses: [] };
 function welcomePreview(body, returning = false) {
   const complete = !!body.guest.email && /^[6-9]\d{9}$/.test(body.guest.phone);
-  const codes = complete && !returning ? ["WELCOME100"] : [];
+  const known = !!body.guest.email;
+  const codes = known && !returning ? ["WELCOME100"] : [];
   const flatAmount = { FLAT150: 150, FLAT200: 200, FLAT300: 300 }[body.code] || 0;
   if (flatAmount) codes.push(body.code);
-  const discount = (complete && !returning ? 100 : 0) + flatAmount;
+  const discount = (known && !returning ? 100 : 0) + flatAmount;
   return response({
     ok: true, productValue: 3200,
     coupon: codes.length ? { code: codes.join("+"), discountType: "flat", discountValue: discount, discount } : null,
-    welcome: { firstOrder: returning ? false : complete ? true : null, identityComplete: complete, eligible: complete && !returning },
+    welcome: { firstOrder: returning ? false : known ? true : null, identityComplete: complete, eligible: known && !returning, pendingMobileVerification: known && !returning && !complete },
   });
 }
 
@@ -248,18 +391,23 @@ test("late profile responses from an old login cannot replace the current accoun
   assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
 });
 
-test("email-only accounts remain signed in and welcome applies when checkout receives a real mobile", async () => {
+test("email-only signup receives its automatic welcome preview and confirms it with a new mobile", async () => {
   const page = checkout({ profile: { ...signedProfile, phoneNorm: "h_email_only" }, offers: welcomePreview });
   await tick();
   assert.equal(page.elements.checkoutAuthOptional.hidden, true);
   assert.equal(page.elements.guestEmail.readOnly, true);
   assert.equal(page.elements.guestPhone.readOnly, false);
-  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.match(page.elements.checkoutWelcomeOffer.innerHTML, /Automatically applied.*before payment/);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.equal(offerRequests(page).length, 1);
   page.elements.guestPhone.value = "9876543210";
   page.elements.guestPhone.emit("input");
   await new Promise(resolve => setTimeout(resolve, 400));
   assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
   assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.doesNotMatch(page.elements.checkoutWelcomeOffer.innerHTML, /before payment/);
+  assert.equal(offerRequests(page).length, 2);
 });
 
 test("switching to an account without a saved mobile clears the previous account's mobile", async () => {
@@ -274,11 +422,55 @@ test("switching to an account without a saved mobile clears the previous account
   assert.equal(page.elements.guestEmail.value, "other@example.test");
   assert.equal(page.elements.guestPhone.value, "");
   assert.equal(page.elements.guestPhone.readOnly, false);
-  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
-  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
 });
 
 const offerRequests = page => page.requests.filter(request => request.route.startsWith("/api/coupons/"));
+
+test("fresh signup on the open checkout auto-applies welcome after one account and offer check", async () => {
+  const profile = { ...signedProfile, phoneNorm: "h_email_only" };
+  const page = checkout({ anonymous: true, profile, offers: body => page.values.has("craftguruGuestToken") ? welcomePreview(body) : response({ ok: true, productValue: 3200, coupon: null, welcome: { firstOrder: null } }) });
+  page.elements.guestPhone.value = "";
+  await tick();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 0);
+  const before = offerRequests(page).length;
+  page.api.checkoutAfterVerifySuccess(profile.email, { token: "fresh-signup-token" }, profile.displayName);
+  repeatCheckoutEvents(page);
+  await tick();
+  assert.equal(page.elements.guestEmail.value, profile.email);
+  assert.equal(page.elements.guestPhone.value, "");
+  assert.equal(page.elements.checkoutAuthOptional.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 1);
+  assert.equal(offerRequests(page).length, before + 1);
+  repeatCheckoutEvents(page);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  assert.equal(offerRequests(page).length, before + 1);
+});
+
+test("signup welcome is removed as soon as the entered mobile has a past order", async () => {
+  const page = checkout({ profile: { ...signedProfile, phoneNorm: "h_email_only" }, offers: body => welcomePreview(body, body.guest.phone === "9876543210") });
+  await tick();
+  await page.api.requestCouponQuote("FLAT200", false);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹300");
+  const before = offerRequests(page).length;
+  page.elements.guestPhone.value = "+91 98765 43210";
+  page.elements.guestPhone.emit("input");
+  page.elements.guestPhone.emit("change");
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  await new Promise(resolve => setTimeout(resolve, 400));
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹200");
+  assert.equal(offerRequests(page).length, before + 1);
+  repeatCheckoutEvents(page);
+  await tick();
+  assert.equal(offerRequests(page).length, before + 1);
+});
+
 function repeatCheckoutEvents(page, count = 30) {
   for (let i = 0; i < count; i++) {
     for (const event of ["craftguruAuthChanged", "resinCartChanged", "craftguruCatalogCategoriesMerged", "craftguruCatalogVendorProductsMerged", "craftguruCatalogPricesMerged"]) page.windowEvents.emit(event);
@@ -299,7 +491,8 @@ test("email-only checkout makes one offer request despite repeated auth, contact
   await new Promise(resolve => setTimeout(resolve, 400));
   assert.equal(offerRequests(page).length, 1);
   assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 1);
-  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
 });
 
 test("initial offers wait for one shared account lookup and include the restored flat code", async () => {

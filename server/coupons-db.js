@@ -141,7 +141,7 @@ function bundleCoupons(coupons) {
 }
 
 /** At most one selected coupon. WELCOME100 can pair only with a built-in flat offer. */
-function resolveCheckoutCoupons(raw, subtotal, guest, cb) {
+function resolveCheckoutCoupons(raw, subtotal, guest, cb, options) {
   var codes = splitCodes(raw);
   if (codes.length > 2 || new Set(codes).size !== codes.length) return process.nextTick(function () { cb(new Error("Choose one flat coupon; only WELCOME100 can be paired with it.")); });
   var selected = codes.filter(function (code) { return code !== "WELCOME100"; });
@@ -150,15 +150,21 @@ function resolveCheckoutCoupons(raw, subtotal, guest, cb) {
   var explicitWelcome = codes.indexOf("WELCOME100") >= 0;
   var pool = poolOrError(cb); if (!pool) return;
   var identityComplete = !!(identity.email && identity.phone);
-  var canWelcome = identityComplete && round2(subtotal) > 500 && (!selected.length || SYSTEM_CODES.slice(1).indexOf(selected[0]) >= 0);
+  // Email-only signup can preview its gift after the server verifies the session.
+  // Payment quotes never enable this option and still require both identifiers.
+  var knownCustomer = identityComplete || !!(options && options.allowEmailOnlyWelcome && identity.email);
+  var canWelcome = knownCustomer && round2(subtotal) > 500 && (!selected.length || SYSTEM_CODES.slice(1).indexOf(selected[0]) >= 0);
   if (explicitWelcome && !canWelcome) {
     var welcomeError = "WELCOME100 requires your email and a valid mobile number to check first-order eligibility.";
-    if (round2(subtotal) <= 500) welcomeError = identityComplete ? "WELCOME100 requires a cart value above ₹500." : "WELCOME100 requires your email, a valid mobile number and a cart value above ₹500.";
+    if (round2(subtotal) <= 500) welcomeError = knownCustomer ? "WELCOME100 requires a cart value above ₹500." : "WELCOME100 requires your email, a valid mobile number and a cart value above ₹500.";
     return process.nextTick(function () { cb(new Error(welcomeError)); });
   }
   // Purchase history controls visibility even below the minimum or before both
   // contact fields are filled. Either previously used identifier blocks welcome.
-  Promise.resolve(identity.email || identity.phone ? hasPreviousOrder(pool, identity) : false).then(function (previous) {
+  var history = Promise.resolve(identity.email || identity.phone ? hasPreviousOrder(pool, identity) : false);
+  var accountIdentity = options && normalizeIdentity({ email: identity.email, phone: options.accountPhone });
+  if (accountIdentity && accountIdentity.phone && accountIdentity.phone !== identity.phone) history = history.then(function (previous) { return previous || hasPreviousOrder(pool, accountIdentity); });
+  history.then(function (previous) {
     if (explicitWelcome && previous) throw new Error("WELCOME100 is only for your first transaction. This email or mobile has already placed an order.");
     var wanted = canWelcome && !previous ? ["WELCOME100"].concat(selected) : selected;
     return Promise.all(wanted.map(function (code) {
@@ -166,7 +172,7 @@ function resolveCheckoutCoupons(raw, subtotal, guest, cb) {
     })).then(function (coupons) {
       var bundle = bundleCoupons(coupons);
       if (bundle) bundle.identity = identity;
-      cb(null, bundle, { eligible: !!(canWelcome && !previous), identityComplete: identityComplete, firstOrder: previous ? false : identityComplete ? true : null });
+      cb(null, bundle, { eligible: !!(canWelcome && !previous), identityComplete: identityComplete, firstOrder: previous ? false : knownCustomer ? true : null, pendingMobileVerification: !!(canWelcome && !previous && !identityComplete) });
     });
   }).catch(cb);
 }
@@ -178,6 +184,7 @@ function createPaymentContext(razorpayOrderId, paymentMethod, coupon, guest, cb)
   var pool = poolOrError(cb); if (!pool) return;
   var identity = normalizeIdentity(guest || (coupon && coupon.identity));
   var welcomes = coupon && splitCodes(coupon.code).indexOf("WELCOME100") >= 0;
+  if (welcomes && (!identity.email || !identity.phone)) return process.nextTick(function () { cb(new Error("WELCOME100 requires your email and a valid mobile number before payment.")); });
   var args = [orderId, paymentMethod === "cod" ? "cod" : "razorpay", coupon ? coupon.code : "", coupon ? coupon.discountType : "", coupon ? coupon.discountValue : 0, coupon ? coupon.discount : 0, JSON.stringify(coupon ? coupon.coupons || [coupon] : []), identity.email, identity.phone];
   var sql = "INSERT INTO checkout_payment_contexts (razorpay_order_id, payment_method, coupon_code, coupon_type, coupon_value, coupon_discount, coupons, email_norm, phone_norm, updated_at) VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, $9, now())";
   if (!welcomes) return pool.query(sql, args).then(function () { cb(null); }).catch(cb);

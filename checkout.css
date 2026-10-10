@@ -526,6 +526,16 @@ body.page-checkout .checkout-addr-type__opt:focus-within {
   display: none !important;
 }
 
+body.page-checkout #ckSectionPayment:not([hidden]) {
+  display: block;
+}
+
+body.page-checkout .checkout-address-msg.is-error {
+  color: #9f261b;
+  background: #fff4f1;
+  border-color: #f0b7af;
+}
+
 .ck-section--payment.is-locked .ck-pay-methods {
   opacity: 0.45;
   pointer-events: none;
