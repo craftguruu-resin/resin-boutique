@@ -5,6 +5,8 @@
   "scripts": {
     "pages:patch-api": "node tools/set-bill-api-base.js",
     "test:mobile-ui": "node tools/mobile-ui-smoke.js",
+    "test:coupons": "node --test tools/coupon-smoke.js",
+    "test:checkout": "node --test tools/checkout-flow-smoke.js",
     "mobile:sync": "npx cap sync android",
     "mobile:android": "npx cap open android",
     "mobile:run": "npx cap run android",

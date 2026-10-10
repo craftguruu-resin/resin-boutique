@@ -20,6 +20,8 @@
   var removeDelegationDone = false;
   var formBound = false;
   var checkoutPhase = "shipping"; /* shipping | payment */
+  var checkoutActiveStep = "shipping";
+  var checkoutNavigationId = 0;
   var googlePlacesReady = false;
   var paymentsAvailable = true;
   var appliedCoupon = null;
@@ -29,6 +31,15 @@
   var couponCartKey = "";
   var couponRequestId = 0;
   var CHECKOUT_COUPON_STORAGE_KEY = "cg_checkout_coupon_code";
+  var selectedCouponCode = "";
+  var couponIdentityKey = "";
+  var welcomeStatus = null;
+  var couponRefreshTimer = null;
+  var couponOffers = [
+    { code: "FLAT150", discountValue: 150, minSubtotal: 2000, isActive: true },
+    { code: "FLAT200", discountValue: 200, minSubtotal: 2500, isActive: true },
+    { code: "FLAT300", discountValue: 300, minSubtotal: 3000, isActive: true },
+  ];
 
   var els = {
     lines: document.getElementById("checkoutLines"),
@@ -69,6 +80,8 @@
     addNewAddrBox: document.getElementById("checkoutAddNewAddrBox"),
     savedAddrCards: document.getElementById("checkoutSavedAddrCards"),
     couponCode: document.getElementById("checkoutCouponCode"),
+    couponOffers: document.getElementById("checkoutCouponOffers"),
+    welcomeOffer: document.getElementById("checkoutWelcomeOffer"),
     couponApply: document.getElementById("checkoutCouponApply"),
     couponRemove: document.getElementById("checkoutCouponRemove"),
     couponMessage: document.getElementById("checkoutCouponMessage"),
@@ -85,38 +98,47 @@
   var editingSavedAddressId = "";
   var PAYMENT_RECOVERY_KEY = "cgPaymentRecoveryV1";
   var PAYMENT_RECOVERY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
+  var paymentAttemptId = 0;
+  var paymentNoticeVersion = 0;
+  var paymentRestartCheck = null;
+  var paymentAttemptBusy = false;
+  var dismissedPaymentAttemptId = -1;
+  var paymentRecoveryMemory = null;
 
   /* Keep only a Razorpay order reference and state — never address, email,
      cart lines or payment credentials. This gives the buyer a safe answer if
      the checkout window closes after a payment attempt. */
   function readPaymentRecovery() {
     try {
-      var value = JSON.parse(sessionStorage.getItem(PAYMENT_RECOVERY_KEY) || "null");
+      var value = paymentRecoveryMemory || JSON.parse(sessionStorage.getItem(PAYMENT_RECOVERY_KEY) || "null");
       if (!value || !value.createdAt || Date.now() - Number(value.createdAt) > PAYMENT_RECOVERY_MAX_AGE_MS) {
         sessionStorage.removeItem(PAYMENT_RECOVERY_KEY);
+        paymentRecoveryMemory = null;
         return null;
       }
       return value;
     } catch (_) {
-      return null;
+      return paymentRecoveryMemory;
     }
   }
 
   function savePaymentRecovery(method, processorOrderId, state) {
+    paymentRecoveryMemory = {
+      method: method === "cod" ? "cod" : "razorpay",
+      processorOrderId: String(processorOrderId || "").slice(0, 120),
+      state: String(state || "opened").slice(0, 40),
+      createdAt: Date.now(),
+    };
     try {
       sessionStorage.setItem(
         PAYMENT_RECOVERY_KEY,
-        JSON.stringify({
-          method: method === "cod" ? "cod" : "razorpay",
-          processorOrderId: String(processorOrderId || "").slice(0, 120),
-          state: String(state || "opened").slice(0, 40),
-          createdAt: Date.now(),
-        })
+        JSON.stringify(paymentRecoveryMemory)
       );
     } catch (_) {}
   }
 
   function clearPaymentRecovery() {
+    paymentRecoveryMemory = null;
     try { sessionStorage.removeItem(PAYMENT_RECOVERY_KEY); } catch (_) {}
     var banner = document.getElementById("checkoutPaymentRecovery");
     if (banner) banner.remove();
@@ -124,8 +146,11 @@
 
   function paymentRecoveryMessage(recovery) {
     var ref = recovery && recovery.processorOrderId ? " Reference: " + recovery.processorOrderId + "." : "";
-    if (recovery && recovery.state === "failed") {
-      return "Razorpay reported that this payment did not complete." + ref + " Your cart is still saved; you can start a new payment.";
+    if (recovery && recovery.state === "cancelled") {
+      return "Payment was cancelled. Your cart is still saved; you can start again.";
+    }
+    if (recovery && recovery.state === "checking") {
+      return "Checking the cancelled payment. You can continue browsing your cart and address.";
     }
     return "We could not confirm the final payment result." + ref + " If money was debited, do not pay again—share this reference with our studio so we can check it safely.";
   }
@@ -153,17 +178,16 @@
     if (!old) return;
     old.innerHTML = "";
     var strong = document.createElement("strong");
-    strong.textContent = recovery.state === "failed" ? "Payment was not completed" : "Payment needs confirmation";
+    strong.textContent = recovery.state === "cancelled" ? "Payment cancelled" : recovery.state === "checking" ? "Checking payment" : "Payment needs confirmation";
     var msg = document.createElement("p");
     msg.textContent = paymentRecoveryMessage(recovery);
     var actions = document.createElement("div");
     actions.className = "checkout-payment-recovery__actions";
-    if (recovery.state === "failed") {
+    if (recovery.state === "cancelled") {
       var retry = document.createElement("button");
       retry.type = "button";
       retry.textContent = "Start a new payment";
       retry.addEventListener("click", function () {
-        clearPaymentRecovery();
         openPayModal();
       });
       actions.appendChild(retry);
@@ -414,22 +438,53 @@
     steps.forEach(function (step) {
       var key = step.getAttribute("data-step");
       step.classList.remove("is-active", "is-done");
-      if (checkoutPhase === "shipping") {
-        if (key === "cart") step.classList.add("is-done");
-        if (key === "shipping") step.classList.add("is-active");
-      } else if (checkoutPhase === "payment") {
-        if (key === "cart" || key === "shipping") step.classList.add("is-done");
-        if (key === "payment") step.classList.add("is-active");
-      }
+      step.removeAttribute("aria-current");
+      if (key === checkoutActiveStep) {
+        step.classList.add("is-active");
+        step.setAttribute("aria-current", "step");
+      } else if (key === "cart" || (checkoutPhase === "payment" && (key === "shipping" || key === "payment"))) step.classList.add("is-done");
     });
     var linePay = document.getElementById("ckStepLinePayment");
     var lineReview = document.getElementById("ckStepLineReview");
     if (linePay) linePay.classList.toggle("is-done", checkoutPhase === "payment");
-    if (lineReview) lineReview.classList.toggle("is-done", false);
+    if (lineReview) lineReview.classList.toggle("is-done", checkoutActiveStep === "review" && checkoutPhase === "payment");
+  }
+
+  function focusCheckoutSection(section) {
+    if (!section) return;
+    try {
+      if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+      section.setAttribute("tabindex", "-1");
+      section.focus({ preventScroll: true });
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (_) {}
+  }
+
+  function navigateCheckoutStep(key) {
+    checkoutNavigationId++;
+    closePayModal();
+    if (key === "payment") {
+      if (checkoutPhase !== "payment") { continueToPayment(); return; }
+      if (!validateShippingStep()) return;
+      checkoutActiveStep = "payment";
+      updateCheckoutStepper();
+      focusCheckoutSection(els.sectionPayment);
+      return;
+    }
+    if (key === "shipping") {
+      goToReviewStep();
+      focusCheckoutSection(els.stepFill);
+      return;
+    }
+    if (key !== "cart" && key !== "review") return;
+    checkoutActiveStep = key;
+    updateCheckoutStepper();
+    focusCheckoutSection(key === "cart" ? document.getElementById("checkoutCartSection") : document.querySelector(".checkout-totals"));
   }
 
   function unlockPaymentSection() {
     checkoutPhase = "payment";
+    checkoutActiveStep = "payment";
     if (els.sectionPayment) {
       els.sectionPayment.removeAttribute("hidden");
       els.sectionPayment.classList.remove("is-locked");
@@ -439,13 +494,11 @@
     });
     if (els.summaryCta) els.summaryCta.textContent = "Pay now";
     if (els.summaryHint) {
-      els.summaryHint.textContent = "Choose Razorpay or Cash on Delivery above, then pay securely.";
+      els.summaryHint.textContent = "Choose UPI / Card / Net banking or Cash on Delivery above, then pay securely.";
     }
     updateCheckoutStepper();
     refreshCheckout();
-    try {
-      els.sectionPayment && els.sectionPayment.scrollIntoView({ behavior: "smooth", block: "start" });
-    } catch (_) {}
+    focusCheckoutSection(els.sectionPayment);
   }
 
   /* Inline, announced errors keep checkout context intact. Browser alert
@@ -511,13 +564,15 @@
     }
     if (!validateShippingStep()) return;
     var cta = els.openUpiModal;
+    if (cta && cta.disabled) return;
+    var navigationId = checkoutNavigationId;
     if (cta) cta.disabled = true;
-    saveOrUpdateCheckoutAddress()
+    return saveOrUpdateCheckoutAddress()
       .then(function () {
         /* Re-fetch so the saved-address cards reflect an edit before the
            customer returns to checkout. */
         refreshGuestCheckoutUi();
-        unlockPaymentSection();
+        if (navigationId === checkoutNavigationId) unlockPaymentSection();
       })
       .catch(function (err) {
         var msg = String((err && err.message) || "Could not save address.");
@@ -776,6 +831,7 @@
           renderSavedAddressCards([]);
         }
       }
+      refreshCustomerCoupons();
     });
   }
 
@@ -1407,6 +1463,7 @@
   }
 
   function closeResultPopup() {
+    paymentNoticeVersion++;
     var pop = document.getElementById("checkoutResultPopup");
     if (pop) pop.setAttribute("hidden", "hidden");
   }
@@ -1422,7 +1479,7 @@
     var support = document.getElementById("checkoutResultSupport");
     pop.classList.toggle("checkout-result-popup--fail", outcome !== "success");
     if (icon) icon.textContent = outcome === "success" ? "✓" : "!";
-    if (title) title.textContent = outcome === "success" ? "Your payment is successful" : outcome === "recovery" ? "Payment needs confirmation" : "Payment not completed";
+    if (title) title.textContent = outcome === "success" ? "Your payment is successful" : opts.allowRetry ? "Payment cancelled" : outcome === "recovery" ? "Payment needs confirmation" : "Payment not completed";
     if (msg) {
       msg.textContent = opts.message ||
         (outcome === "success"
@@ -1435,20 +1492,94 @@
       support.href = paymentSupportUrl(opts.recovery);
     }
     pop.removeAttribute("hidden");
+    var ok = document.getElementById("checkoutResultOk");
+    try { if (ok) ok.focus({ preventScroll: true }); } catch (_) {}
   }
 
   function showPaymentRecovery(state, method, processorOrderId) {
+    closePayModal();
     savePaymentRecovery(method, processorOrderId, state);
     var recovery = readPaymentRecovery();
-    if (els.payModal) els.payModal.setAttribute("hidden", "hidden");
-    document.body.style.overflow = "";
     renderPaymentRecoveryBanner();
-    setPaymentUi("recovery");
+    setPaymentUi(state === "cancelled" ? "idle" : "recovery");
     showResultPopup("recovery", {
       recovery: recovery,
-      allowRetry: state === "failed" || state === "dismissed",
+      allowRetry: state === "cancelled",
       message: paymentRecoveryMessage(recovery),
     });
+  }
+
+  function checkPaymentCancellation(recovery, guest) {
+    if (!recovery) return Promise.resolve(false);
+    if (paymentRestartCheck && paymentRestartCheck.orderId === recovery.processorOrderId) return paymentRestartCheck.promise;
+    var base = billApiBase();
+    if (!base) return Promise.resolve(false);
+    var controller = typeof window.AbortController === "function" ? new window.AbortController() : null;
+    var timer;
+    var request = fetch(base + "/api/checkout/payment-cancel", {
+      method: "POST",
+      headers: guestAuthHeaders(),
+      signal: controller ? controller.signal : undefined,
+      body: JSON.stringify({ razorpay_order_id: recovery.processorOrderId, paymentMethod: recovery.method, guest: guest }),
+    }).then(function (res) {
+      return parseApiJson(res).then(function (x) { return !!(x.okHttp && x.json.ok && x.json.canRetry); });
+    });
+    var check = { orderId: recovery.processorOrderId };
+    check.promise = Promise.race([request, new Promise(function (resolve) {
+      timer = window.setTimeout(function () { if (controller) controller.abort(); resolve(false); }, 10000);
+    })]).catch(function () { return false; }).then(function (canRetry) {
+      window.clearTimeout(timer);
+      if (paymentRestartCheck === check) paymentRestartCheck = null;
+      return canRetry;
+    });
+    paymentRestartCheck = check;
+    return check.promise;
+  }
+
+  function handlePaymentDismissal(method, processorOrderId, guest, attemptId, background) {
+    if (attemptId !== paymentAttemptId || dismissedPaymentAttemptId === attemptId) return Promise.resolve();
+    dismissedPaymentAttemptId = attemptId;
+    if (!background) closePayModal();
+    var noticeVersion = background ? -1 : paymentNoticeVersion;
+    savePaymentRecovery(method, processorOrderId, "checking");
+    renderPaymentRecoveryBanner();
+    var recovery = readPaymentRecovery();
+    return checkPaymentCancellation(recovery, guest).then(function (canRetry) {
+      var current = readPaymentRecovery();
+      if (attemptId !== paymentAttemptId || !current || current.processorOrderId !== processorOrderId || current.state === "verifying") return;
+      var state = canRetry ? "cancelled" : "unconfirmed";
+      savePaymentRecovery(method, processorOrderId, state);
+      // A delayed cancellation response must not cover a reopened sheet or a
+      // section the buyer has already moved to.
+      if (noticeVersion !== paymentNoticeVersion) {
+        if (canRetry && els.payModal && !els.payModal.hasAttribute("hidden")) clearPaymentRecovery();
+        else renderPaymentRecoveryBanner();
+        return;
+      }
+      showPaymentRecovery(state, method, processorOrderId);
+    });
+  }
+
+  function preparePaymentAttempt() {
+    closeResultPopup();
+    var recovery = readPaymentRecovery();
+    var check = !recovery || recovery.state === "cancelled" ? Promise.resolve(true) : checkPaymentCancellation(recovery, buildGuestPayloadFromForm());
+    return check.then(function (canRetry) {
+      if (!canRetry) throw new Error("This payment still needs confirmation. If money was debited, contact payment support with your saved reference before paying again.");
+      clearPaymentRecovery();
+      setPaymentUi("ready");
+      var addressMsg = document.getElementById("checkoutAddressMsg");
+      if (addressMsg) { addressMsg.hidden = true; addressMsg.textContent = ""; addressMsg.classList.remove("is-error"); }
+      paymentAttemptId++;
+      return paymentAttemptId;
+    });
+  }
+
+  function paymentDetailsStillCurrent(items, guest) {
+    var current = buildGuestPayloadFromForm();
+    return checkoutPhase === "payment" && els.payModal && !els.payModal.hasAttribute("hidden") &&
+      cartKeyForCoupon(items) === cartKeyForCoupon(buildBillItemsForApi()) &&
+      normalizeCheckoutEmail(guest.email) === normalizeCheckoutEmail(current.email) && guest.phone === current.phone;
   }
 
   /** After successful checkout: persist guest session from server, clear cart, open My orders. */
@@ -1509,6 +1640,11 @@
 
   function couponPreviewDiscount(productValue) {
     if (!appliedCoupon) return 0;
+    if (Array.isArray(appliedCoupon.coupons) && appliedCoupon.coupons.length) {
+      return Math.round(Math.min(productValue, appliedCoupon.coupons.reduce(function (sum, coupon) {
+        return sum + (coupon.discountType === "percentage" ? productValue * Number(coupon.discountValue) / 100 : Number(coupon.discountValue));
+      }, 0)) * 100) / 100;
+    }
     var value = Math.max(0, Number(appliedCoupon.discountValue) || 0);
     var raw = appliedCoupon.discountType === "percentage" ? productValue * value / 100 : value;
     return Math.round(Math.min(productValue, raw) * 100) / 100;
@@ -1550,6 +1686,48 @@
     els.couponMessage.classList.toggle("is-error", !!isError);
   }
 
+  function customerCouponIdentityKey() {
+    var guest = buildGuestPayloadFromForm();
+    return String(guest.email || "").trim().toLowerCase() + ":" + guest.phone;
+  }
+
+  function renderCouponOffers() {
+    var value = couponProductValue != null ? couponProductValue : CART.subtotal();
+    if (els.couponOffers) els.couponOffers.innerHTML = couponOffers.filter(function (offer) { return offer.code !== "WELCOME100"; }).sort(function (a, b) { return a.minSubtotal - b.minSubtotal; }).map(function (offer) {
+      var eligible = offer.isActive && value > offer.minSubtotal;
+      var selected = selectedCouponCode === offer.code && !!appliedCoupon;
+      var remaining = Math.round(Math.max(0, offer.minSubtotal + 0.01 - value) * 100) / 100;
+      return '<button type="button" class="checkout-offer' + (selected ? ' is-selected' : '') + '" data-coupon-offer="' + escapeAttr(offer.code) + '" aria-pressed="' + selected + '"' + (!eligible || couponChecking ? ' disabled' : '') + '><span class="checkout-offer__amount">' + fmt(offer.discountValue) + ' OFF</span><strong>' + escapeAttr(offer.code) + '</strong><span>On shopping above ' + fmt(offer.minSubtotal) + '</span><span class="checkout-offer__action">' + (selected ? '✓ Applied' : eligible ? 'Apply coupon →' : 'Add ' + fmt(remaining) + ' to unlock') + '</span></button>';
+    }).join("");
+    if (els.welcomeOffer) {
+      var hasWelcome = appliedCoupon && appliedCoupon.code.split("+").indexOf("WELCOME100") >= 0;
+      var guest = buildGuestPayloadFromForm();
+      var complete = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email) && /^[6-9]\d{9}$/.test(guest.phone);
+      var message = hasWelcome ? '✓ Automatically applied · You save ₹100' : value <= 500 ? 'Shop above ₹500 to unlock your first-order gift.' : !complete ? 'Enter your email and mobile to check your first-order gift.' : couponChecking ? 'Checking your first-order gift…' : welcomeStatus && !welcomeStatus.eligible ? 'First transaction only · One use per email and mobile.' : '₹100 off your first transaction, automatically.';
+      if (complete && selectedCouponCode && couponOffers.every(function (offer) { return offer.code !== selectedCouponCode; })) message = 'WELCOME100 pairs with FLAT150, FLAT200 or FLAT300. Choose one to keep your first-order gift.';
+      els.welcomeOffer.classList.toggle("is-applied", !!hasWelcome);
+      els.welcomeOffer.innerHTML = '<span class="checkout-welcome__icon" aria-hidden="true">✦</span><div><strong>WELCOME100 <span class="checkout-welcome__badge">First order gift</span></strong><p>' + escapeAttr(message) + '</p></div><span class="checkout-welcome__amount">₹100 OFF</span>';
+    }
+  }
+
+  function refreshCustomerCoupons() {
+    if (couponIdentityKey === customerCouponIdentityKey() && couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
+    return requestCouponQuote(selectedCouponCode, true);
+  }
+
+  function scheduleCustomerCouponRefresh() {
+    window.clearTimeout(couponRefreshTimer);
+    // Clear the previous customer's discount immediately, before the debounce.
+    couponRequestId++;
+    couponIdentityKey = "";
+    appliedCoupon = null;
+    couponProductValue = null;
+    welcomeStatus = null;
+    couponChecking = true;
+    refreshCheckout();
+    couponRefreshTimer = window.setTimeout(function () { refreshCustomerCoupons(); }, 350);
+  }
+
   function startOtpCooldown(button, msgEl) {
     if (!button) return;
     var seconds = 30;
@@ -1569,35 +1747,44 @@
 
   function applyCoupon() {
     var code = els.couponCode ? String(els.couponCode.value || "").trim().toUpperCase().replace(/\s+/g, "") : "";
-    var items = buildBillItemsForApi();
     if (!code) { couponMessage("Enter a coupon code first.", true); return; }
+    return requestCouponQuote(code, false);
+  }
+
+  function requestCouponQuote(code, automatic) {
+    window.clearTimeout(couponRefreshTimer);
+    var items = buildBillItemsForApi();
     if (!items.length) { couponMessage("Your cart is empty.", true); return; }
     var base = billApiBase();
     if (!base) { couponMessage("Coupon service is temporarily unavailable.", true); return; }
     var requestId = ++couponRequestId;
     couponChecking = true;
     couponCartKey = cartKeyForCoupon(items);
+    couponIdentityKey = customerCouponIdentityKey();
+    selectedCouponCode = code.split("+").filter(function (part) { return part !== "WELCOME100"; }).join("+");
     appliedCoupon = null;
     couponProductValue = null;
-    if (els.couponCode) { els.couponCode.value = code; els.couponCode.disabled = true; }
-    if (els.couponRemove) els.couponRemove.hidden = false;
+    if (els.couponCode) { els.couponCode.value = selectedCouponCode; els.couponCode.disabled = true; }
+    if (els.couponRemove) els.couponRemove.hidden = !selectedCouponCode;
     if (els.couponApply) els.couponApply.disabled = true;
-    couponMessage("Checking coupon…", false);
+    couponMessage("Checking offers…", false);
     pendingCouponRetry = false;
     refreshCheckout();
-    return fetch(base + "/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store", body: JSON.stringify({ code: code, items: items }) })
+    return fetch(base + (automatic ? "/api/coupons/offers" : "/api/coupons/validate"), { method: "POST", headers: guestAuthHeaders(), cache: "no-store", body: JSON.stringify({ code: code, items: items, guest: buildGuestPayloadFromForm() }) })
       .then(function (res) { return parseApiJson(res); })
       .then(function (x) {
         if (requestId !== couponRequestId) return;
-        if (couponCartKey !== cartKeyForCoupon(buildBillItemsForApi())) return clearCouponForCartChange();
-        if (!x.okHttp || !x.json.ok || !x.json.coupon) throw new Error((x.json && x.json.error) || "This coupon is not available.");
-        appliedCoupon = x.json.coupon;
+        if (couponCartKey !== cartKeyForCoupon(buildBillItemsForApi()) || couponIdentityKey !== customerCouponIdentityKey()) return refreshCustomerCoupons();
+        if (!x.okHttp || !x.json.ok || (code && !x.json.coupon)) throw new Error((x.json && x.json.error) || "This coupon is not available.");
+        appliedCoupon = x.json.coupon || null;
+        welcomeStatus = x.json.welcome || null;
+        if (Array.isArray(x.json.offers)) couponOffers = x.json.offers;
         var productValue = Number(x.json.productValue);
         couponProductValue = Number.isFinite(productValue) && productValue >= 0 ? productValue : null;
-        try { sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, appliedCoupon.code); } catch (_) {}
-        if (els.couponCode) { els.couponCode.value = appliedCoupon.code; els.couponCode.disabled = true; }
-        if (els.couponRemove) els.couponRemove.hidden = false;
-        couponMessage(appliedCoupon.code + " applied — you save " + fmt(couponPreviewDiscount(couponProductValue != null ? couponProductValue : CART.subtotal())) + ".", false);
+        try { if (selectedCouponCode) sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, selectedCouponCode); else sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
+        if (els.couponCode) els.couponCode.value = selectedCouponCode;
+        if (els.couponRemove) els.couponRemove.hidden = !selectedCouponCode;
+        couponMessage(appliedCoupon ? appliedCoupon.code.replace(/\+/g, " + ") + " applied — you save " + fmt(couponPreviewDiscount(couponProductValue != null ? couponProductValue : CART.subtotal())) + "." : "Choose an eligible offer above.", false);
         refreshCheckout();
       })
       .catch(function (err) {
@@ -1609,14 +1796,22 @@
           return;
         }
         couponCartKey = "";
+        selectedCouponCode = "";
         try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
         if (els.couponRemove) els.couponRemove.hidden = true;
-        couponMessage(String((err && err.message) || "This coupon is not available."), true);
+        var message = String((err && err.message) || "This coupon is not available.");
+        if (code) {
+          var fallbackRequestId = couponRequestId + 1;
+          return requestCouponQuote("", true).then(function () { if (couponRequestId === fallbackRequestId) couponMessage(message, true); });
+        }
+        couponMessage(message, true);
       })
       .then(function () {
         if (requestId !== couponRequestId) return;
         couponChecking = false;
+        if (els.couponCode) els.couponCode.disabled = false;
         if (els.couponApply) els.couponApply.disabled = false;
+        renderCouponOffers();
       });
   }
 
@@ -1625,6 +1820,7 @@
     couponChecking = false;
     couponCartKey = "";
     pendingCouponRetry = false;
+    selectedCouponCode = "";
     appliedCoupon = null;
     couponProductValue = null;
     try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
@@ -1633,30 +1829,34 @@
     if (els.couponApply) els.couponApply.disabled = false;
     couponMessage("Coupon removed.", false);
     refreshCheckout();
+    // The first-order gift stays automatic when the chosen flat code is removed.
+    if (els.welcomeOffer) return requestCouponQuote("", true);
   }
 
   function restoreCouponAfterReload() {
     var saved = "";
     try { saved = String(sessionStorage.getItem(CHECKOUT_COUPON_STORAGE_KEY) || "").trim(); } catch (_) {}
-    if (!saved || !els.couponCode) return;
-    els.couponCode.value = saved;
-    applyCoupon();
+    if (saved && els.couponCode) { els.couponCode.value = saved.split("+").filter(function (part) { return part !== "WELCOME100"; }).join("+"); return requestCouponQuote(els.couponCode.value, true); }
+    if (els.welcomeOffer) return requestCouponQuote("", true);
   }
 
   function clearCouponForCartChange() {
-    if (!couponCartKey || couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
-    var code = appliedCoupon ? appliedCoupon.code : els.couponCode && els.couponCode.value;
+    if (!couponCartKey) { if (els.welcomeOffer) return refreshCustomerCoupons(); return; }
+    if (couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
     couponRequestId++;
     couponChecking = false;
     couponCartKey = "";
     pendingCouponRetry = false;
+    selectedCouponCode = "";
     appliedCoupon = null;
     couponProductValue = null;
     try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
-    if (els.couponCode) { els.couponCode.value = code || ""; els.couponCode.disabled = false; }
+    if (els.couponCode) { els.couponCode.value = ""; els.couponCode.disabled = false; }
     if (els.couponRemove) els.couponRemove.hidden = true;
     if (els.couponApply) els.couponApply.disabled = false;
-    if (code && CART.countItems() > 0) return applyCoupon();
+    couponMessage("Cart updated. Choose a coupon for your new total.", false);
+    refreshCheckout();
+    if (els.welcomeOffer && CART.countItems() > 0) return requestCouponQuote("", true);
     couponMessage("", false);
   }
 
@@ -1664,11 +1864,11 @@
     if (couponChecking) return Promise.reject(new Error("Please wait for your coupon to be checked before paying."));
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
-    var headers = { "Content-Type": "application/json" };
+    var headers = guestAuthHeaders();
     return fetch(base + "/api/cod-advance-order", {
       method: "POST",
       headers: headers,
-      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "" }),
+      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "", guest: buildGuestPayloadFromForm() }),
     }).then(function (res) {
       return parseApiJson(res).then(function (x) {
         var j = x.json;
@@ -1717,14 +1917,14 @@
     if (codPanel) codPanel.hidden = method !== "cod";
     if (razorFine) razorFine.hidden = method === "cod";
     if (modalTitle) {
-      modalTitle.textContent = method === "cod" ? "Cash on delivery" : "Pay with Razorpay";
+      modalTitle.textContent = method === "cod" ? "Cash on delivery" : "UPI / Card / Net banking";
     }
     var hint = document.querySelector(".checkout-summary-pay-hint");
     if (hint && checkoutPhase === "payment") {
       hint.textContent =
         method === "cod"
-          ? "COD is available on orders of ₹500 or more. Pay ₹200 advance by Razorpay to confirm the order; the remaining product balance is collected on delivery."
-          : "Open Pay now to complete Razorpay checkout — 10% instant online discount applied.";
+          ? "COD is available on orders of ₹500 or more. Pay ₹200 advance using UPI, card or net banking; pay the remaining balance on delivery."
+          : "Open Pay now to pay by UPI, card or net banking — 10% instant online discount applied.";
     }
     /* Eligibility is independent of the currently selected payment method.
        Razorpay is selected by default, but eligible carts must still be able to choose COD. */
@@ -1761,11 +1961,11 @@
     if (couponChecking) return Promise.reject(new Error("Please wait for your coupon to be checked before paying."));
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
-    var headers = { "Content-Type": "application/json" };
+    var headers = guestAuthHeaders();
     return fetch(base + "/api/razorpay-order", {
       method: "POST",
       headers: headers,
-      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "" }),
+      body: JSON.stringify({ items: items, couponCode: appliedCoupon ? appliedCoupon.code : "", guest: buildGuestPayloadFromForm() }),
     }).then(function (res) {
       return parseApiJson(res).then(function (x) {
         var j = x.json;
@@ -1900,8 +2100,9 @@
           ge.value = me.email;
         }
       }
-      if (els.guestName) {
+      if (els.guestName && !(window.matchMedia && window.matchMedia("(pointer: coarse)").matches)) {
         setTimeout(function () {
+          if (checkoutActiveStep !== "shipping" || (document.activeElement && document.activeElement !== document.body)) return;
           try {
             els.guestName.focus({ preventScroll: false });
           } catch (_) {
@@ -1915,6 +2116,7 @@
 
   function goToReviewStep() {
     checkoutPhase = "shipping";
+    checkoutActiveStep = "shipping";
     if (els.sectionPayment) {
       els.sectionPayment.setAttribute("hidden", "hidden");
       els.sectionPayment.classList.add("is-locked");
@@ -2143,6 +2345,7 @@
     if (els.modalShip) els.modalShip.textContent = "Free";
     if (els.modalTax) els.modalTax.textContent = fmt(totals.gst);
     if (els.modalGrand) els.modalGrand.textContent = fmt(totals.grand);
+    renderCouponOffers();
     updatePaymentPanelVisibility();
     if (CART.syncShippingNotice) CART.syncShippingNotice();
   }
@@ -2158,7 +2361,7 @@
       label.textContent = "Ready";
       msg.textContent =
         getCheckoutPaymentMethod() === "cod"
-          ? "Tap Pay now, choose Cash on delivery, pay the ₹200 advance via Razorpay, then the remaining balance is collected when your parcel arrives."
+          ? "Tap Pay now, choose Cash on delivery, pay the ₹200 advance using UPI, card or net banking, then pay the remaining balance when your parcel arrives."
           : "Tap Pay now to see your total here, then use Pay securely now — 10% instant discount on online payment.";
       return;
     }
@@ -2167,10 +2370,10 @@
       label.textContent = "Checkout";
       if (getCheckoutPaymentMethod() === "cod") {
         msg.innerHTML =
-          "COD is available on orders of ₹500 or more. Pay <strong>₹200 advance via Razorpay</strong> to confirm the order; the remaining product balance is collected on delivery.";
+          "COD is available on orders of ₹500 or more. Pay <strong>₹200 advance using UPI, card or net banking</strong> to confirm the order; pay the remaining balance on delivery.";
       } else {
         msg.innerHTML =
-          "Review the amount on the left, then use <strong>Pay securely now</strong> — the charge matches your cart on the server (includes 10% prepaid discount).";
+          "Review your total, then use <strong>Pay securely now</strong> to pay by UPI, card or net banking. Your total includes the 10% prepaid discount.";
       }
       return;
     }
@@ -2195,6 +2398,9 @@
     }
     if (!validateShippingStep()) return;
     if (!els.payModal) return;
+    closeResultPopup();
+    var recovery = readPaymentRecovery();
+    if (recovery && recovery.state === "cancelled") clearPaymentRecovery();
     refreshCheckout();
     els.payModal.removeAttribute("hidden");
     document.body.style.overflow = "hidden";
@@ -2207,8 +2413,7 @@
 
   function closePayModal() {
     closeResultPopup();
-    if (!els.payModal) return;
-    els.payModal.setAttribute("hidden", "hidden");
+    if (els.payModal) els.payModal.setAttribute("hidden", "hidden");
     document.body.style.overflow = "";
     if (window.CraftguruOverlayLock) window.CraftguruOverlayLock.release("payment");
     setPaymentUi("idle");
@@ -2270,6 +2475,15 @@
     bindSavedAddressCards();
     if (els.couponApply) els.couponApply.addEventListener("click", applyCoupon);
     if (els.couponRemove) els.couponRemove.addEventListener("click", removeCoupon);
+    if (els.couponOffers) els.couponOffers.addEventListener("click", function (event) {
+      var button = event.target.closest("[data-coupon-offer]");
+      if (!button || button.disabled) return;
+      if (els.couponCode) els.couponCode.value = button.getAttribute("data-coupon-offer");
+      applyCoupon();
+    });
+    [document.getElementById("guestEmail"), els.guestPhone].forEach(function (input) {
+      if (input) { input.addEventListener("input", scheduleCustomerCouponRefresh); input.addEventListener("change", scheduleCustomerCouponRefresh); }
+    });
     if (els.couponCode) {
       els.couponCode.addEventListener("keydown", function (event) {
         if (event.key === "Enter") { event.preventDefault(); applyCoupon(); }
@@ -2280,10 +2494,21 @@
       clearCouponForCartChange();
       refreshCheckout();
     });
+    document.querySelectorAll("#checkoutStepper .ck-step[data-step]").forEach(function (step) {
+      step.addEventListener("click", function () { navigateCheckoutStep(step.getAttribute("data-step")); });
+    });
+    window.addEventListener("pagehide", function () { closePayModal(); });
+    window.addEventListener("pageshow", function (event) {
+      if (!event.persisted) return;
+      closePayModal();
+      clearCouponForCartChange();
+      refreshCheckout();
+      renderPaymentRecoveryBanner();
+    });
     window.addEventListener("online", function () {
-      if (!pendingCouponRetry || !els.couponCode || !String(els.couponCode.value || "").trim()) return;
+      if (!pendingCouponRetry) return;
       couponMessage("Back online. Checking your coupon again…", false);
-      applyCoupon();
+      requestCouponQuote(selectedCouponCode, true);
     });
 
     var phoneInput = document.getElementById("guestPhone");
@@ -2344,6 +2569,7 @@
     }
     if (els.btnRazorpayCheckout) {
       els.btnRazorpayCheckout.addEventListener("click", function () {
+        if (paymentAttemptBusy) return;
         var base = billApiBase();
         if (!base) {
           showCheckoutProblem("Checkout service is unavailable. Please try again shortly.");
@@ -2366,8 +2592,20 @@
           return;
         }
         els.btnRazorpayCheckout.disabled = true;
-        postRazorpayOrder(items)
+        paymentAttemptBusy = true;
+        var attemptId;
+        var quoteUiVersion;
+        var paymentGuest = buildGuestPayloadFromForm();
+        preparePaymentAttempt().then(function (id) {
+          attemptId = id;
+          if (!paymentDetailsStillCurrent(items, paymentGuest)) throw new Error("Checkout changed. Review your current cart and details before paying.");
+          quoteUiVersion = paymentNoticeVersion;
+          return postRazorpayOrder(items);
+        })
           .then(function (order) {
+            if (quoteUiVersion !== paymentNoticeVersion || !paymentDetailsStillCurrent(items, paymentGuest)) {
+              return handlePaymentDismissal("razorpay", order.orderId, paymentGuest, attemptId, true).then(function () { throw new Error("Checkout changed. Review your current cart and details before paying."); });
+            }
             savePaymentRecovery("razorpay", order.orderId, "opened");
             var paymentHandled = false;
             var guestEmail = document.getElementById("guestEmail");
@@ -2408,15 +2646,14 @@
               modal: {
                 ondismiss: function () {
                   window.setTimeout(function () {
-                    if (!paymentHandled) showPaymentRecovery("dismissed", "razorpay", order.orderId);
+                    if (!paymentHandled) handlePaymentDismissal("razorpay", order.orderId, paymentGuest, attemptId);
                   }, 0);
                 },
               },
             };
             var rzp = new window.Razorpay(options);
             rzp.on("payment.failed", function () {
-              paymentHandled = true;
-              showPaymentRecovery("failed", "razorpay", order.orderId);
+              if (!paymentHandled && attemptId === paymentAttemptId) savePaymentRecovery("razorpay", order.orderId, "failed");
             });
             rzp.open();
           })
@@ -2424,12 +2661,14 @@
             showCheckoutProblem(String((err && err.message) || "Could not start Razorpay."));
           })
           .then(function () {
+            paymentAttemptBusy = false;
             els.btnRazorpayCheckout.disabled = false;
           });
       });
     }
     if (els.btnCodCheckout) {
       els.btnCodCheckout.addEventListener("click", function () {
+        if (paymentAttemptBusy) return;
         if (!els.form || !els.form.checkValidity()) {
           showCheckoutProblem("Please fill guest name, email, phone, and full shipping address before paying the COD advance.");
           try {
@@ -2453,8 +2692,19 @@
         }
         var guest = buildGuestPayloadFromForm();
         els.btnCodCheckout.disabled = true;
-        postCodAdvanceOrder(items)
+        paymentAttemptBusy = true;
+        var attemptId;
+        var quoteUiVersion;
+        preparePaymentAttempt().then(function (id) {
+          attemptId = id;
+          if (!paymentDetailsStillCurrent(items, guest)) throw new Error("Checkout changed. Review your current cart and details before paying.");
+          quoteUiVersion = paymentNoticeVersion;
+          return postCodAdvanceOrder(items);
+        })
           .then(function (order) {
+            if (quoteUiVersion !== paymentNoticeVersion || !paymentDetailsStillCurrent(items, guest)) {
+              return handlePaymentDismissal("cod", order.orderId, guest, attemptId, true).then(function () { throw new Error("Checkout changed. Review your current cart and details before paying."); });
+            }
             savePaymentRecovery("cod", order.orderId, "opened");
             var paymentHandled = false;
             var guestEmail = document.getElementById("guestEmail");
@@ -2493,15 +2743,14 @@
               modal: {
                 ondismiss: function () {
                   window.setTimeout(function () {
-                    if (!paymentHandled) showPaymentRecovery("dismissed", "cod", order.orderId);
+                    if (!paymentHandled) handlePaymentDismissal("cod", order.orderId, guest, attemptId);
                   }, 0);
                 },
               },
             };
             var rzp = new window.Razorpay(options);
             rzp.on("payment.failed", function () {
-              paymentHandled = true;
-              showPaymentRecovery("failed", "cod", order.orderId);
+              if (!paymentHandled && attemptId === paymentAttemptId) savePaymentRecovery("cod", order.orderId, "failed");
             });
             rzp.open();
           })
@@ -2509,6 +2758,7 @@
             showCheckoutProblem(String((err && err.message) || "Could not start COD advance payment."));
           })
           .then(function () {
+            paymentAttemptBusy = false;
             els.btnCodCheckout.disabled = false;
           });
       });
@@ -2543,7 +2793,7 @@
     if (resRetry) {
       resRetry.addEventListener("click", function () {
         var recovery = readPaymentRecovery();
-        if (!recovery || (recovery.state !== "failed" && recovery.state !== "dismissed")) return;
+        if (!recovery || recovery.state !== "cancelled") return;
         closeResultPopup();
         clearPaymentRecovery();
         openPayModal();
@@ -2623,6 +2873,7 @@
         if (gp) {
           gp.readOnly = false;
         }
+        scheduleCustomerCouponRefresh();
         if (window.RESIN_SHELL) {
           if (window.RESIN_SHELL.updateBadge) window.RESIN_SHELL.updateBadge();
           if (window.RESIN_SHELL.renderDrawer) window.RESIN_SHELL.renderDrawer();
@@ -2650,6 +2901,7 @@
 
   function onCatalogNamesMerged() {
     if (els.success && !els.success.classList.contains("checkout-hidden")) return;
+    clearCouponForCartChange();
     refreshCheckout();
     if (window.RESIN_SHELL && window.RESIN_SHELL.renderDrawer) {
       window.RESIN_SHELL.renderDrawer();

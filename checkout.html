@@ -20,7 +20,7 @@
   <link rel="stylesheet" href="motion.css" />
   <link rel="stylesheet" href="guest-layout.css?v=20260928recovery1" />
   <link rel="stylesheet" href="craftguru-theme.css" />
-  <link rel="stylesheet" href="checkout.css?v=20261005address2" />
+  <link rel="stylesheet" href="checkout.css?v=20261010checkout4" />
   <script>document.documentElement.classList.add("guest-responsive-root");</script>
   <link rel="stylesheet" href="storefront-fluid.css?v=20260925f11" />
   <link rel="stylesheet" href="header-responsive.css?v=20260928b" />
@@ -75,33 +75,33 @@
       <div class="checkout-page">
         <div class="ck-topbar">
           <nav class="ck-stepper" id="checkoutStepper" aria-label="Checkout progress">
-            <a href="index.html" class="ck-step is-done" data-step="cart">
+            <button type="button" class="ck-step is-done" data-step="cart">
               <span class="ck-step__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M6 6h15l-1.5 9h-12L4 3H2"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>
               </span>
               Cart
-            </a>
+            </button>
             <span class="ck-step__line is-done" aria-hidden="true"></span>
-            <span class="ck-step is-active" data-step="shipping" aria-current="step">
+            <button type="button" class="ck-step is-active" data-step="shipping" aria-current="step">
               <span class="ck-step__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M1 8h15v8H1z"/><path d="M16 10h4l2 3v3h-6V10z"/><circle cx="5.5" cy="18" r="1.75"/><circle cx="18.5" cy="18" r="1.75"/></svg>
               </span>
               Shipping
-            </span>
+            </button>
             <span class="ck-step__line" id="ckStepLinePayment" aria-hidden="true"></span>
-            <span class="ck-step" data-step="payment">
+            <button type="button" class="ck-step" data-step="payment">
               <span class="ck-step__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
               </span>
               Payment
-            </span>
+            </button>
             <span class="ck-step__line" id="ckStepLineReview" aria-hidden="true"></span>
-            <span class="ck-step" data-step="review">
+            <button type="button" class="ck-step" data-step="review">
               <span class="ck-step__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
               </span>
               Review
-            </span>
+            </button>
           </nav>
           <div class="ck-secure-badge">
             <span class="ck-secure-badge__icon" aria-hidden="true">🔒</span>
@@ -231,10 +231,13 @@
 
                 <section class="ck-section" id="ckSectionCoupon" aria-labelledby="ckCouponTitle">
                   <div class="ck-section__head">
-                    <h2 id="ckCouponTitle"><span class="ck-section__num">3</span> Coupon code</h2>
-                    <span class="ck-secure-inline">Optional</span>
+                    <h2 id="ckCouponTitle"><span class="ck-section__num">3</span> Offers for you</h2>
+                    <span class="ck-secure-inline">✦ Extra savings</span>
                   </div>
                   <div class="checkout-coupon">
+                    <p class="checkout-coupon__intro">Pick one flat offer. Your first-order WELCOME100 gift pairs automatically.</p>
+                    <div class="checkout-offers" id="checkoutCouponOffers" aria-label="Choose one flat coupon"></div>
+                    <div class="checkout-welcome" id="checkoutWelcomeOffer" role="status"></div>
                     <label class="checkout-label" for="checkoutCouponCode">Coupon code</label>
                     <div class="checkout-coupon__row">
                       <input class="checkout-input" type="text" id="checkoutCouponCode" maxlength="40" autocomplete="off" autocapitalize="characters" placeholder="Enter coupon code" />
@@ -253,13 +256,15 @@
                   <div class="ck-pay-methods" id="checkoutInlinePayment">
                     <label class="ck-pay-card">
                       <input type="radio" name="checkoutPaymentMethod" value="razorpay" checked disabled />
-                      <div class="ck-pay-card__title">Razorpay</div>
-                      <div class="ck-pay-card__sub">Cards, UPI, NetBanking · 10% prepaid discount</div>
+                      <div class="ck-pay-card__title">UPI / Card / Net banking</div>
+                      <div class="ck-pay-card__sub">10% instant discount on online payment</div>
+                      <div class="checkout-payment-provider">Powered by <strong>Razorpay</strong></div>
                     </label>
                     <label class="ck-pay-card">
                       <input type="radio" name="checkoutPaymentMethod" value="cod" disabled />
                       <div class="ck-pay-card__title">Cash on Delivery</div>
-                      <div class="ck-pay-card__sub">Orders ₹500 or more · ₹200 advance via Razorpay · balance on delivery</div>
+                      <div class="ck-pay-card__sub">Orders ₹500 or more · ₹200 advance · balance on delivery</div>
+                      <div class="checkout-payment-provider">Advance payment powered by <strong>Razorpay</strong></div>
                     </label>
                   </div>
                 </section>
@@ -323,7 +328,7 @@
             </div>
           </div>
 
-          <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary checkout-summary-rail" aria-labelledby="summary-heading">
+          <aside class="checkout-panel checkout-panel--sticky checkout-layout__summary checkout-summary-rail" id="checkoutCartSection" tabindex="-1" aria-labelledby="summary-heading">
             <h2 id="summary-heading">Order Summary</h2>
             <div class="checkout-snips" aria-hidden="true">
               <div class="checkout-snips__grid" id="checkoutSnipsGrid"></div>
@@ -439,7 +444,7 @@
       <div class="checkout-pay-modal__head">
         <div class="checkout-pay-modal__head-text">
           <p class="checkout-pay-modal__eyebrow">Secure payment</p>
-          <h2 id="checkoutPayModalTitle">Pay with Razorpay</h2>
+          <h2 id="checkoutPayModalTitle">UPI / Card / Net banking</h2>
         </div>
         <button type="button" class="checkout-pay-modal__x" id="checkoutPayModalClose" aria-label="Close">✕</button>
       </div>
@@ -472,7 +477,7 @@
           <div class="checkout-payment-status" id="checkoutPaymentStatus" data-state="idle">
             <p class="checkout-payment-status__label" id="checkoutPaymentStatusLabel">Status</p>
             <p class="checkout-payment-status__msg" id="checkoutPaymentStatusMsg">
-              Open Pay now after your details are filled. Totals here match your cart; complete payment with Razorpay on the right.
+              Review your total, then pay securely using UPI, card or net banking.
             </p>
           </div>
           <p class="checkout-pay-modal__fine checkout-pay-modal__fine--razor" id="checkoutRazorpayFine">
@@ -491,13 +496,14 @@
                       <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
                     </svg>
                   </span>
-                  <span class="checkout-razor-panel__brand-name">Razorpay</span>
+                  <span class="checkout-razor-panel__brand-name">UPI / Card / Net banking</span>
                   <span class="checkout-razor-panel__badge">PCI DSS</span>
                 </div>
+                <p class="checkout-payment-provider">Powered by <strong>Razorpay</strong></p>
                 <p class="checkout-razor-panel__kicker">Encrypted checkout</p>
                 <h3 class="checkout-razor-panel__title">Complete your payment</h3>
                 <p class="checkout-razor-panel__lead">
-                  Your total is locked to this cart on our server. Continue in Razorpay&apos;s window — UPI, cards, netbanking and wallets where available.
+                  Pay securely using UPI, card or net banking. Your total includes the 10% prepaid discount.
                 </p>
                 <ul class="checkout-razor-panel__pills" aria-label="Payment options">
                   <li>UPI</li>
@@ -521,13 +527,14 @@
                 <p class="checkout-razor-panel__kicker">Pay on delivery</p>
                 <h3 class="checkout-razor-panel__title">Cash on delivery</h3>
                 <p class="checkout-razor-panel__lead">
-                  COD is available on product value ₹500 or more. Pay ₹200 in advance via Razorpay to confirm the order; the remaining product balance is collected in cash on delivery.
+                  COD is available on product value ₹500 or more. Pay ₹200 in advance using UPI, card or net banking to confirm the order; pay the remaining balance in cash on delivery.
                 </p>
+                <p class="checkout-payment-provider">Advance payment powered by <strong>Razorpay</strong></p>
                 <button type="button" class="checkout-razor-panel__cta checkout-razor-panel__cta--cod" id="btnCodCheckout">
                   <span class="checkout-razor-panel__cta-text">Pay ₹200 &amp; Confirm COD</span>
                   <span class="checkout-razor-panel__cta-icon" aria-hidden="true">→</span>
                 </button>
-                <p class="checkout-razor-panel__trust">₹200 is paid now by Razorpay. The remaining product balance is due when the parcel is delivered.</p>
+                <p class="checkout-razor-panel__trust">Pay ₹200 now. The remaining balance is due when your parcel is delivered.</p>
                 <button type="button" class="checkout-razor-panel__ghost" id="checkoutPaymentCancelBtnCod">Cancel and close</button>
               </div>
             </div>
@@ -637,6 +644,6 @@
   <script defer src="auth-db.js"></script>
   <script defer src="google-signin.js?v=20260929local1"></script>
   <script defer src="auth-home.js?v=20261005customer1"></script>
-  <script defer src="checkout.js?v=20261010coupon1"></script>
+  <script defer src="checkout.js?v=20261010checkout4"></script>
 </body>
 </html>

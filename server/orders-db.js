@@ -2,6 +2,7 @@
 
 var poolMod = require("./db/pool.js");
 var guestDb = require("./guest-db.js");
+var couponsDb = require("./coupons-db.js");
 var inventoryDecrement = require("./inventory-decrement.js");
 var shipmentDb = require("./shipment/shipment-db.js");
 var shipmentStatusMod = require("./shipment/shipment-status.js");
@@ -164,15 +165,17 @@ function ensureCouponCapacity(client, couponCode, paymentReference) {
     : Promise.resolve(false);
   return existingCheck.then(function (alreadyCreated) {
     if (alreadyCreated) return null;
-    return client.query("SELECT max_redemptions FROM store_coupons WHERE code = $1 FOR UPDATE", [code]);
+    return client.query("SELECT code, max_redemptions FROM store_coupons WHERE code = ANY($1::varchar[]) ORDER BY code FOR UPDATE", [couponsDb.splitCodes(code)]);
   }).then(function (couponRow) {
     if (!couponRow) return null;
-    if (!couponRow.rows.length || couponRow.rows[0].max_redemptions == null) return null;
-    var max = Number(couponRow.rows[0].max_redemptions);
-    return client.query("SELECT COUNT(*)::int AS n FROM orders WHERE coupon_code = $1 AND payment_status IN ('paid', 'cod_advance_paid')", [code]).then(function (countRow) {
-      if (Number(countRow.rows[0] && countRow.rows[0].n) >= max) throw new Error("This coupon has reached its redemption limit.");
-      return null;
-    });
+    return couponRow.rows.reduce(function (promise, row) {
+      return promise.then(function () {
+        if (row.max_redemptions == null) return;
+        return client.query("SELECT COUNT(*)::int AS n FROM orders WHERE $1 = ANY(string_to_array(coupon_code, '+')) AND payment_status IN ('paid', 'cod_advance_paid')", [row.code]).then(function (countRow) {
+          if (Number(countRow.rows[0] && countRow.rows[0].n) >= Number(row.max_redemptions)) throw new Error("This coupon has reached its redemption limit.");
+        });
+      });
+    }, Promise.resolve());
   });
 }
 
@@ -238,6 +241,21 @@ function createCheckoutParcelOrder(opts, cb) {
       return client.query("BEGIN");
     })
     .then(function () {
+      var identity = couponsDb.normalizeIdentity(guest);
+      if (paymentStatus !== "paid" && paymentStatus !== "cod_advance_paid") return;
+      return couponsDb.lockIdentity(client, identity).then(function () {
+        if (couponsDb.splitCodes(couponCode).indexOf("WELCOME100") < 0) return;
+        if (!identity.email || !identity.phone) throw new Error("WELCOME100 coupon requires both email and mobile.");
+        if (Number(totals.productValue) <= 500) throw new Error("WELCOME100 coupon requires a cart value above ₹500.");
+        return client.query("SELECT id FROM orders WHERE payment_reference = $1 LIMIT 1", [paymentReference]).then(function (existing) {
+          if (existing.rows.length) return;
+          return couponsDb.hasPreviousOrder(client, identity).then(function (previous) {
+            if (previous) throw new Error("WELCOME100 coupon is only for the first transaction of this email and mobile.");
+          });
+        });
+      });
+    })
+    .then(function () {
       return guestDb.insertGuestStrictOrAttachAddress(client, guest);
     })
     .then(function (guestOut) {
@@ -295,6 +313,10 @@ function createCheckoutParcelOrder(opts, cb) {
             var orderId = ins.rows[0].id;
             var createdAt = ins.rows[0].created_at;
             var metaBase = { orderId: orderId, createdAt: createdAt, guestId: guestId, tagRef: tagRef };
+            var identity = couponsDb.normalizeIdentity(guest);
+            var identityWrite = paymentStatus === "paid" || paymentStatus === "cod_advance_paid"
+              ? client.query("INSERT INTO customer_order_identities (identity_kind, identity_value, first_order_id) VALUES ('email', $1, $3), ('phone', $2, $3) ON CONFLICT DO NOTHING", [identity.email, identity.phone, orderId])
+              : Promise.resolve();
             var lineQs = [];
             for (var i = 0; i < items.length; i++) {
               var it = items[i];
@@ -325,7 +347,7 @@ function createCheckoutParcelOrder(opts, cb) {
                 )
               );
             }
-            return Promise.all(lineQs).then(function () {
+            return Promise.all([identityWrite].concat(lineQs)).then(function () {
               return inventoryDecrement.decrementOrderItems(client, items).then(function () {
                 return metaBase;
               });
@@ -528,8 +550,17 @@ function markOrderPaymentReceived(orderId, cb) {
       cb(new Error("Invalid order id"));
     });
   }
-  pool
-    .query("SELECT id, payment_status, payment_method FROM orders WHERE id = $1", [id])
+  var client;
+  var identity;
+  pool.connect()
+    .then(function (c) { client = c; return client.query("BEGIN"); })
+    .then(function () { return client.query("SELECT guest_snapshot FROM orders WHERE id = $1", [id]); })
+    .then(function (r) {
+      if (!r.rows.length) throw new Error("Order not found");
+      identity = couponsDb.normalizeIdentity(parseGuestSnapshot(r.rows[0].guest_snapshot));
+      return couponsDb.lockIdentity(client, identity);
+    })
+    .then(function () { return client.query("SELECT id, payment_status, payment_method, coupon_code FROM orders WHERE id = $1 FOR UPDATE", [id]); })
     .then(function (r) {
       if (!r.rows.length) throw new Error("Order not found");
       var row = r.rows[0];
@@ -539,10 +570,13 @@ function markOrderPaymentReceived(orderId, cb) {
       if (String(row.payment_status) !== "pending_payment" && String(row.payment_status) !== "cod_advance_paid") {
         throw new Error("Only pending or COD-advance orders can be marked paid");
       }
-      return pool.query(
+      var welcomeCheck = String(row.payment_status) === "pending_payment" && couponsDb.splitCodes(row.coupon_code).indexOf("WELCOME100") >= 0
+        ? couponsDb.hasPreviousOrder(client, identity).then(function (previous) { if (previous) throw new Error("WELCOME100 coupon is only for the first transaction of this email and mobile."); })
+        : Promise.resolve();
+      return welcomeCheck.then(function () { return client.query(
         "UPDATE orders SET payment_status = 'paid', paid_at = COALESCE(paid_at, now()), gateway_fee = 0 WHERE id = $1 RETURNING id, payment_status, payment_method, paid_at",
         [id]
-      ).then(function (u) {
+      ); }).then(function (u) {
         return {
           orderId: u.rows[0].id,
           paymentStatus: u.rows[0].payment_status,
@@ -553,9 +587,17 @@ function markOrderPaymentReceived(orderId, cb) {
       });
     })
     .then(function (out) {
+      return client.query("INSERT INTO customer_order_identities (identity_kind, identity_value, first_order_id) SELECT kind, value, $3 FROM (VALUES ('email', $1::varchar), ('phone', $2::varchar)) AS identities(kind, value) WHERE value <> '' ON CONFLICT DO NOTHING", [identity.email, identity.phone, id])
+        .then(function () { return client.query("COMMIT"); })
+        .then(function () { client.release(); client = null; return out; });
+    })
+    .then(function (out) {
       cb(null, out);
     })
-    .catch(cb);
+    .catch(function (err) {
+      if (!client) return cb(err);
+      client.query("ROLLBACK").catch(function () {}).then(function () { client.release(); cb(err); });
+    });
 }
 
 /** @param {(err: Error|null, rows?: object[]) => void} cb */

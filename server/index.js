@@ -400,28 +400,49 @@ function productValueForItems(items) {
   );
 }
 
-function resolveCouponTotals(items, paymentMethod, couponCode, cb) {
+function resolveCouponTotals(items, paymentMethod, couponCode, guest, cb) {
   var productValue = productValueForItems(items);
-  couponsDb.resolveCoupon(couponCode, productValue, function (err, coupon) {
+  couponsDb.resolveCheckoutCoupons(couponCode, productValue, guest, function (err, coupon, welcome) {
     if (err) return cb(err);
-    if (couponCode && !coupon) return cb(new Error("This coupon is not available."));
     var totals = computeTotals(items, { paymentMethod: paymentMethod, couponDiscount: coupon ? coupon.discount : 0 });
     totals.coupon = coupon
-      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount }
+      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount, coupons: coupon.coupons }
+      : null;
+    totals.welcome = welcome;
+    cb(null, totals, coupon);
+  });
+}
+
+function totalsFromPaymentContext(items, paymentMethod, razorpayOrderId, guest, cb) {
+  var productValue = productValueForItems(items);
+  couponsDb.getPaymentContext(razorpayOrderId, paymentMethod, productValue, guest, function (err, coupon) {
+    if (err) return cb(err);
+    var totals = computeTotals(items, { paymentMethod: paymentMethod, couponDiscount: coupon ? coupon.discount : 0 });
+    totals.coupon = coupon
+      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount, coupons: coupon.coupons }
       : null;
     cb(null, totals, coupon);
   });
 }
 
-function totalsFromPaymentContext(items, paymentMethod, razorpayOrderId, cb) {
-  var productValue = productValueForItems(items);
-  couponsDb.getPaymentContext(razorpayOrderId, paymentMethod, productValue, function (err, coupon) {
-    if (err) return cb(err);
-    var totals = computeTotals(items, { paymentMethod: paymentMethod, couponDiscount: coupon ? coupon.discount : 0 });
-    totals.coupon = coupon
-      ? { code: coupon.code, discountType: coupon.discountType, discountValue: coupon.discountValue, discount: coupon.discount }
-      : null;
-    cb(null, totals, coupon);
+function createQuotedPaymentOrder(rz, args, paymentMethod, coupon, guest) {
+  return new Promise(function (resolve, reject) {
+    couponsDb.findReusablePaymentContext(paymentMethod, coupon, guest, function (err, orderId) { if (err) reject(err); else resolve(orderId); });
+  }).then(function (orderId) {
+    if (!orderId) return null;
+    return rz.orders.fetch(orderId).then(function (order) {
+      // Reopen the same payment after dismissal/reload without reserving a
+      // second welcome offer. Gateway amount/status must still agree.
+      if (order.status !== "paid" && order.currency === "INR" && Number(order.amount) === args.amount && !Number(order.amount_paid)) return order;
+      throw new Error("Your earlier welcome payment needs confirmation. Check its payment reference before trying again.");
+    });
+  }).then(function (existing) {
+    if (existing) return existing;
+    return rz.orders.create(args).then(function (order) {
+      return new Promise(function (resolve, reject) {
+        couponsDb.createPaymentContext(order.id, paymentMethod, coupon, guest, function (err) { if (err) reject(err); else resolve(order); });
+      });
+    });
   });
 }
 
@@ -1503,7 +1524,7 @@ app.get("/api/shipping/providers", function (_req, res) {
 });
 
 /** Preview a coupon against authoritative catalog prices. No guest data is stored. */
-app.post("/api/coupons/validate", function (req, res) {
+function previewCheckoutCoupons(req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
   if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
   var body = req.body || {};
@@ -1511,12 +1532,17 @@ app.post("/api/coupons/validate", function (req, res) {
   if (itemsErr) return res.status(400).json({ ok: false, error: itemsErr });
   resolveAuthoritativeCheckoutItems(body.items, function (priceErr, items) {
     if (priceErr) return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
-    resolveCouponTotals(items, "razorpay", body.code, function (couponErr, totals, coupon) {
+    resolveCouponTotals(items, "razorpay", body.codes || body.code, body.guest, function (couponErr, totals, coupon) {
       if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
-      res.json({ ok: true, coupon: coupon ? totals.coupon : null, productValue: totals.productValue });
+      couponsDb.listCoupons(function (listErr, offers) {
+        if (listErr) return res.status(503).json({ ok: false, error: "Could not load checkout offers." });
+        res.json({ ok: true, coupon: coupon ? totals.coupon : null, productValue: totals.productValue, welcome: totals.welcome, offers: offers.filter(function (offer) { return offer.isSystem; }) });
+      });
     });
   });
-});
+}
+app.post("/api/coupons/validate", previewCheckoutCoupons);
+app.post("/api/coupons/offers", previewCheckoutCoupons);
 
 /** Vendor coupon controls live inside the Products workspace. */
 app.get("/api/vendor/coupons", function (req, res) {
@@ -1568,6 +1594,39 @@ app.patch("/api/vendor/coupons/:id/active", function (req, res) {
 });
 
 /** Create Razorpay order from cart lines (amount fixed server-side). */
+function paymentCanRestart(order, payments) {
+  if (!order || ["created", "attempted"].indexOf(order.status) < 0 || order.amount_paid == null || Number(order.amount_paid) !== 0) return false;
+  if (!payments || !Array.isArray(payments.items) || Number(payments.count) !== payments.items.length) return false;
+  if (!Number.isFinite(Number(order.attempts || 0)) || Number(order.attempts || 0) > payments.items.length) return false;
+  if (!payments.items.length) return order.status === "created" && Number(order.attempts || 0) === 0;
+  return payments.items.every(function (payment) { return payment && payment.status === "failed"; });
+}
+
+/** Confirm a dismissed checkout is unpaid before releasing its welcome reservation. */
+app.post("/api/checkout/payment-cancel", function (req, res) {
+  var ip = req.ip || (req.connection && req.connection.remoteAddress) || "unknown";
+  if (!rateOk(ip)) return res.status(429).json({ ok: false, error: "Too many requests." });
+  var body = req.body || {};
+  var orderId = String(body.razorpay_order_id || "").trim();
+  var method = body.paymentMethod;
+  if (!/^order_[a-zA-Z0-9]+$/.test(orderId) || orderId.length > 120 || (method !== "cod" && method !== "razorpay")) return res.status(400).json({ ok: false, error: "Invalid payment reference." });
+  var rz = getRazorpayClient();
+  if (!rz) return res.status(503).json({ ok: false, error: "Payment checking is temporarily unavailable." });
+  res.setHeader("Cache-Control", "no-store");
+  couponsDb.findCustomerPaymentContext(orderId, method, body.guest, function (contextErr) {
+    if (contextErr) return res.status(400).json({ ok: false, error: String(contextErr.message || contextErr) });
+    Promise.all([rz.orders.fetch(orderId), rz.orders.fetchPayments(orderId)])
+      .then(function (values) {
+        if (!paymentCanRestart(values[0], values[1])) return res.json({ ok: true, canRetry: false });
+        couponsDb.cancelPaymentContext(orderId, method, body.guest, function (cancelErr) {
+          if (cancelErr) return res.status(500).json({ ok: false, error: "Could not confirm payment cancellation." });
+          res.json({ ok: true, canRetry: true });
+        });
+      })
+      .catch(function () { res.status(502).json({ ok: false, error: "Could not confirm the payment result. Keep your payment reference." }); });
+  });
+});
+
 app.post("/api/razorpay-order", function (req, res) {
   var ip = req.ip || req.connection.remoteAddress || "unknown";
   if (!rateOk(ip)) {
@@ -1592,7 +1651,7 @@ app.post("/api/razorpay-order", function (req, res) {
       return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
     }
 
-    resolveCouponTotals(items, "razorpay", body.couponCode, function (couponErr, totals, coupon) {
+    resolveCouponTotals(items, "razorpay", body.couponCodes || body.couponCode, body.guest, function (couponErr, totals, coupon) {
       if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
       var amountPaise = Math.round(totals.total * 100);
       if (!Number.isFinite(amountPaise) || amountPaise < 100) {
@@ -1601,12 +1660,7 @@ app.post("/api/razorpay-order", function (req, res) {
       var receipt = ("cg" + Date.now()).replace(/\D/g, "").slice(0, 40);
       checkInventoryBeforePayment(items, function (invErr) {
         if (invErr) return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
-        rz.orders.create({ amount: amountPaise, currency: "INR", receipt: receipt })
-          .then(function (order) {
-            return new Promise(function (resolve, reject) {
-              couponsDb.createPaymentContext(order.id, "razorpay", coupon, function (ctxErr) { if (ctxErr) reject(ctxErr); else resolve(order); });
-            });
-          })
+        createQuotedPaymentOrder(rz, { amount: amountPaise, currency: "INR", receipt: receipt }, "razorpay", coupon, body.guest)
           .then(function (order) {
             res.json({ ok: true, keyId: RAZORPAY_KEY_ID, orderId: order.id, amount: order.amount, currency: order.currency, totals: totals });
           })
@@ -1652,8 +1706,8 @@ app.post("/api/razorpay-verify", function (req, res) {
       if (priceErr) {
         return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
       }
-      totalsFromPaymentContext(items0, "razorpay", oid, function (contextErr, totals0, coupon) {
-        if (contextErr) return res.status(500).json({ ok: false, error: "Could not load the protected checkout total." });
+      totalsFromPaymentContext(items0, "razorpay", oid, guest, function (contextErr, totals0, coupon) {
+        if (contextErr) return res.status(400).json({ ok: false, error: String(contextErr.message || contextErr) });
         var g0 = normalizeGuestParcel(guest);
         var rz0 = getRazorpayClient();
         verifyRazorpayOrderAmount(rz0, oid, Math.round(Number(totals0.total) * 100))
@@ -1699,14 +1753,9 @@ app.post("/api/cod-advance-order", function (req, res) {
       if (invErr) {
         return res.status(409).json({ ok: false, code: "OUT_OF_STOCK", error: String(invErr.message || invErr) });
       }
-      resolveCouponTotals(items, "cod", b.couponCode, function (couponErr, totals, coupon) {
+      resolveCouponTotals(items, "cod", b.couponCodes || b.couponCode, b.guest, function (couponErr, totals, coupon) {
         if (couponErr) return res.status(400).json({ ok: false, error: String(couponErr.message || couponErr) });
-        rz.orders.create({ amount: advancePaise, currency: "INR", receipt: receipt })
-        .then(function (order) {
-          return new Promise(function (resolve, reject) {
-            couponsDb.createPaymentContext(order.id, "cod", coupon, function (ctxErr) { if (ctxErr) reject(ctxErr); else resolve(order); });
-          });
-        })
+        createQuotedPaymentOrder(rz, { amount: advancePaise, currency: "INR", receipt: receipt }, "cod", coupon, b.guest)
         .then(function (order) {
           res.json({ ok: true, keyId: RAZORPAY_KEY_ID, orderId: order.id, amount: order.amount, currency: order.currency, advance: 200, productValue: productValue, totals: totals });
         })
@@ -1743,8 +1792,8 @@ app.post("/api/cod-advance-verify", function (req, res) {
     if (priceErr) {
       return res.status(409).json({ ok: false, code: "CATALOG_CHANGED", error: String(priceErr.message || priceErr) });
     }
-    totalsFromPaymentContext(items, "cod", b.razorpay_order_id, function (contextErr, totals, coupon) {
-      if (contextErr) return res.status(500).json({ ok: false, error: "Could not load the protected checkout total." });
+    totalsFromPaymentContext(items, "cod", b.razorpay_order_id, guest, function (contextErr, totals, coupon) {
+      if (contextErr) return res.status(400).json({ ok: false, error: String(contextErr.message || contextErr) });
       if (Number(totals.productValue || 0) < orderPricing.COD_MIN_PRODUCT_VALUE) {
         return res.status(400).json({ ok: false, code: "COD_MINIMUM", error: "Cash on Delivery is available only for product value of ₹500 or more." });
       }
@@ -5330,13 +5379,13 @@ if (productionDatabaseRequired() && !poolMod.isEnabled()) {
       process.exitCode = 1;
       return;
     }
-    schemaHotfix.ensureVendorInventoryColumns().then(startHttpServer).catch(function (err) {
+    schemaHotfix.ensureVendorInventoryColumns().then(couponsDb.ensureSchema).then(startHttpServer).catch(function (err) {
       console.error("[startup] Postgres schema check failed:", err && err.message ? err.message : err);
       process.exitCode = 1;
     });
   });
 } else if (poolMod.isEnabled()) {
-  schemaHotfix.ensureVendorInventoryColumns().then(startHttpServer).catch(function (err) {
+  schemaHotfix.ensureVendorInventoryColumns().then(couponsDb.ensureSchema).then(startHttpServer).catch(function (err) {
     console.warn("[db] vendor_inventory_items hotfix before listen:", err && err.message ? err.message : err);
     startHttpServer();
   });

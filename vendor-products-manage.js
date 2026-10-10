@@ -63,9 +63,10 @@
     body.innerHTML = loadedCoupons.map(function (coupon) {
       var amount = coupon.discountType === "percentage" ? esc(coupon.discountValue) + "%" : "₹" + esc(coupon.discountValue);
       var status = coupon.isActive ? "<span class=\"vs-pill vs-pill--active\">Active</span>" : "<span class=\"vs-pill vs-pill--inactive\">Inactive</span>";
-      var rules = (coupon.minSubtotal > 0 ? "Min ₹" + esc(coupon.minSubtotal) : "No minimum") + (coupon.endsAt ? " · ends " + esc(new Date(coupon.endsAt).toLocaleDateString("en-IN")) : "") + (coupon.maxRedemptions != null ? " · max " + esc(coupon.maxRedemptions) : "");
+      var rules = (coupon.minSubtotal > 0 ? (coupon.isSystem ? "Above ₹" : "Min ₹") + esc(coupon.minSubtotal) : "No minimum") + (coupon.endsAt ? " · ends " + esc(new Date(coupon.endsAt).toLocaleDateString("en-IN")) : " · No end date") + (coupon.maxRedemptions != null ? " · max " + esc(coupon.maxRedemptions) : "") + (coupon.firstOrderOnly ? " · Auto-applied on first transaction · One use per email AND mobile" : coupon.isSystem ? " · Pairs only with first-order WELCOME100" : "");
       var usage = esc(coupon.redemptionCount || 0) + (coupon.maxRedemptions != null ? " / " + esc(coupon.maxRedemptions) : " used");
-      return "<tr><td><strong>" + esc(coupon.code) + "</strong></td><td>" + amount + " off<br><small>" + rules + "</small></td><td>" + usage + "</td><td>" + status + "</td><td><button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-edit\" data-coupon-id=\"" + esc(coupon.id) + "\">Edit</button> <button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-toggle\" data-coupon-id=\"" + esc(coupon.id) + "\" data-coupon-active=\"" + (coupon.isActive ? "1" : "0") + "\">" + (coupon.isActive ? "Deactivate" : "Activate") + "</button></td></tr>";
+      var actions = coupon.isSystem ? '<span class="vs-muted">Permanent offer</span>' : "<button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-edit\" data-coupon-id=\"" + esc(coupon.id) + "\">Edit</button> <button type=\"button\" class=\"vs-btn vs-btn--ghost vpm-coupon-toggle\" data-coupon-id=\"" + esc(coupon.id) + "\" data-coupon-active=\"" + (coupon.isActive ? "1" : "0") + "\">" + (coupon.isActive ? "Deactivate" : "Activate") + "</button>";
+      return "<tr><td><strong>" + esc(coupon.code) + "</strong></td><td>" + amount + " off<br><small>" + rules + "</small></td><td>" + usage + "</td><td>" + status + "</td><td>" + actions + "</td></tr>";
     }).join("");
   }
 
