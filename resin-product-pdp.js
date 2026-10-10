@@ -852,7 +852,7 @@
     var socialProof = P && P.socialProofHtml ? P.socialProofHtml(m || p) : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
-    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "resinPdpBuyNow", waBuyId: "resinPdpWaBuy" }) : "";
+    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "resinPdpBuyNow" }) : "";
     var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml(p.category) : "";
     var descSection =
       m.description && P && P.descriptionSectionHtml
@@ -953,17 +953,6 @@
     if (P) {
       P.wireFullscreen(root);
       P.wireMoreViews(root);
-      P.wireWhatsAppBuy(document.getElementById("resinPdpWaBuy"), function () {
-        var slot = variantSlot(state.sel);
-        return {
-          productName: m.name,
-          productId: m.id,
-          productUrl: "product.html?id=" + encodeURIComponent(state.product.id),
-          qty: state.lineQty,
-          variantLabel: variantLabelFrom(m, state.sel),
-          price: CART.formatMoney(effectivePriceInr(m, state.sel)),
-        };
-      });
     }
     if (window.CRAFTGURU_SHARE && window.CRAFTGURU_SHARE.mountProductShare) {
       var sh = document.getElementById("resinPdpShare");

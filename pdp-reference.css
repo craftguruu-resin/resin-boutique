@@ -448,8 +448,7 @@ body.pdp-ethereal .cg-pdp__buy-row {
   margin: 0;
 }
 
-body.pdp-ethereal .cg-pdp__buy-now,
-body.pdp-ethereal .cg-pdp__wa-buy {
+body.pdp-ethereal .cg-pdp__buy-now {
   min-height: 3rem;
   padding: 0.75rem 0.8rem;
   border-radius: 14px;
@@ -460,17 +459,6 @@ body.pdp-ethereal .cg-pdp__wa-buy {
 body.pdp-ethereal .cg-pdp__buy-now {
   border-width: 1.5px;
   color: var(--pdp-ref-teal-deep);
-}
-
-body.pdp-ethereal .cg-pdp__wa-buy {
-  border: 1px solid #bbf4d7;
-  background: #e9fff4;
-  box-shadow: none;
-  color: #087f4a;
-}
-
-body.pdp-ethereal .cg-pdp__wa-buy .bulk-buy-btn__icon {
-  color: #08a35d;
 }
 
 /* The service banner under the untouched gallery communicates these assurances. */
@@ -776,7 +764,6 @@ body.pdp-ethereal .product-detail--purchase.product-detail--buy-column {
 }
 
 body.pdp-ethereal .cg-pdp__buy-now,
-body.pdp-ethereal .cg-pdp__wa-buy,
 body.pdp-ethereal .pd-buy-rail__cta,
 body.pdp-ethereal .rm-pdp--modern .rm-pdp__add {
   border-radius: 999px !important;

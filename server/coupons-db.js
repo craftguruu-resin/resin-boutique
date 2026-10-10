@@ -16,7 +16,8 @@ function validateCouponInput(input) {
   if (!Number.isFinite(discountValue) || discountValue <= 0) return { error: "Enter a discount value greater than zero." };
   if (discountType === "percentage" && discountValue > 100) return { error: "Percentage discount cannot exceed 100%." };
   if (discountType === "flat" && discountValue > 999999) return { error: "Flat discount is too large." };
-  var minSubtotal = round2(input.minSubtotal != null ? input.minSubtotal : input.min_subtotal);
+  var minSubtotalRaw = input.minSubtotal != null ? input.minSubtotal : input.min_subtotal;
+  var minSubtotal = round2(minSubtotalRaw == null || minSubtotalRaw === "" ? 0 : minSubtotalRaw);
   if (!Number.isFinite(minSubtotal) || minSubtotal < 0) return { error: "Minimum order value cannot be negative." };
   var maxRedemptionsRaw = input.maxRedemptions != null ? input.maxRedemptions : input.max_redemptions;
   var maxRedemptions = maxRedemptionsRaw === "" || maxRedemptionsRaw == null ? null : Math.floor(Number(maxRedemptionsRaw));
@@ -86,14 +87,15 @@ function resolveCoupon(codeRaw, subtotal, cb) {
   var code = normalizeCode(codeRaw);
   if (!code) return process.nextTick(function () { cb(null, null); });
   var pool = poolOrError(cb); if (!pool) return;
-  pool.query("SELECT " + COUPON_SELECT + " FROM store_coupons c WHERE c.code = $1 AND c.is_active = true LIMIT 1", [code]).then(function (r) {
+  pool.query("SELECT " + COUPON_SELECT + " FROM store_coupons c WHERE c.code = $1 LIMIT 1", [code]).then(function (r) {
     var coupon = mapRow(r.rows[0]);
     if (!coupon) return cb(null, null);
+    if (!coupon.isActive) return cb(new Error("This coupon is inactive."));
     var now = Date.now();
-    if (coupon.startsAt && new Date(coupon.startsAt).getTime() > now) return cb(null, null);
-    if (coupon.endsAt && new Date(coupon.endsAt).getTime() <= now) return cb(null, null);
-    if (coupon.maxRedemptions != null && coupon.redemptionCount >= coupon.maxRedemptions) return cb(null, null);
-    if (round2(subtotal) < coupon.minSubtotal) return cb(null, null);
+    if (coupon.startsAt && new Date(coupon.startsAt).getTime() > now) return cb(new Error("This coupon has not started yet."));
+    if (coupon.endsAt && new Date(coupon.endsAt).getTime() <= now) return cb(new Error("This coupon has expired."));
+    if (coupon.maxRedemptions != null && coupon.redemptionCount >= coupon.maxRedemptions) return cb(new Error("This coupon has reached its redemption limit."));
+    if (round2(subtotal) < coupon.minSubtotal) return cb(new Error("This coupon requires a minimum cart value of ₹" + coupon.minSubtotal.toLocaleString("en-IN") + "."));
     coupon.discount = calculateDiscount(coupon, subtotal); cb(null, coupon);
   }).catch(cb);
 }

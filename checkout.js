@@ -23,7 +23,11 @@
   var googlePlacesReady = false;
   var paymentsAvailable = true;
   var appliedCoupon = null;
+  var couponProductValue = null;
+  var couponChecking = false;
   var pendingCouponRetry = false;
+  var couponCartKey = "";
+  var couponRequestId = 0;
   var CHECKOUT_COUPON_STORAGE_KEY = "cg_checkout_coupon_code";
 
   var els = {
@@ -1510,8 +1514,15 @@
     return Math.round(Math.min(productValue, raw) * 100) / 100;
   }
 
+  function cartKeyForCoupon(items) {
+    /* Name, image and inventory refreshes must not remove a valid discount. */
+    return JSON.stringify(items.map(function (item) {
+      return JSON.stringify([item.productId, item.sizeKey, item.stockSlot, item.qty, item.unitPrice]);
+    }).sort());
+  }
+
   function computeCheckoutTotals(subtotalVal, paymentMethod) {
-    var productValue = Math.round(Number(subtotalVal) * 100) / 100;
+    var productValue = Math.round(Number(appliedCoupon && couponProductValue != null ? couponProductValue : subtotalVal) * 100) / 100;
     var shipping = 0;
     var couponDiscount = couponPreviewDiscount(productValue);
     var discountableValue = Math.round(Math.max(0, productValue - couponDiscount) * 100) / 100;
@@ -1563,36 +1574,63 @@
     if (!items.length) { couponMessage("Your cart is empty.", true); return; }
     var base = billApiBase();
     if (!base) { couponMessage("Coupon service is temporarily unavailable.", true); return; }
+    var requestId = ++couponRequestId;
+    couponChecking = true;
+    couponCartKey = cartKeyForCoupon(items);
+    appliedCoupon = null;
+    couponProductValue = null;
+    if (els.couponCode) { els.couponCode.value = code; els.couponCode.disabled = true; }
+    if (els.couponRemove) els.couponRemove.hidden = false;
     if (els.couponApply) els.couponApply.disabled = true;
     couponMessage("Checking coupon…", false);
     pendingCouponRetry = false;
-    fetch(base + "/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: code, items: items }) })
+    refreshCheckout();
+    return fetch(base + "/api/coupons/validate", { method: "POST", headers: { "Content-Type": "application/json" }, cache: "no-store", body: JSON.stringify({ code: code, items: items }) })
       .then(function (res) { return parseApiJson(res); })
       .then(function (x) {
+        if (requestId !== couponRequestId) return;
+        if (couponCartKey !== cartKeyForCoupon(buildBillItemsForApi())) return clearCouponForCartChange();
         if (!x.okHttp || !x.json.ok || !x.json.coupon) throw new Error((x.json && x.json.error) || "This coupon is not available.");
         appliedCoupon = x.json.coupon;
+        var productValue = Number(x.json.productValue);
+        couponProductValue = Number.isFinite(productValue) && productValue >= 0 ? productValue : null;
         try { sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, appliedCoupon.code); } catch (_) {}
         if (els.couponCode) { els.couponCode.value = appliedCoupon.code; els.couponCode.disabled = true; }
         if (els.couponRemove) els.couponRemove.hidden = false;
-        couponMessage(appliedCoupon.code + " applied — you save " + fmt(couponPreviewDiscount(CART.subtotal())) + ".", false);
+        couponMessage(appliedCoupon.code + " applied — you save " + fmt(couponPreviewDiscount(couponProductValue != null ? couponProductValue : CART.subtotal())) + ".", false);
         refreshCheckout();
       })
       .catch(function (err) {
+        if (requestId !== couponRequestId) return;
+        if (els.couponCode) els.couponCode.disabled = false;
         if (navigator.onLine === false || (err && err.name === "TypeError")) {
           pendingCouponRetry = true;
           couponMessage("We could not check this coupon offline. It will retry when you reconnect.", true);
           return;
         }
+        couponCartKey = "";
+        try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
+        if (els.couponRemove) els.couponRemove.hidden = true;
         couponMessage(String((err && err.message) || "This coupon is not available."), true);
       })
-      .then(function () { if (els.couponApply) els.couponApply.disabled = false; });
+      .then(function () {
+        if (requestId !== couponRequestId) return;
+        couponChecking = false;
+        if (els.couponApply) els.couponApply.disabled = false;
+      });
   }
 
   function removeCoupon() {
+    couponRequestId++;
+    couponChecking = false;
+    couponCartKey = "";
+    pendingCouponRetry = false;
     appliedCoupon = null;
+    couponProductValue = null;
     try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
     if (els.couponCode) { els.couponCode.value = ""; els.couponCode.disabled = false; els.couponCode.focus(); }
     if (els.couponRemove) els.couponRemove.hidden = true;
+    if (els.couponApply) els.couponApply.disabled = false;
     couponMessage("Coupon removed.", false);
     refreshCheckout();
   }
@@ -1606,15 +1644,24 @@
   }
 
   function clearCouponForCartChange() {
-    if (!appliedCoupon) return;
+    if (!couponCartKey || couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
+    var code = appliedCoupon ? appliedCoupon.code : els.couponCode && els.couponCode.value;
+    couponRequestId++;
+    couponChecking = false;
+    couponCartKey = "";
+    pendingCouponRetry = false;
     appliedCoupon = null;
+    couponProductValue = null;
     try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
-    if (els.couponCode) { els.couponCode.value = ""; els.couponCode.disabled = false; }
+    if (els.couponCode) { els.couponCode.value = code || ""; els.couponCode.disabled = false; }
     if (els.couponRemove) els.couponRemove.hidden = true;
-    couponMessage("Your cart changed. Re-apply the coupon to refresh the final checkout price.", false);
+    if (els.couponApply) els.couponApply.disabled = false;
+    if (code && CART.countItems() > 0) return applyCoupon();
+    couponMessage("", false);
   }
 
   function postCodAdvanceOrder(items) {
+    if (couponChecking) return Promise.reject(new Error("Please wait for your coupon to be checked before paying."));
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = { "Content-Type": "application/json" };
@@ -1711,6 +1758,7 @@
   }
 
   function postRazorpayOrder(items) {
+    if (couponChecking) return Promise.reject(new Error("Please wait for your coupon to be checked before paying."));
     var base = billApiBase();
     if (!base) return Promise.reject(new Error("missing bill API base"));
     var headers = { "Content-Type": "application/json" };

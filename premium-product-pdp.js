@@ -145,7 +145,6 @@
   function buyActionsRowHtml(opts) {
     opts = opts || {};
     var buyId = opts.buyNowId || "cgPdpBuyNow";
-    var waId = opts.waBuyId || "cgPdpWaBuy";
     return (
       '<div class="cg-pdp__buy-row">' +
       '<button type="button" class="cg-pdp__buy-now rm-pdp__buy-now" id="' +
@@ -153,12 +152,7 @@
       '">' +
       '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
       '<path d="M13 2L4 14h7l-1 8 10-14h-7l0-6z" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/></svg>' +
-      "<span>Buy Now</span></button>" +
-      '<button type="button" class="cg-pdp__wa-buy" id="' +
-      escAttr(waId) +
-      '">' +
-      (global.CRAFTGURU_WA && global.CRAFTGURU_WA.ICON_SVG ? global.CRAFTGURU_WA.ICON_SVG : "") +
-      "<span>Buy on WhatsApp</span></button></div>"
+      "<span>Buy Now</span></button></div>"
     );
   }
 
@@ -331,25 +325,6 @@
     return html;
   }
 
-  function singleBuyMessage(opts) {
-    opts = opts || {};
-    var name = String(opts.productName || opts.name || "product").trim();
-    var qty = opts.qty != null ? opts.qty : 1;
-    var price = opts.price != null ? opts.price : "";
-    var variant = String(opts.variantLabel || "").trim();
-    var url = opts.productUrl || (global.location && global.location.href) || "";
-    var WA = global.CRAFTGURU_WA;
-    if (WA && typeof WA.absoluteUrl === "function") url = WA.absoluteUrl(url);
-    var lines = ["Hi, I'd like to buy this product.", "", "Product: " + name];
-    if (variant) lines.push("Variant: " + variant);
-    var customisation = String(opts.customisation || "").trim();
-    if (customisation) lines.push("Customisation: " + customisation);
-    lines.push("Quantity: " + qty);
-    if (price !== "") lines.push("Price: " + price);
-    lines.push("URL: " + url);
-    return lines.join("\n");
-  }
-
   function wireFullscreen(root) {
     if (!root || root.dataset.cgPdpFsWired === "1") return;
     root.dataset.cgPdpFsWired = "1";
@@ -393,22 +368,6 @@
       );
       document.body.classList.add("cg-pdp-lightbox-open");
       document.body.appendChild(overlay);
-    });
-  }
-
-  function wireWhatsAppBuy(btn, getOpts) {
-    if (!btn || btn.dataset.cgWaWired === "1") return;
-    btn.dataset.cgWaWired = "1";
-    btn.addEventListener("click", function () {
-      var opts = typeof getOpts === "function" ? getOpts() : getOpts || {};
-      var WA = global.CRAFTGURU_WA;
-      var msg = singleBuyMessage(opts);
-      var url = WA && WA.buildUrl ? WA.buildUrl(msg) : "https://wa.me/918824350056?text=" + encodeURIComponent(msg);
-      try {
-        global.open(url, "_blank", "noopener,noreferrer");
-      } catch (_) {
-        global.location.href = url;
-      }
     });
   }
 
@@ -461,9 +420,7 @@
     wirePdpHeader: wirePdpHeader,
     titleRowHtml: titleRowHtml,
     buildThumbButtons: buildThumbButtons,
-    singleBuyMessage: singleBuyMessage,
     wireFullscreen: wireFullscreen,
-    wireWhatsAppBuy: wireWhatsAppBuy,
     wireMoreViews: wireMoreViews,
     mountBottomSections: mountBottomSections,
   };

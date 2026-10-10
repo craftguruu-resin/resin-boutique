@@ -100,7 +100,8 @@
     var startsAt = document.getElementById("vpmCouponStartsAt");
     var endsAt = document.getElementById("vpmCouponEndsAt");
     var save = document.getElementById("vpmCouponSave");
-    var payload = { code: code ? code.value : "", discountType: couponType, discountValue: value ? value.value : "", minSubtotal: minSubtotal ? minSubtotal.value : "", maxRedemptions: maxRedemptions ? maxRedemptions.value : "", startsAt: startsAt ? startsAt.value : "", endsAt: endsAt ? endsAt.value : "" };
+    /* datetime-local is in the vendor's timezone; persist the same instant on UTC servers. */
+    var payload = { code: code ? code.value : "", discountType: couponType, discountValue: value ? value.value : "", minSubtotal: minSubtotal ? minSubtotal.value : "", maxRedemptions: maxRedemptions ? maxRedemptions.value : "", startsAt: couponDateForApi(startsAt), endsAt: couponDateForApi(endsAt) };
     showCouponMsg("", false);
     if (save) save.disabled = true;
     return fetch(base() + "/api/vendor/coupons" + (editingCouponId ? "/" + encodeURIComponent(editingCouponId) : ""), { method: editingCouponId ? "PUT" : "POST", headers: Object.assign({ "Content-Type": "application/json" }, V.authHeaders()), body: JSON.stringify(payload) }).then(function (res) {
@@ -111,6 +112,13 @@
         return loadCoupons();
       });
     }).catch(function (err) { showCouponMsg(String((err && err.message) || err), true); }).then(function (out) { if (save) save.disabled = false; return out; });
+  }
+
+  function couponDateForApi(input) {
+    var value = input ? String(input.value || "").trim() : "";
+    if (!value) return "";
+    var date = new Date(value);
+    return Number.isNaN(date.getTime()) ? value : date.toISOString();
   }
 
   function localDateValue(iso) {

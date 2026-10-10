@@ -406,7 +406,7 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__price-row::after {
 /* ── Buy actions row ── */
 .cg-pdp__buy-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 0.65rem;
   margin-top: 0.85rem;
 }
@@ -438,35 +438,6 @@ body.pdp-ethereal .rm-pdp--modern .rm-pdp__price-row::after {
   background: var(--cg-pdp-teal-soft);
   transform: translateY(-1px);
   filter: none;
-}
-
-.cg-pdp__wa-buy {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border-radius: 999px;
-  border: none;
-  background: linear-gradient(135deg, var(--cg-pdp-wa-green), var(--cg-pdp-wa-green-deep));
-  color: #fff;
-  font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  cursor: pointer;
-  box-shadow: 0 8px 22px rgba(37, 211, 102, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.cg-pdp__wa-buy:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 28px rgba(37, 211, 102, 0.42);
-}
-
-.cg-pdp__wa-buy .bulk-buy-btn__icon {
-  color: #fff;
 }
 
 /* Hide legacy standalone buy-now when buy-row present */
@@ -871,7 +842,6 @@ body.cg-pdp-lightbox-open {
 
 @media (prefers-reduced-motion: reduce) {
   .cg-pdp__buy-now:hover,
-  .cg-pdp__wa-buy:hover,
   .cg-pdp__fullscreen:hover {
     transform: none;
   }

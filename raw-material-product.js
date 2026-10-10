@@ -1016,7 +1016,7 @@
     var socialProof = P && P.socialProofHtml ? P.socialProofHtml(m) : "";
     var discBanner = P && P.discountBannerHtml ? P.discountBannerHtml() : "";
     var trustHtml = P && P.trustRowHtml ? P.trustRowHtml(opt.trustBullets) : "";
-    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow", waBuyId: "rmWaBuy" }) : "";
+    var buyRow = P && P.buyActionsRowHtml ? P.buyActionsRowHtml({ buyNowId: "rmBuyNow" }) : "";
     var bottomHtml = P && P.bottomSectionsHtml ? P.bottomSectionsHtml("raw-material") : "";
     var descSource = String(m.description || "").trim() || detailText;
     var descSection =
@@ -1112,16 +1112,6 @@
     if (P) {
       P.wireFullscreen(root);
       P.wireMoreViews(root);
-      P.wireWhatsAppBuy(document.getElementById("rmWaBuy"), function () {
-        return {
-          productName: m.name,
-          productId: m.id,
-          productUrl: window.location.href,
-          qty: state.lineQty,
-          variantLabel: variantLabelFrom(m, state.sel),
-          price: CART ? CART.formatMoney(effectivePriceInr(m, state.sel)) : effectivePriceInr(m, state.sel),
-        };
-      });
     }
     var wishBtn = root.querySelector("#rmPdpWish");
     var wishLink = root.querySelector("#rmPdpWishLink");
