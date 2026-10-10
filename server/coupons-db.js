@@ -149,9 +149,16 @@ function resolveCheckoutCoupons(raw, subtotal, guest, cb) {
   var identity = normalizeIdentity(guest);
   var explicitWelcome = codes.indexOf("WELCOME100") >= 0;
   var pool = poolOrError(cb); if (!pool) return;
-  var canWelcome = identity.email && identity.phone && round2(subtotal) > 500 && (!selected.length || SYSTEM_CODES.slice(1).indexOf(selected[0]) >= 0);
-  if (explicitWelcome && !canWelcome) return process.nextTick(function () { cb(new Error("WELCOME100 requires your email, a valid mobile number and a cart value above ₹500.")); });
-  Promise.resolve(canWelcome ? hasPreviousOrder(pool, identity) : true).then(function (previous) {
+  var identityComplete = !!(identity.email && identity.phone);
+  var canWelcome = identityComplete && round2(subtotal) > 500 && (!selected.length || SYSTEM_CODES.slice(1).indexOf(selected[0]) >= 0);
+  if (explicitWelcome && !canWelcome) {
+    var welcomeError = "WELCOME100 requires your email and a valid mobile number to check first-order eligibility.";
+    if (round2(subtotal) <= 500) welcomeError = identityComplete ? "WELCOME100 requires a cart value above ₹500." : "WELCOME100 requires your email, a valid mobile number and a cart value above ₹500.";
+    return process.nextTick(function () { cb(new Error(welcomeError)); });
+  }
+  // Purchase history controls visibility even below the minimum or before both
+  // contact fields are filled. Either previously used identifier blocks welcome.
+  Promise.resolve(identity.email || identity.phone ? hasPreviousOrder(pool, identity) : false).then(function (previous) {
     if (explicitWelcome && previous) throw new Error("WELCOME100 is only for your first transaction. This email or mobile has already placed an order.");
     var wanted = canWelcome && !previous ? ["WELCOME100"].concat(selected) : selected;
     return Promise.all(wanted.map(function (code) {
@@ -159,7 +166,7 @@ function resolveCheckoutCoupons(raw, subtotal, guest, cb) {
     })).then(function (coupons) {
       var bundle = bundleCoupons(coupons);
       if (bundle) bundle.identity = identity;
-      cb(null, bundle, { eligible: !!(canWelcome && !previous), identityComplete: !!(identity.email && identity.phone), firstOrder: !previous && !!canWelcome });
+      cb(null, bundle, { eligible: !!(canWelcome && !previous), identityComplete: identityComplete, firstOrder: previous ? false : identityComplete ? true : null });
     });
   }).catch(cb);
 }

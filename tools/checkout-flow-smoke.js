@@ -8,7 +8,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const read = file => fs.readFileSync(path.resolve(__dirname, "..", file), "utf8");
 const tick = () => new Promise(resolve => setTimeout(resolve, 5));
-const response = body => ({ ok: true, status: 200, text: async () => JSON.stringify(body), json: async () => body });
+const response = (body, status = 200) => ({ ok: status < 400, status, text: async () => JSON.stringify(body), json: async () => body });
 
 function checkout(options = {}) {
   const elements = {};
@@ -85,9 +85,14 @@ function checkout(options = {}) {
   elements.checkoutMain.parentNode = document.body;
   elements.checkoutSummaryHint.parentNode = document.body;
   for (const id of ["checkoutPayModal", "checkoutResultPopup", "ckSectionPayment"]) elements[id].hidden = true;
-  element("guestName", "First Customer");
-  element("guestEmail", "first@example.test");
-  element("guestPhone", "9876543210");
+  const signedIn = !!(options.profile || options.me);
+  if (signedIn) {
+    for (const id of ["checkoutGuestSessionBar", "checkoutGuestSessionText", "checkoutAuthOptional", "checkoutSignInLink", "checkoutWelcomeOffer", "checkoutCouponOffers", "checkoutCouponMessage", "checkoutCouponCode", "checkoutCouponApply", "checkoutCouponRemove", "valCouponDiscount", "valCouponLabel"]) element(id);
+    elements.checkoutWelcomeOffer.hidden = true;
+  }
+  element("guestName", signedIn ? "" : "First Customer");
+  element("guestEmail", signedIn ? "" : "first@example.test");
+  element("guestPhone", signedIn ? "" : "9876543210");
   element("zip", "302001");
   const windowEvents = element();
   const locks = new Set();
@@ -95,6 +100,8 @@ function checkout(options = {}) {
   const requests = [];
   const lines = [{ id: "resin-test", size: "m", name: "Test", price: 3200, qty: 1 }];
   const values = new Map();
+  if (signedIn) values.set("craftguruGuestToken", "signed-in-token");
+  if (options.savedCoupon) values.set("cg_checkout_coupon_code", options.savedCoupon);
   const sessionStorage = {
     getItem(key) { if (options.storageBlocked) throw new Error("Storage blocked"); return values.get(key) || null; },
     setItem(key, value) { if (options.storageBlocked || options.storageWriteBlocked) throw new Error("Storage blocked"); values.set(key, value); },
@@ -103,9 +110,11 @@ function checkout(options = {}) {
   let nextOrder = 0;
   const fetch = async (url, init = {}) => {
     const route = new URL(url).pathname;
-    requests.push({ route, body: init.body ? JSON.parse(init.body) : null });
+    const body = init.body ? JSON.parse(init.body) : null;
+    requests.push({ route, body, headers: init.headers });
+    if (route === "/api/guest/me") return options.me ? options.me(init) : response(options.profile);
     if (route === "/api/razorpay-status") return response({ configured: true });
-    if (route === "/api/coupons/offers") return response({ ok: true, coupon: null, totals: { productValue: 3200 } });
+    if (route === "/api/coupons/offers" || route === "/api/coupons/validate") return options.offers ? options.offers(body) : response({ ok: true, coupon: null, totals: { productValue: 3200 } });
     if (route === "/api/save-guest-address") return options.saveAddress ? options.saveAddress() : response({ ok: true });
     if (route === "/api/razorpay-order" || route === "/api/cod-advance-order") {
       const order = { ok: true, orderId: "order_" + ++nextOrder, keyId: "test", amount: 20000, currency: "INR" };
@@ -128,9 +137,19 @@ function checkout(options = {}) {
       this.open = () => { sdk.push(this); };
     },
   };
-  const source = read("checkout.js").replace("  boot();\n})();", "  boot();\n  window.test = { readPaymentRecovery, preparePaymentAttempt };\n})();");
+  const nameUpdates = [];
+  if (signedIn) window.CRAFT_AUTH_DB = {
+    getSessionName: () => values.get("cg_session_name") || "",
+    setSessionName(value) {
+      nameUpdates.push(value);
+      assert.ok(nameUpdates.length < 8, "session-name updates must not cause an auth refresh loop");
+      values.set("cg_session_name", value);
+      window.dispatchEvent({ type: "craftguruAuthChanged" });
+    },
+  };
+  const source = read("checkout.js").replace("  boot();\n})();", "  boot();\n  window.test = { readPaymentRecovery, preparePaymentAttempt, refreshGuestCheckoutUi, requestCouponQuote, refreshCustomerCoupons, removeCoupon };\n})();");
   vm.runInNewContext(source, { window, document, fetch, sessionStorage, localStorage: sessionStorage, setTimeout, navigator: { onLine: true } });
-  return { window, document, elements, steps, locks, sdk, requests, totals, lines, events, windowEvents, options, api: window.test };
+  return { window, document, elements, steps, locks, sdk, requests, totals, lines, events, windowEvents, options, values, nameUpdates, api: window.test };
 }
 
 async function startPayment(page) {
@@ -142,6 +161,331 @@ async function startPayment(page) {
   await tick();
   assert.equal(page.sdk.length, 1);
 }
+
+const signedProfile = { ok: true, email: "first@example.test", phoneNorm: "+91 98765 43210", displayName: "First Customer", addresses: [] };
+function welcomePreview(body, returning = false) {
+  const complete = !!body.guest.email && /^[6-9]\d{9}$/.test(body.guest.phone);
+  const codes = complete && !returning ? ["WELCOME100"] : [];
+  const flatAmount = { FLAT150: 150, FLAT200: 200, FLAT300: 300 }[body.code] || 0;
+  if (flatAmount) codes.push(body.code);
+  const discount = (complete && !returning ? 100 : 0) + flatAmount;
+  return response({
+    ok: true, productValue: 3200,
+    coupon: codes.length ? { code: codes.join("+"), discountType: "flat", discountValue: discount, discount } : null,
+    welcome: { firstOrder: returning ? false : complete ? true : null, identityComplete: complete, eligible: complete && !returning },
+  });
+}
+
+test("signed-in first buyer loads both account contacts and auto-applies welcome without an auth loop", async () => {
+  for (const coarse of [true, false]) {
+    const page = checkout({ profile: signedProfile, coarse, offers: welcomePreview });
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+    await tick();
+    await tick();
+    assert.equal(page.elements.guestEmail.value, signedProfile.email);
+    assert.equal(page.elements.guestPhone.value, "9876543210");
+    assert.equal(page.elements.guestEmail.readOnly, true);
+    assert.equal(page.elements.guestPhone.readOnly, true);
+    assert.equal(page.elements.checkoutAuthOptional.hidden, true);
+    assert.equal(page.elements.checkoutSignInLink.hidden, true);
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+    assert.match(page.elements.checkoutWelcomeOffer.innerHTML, /Automatically applied/);
+    assert.doesNotMatch(page.elements.checkoutWelcomeOffer.innerHTML, /Enter your email|check your first-order gift/);
+    assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+    assert.equal(page.nameUpdates.length, 1);
+    assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 1);
+    assert.equal(page.requests.filter(request => request.route === "/api/coupons/offers").length, 1);
+    const quote = page.requests.filter(request => request.route === "/api/coupons/offers").at(-1);
+    assert.equal(quote.body.guest.email, signedProfile.email);
+    assert.equal(quote.body.guest.phone, "9876543210");
+    assert.equal(quote.headers.Authorization, "Bearer signed-in-token");
+  }
+});
+
+test("signed-in returning buyer sees flat offers without any welcome block or welcome message", async () => {
+  const page = checkout({ profile: signedProfile, offers: body => welcomePreview(body, true) });
+  await tick();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.innerHTML, "");
+  assert.doesNotMatch(page.elements.checkoutCouponMessage.textContent, /WELCOME100|first-order gift/);
+  assert.match(page.elements.checkoutCouponOffers.innerHTML, /FLAT150.*FLAT200.*FLAT300/);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
+
+test("saved-page restoration rechecks a completed purchase with the same account and cart", async () => {
+  let purchased = false;
+  const page = checkout({ profile: signedProfile, offers: body => welcomePreview(body, purchased) });
+  await tick();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  const before = page.requests.filter(request => request.route === "/api/coupons/offers").length;
+  purchased = true;
+  page.windowEvents.emit("pageshow", { persisted: true });
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  await tick();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.innerHTML, "");
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  assert.ok(page.requests.filter(request => request.route === "/api/coupons/offers").length > before);
+});
+
+test("late profile responses from an old login cannot replace the current account or reveal welcome", async () => {
+  const oldResponses = [];
+  const returningProfile = { ...signedProfile, email: "returning@example.test", phoneNorm: "9988776655", displayName: "Returning Customer" };
+  const page = checkout({
+    me: init => init.headers.Authorization === "Bearer signed-in-token" ? new Promise(resolve => oldResponses.push(resolve)) : response(returningProfile),
+    offers: body => welcomePreview(body, body.guest.email === returningProfile.email),
+  });
+  await tick();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  page.values.set("craftguruGuestToken", "new-account-token");
+  page.windowEvents.emit("craftguruAuthChanged");
+  await tick();
+  for (const resolve of oldResponses) resolve(response(signedProfile));
+  await tick();
+  assert.equal(page.elements.guestEmail.value, returningProfile.email);
+  assert.equal(page.elements.guestPhone.value, returningProfile.phoneNorm);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
+
+test("email-only accounts remain signed in and welcome applies when checkout receives a real mobile", async () => {
+  const page = checkout({ profile: { ...signedProfile, phoneNorm: "h_email_only" }, offers: welcomePreview });
+  await tick();
+  assert.equal(page.elements.checkoutAuthOptional.hidden, true);
+  assert.equal(page.elements.guestEmail.readOnly, true);
+  assert.equal(page.elements.guestPhone.readOnly, false);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  page.elements.guestPhone.value = "9876543210";
+  page.elements.guestPhone.emit("input");
+  await new Promise(resolve => setTimeout(resolve, 400));
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+});
+
+test("switching to an account without a saved mobile clears the previous account's mobile", async () => {
+  const options = { profile: signedProfile, offers: welcomePreview };
+  const page = checkout(options);
+  await tick();
+  assert.equal(page.elements.guestPhone.value, "9876543210");
+  options.profile = { ...signedProfile, email: "other@example.test", displayName: "Other Customer", phoneNorm: "h_email_only" };
+  page.values.set("craftguruGuestToken", "other-account-token");
+  page.windowEvents.emit("craftguruAuthChanged");
+  await tick();
+  assert.equal(page.elements.guestEmail.value, "other@example.test");
+  assert.equal(page.elements.guestPhone.value, "");
+  assert.equal(page.elements.guestPhone.readOnly, false);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
+
+const offerRequests = page => page.requests.filter(request => request.route.startsWith("/api/coupons/"));
+function repeatCheckoutEvents(page, count = 30) {
+  for (let i = 0; i < count; i++) {
+    for (const event of ["craftguruAuthChanged", "resinCartChanged", "craftguruCatalogCategoriesMerged", "craftguruCatalogVendorProductsMerged", "craftguruCatalogPricesMerged"]) page.windowEvents.emit(event);
+    page.elements.guestEmail.emit("input");
+    page.elements.guestEmail.emit("change");
+    page.elements.guestPhone.emit("input");
+    page.elements.guestPhone.emit("change");
+    page.windowEvents.emit("pageshow", { persisted: false });
+  }
+}
+
+test("email-only checkout makes one offer request despite repeated auth, contact and catalog events", async () => {
+  const page = checkout({ profile: { ...signedProfile, phoneNorm: "h_email_only" }, offers: welcomePreview });
+  await tick();
+  assert.equal(offerRequests(page).length, 1);
+  assert.equal(offerRequests(page)[0].body.guest.phone, "");
+  repeatCheckoutEvents(page);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  assert.equal(offerRequests(page).length, 1);
+  assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 1);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+});
+
+test("initial offers wait for one shared account lookup and include the restored flat code", async () => {
+  let resolveProfile;
+  const page = checkout({ me: () => new Promise(resolve => { resolveProfile = resolve; }), savedCoupon: "FLAT300", offers: welcomePreview });
+  repeatCheckoutEvents(page);
+  assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 1);
+  assert.equal(offerRequests(page).length, 0);
+  resolveProfile(response(signedProfile));
+  await tick();
+  assert.equal(offerRequests(page).length, 1);
+  assert.equal(offerRequests(page)[0].body.code, "FLAT300");
+  assert.equal(offerRequests(page)[0].body.guest.email, signedProfile.email);
+  assert.equal(offerRequests(page)[0].body.guest.phone, "9876543210");
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹400");
+});
+
+test("identical in-flight checks share one request and completed checks reuse the result", async () => {
+  let resolveOffer;
+  let payload;
+  const page = checkout({ profile: signedProfile, offers: body => { payload = body; return new Promise(resolve => { resolveOffer = resolve; }); } });
+  await tick();
+  const pending = Array.from({ length: 30 }, () => page.api.requestCouponQuote("", true));
+  repeatCheckoutEvents(page);
+  assert.equal(offerRequests(page).length, 1);
+  resolveOffer(welcomePreview(payload));
+  await Promise.all(pending);
+  await tick();
+  for (let i = 0; i < 30; i++) {
+    await page.api.requestCouponQuote("", true);
+    await page.api.removeCoupon(); // an automatic gift cannot be removed
+  }
+  assert.equal(offerRequests(page).length, 1);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+});
+
+test("coupon changes request once and repeated Apply clicks reuse the selected coupon", async () => {
+  const page = checkout({ profile: signedProfile, offers: welcomePreview });
+  await tick();
+  for (const [code, amount] of [["FLAT150", 250], ["FLAT300", 400]]) {
+    const before = offerRequests(page).length;
+    page.elements.checkoutCouponCode.value = code;
+    page.elements.checkoutCouponApply.click();
+    await tick();
+    for (let i = 0; i < 30; i++) page.elements.checkoutCouponApply.click();
+    await tick();
+    assert.equal(offerRequests(page).length, before + 1);
+    assert.equal(page.elements.valCouponDiscount.textContent, "− ₹" + amount);
+  }
+  await page.api.removeCoupon();
+  assert.equal(offerRequests(page).length, 4);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+});
+
+test("a real cart change requests once and late old responses cannot restore its old coupon", async () => {
+  const pending = [];
+  const page = checkout({ profile: signedProfile, offers: body => new Promise(resolve => pending.push({ body, resolve })) });
+  await tick();
+  page.lines[0].qty = 2;
+  page.windowEvents.emit("resinCartChanged");
+  repeatCheckoutEvents(page);
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(pending[1].body.items[0].qty, 2);
+  pending[1].resolve(welcomePreview(pending[1].body, true));
+  await tick();
+  pending[0].resolve(welcomePreview(pending[0].body));
+  await tick();
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
+
+test("429 and server failures never fall back or retry on unrelated checkout events", async () => {
+  for (const status of [429, 503]) {
+    const page = checkout({ profile: signedProfile, savedCoupon: "FLAT300", offers: () => response({ ok: false, error: "Offers temporarily unavailable" }, status) });
+    await tick();
+    repeatCheckoutEvents(page);
+    await new Promise(resolve => setTimeout(resolve, 400));
+    assert.equal(offerRequests(page).length, 1);
+    assert.equal(page.elements.checkoutCouponApply.disabled, false);
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+    assert.match(page.elements.checkoutCouponMessage.textContent, /temporarily unavailable/);
+  }
+});
+
+test("saving an address refreshes addresses without requesting unchanged coupon offers", async () => {
+  const page = checkout({ profile: signedProfile, offers: welcomePreview });
+  await tick();
+  page.steps.payment.click();
+  await tick();
+  assert.equal(page.requests.filter(request => request.route === "/api/guest/me").length, 2);
+  assert.equal(offerRequests(page).length, 1);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.equal(page.elements.ckSectionPayment.hidden, false);
+});
+
+test("contact edits debounce to one check and repeated input/change events do not restart it", async () => {
+  const page = checkout({ profile: { ...signedProfile, phoneNorm: "h_email_only" }, offers: welcomePreview });
+  await tick();
+  for (const phone of ["9", "98", "987", "9876", "98765", "987654", "9876543", "98765432", "987654321"]) {
+    page.elements.guestPhone.value = phone;
+    page.elements.guestPhone.emit("input");
+    page.elements.guestPhone.emit("change");
+  }
+  assert.equal(offerRequests(page).length, 1);
+  page.elements.guestPhone.value = "9876543210";
+  for (let i = 0; i < 30; i++) {
+    page.elements.guestPhone.emit("input");
+    page.elements.guestPhone.emit("change");
+  }
+  await new Promise(resolve => setTimeout(resolve, 400));
+  repeatCheckoutEvents(page);
+  await new Promise(resolve => setTimeout(resolve, 400));
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+});
+
+test("offline offer failures wait for reconnect and repeated online events share one retry", async () => {
+  let online = false;
+  let resolveRetry;
+  let payload;
+  const page = checkout({ profile: signedProfile, offers: body => {
+    if (!online) return Promise.reject(new TypeError("Offline"));
+    payload = body;
+    return new Promise(resolve => { resolveRetry = resolve; });
+  } });
+  await tick();
+  repeatCheckoutEvents(page);
+  assert.equal(offerRequests(page).length, 1);
+  online = true;
+  for (let i = 0; i < 30; i++) page.windowEvents.emit("online");
+  assert.equal(offerRequests(page).length, 2);
+  resolveRetry(welcomePreview(payload));
+  await tick();
+  for (let i = 0; i < 30; i++) page.windowEvents.emit("online");
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+});
+
+test("an invalid manual coupon reuses the checked automatic gift instead of another offers call", async () => {
+  const page = checkout({ profile: signedProfile, offers: body => body.code === "INVALID" ? response({ ok: false, error: "This coupon is not available." }, 400) : welcomePreview(body) });
+  await tick();
+  page.elements.checkoutCouponCode.value = "INVALID";
+  page.elements.checkoutCouponApply.click();
+  await tick();
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(page.requests.filter(request => request.route === "/api/coupons/offers").length, 1);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+  assert.match(page.elements.checkoutCouponMessage.textContent, /not available/);
+});
+
+test("restoring a changed cart checks fresh purchase history once and clears the previous flat", async () => {
+  let purchased = false;
+  const page = checkout({ profile: signedProfile, savedCoupon: "FLAT300", offers: body => welcomePreview(body, purchased) });
+  await tick();
+  purchased = true;
+  page.lines[0].qty = 2;
+  page.windowEvents.emit("pageshow", { persisted: true });
+  await tick();
+  repeatCheckoutEvents(page);
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(offerRequests(page)[1].body.code, "");
+  assert.equal(offerRequests(page)[1].body.items[0].qty, 2);
+  assert.equal(page.elements.checkoutCouponCode.value, "");
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
+
+test("page restoration replaces an old pending offer with one fresh history check", async () => {
+  const pending = [];
+  const page = checkout({ profile: signedProfile, offers: body => new Promise(resolve => pending.push({ body, resolve })) });
+  await tick();
+  assert.equal(offerRequests(page).length, 1);
+  page.windowEvents.emit("pageshow", { persisted: true });
+  await tick();
+  repeatCheckoutEvents(page);
+  assert.equal(offerRequests(page).length, 2);
+  pending[1].resolve(welcomePreview(pending[1].body, true));
+  await tick();
+  pending[0].resolve(welcomePreview(pending[0].body));
+  await tick();
+  assert.equal(offerRequests(page).length, 2);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+});
 
 for (const coarse of [true, false]) for (const method of ["razorpay", "cod"]) {
   test(`${coarse ? "touch" : "desktop"} ${method}: cancellation unlocks navigation and retry clears old UI`, async () => {

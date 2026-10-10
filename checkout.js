@@ -35,6 +35,9 @@
   var couponIdentityKey = "";
   var welcomeStatus = null;
   var couponRefreshTimer = null;
+  var couponScheduledIdentityKey = "";
+  var couponQuoteInFlight = null;
+  var couponQuoteCache = null;
   var couponOffers = [
     { code: "FLAT150", discountValue: 150, minSubtotal: 2000, isActive: true },
     { code: "FLAT200", discountValue: 200, minSubtotal: 2500, isActive: true },
@@ -95,6 +98,12 @@
   var GUEST_TOKEN_KEY = "craftguruGuestToken";
   var GUEST_SESSION_NAME_KEY = "cg_session_name";
   var checkoutSessionRefreshId = 0;
+  var checkoutSessionLoading = false;
+  var checkoutProfileEmail = "";
+  var guestSessionRequest = null;
+  var checkoutSessionAuthorization = null;
+  var checkoutSessionUiPromise = null;
+  var checkoutSessionNeedsRetry = false;
   var editingSavedAddressId = "";
   var PAYMENT_RECOVERY_KEY = "cgPaymentRecoveryV1";
   var PAYMENT_RECOVERY_MAX_AGE_MS = 48 * 60 * 60 * 1000;
@@ -216,6 +225,9 @@
 
   function setCheckoutSessionName(name) {
     var value = String(name || "").trim().slice(0, 200);
+    // The auth helper emits craftguruAuthChanged; unchanged names must not
+    // restart session loading and coupon validation indefinitely.
+    if (checkoutSessionName() === value) return;
     try {
       if (window.CRAFT_AUTH_DB && typeof window.CRAFT_AUTH_DB.setSessionName === "function") {
         window.CRAFT_AUTH_DB.setSessionName(value);
@@ -237,14 +249,18 @@
     return h;
   }
 
-  function loadGuestSession() {
+  function loadGuestSession(force) {
     var base = billApiBase();
     if (!base) {
       return Promise.resolve(null);
     }
     var token = "";
     try { token = String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim(); } catch (_) {}
-    return fetch(base + "/api/guest/me", {
+    if (!token) return Promise.resolve(null);
+    if (!force && guestSessionRequest && guestSessionRequest.token === token) return guestSessionRequest.promise;
+    var sessionRequest = { token: token, promise: null };
+    guestSessionRequest = sessionRequest;
+    sessionRequest.promise = fetch(base + "/api/guest/me", {
       method: "GET",
       headers: guestAuthHeaders(token),
       cache: "no-store",
@@ -257,11 +273,11 @@
       })
       .then(function (o) {
         var j = o.x.json;
+        var stillSameToken = false;
+        try { stillSameToken = String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim() === token; } catch (_) {}
+        if (!stillSameToken) return null;
         if (o.x.okHttp && j.ok) return j;
         if (o.status === 401 || (j && j.code === "NO_SESSION")) {
-          var stillSameToken = false;
-          try { stillSameToken = String(localStorage.getItem(GUEST_TOKEN_KEY) || "").trim() === token; } catch (_) {}
-          if (!stillSameToken) return null;
           try {
             localStorage.removeItem(GUEST_TOKEN_KEY);
             localStorage.removeItem(GUEST_SESSION_EMAIL_KEY);
@@ -275,7 +291,12 @@
       })
       .catch(function () {
         return null;
+      })
+      .then(function (me) {
+        if (guestSessionRequest === sessionRequest) guestSessionRequest = null;
+        return me;
       });
+    return sessionRequest.promise;
   }
 
   function applySavedAddress(addr) {
@@ -571,7 +592,7 @@
       .then(function () {
         /* Re-fetch so the saved-address cards reflect an edit before the
            customer returns to checkout. */
-        refreshGuestCheckoutUi();
+        refreshGuestCheckoutUi(true);
         if (navigationId === checkoutNavigationId) unlockPaymentSection();
       })
       .catch(function (err) {
@@ -757,17 +778,41 @@
     }
   }
 
-  function refreshGuestCheckoutUi() {
+  function refreshGuestCheckoutUi(forceProfile, refreshHistory) {
+    var sessionAuthorization = guestAuthHeaders().Authorization || "";
+    var sessionChanged = checkoutSessionAuthorization !== sessionAuthorization;
+    // Name/header updates reuse the current session. Only a real session
+    // change, saved-address refresh or page restoration needs another lookup.
+    if (!sessionChanged && checkoutSessionUiPromise && !forceProfile && !refreshHistory) return checkoutSessionUiPromise;
+    if (!sessionChanged && !forceProfile) {
+      var currentText = document.getElementById("checkoutGuestSessionText");
+      if (currentText) currentText.textContent = "Signed in as " + (checkoutSessionName() || "My account") + ".";
+      return Promise.resolve();
+    }
     var refreshId = ++checkoutSessionRefreshId;
+    checkoutSessionAuthorization = sessionAuthorization;
+    checkoutSessionLoading = true;
+    checkoutSessionNeedsRetry = false;
+    if (sessionChanged || refreshHistory) {
+      couponRequestId++;
+      couponQuoteCache = null;
+      welcomeStatus = null;
+      appliedCoupon = null;
+      couponProductValue = null;
+      couponChecking = true;
+    }
+    refreshCheckout();
     var bar = document.getElementById("checkoutGuestSessionBar");
     var txt = document.getElementById("checkoutGuestSessionText");
     var fs = document.getElementById("checkoutSavedAddrFieldset");
     var guestEmail = document.getElementById("guestEmail");
     var guestPhone = document.getElementById("guestPhone");
-    loadGuestSession().then(function (me) {
+    checkoutSessionUiPromise = loadGuestSession(forceProfile).then(function (me) {
       /* Ignore a response for an earlier anonymous/expired session. A later
          sign-in must own the checkout UI instead of being overwritten by it. */
       if (refreshId !== checkoutSessionRefreshId) return;
+      if (sessionAuthorization !== (guestAuthHeaders().Authorization || "")) return refreshGuestCheckoutUi();
+      checkoutSessionNeedsRetry = !!(sessionAuthorization && !me);
       if (me && me.email) {
         if (bar) {
           bar.hidden = false;
@@ -786,9 +831,10 @@
           guestEmail.value = me.email;
           guestEmail.readOnly = true;
         }
-        var pn = me.phoneNorm != null ? String(me.phoneNorm).trim() : "";
+        var pn = normalizeIndiaMobile10(me.phoneNorm);
         if (guestPhone) {
-          var disp = formatIndiaPhoneDisplay10(pn);
+          if (checkoutProfileEmail && checkoutProfileEmail !== normalizeCheckoutEmail(me.email)) guestPhone.value = "";
+          var disp = /^[6-9]\d{9}$/.test(pn) ? formatIndiaPhoneDisplay10(pn) : "";
           if (disp) {
             guestPhone.value = disp;
             guestPhone.readOnly = true;
@@ -796,6 +842,7 @@
             guestPhone.readOnly = false;
           }
         }
+        checkoutProfileEmail = normalizeCheckoutEmail(me.email);
         if (me.displayName && els.guestName) {
           els.guestName.value = me.displayName;
         }
@@ -831,8 +878,14 @@
           renderSavedAddressCards([]);
         }
       }
-      refreshCustomerCoupons();
+      if (refreshId !== checkoutSessionRefreshId) return;
+      checkoutSessionLoading = false;
+      refreshCheckout();
+      return refreshCustomerCoupons(sessionChanged || refreshHistory);
+    }).then(function () {
+      if (refreshId === checkoutSessionRefreshId) checkoutSessionUiPromise = null;
     });
+    return checkoutSessionUiPromise;
   }
 
   var GUEST_SESSION_EMAIL_KEY = "cg_session_email";
@@ -1336,7 +1389,7 @@
           throw new Error("Server did not return valid JSON. Is the bill API running?");
         }
       }
-      return { okHttp: res.ok, json: j };
+      return { okHttp: res.ok, status: res.status, json: j };
     });
   }
 
@@ -1700,23 +1753,32 @@
       return '<button type="button" class="checkout-offer' + (selected ? ' is-selected' : '') + '" data-coupon-offer="' + escapeAttr(offer.code) + '" aria-pressed="' + selected + '"' + (!eligible || couponChecking ? ' disabled' : '') + '><span class="checkout-offer__amount">' + fmt(offer.discountValue) + ' OFF</span><strong>' + escapeAttr(offer.code) + '</strong><span>On shopping above ' + fmt(offer.minSubtotal) + '</span><span class="checkout-offer__action">' + (selected ? '✓ Applied' : eligible ? 'Apply coupon →' : 'Add ' + fmt(remaining) + ' to unlock') + '</span></button>';
     }).join("");
     if (els.welcomeOffer) {
+      var showWelcome = CART.countItems() > 0 && !checkoutSessionLoading && !couponChecking && couponIdentityKey === customerCouponIdentityKey() && welcomeStatus && welcomeStatus.firstOrder === true;
+      els.welcomeOffer.hidden = !showWelcome;
+      if (!showWelcome) {
+        els.welcomeOffer.innerHTML = "";
+        els.welcomeOffer.classList.toggle("is-applied", false);
+        return;
+      }
       var hasWelcome = appliedCoupon && appliedCoupon.code.split("+").indexOf("WELCOME100") >= 0;
-      var guest = buildGuestPayloadFromForm();
-      var complete = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(guest.email) && /^[6-9]\d{9}$/.test(guest.phone);
-      var message = hasWelcome ? '✓ Automatically applied · You save ₹100' : value <= 500 ? 'Shop above ₹500 to unlock your first-order gift.' : !complete ? 'Enter your email and mobile to check your first-order gift.' : couponChecking ? 'Checking your first-order gift…' : welcomeStatus && !welcomeStatus.eligible ? 'First transaction only · One use per email and mobile.' : '₹100 off your first transaction, automatically.';
-      if (complete && selectedCouponCode && couponOffers.every(function (offer) { return offer.code !== selectedCouponCode; })) message = 'WELCOME100 pairs with FLAT150, FLAT200 or FLAT300. Choose one to keep your first-order gift.';
+      var message = hasWelcome ? '✓ Automatically applied · You save ₹100' : value <= 500 ? 'Shop above ₹500 to unlock your first-order gift.' : '₹100 off your first transaction, automatically.';
+      if (selectedCouponCode && couponOffers.every(function (offer) { return offer.code !== selectedCouponCode; })) message = 'WELCOME100 pairs with FLAT150, FLAT200 or FLAT300. Choose one to keep your first-order gift.';
       els.welcomeOffer.classList.toggle("is-applied", !!hasWelcome);
       els.welcomeOffer.innerHTML = '<span class="checkout-welcome__icon" aria-hidden="true">✦</span><div><strong>WELCOME100 <span class="checkout-welcome__badge">First order gift</span></strong><p>' + escapeAttr(message) + '</p></div><span class="checkout-welcome__amount">₹100 OFF</span>';
     }
   }
 
-  function refreshCustomerCoupons() {
-    if (couponIdentityKey === customerCouponIdentityKey() && couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
-    return requestCouponQuote(selectedCouponCode, true);
+  function refreshCustomerCoupons(force) {
+    if (checkoutSessionLoading) return Promise.resolve();
+    if (!force && couponIdentityKey === customerCouponIdentityKey() && couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return couponQuoteInFlight && couponQuoteInFlight.requestId === couponRequestId ? couponQuoteInFlight.promise : Promise.resolve();
+    return requestCouponQuote(selectedCouponCode, true, force);
   }
 
   function scheduleCustomerCouponRefresh() {
+    var identityKey = customerCouponIdentityKey();
+    if (identityKey === couponIdentityKey || (couponRefreshTimer && identityKey === couponScheduledIdentityKey)) return;
     window.clearTimeout(couponRefreshTimer);
+    couponScheduledIdentityKey = identityKey;
     // Clear the previous customer's discount immediately, before the debounce.
     couponRequestId++;
     couponIdentityKey = "";
@@ -1725,7 +1787,7 @@
     welcomeStatus = null;
     couponChecking = true;
     refreshCheckout();
-    couponRefreshTimer = window.setTimeout(function () { refreshCustomerCoupons(); }, 350);
+    couponRefreshTimer = window.setTimeout(function () { couponRefreshTimer = null; refreshCustomerCoupons(); }, 350);
   }
 
   function startOtpCooldown(button, msgEl) {
@@ -1751,41 +1813,76 @@
     return requestCouponQuote(code, false);
   }
 
-  function requestCouponQuote(code, automatic) {
+  function applyCouponQuoteResult(body) {
+    appliedCoupon = body.coupon || null;
+    welcomeStatus = body.welcome || null;
+    if (Array.isArray(body.offers)) couponOffers = body.offers;
+    var productValue = Number(body.productValue);
+    couponProductValue = Number.isFinite(productValue) && productValue >= 0 ? productValue : null;
+    try { if (selectedCouponCode) sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, selectedCouponCode); else sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
+    if (els.couponCode) els.couponCode.value = selectedCouponCode;
+    if (els.couponRemove) els.couponRemove.hidden = !selectedCouponCode;
+    couponMessage(appliedCoupon ? appliedCoupon.code.replace(/\+/g, " + ") + " applied — you save " + fmt(couponPreviewDiscount(couponProductValue != null ? couponProductValue : CART.subtotal())) + "." : "Choose an eligible offer above.", false);
+    refreshCheckout();
+  }
+
+  function finishCouponQuote() {
+    couponChecking = false;
+    if (els.couponCode) els.couponCode.disabled = false;
+    if (els.couponApply) els.couponApply.disabled = false;
+    renderCouponOffers();
+  }
+
+  function requestCouponQuote(code, automatic, force) {
     window.clearTimeout(couponRefreshTimer);
+    couponRefreshTimer = null;
+    code = String(code || "").trim().toUpperCase().replace(/\s+/g, "");
+    if (checkoutSessionLoading) return Promise.resolve();
     var items = buildBillItemsForApi();
-    if (!items.length) { couponMessage("Your cart is empty.", true); return; }
+    if (!items.length) { couponChecking = false; renderCouponOffers(); couponMessage("Your cart is empty.", true); return; }
     var base = billApiBase();
-    if (!base) { couponMessage("Coupon service is temporarily unavailable.", true); return; }
+    if (!base) { couponChecking = false; renderCouponOffers(); couponMessage("Coupon service is temporarily unavailable.", true); return; }
+    var cartKey = cartKeyForCoupon(items);
+    var identityKey = customerCouponIdentityKey();
+    var quoteKey = JSON.stringify([cartKey, identityKey, guestAuthHeaders().Authorization || "", code]);
+    // These are the only inputs that affect coupon eligibility. Shipping,
+    // display names and repeated UI events must not produce more requests.
+    if (couponQuoteInFlight && couponQuoteInFlight.key === quoteKey && couponQuoteInFlight.requestId === couponRequestId) return couponQuoteInFlight.promise;
     var requestId = ++couponRequestId;
-    couponChecking = true;
-    couponCartKey = cartKeyForCoupon(items);
-    couponIdentityKey = customerCouponIdentityKey();
+    couponCartKey = cartKey;
+    couponIdentityKey = identityKey;
     selectedCouponCode = code.split("+").filter(function (part) { return part !== "WELCOME100"; }).join("+");
+    pendingCouponRetry = false;
+    if (!force && couponQuoteCache && couponQuoteCache.key === quoteKey) {
+      couponChecking = false;
+      applyCouponQuoteResult(couponQuoteCache.body);
+      finishCouponQuote();
+      return Promise.resolve();
+    }
+    if (force) couponQuoteCache = null;
+    couponChecking = true;
     appliedCoupon = null;
     couponProductValue = null;
+    welcomeStatus = null;
     if (els.couponCode) { els.couponCode.value = selectedCouponCode; els.couponCode.disabled = true; }
     if (els.couponRemove) els.couponRemove.hidden = !selectedCouponCode;
     if (els.couponApply) els.couponApply.disabled = true;
     couponMessage("Checking offers…", false);
-    pendingCouponRetry = false;
     refreshCheckout();
-    return fetch(base + (automatic ? "/api/coupons/offers" : "/api/coupons/validate"), { method: "POST", headers: guestAuthHeaders(), cache: "no-store", body: JSON.stringify({ code: code, items: items, guest: buildGuestPayloadFromForm() }) })
+    var flight = { key: quoteKey, requestId: requestId, promise: null };
+    couponQuoteInFlight = flight;
+    flight.promise = fetch(base + (automatic ? "/api/coupons/offers" : "/api/coupons/validate"), { method: "POST", headers: guestAuthHeaders(), cache: "no-store", body: JSON.stringify({ code: code, items: items, guest: buildGuestPayloadFromForm() }) })
       .then(function (res) { return parseApiJson(res); })
       .then(function (x) {
         if (requestId !== couponRequestId) return;
         if (couponCartKey !== cartKeyForCoupon(buildBillItemsForApi()) || couponIdentityKey !== customerCouponIdentityKey()) return refreshCustomerCoupons();
-        if (!x.okHttp || !x.json.ok || (code && !x.json.coupon)) throw new Error((x.json && x.json.error) || "This coupon is not available.");
-        appliedCoupon = x.json.coupon || null;
-        welcomeStatus = x.json.welcome || null;
-        if (Array.isArray(x.json.offers)) couponOffers = x.json.offers;
-        var productValue = Number(x.json.productValue);
-        couponProductValue = Number.isFinite(productValue) && productValue >= 0 ? productValue : null;
-        try { if (selectedCouponCode) sessionStorage.setItem(CHECKOUT_COUPON_STORAGE_KEY, selectedCouponCode); else sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
-        if (els.couponCode) els.couponCode.value = selectedCouponCode;
-        if (els.couponRemove) els.couponRemove.hidden = !selectedCouponCode;
-        couponMessage(appliedCoupon ? appliedCoupon.code.replace(/\+/g, " + ") + " applied — you save " + fmt(couponPreviewDiscount(couponProductValue != null ? couponProductValue : CART.subtotal())) + "." : "Choose an eligible offer above.", false);
-        refreshCheckout();
+        if (!x.okHttp || !x.json.ok || (code && !x.json.coupon)) {
+          var quoteError = new Error((x.json && x.json.error) || "This coupon is not available.");
+          quoteError.serviceUnavailable = x.status === 429 || x.status >= 500;
+          throw quoteError;
+        }
+        couponQuoteCache = { key: quoteKey, body: x.json };
+        applyCouponQuoteResult(x.json);
       })
       .catch(function (err) {
         if (requestId !== couponRequestId) return;
@@ -1795,7 +1892,12 @@
           couponMessage("We could not check this coupon offline. It will retry when you reconnect.", true);
           return;
         }
-        couponCartKey = "";
+        // Server failures must not trigger a fallback request or turn every
+        // subsequent render/catalog event into another automatic retry.
+        if (err && err.serviceUnavailable) {
+          couponMessage(String(err.message || "Could not check offers. Please try again."), true);
+          return;
+        }
         selectedCouponCode = "";
         try { sessionStorage.removeItem(CHECKOUT_COUPON_STORAGE_KEY); } catch (_) {}
         if (els.couponRemove) els.couponRemove.hidden = true;
@@ -1807,15 +1909,15 @@
         couponMessage(message, true);
       })
       .then(function () {
+        if (couponQuoteInFlight === flight) couponQuoteInFlight = null;
         if (requestId !== couponRequestId) return;
-        couponChecking = false;
-        if (els.couponCode) els.couponCode.disabled = false;
-        if (els.couponApply) els.couponApply.disabled = false;
-        renderCouponOffers();
+        finishCouponQuote();
       });
+    return flight.promise;
   }
 
   function removeCoupon() {
+    if (!selectedCouponCode) return els.welcomeOffer ? refreshCustomerCoupons() : Promise.resolve();
     couponRequestId++;
     couponChecking = false;
     couponCartKey = "";
@@ -1833,15 +1935,17 @@
     if (els.welcomeOffer) return requestCouponQuote("", true);
   }
 
-  function restoreCouponAfterReload() {
+  function restoreCouponAfterReload(deferQuote) {
     var saved = "";
     try { saved = String(sessionStorage.getItem(CHECKOUT_COUPON_STORAGE_KEY) || "").trim(); } catch (_) {}
-    if (saved && els.couponCode) { els.couponCode.value = saved.split("+").filter(function (part) { return part !== "WELCOME100"; }).join("+"); return requestCouponQuote(els.couponCode.value, true); }
+    if (saved && els.couponCode) { selectedCouponCode = saved.split("+").filter(function (part) { return part !== "WELCOME100"; }).join("+"); els.couponCode.value = selectedCouponCode; }
+    if (deferQuote) return;
+    if (saved && els.couponCode) return requestCouponQuote(selectedCouponCode, true);
     if (els.welcomeOffer) return requestCouponQuote("", true);
   }
 
-  function clearCouponForCartChange() {
-    if (!couponCartKey) { if (els.welcomeOffer) return refreshCustomerCoupons(); return; }
+  function clearCouponForCartChange(deferQuote) {
+    if (!couponCartKey) { if (!deferQuote && els.welcomeOffer) return refreshCustomerCoupons(); return; }
     if (couponCartKey === cartKeyForCoupon(buildBillItemsForApi())) return;
     couponRequestId++;
     couponChecking = false;
@@ -1856,7 +1960,7 @@
     if (els.couponApply) els.couponApply.disabled = false;
     couponMessage("Cart updated. Choose a coupon for your new total.", false);
     refreshCheckout();
-    if (els.welcomeOffer && CART.countItems() > 0) return requestCouponQuote("", true);
+    if (!deferQuote && els.welcomeOffer && CART.countItems() > 0) return requestCouponQuote("", true);
     couponMessage("", false);
   }
 
@@ -2501,14 +2605,17 @@
     window.addEventListener("pageshow", function (event) {
       if (!event.persisted) return;
       closePayModal();
-      clearCouponForCartChange();
+      clearCouponForCartChange(true);
       refreshCheckout();
       renderPaymentRecoveryBanner();
+      refreshGuestCheckoutUi(true, true);
     });
     window.addEventListener("online", function () {
-      if (!pendingCouponRetry) return;
+      if (!pendingCouponRetry && !checkoutSessionNeedsRetry) return;
+      pendingCouponRetry = false;
+      if (checkoutSessionNeedsRetry) { refreshGuestCheckoutUi(true, true); return; }
       couponMessage("Back online. Checking your coupon again…", false);
-      requestCouponQuote(selectedCouponCode, true);
+      requestCouponQuote(selectedCouponCode, true, true);
     });
 
     var phoneInput = document.getElementById("guestPhone");
@@ -2542,8 +2649,10 @@
       });
     }
 
+    // Restore the selection first, then quote once after account hydration.
+    restoreCouponAfterReload(true);
+    refreshGuestCheckoutUi();
     goToDetailsStep();
-    restoreCouponAfterReload();
     checkPaymentReadiness();
     renderPaymentRecoveryBanner();
 
@@ -2881,7 +2990,6 @@
         refreshCheckout();
       });
     }
-    refreshGuestCheckoutUi();
     initGooglePlacesAutocomplete();
 
     var exit = document.getElementById("checkoutPageExit");

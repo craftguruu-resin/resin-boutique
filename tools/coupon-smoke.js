@@ -10,6 +10,7 @@ const root = path.resolve(__dirname, "..");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const pricing = require("../server/order-pricing.js");
 const call = (fn, ...args) => new Promise((resolve, reject) => fn(...args, (err, value) => err ? reject(err) : resolve(value)));
+const checkoutQuote = (db, code, subtotal, guest) => new Promise((resolve, reject) => db.resolveCheckoutCoupons(code, subtotal, guest, (err, coupon, welcome) => err ? reject(err) : resolve({ coupon, welcome })));
 
 function couponStore(withOffers = false) {
   const rows = withOffers ? [["WELCOME100", 100, 500], ["FLAT150", 150, 2000], ["FLAT200", 200, 2500], ["FLAT300", 300, 3000]].map(([code, discount_value, min_subtotal], i) => ({ id: i + 1, code, discount_type: "flat", discount_value, min_subtotal, is_active: true })) : [];
@@ -301,6 +302,79 @@ test("payment context keeps the quoted coupon amount after a vendor edit", async
 
 const newCustomer = { email: "new@example.test", phone: "+91 98765 43210" };
 
+test("first-order history stays separate from the cart threshold and coupon pairing", async () => {
+  const { db } = couponStore(true);
+  await call(db.createCoupon, { code: "FESTIVE10", discountType: "percentage", discountValue: 10 });
+  for (const [code, subtotal, eligible] of [["", 500, false], ["", 500.01, true], ["FESTIVE10", 3200, false]]) {
+    const quote = await checkoutQuote(db, code, subtotal, newCustomer);
+    assert.equal(quote.welcome.firstOrder, true);
+    assert.equal(quote.welcome.identityComplete, true);
+    assert.equal(quote.welcome.eligible, eligible);
+  }
+});
+
+test("returning buyers are identified below ₹500 and with only one known contact", async () => {
+  const { db, identities } = couponStore(true);
+  identities.add("new@example.test");
+  identities.add("9876543210");
+  for (const subtotal of [400, 500, 3200]) for (const guest of [newCustomer, { email: newCustomer.email }, { phone: newCustomer.phone }]) {
+    const quote = await checkoutQuote(db, "", subtotal, guest);
+    assert.equal(quote.welcome.firstOrder, false);
+    assert.equal(quote.welcome.eligible, false);
+    assert.equal(quote.coupon, null);
+  }
+  for (const guest of [{}, { email: "unknown@example.test" }, { phone: "9988776655" }]) {
+    const quote = await checkoutQuote(db, "", 3200, guest);
+    assert.equal(quote.welcome.firstOrder, null);
+    assert.equal(quote.welcome.eligible, false);
+  }
+});
+
+test("returning buyers never render welcome while flat offers remain available", async () => {
+  const { db, identities } = couponStore(true);
+  identities.add("new@example.test");
+  for (const price of [400, 500, 3200]) {
+    const page = checkout(couponApi(db, price), price, "resin-test", newCustomer);
+    await page.api.restoreCouponAfterReload();
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+    assert.equal(page.elements.checkoutWelcomeOffer.innerHTML, "");
+    assert.match(page.elements.checkoutCouponOffers.innerHTML, /FLAT150.*FLAT200.*FLAT300/);
+    if (price > 3000) {
+      page.elements.checkoutCouponCode.value = "FLAT300";
+      await page.api.applyCoupon();
+      assert.equal(page.elements.valCouponDiscount.textContent, "− ₹300");
+      assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+      assert.doesNotMatch(page.elements.checkoutCouponMessage.textContent, /WELCOME100/);
+    }
+  }
+});
+
+test("unknown customers see no welcome prompt and complete first buyers get it automatically", async () => {
+  const { db } = couponStore(true);
+  const page = checkout(couponApi(db, 1000), 1000, "resin-test", { email: newCustomer.email, phone: "" });
+  await page.api.restoreCouponAfterReload();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.innerHTML, "");
+  page.elements.guestPhone.value = newCustomer.phone;
+  await page.api.refreshCustomerCoupons();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.match(page.elements.checkoutWelcomeOffer.innerHTML, /Automatically applied/);
+  assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
+});
+
+test("first buyer gets a threshold message at ₹500 and welcome disappears after purchase", async () => {
+  const { db, identities } = couponStore(true);
+  const page = checkout(couponApi(db, 500), 500, "resin-test", newCustomer);
+  await page.api.restoreCouponAfterReload();
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
+  assert.match(page.elements.checkoutWelcomeOffer.innerHTML, /Shop above ₹500/);
+  assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  identities.add("new@example.test");
+  await page.api.refreshCustomerCoupons(true);
+  assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+  assert.equal(page.elements.checkoutWelcomeOffer.innerHTML, "");
+});
+
 test("permanent offers enforce strictly-above thresholds before discounts", async () => {
   const { db } = couponStore(true);
   for (const [code, threshold, amount] of [["WELCOME100", 500, 100], ["FLAT150", 2000, 150], ["FLAT200", 2500, 200], ["FLAT300", 3000, 300]]) {
@@ -311,6 +385,39 @@ test("permanent offers enforce strictly-above thresholds before discounts", asyn
   }
   assert.equal(await call(db.resolveCheckoutCoupons, "", 500, newCustomer), null);
   assert.equal((await call(db.resolveCheckoutCoupons, "", 500.01, newCustomer)).code, "WELCOME100");
+});
+
+test("welcome validation names only the missing requirements at the actual cart threshold", async () => {
+  const { db } = couponStore(true);
+  for (const guest of [{}, { email: newCustomer.email }, { phone: newCustomer.phone }, { email: newCustomer.email, phone: "123" }]) {
+    for (const subtotal of [400, 500, 500.01, 3200]) {
+      await assert.rejects(checkoutQuote(db, "WELCOME100", subtotal, guest), err => {
+        assert.match(err.message, /requires your email.*valid mobile number/);
+        if (subtotal <= 500) assert.match(err.message, /cart value above ₹500/);
+        else assert.doesNotMatch(err.message, /cart|₹500/);
+        return true;
+      });
+    }
+  }
+  await assert.rejects(checkoutQuote(db, "WELCOME100", 500, newCustomer), err => {
+    assert.equal(err.message, "WELCOME100 requires a cart value above ₹500.");
+    return true;
+  });
+});
+
+test("checkout shows the welcome contact error using server prices without a misleading cart warning", async () => {
+  const { db } = couponStore(true);
+  for (const actualPrice of [400, 500, 500.01, 3200]) {
+    // The cached browser price is deliberately lower than the server price.
+    const page = checkout(couponApi(db, actualPrice), 300, "resin-test", { email: newCustomer.email, phone: "" });
+    page.elements.checkoutCouponCode.value = "WELCOME100";
+    await page.api.applyCoupon();
+    assert.match(page.elements.checkoutCouponMessage.textContent, /requires your email.*valid mobile number/);
+    if (actualPrice <= 500) assert.match(page.elements.checkoutCouponMessage.textContent, /cart value above ₹500/);
+    else assert.doesNotMatch(page.elements.checkoutCouponMessage.textContent, /cart|₹500/);
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, true);
+    assert.equal(page.elements.valCouponDiscount.textContent, "₹0");
+  }
 });
 
 test("either previously used email or mobile blocks welcome independently", async () => {
@@ -353,6 +460,7 @@ test("checkout auto-applies welcome, switches one flat offer, and retains welcom
     await page.api.restoreCouponAfterReload();
     assert.equal(page.elements.valCouponDiscount.textContent, "− ₹100");
     assert.match(page.elements.checkoutCouponOffers.innerHTML, /FLAT150.*FLAT200.*FLAT300/);
+    assert.equal(page.elements.checkoutWelcomeOffer.hidden, false);
     assert.match(page.elements.checkoutWelcomeOffer.innerHTML, /Automatically applied/);
     for (const [code, discount, total] of [["FLAT150", 250, 2655], ["FLAT200", 300, 2610], ["FLAT300", 400, 2520]]) {
       page.elements.checkoutCouponCode.value = code;
