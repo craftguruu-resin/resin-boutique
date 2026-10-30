@@ -16,6 +16,13 @@ body.page-checkout .grid-lines {
   display: none;
 }
 
+/* Keep payment controls clear, including when an older widget script is cached. */
+html.guest-responsive-root body.guest-site.page-checkout #cgSocialFloatStack,
+html.guest-responsive-root body.guest-site.page-checkout #cgWhatsAppWidget,
+html.guest-responsive-root body.guest-site.page-checkout #cgInstagramWidget {
+  display: none !important;
+}
+
 body.page-checkout .sub-main {
   padding-top: 0.5rem;
   min-height: 0;

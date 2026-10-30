@@ -1208,6 +1208,8 @@ function normalizeGuestParcel(g) {
 
 var app = express();
 httpHardening.applyHttpHardening(app);
+var storefrontSeo = require("./storefront-seo.js").createMiddleware();
+app.use(storefrontSeo);
 
 app.use("/api", function (_req, res, next) {
   var requestId = require("crypto").randomBytes(8).toString("hex");
@@ -5231,20 +5233,11 @@ app.get(["/photo-frame-shop.html", "/photo-frame-shop"], function (req, res) {
   if (q.indexOf("#") >= 0) {
     /* keep query only */
   }
-  res.redirect(302, "/photo-frames.html" + q);
+  res.redirect(301, "/photo-frames.html" + q);
 });
 
 /** Server-rendered homepage — categories + featured grid in initial HTML (hydrate client-side). */
-app.get("/", function (req, res) {
-  // Always enter the storefront through the canonical index document.
-  var q = "";
-  try {
-    var ix = String(req.url || "").indexOf("?");
-    if (ix >= 0) q = String(req.url).slice(ix);
-  } catch (_) {}
-  return res.redirect(302, "/index.html" + q);
-});
-app.get("/index.html", homepageSsr.serveHomepage);
+app.get("/", homepageSsr.serveHomepage);
 
 app.use("/media/catalog", versionedStaticCache, express.static(catalogMediaPath.catalogMediaFsRoot(), staticUploadOpts));
 app.use("/media/hero", versionedStaticCache, express.static(catalogMediaPath.heroMediaFsRoot(), staticUploadOpts));
@@ -5255,6 +5248,7 @@ app.use(
   express.static(catalogMediaPath.photoFrameProductsMediaFsRoot(), staticUploadOpts)
 );
 app.use(versionedStaticCache, express.static(siteRoot, staticSiteOpts));
+app.use(storefrontSeo.notFound);
 
 function onServerListen() {
   console.log("Craftguru server listening on http://" + HOST + ":" + PORT);

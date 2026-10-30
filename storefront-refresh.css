@@ -5,10 +5,139 @@
  */
 
 html.guest-responsive-root body.guest-site {
-  background-color: #f7fbfa;
+  --cg-surface-gloss: linear-gradient(145deg, #fff 0%, #fff 42%, #f1faf7 100%);
+  --cg-surface-highlight: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(15, 125, 113, 0.035);
+  --cg-surface-shadow: 0 12px 32px rgba(15, 80, 75, 0.075);
+  background-color: #fff;
   background-image:
-    radial-gradient(circle at 8% 0%, rgba(61, 183, 165, 0.09), transparent 25rem),
-    radial-gradient(circle at 92% 20%, rgba(233, 181, 91, 0.10), transparent 26rem);
+    radial-gradient(ellipse at 8% 0%, rgba(112, 223, 203, 0.15), transparent 35rem),
+    radial-gradient(ellipse at 95% 22%, rgba(245, 219, 160, 0.09), transparent 30rem),
+    linear-gradient(165deg, #fff 0%, #fff 52%, #f1faf7 100%);
+}
+
+/* Crisp white highlights provide the gloss without extra animated or blurred
+   layers. Keep all existing card dimensions, controls and page layouts. */
+html.guest-responsive-root body.guest-site .site-top.site-top--fx {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(247, 253, 250, 0.96));
+  border-bottom-color: rgba(15, 125, 113, 0.075);
+  box-shadow: 0 6px 24px rgba(15, 80, 75, 0.055), inset 0 1px 0 #fff;
+}
+
+/* The logo artwork already contains its own white canvas. Blend that canvas
+   into the header and remove the second tile behind it, keeping the full mark. */
+html.guest-responsive-root body.guest-site .site-top .brand {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.guest-responsive-root body.guest-site .site-top .brand__logo-img {
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  mix-blend-mode: multiply;
+  /* Trim the canvas edge inside the existing 2px image padding. */
+  clip-path: inset(3px);
+}
+
+/* Small rounded controls do not need separate backdrop-filter surfaces; those
+   surfaces can paint square edges around the pills in Safari/WebViews. */
+html.guest-responsive-root body.guest-site .site-top :is(.btn-cart, .home-auth-btn, .home-header-wish, .icon-btn, .cg-mobile-header-action) {
+  background: var(--cg-surface-gloss);
+  background-clip: padding-box;
+  border-color: rgba(15, 125, 113, 0.08);
+  border-radius: 999px;
+  box-shadow: var(--cg-surface-highlight), 0 3px 10px rgba(15, 80, 75, 0.055);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.guest-responsive-root body.guest-site :is(
+  .product-card, .premium-product-card, .plp-card, .rm-card-shop, .pf-product-card,
+  .home-category-rail, .rm-category-rail, .home-cat-hub, .rm-cat-hub,
+  .checkout-panel, .checkout-summary-rail, .checkout-pay-modal__sheet, .checkout-result-popup__card,
+  .cart-drawer, .auth-modal__sheet, .account-dock, .account-order-card,
+  .rm-pdp__detail-card, .rm-pdp-gallery--shell, .product-info,
+  .about-band, .about-signal-card, .connect-premium-card,
+  .ck-trust-bar__item, .ck-trust-icon, .cg-category-section__trust-item
+) {
+  background: var(--cg-surface-gloss);
+  background-clip: padding-box;
+  border-color: rgba(15, 125, 113, 0.075);
+  box-shadow: var(--cg-surface-highlight), var(--cg-surface-shadow);
+}
+
+html.guest-responsive-root body.page-home #categories,
+html.guest-responsive-root body.page-home #collections {
+  background: var(--cg-surface-gloss);
+  border-color: rgba(15, 125, 113, 0.075);
+  box-shadow: var(--cg-surface-highlight), var(--cg-surface-shadow);
+}
+
+html.guest-responsive-root body.guest-site .band-shop,
+html.guest-responsive-root body.guest-site .sub-main {
+  background: transparent;
+}
+
+html.guest-responsive-root body.guest-site :is(.ck-trust-bar, .ck-trust-icons, .cg-category-section__trust),
+html.guest-responsive-root body.page-checkout .checkout-auth-details:not([open]) {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+/* Phone accordions can remain mounted when the viewport grows. Style their
+   actual buttons at every width so they never fall back to grey browser boxes. */
+html.guest-responsive-root body.guest-site .site-footer .cg-footer-accordion__toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  font-weight: 800;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+/* Checkout progress is four circular icons, without a rectangular button
+   shadow or a second container around them. Focus remains clearly visible. */
+html.guest-responsive-root body.page-checkout .ck-stepper {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+}
+
+html.guest-responsive-root body.page-checkout .ck-step,
+html.guest-responsive-root body.page-checkout .ck-step:hover {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.guest-responsive-root body.page-checkout .ck-step__icon {
+  background: var(--cg-surface-gloss);
+  border-color: rgba(15, 125, 113, 0.16);
+  box-shadow: var(--cg-surface-highlight), 0 3px 10px rgba(15, 80, 75, 0.07);
+}
+
+html.guest-responsive-root body.page-checkout .ck-step.is-active .ck-step__icon {
+  background: linear-gradient(145deg, #37c4b2, #159b8c 58%, #08796f);
+  border-color: #159b8c;
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 4px 12px rgba(15, 143, 131, 0.22);
+}
+
+html.guest-responsive-root body.page-checkout .ck-step.is-done .ck-step__icon {
+  background: linear-gradient(145deg, #fff, #dcf7ee);
+  border-color: rgba(15, 143, 131, 0.36);
+  color: #08796f;
 }
 
 html.guest-responsive-root body.guest-site .site-top--fx {
@@ -55,7 +184,7 @@ html.guest-responsive-root body.guest-site .product-card,
 html.guest-responsive-root body.guest-site .rm-card-shop,
 html.guest-responsive-root body.guest-site .plp-card {
   border-color: rgba(16, 99, 92, 0.12);
-  box-shadow: 0 0.45rem 1.35rem rgba(15, 80, 75, 0.055);
+  box-shadow: var(--cg-surface-highlight), var(--cg-surface-shadow);
 }
 
 html.guest-responsive-root body.guest-site .product-card .add-btn,
@@ -84,7 +213,7 @@ html.guest-responsive-root body.guest-site .site-footer {
   html.guest-responsive-root body.guest-site .rm-card-shop:hover,
   html.guest-responsive-root body.guest-site .plp-card:hover {
     transform: translateY(-3px);
-    box-shadow: 0 0.9rem 2rem rgba(15, 80, 75, 0.12);
+    box-shadow: var(--cg-surface-highlight), 0 0.9rem 2rem rgba(15, 80, 75, 0.12);
   }
 
   html.guest-responsive-root body.guest-site .category-pill:hover,
@@ -107,7 +236,13 @@ html.guest-responsive-root body.guest-site .site-footer {
   html.guest-responsive-root body.guest-site .product-card,
   html.guest-responsive-root body.guest-site .rm-card-shop,
   html.guest-responsive-root body.guest-site .plp-card {
-    box-shadow: 0 0.28rem 0.9rem rgba(15, 80, 75, 0.045);
+    box-shadow: var(--cg-surface-highlight), 0 0.28rem 0.9rem rgba(15, 80, 75, 0.045);
+  }
+
+  html.guest-responsive-root body.page-home #collections {
+    /* The phone layout has an earlier important white-card reset. */
+    background: var(--cg-surface-gloss) !important;
+    box-shadow: var(--cg-surface-highlight), 0 0.28rem 0.9rem rgba(15, 80, 75, 0.045) !important;
   }
 }
 

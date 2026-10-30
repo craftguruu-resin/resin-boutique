@@ -1,0 +1,31 @@
+#cgAdvertisingChoice {
+  position: fixed;
+  z-index: 10000;
+  right: 1rem;
+  bottom: calc(1rem + env(safe-area-inset-bottom));
+  left: 1rem;
+  max-width: 44rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+  background: #fff;
+  color: #173f3b;
+  border: 1px solid #bcd8d2;
+  border-radius: 1rem;
+  box-shadow: 0 8px 36px #173f3b29;
+  font: 14px/1.5 "Plus Jakarta Sans", sans-serif;
+}
+#cgAdvertisingChoice p { margin: 0 0 .75rem; }
+#cgAdvertisingChoice a { color: #135a50; text-decoration: underline; }
+#cgAdvertisingChoice > div { display: flex; justify-content: flex-end; gap: .75rem; }
+#cgAdvertisingChoice button {
+  min-height: 44px;
+  padding: .5rem 1rem;
+  border: 1px solid #135a50;
+  border-radius: .6rem;
+  background: #fff;
+  color: #135a50;
+  font: inherit;
+  cursor: pointer;
+}
+#cgAdvertisingChoice button[data-choice="yes"] { background: #135a50; color: #fff; }
+#cgAdvertisingChoice button:focus-visible { outline: 3px solid #db9948; outline-offset: 3px; }

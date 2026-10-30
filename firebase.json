@@ -15,78 +15,194 @@
       "Dockerfile",
       ".dockerignore",
       "package.json",
-      "package-lock.json"
+      "package-lock.json",
+      "index.html",
+      "category.html",
+      "product.html",
+      "raw-material-product.html",
+      "photo-frame-product.html",
+      "android/**",
+      "artifacts/**",
+      "raw-material-shop.html",
+      "raw-material.html",
+      "photo-frames.html"
     ],
     "headers": [
       {
         "source": "media/catalog/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
         ]
       },
       {
         "source": "media/hero/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
         ]
       },
       {
         "source": "media/raw-materials/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
         ]
       },
       {
         "source": "media/photo-frame-products/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
         ]
       },
       {
         "source": "media/home-showcase/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=86400"
+          }
         ]
       },
       {
         "source": "media/photo-frames-showcase/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=86400"
+          }
         ]
       },
       {
         "source": "media/raw-material-showcase/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=2592000, stale-while-revalidate=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=2592000, stale-while-revalidate=86400"
+          }
         ]
       },
       {
         "source": "media/**",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=604800, stale-while-revalidate=86400" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800, stale-while-revalidate=86400"
+          }
         ]
       },
       {
         "source": "favicon.ico",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, must-revalidate"
+          }
         ]
       },
       {
         "source": "**/*.@(js|css)",
         "headers": [
-          { "key": "Cache-Control", "value": "public, max-age=86400, stale-while-revalidate=604800" }
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=86400, stale-while-revalidate=604800"
+          }
         ]
       },
       {
         "source": "**/*.html",
         "headers": [
-          { "key": "Cache-Control", "value": "no-cache, must-revalidate" }
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, must-revalidate"
+          }
         ]
       }
     ],
     "rewrites": [
-      { "source": "/", "destination": "/index.html" }
+      {
+        "source": "**",
+        "run": {
+          "serviceId": "craftguru-api",
+          "region": "asia-south1"
+        }
+      }
+    ],
+    "redirects": [
+      {
+        "source": "/index.html",
+        "destination": "/",
+        "type": 301
+      },
+      {
+        "source": "/about.html",
+        "destination": "/about/",
+        "type": 301
+      },
+      {
+        "source": "/contact.html",
+        "destination": "/contact/",
+        "type": 301
+      },
+      {
+        "source": "/wholesale.html",
+        "destination": "/wholesale/",
+        "type": 301
+      },
+      {
+        "source": "/corporate-gifting.html",
+        "destination": "/corporate-gifting/",
+        "type": 301
+      },
+      {
+        "source": "/blog.html",
+        "destination": "/blog/",
+        "type": 301
+      },
+      {
+        "source": "/shipping-policy.html",
+        "destination": "/shipping-policy/",
+        "type": 301
+      },
+      {
+        "source": "/return-policy.html",
+        "destination": "/return-policy/",
+        "type": 301
+      },
+      {
+        "source": "/privacy-policy.html",
+        "destination": "/privacy-policy/",
+        "type": 301
+      },
+      {
+        "source": "/terms-and-conditions.html",
+        "destination": "/terms-and-conditions/",
+        "type": 301
+      },
+      {
+        "source": "/mini-resin-deshboard",
+        "destination": "/mini-resin-dashboard/",
+        "type": 301
+      },
+      {
+        "source": "/mini-resin-deshboard/",
+        "destination": "/mini-resin-dashboard/",
+        "type": 301
+      },
+      {
+        "source": "/photo-frame-shop.html",
+        "destination": "/photo-frames.html",
+        "type": 301
+      }
     ]
   }
 }

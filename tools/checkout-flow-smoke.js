@@ -157,6 +157,7 @@ function checkout(options = {}) {
     },
   };
   const nameUpdates = [];
+  if (options.metaPixel) window.CraftguruMetaPixel = options.metaPixel;
   if (accountUi) window.CRAFT_AUTH_DB = {
     getSessionName: () => values.get("cg_session_name") || "",
     setSessionName(value) {
@@ -945,6 +946,44 @@ test("successful online and COD payments still clear cart and open the saved ord
     assert.equal(page.api.readPaymentRecovery(), null);
     assert.equal(page.locks.size, 0);
     assert.equal(page.requests.some(req => req.route.endsWith("payment-cancel")), false);
+  }
+});
+
+test("Meta receives confirmed online and COD orders, and tracking failures cannot interrupt payment completion", async () => {
+  for (const method of ["razorpay", "cod"]) for (const failTracking of [false, true]) {
+    const recorded = [], started = [];
+    const page = checkout({
+      method,
+      quote: order => response({ ...order, keyId: "rzp_live_test_fixture" }),
+      verify: () => response({ ok: true, orderCreated: true, orderId: 101, totals: { total: 2880 } }),
+      metaPixel: {
+        initiateCheckout(lines) { started.push(lines.map(line => ({ ...line }))); if (failTracking) throw new Error("Tracker blocked"); },
+        recordPurchase(order, items, livePayment) {
+          recorded.push({ order, items, livePayment });
+          if (failTracking) throw new Error("Tracker blocked");
+        },
+      },
+    });
+    await startPayment(page);
+    page.sdk[0].options.handler({ razorpay_order_id: "order_1", razorpay_payment_id: "pay_1", razorpay_signature: "test" });
+    await tick();
+    assert.equal(started.length, 1); assert.equal(recorded.length, 1);
+    assert.equal(recorded[0].livePayment, true); assert.equal(recorded[0].order.totals.total, 2880);
+    assert.equal(recorded[0].items[0].productId, "resin-test");
+    assert.match(page.window.location.href, /account.html\?(paid|cod)=1&orderId=101/);
+    assert.equal(page.lines.length, 0); assert.equal(page.api.readPaymentRecovery(), null);
+  }
+});
+
+test("failed payment verification never records a purchase", async () => {
+  for (const method of ["razorpay", "cod"]) {
+    let recorded = 0;
+    const page = checkout({ method, verify: () => response({ ok: false, error: "Verification failed" }, 400), metaPixel: { initiateCheckout() {}, recordPurchase() { recorded++; } } });
+    await startPayment(page);
+    page.sdk[0].options.handler({ razorpay_order_id: "order_1", razorpay_payment_id: "pay_1", razorpay_signature: "test" });
+    await tick();
+    assert.equal(recorded, 0); assert.equal(page.window.location.href, undefined);
+    assert.equal(page.lines.length, 1);
   }
 });
 

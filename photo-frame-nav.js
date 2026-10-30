@@ -98,7 +98,7 @@
 
   function hrefMatchesLine(href, cur) {
     try {
-      var u = new URL(href, window.location.href);
+      var u = new URL(href, (document.baseURI || window.location.href));
       var b = (u.searchParams.get("base") || "").trim();
       var s = (u.searchParams.get("sub") || "").trim();
       return b === cur.base && s === cur.sub;
@@ -156,7 +156,7 @@
 
   function lineNavAbsUrl(href) {
     try {
-      return new URL(href, window.location.href).href;
+      return new URL(href, (document.baseURI || window.location.href)).href;
     } catch (_) {
       return href;
     }

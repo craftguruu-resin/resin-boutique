@@ -15,7 +15,7 @@
   }
 
   function activeParams() {
-    var p = new URLSearchParams(window.location.search);
+    var p = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
     return ["q", "minp", "maxp", "sort"].filter(function (key) { return String(p.get(key) || "").trim(); });
   }
 
@@ -46,7 +46,7 @@
     var chips = meta.querySelector(".cg-catalog-meta__chips");
     if (chips) {
       var labels = { q: "Search", minp: "Min", maxp: "Max", sort: "Sort" };
-      var current = new URLSearchParams(window.location.search);
+      var current = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
       params.forEach(function (key) {
         var chip = document.createElement("button");
         chip.type = "button";

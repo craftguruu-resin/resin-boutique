@@ -7,10 +7,13 @@
     "test:mobile-ui": "node tools/mobile-ui-smoke.js",
     "test:coupons": "node --test tools/coupon-smoke.js",
     "test:checkout": "node --test tools/checkout-flow-smoke.js",
+    "test:meta": "node --test tools/meta-pixel-smoke.js",
     "mobile:sync": "npx cap sync android",
     "mobile:android": "npx cap open android",
     "mobile:run": "npx cap run android",
-    "mobile:build": "cd android && ./gradlew assembleDebug"
+    "mobile:build": "cd android && ./gradlew assembleDebug",
+    "test:seo": "node --test tools/seo-smoke.js",
+    "seo:build": "node tools/update-storefront-seo.js && node tools/build-seo-pages.js"
   },
   "dependencies": {
     "@capacitor/core": "^7.4.3",

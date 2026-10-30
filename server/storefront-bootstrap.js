@@ -190,7 +190,11 @@ function loadStorefrontBootstrap(cb) {
       if (x.stockM != null && Number.isFinite(Number(x.stockM))) o.stockM = Number(x.stockM);
       if (x.stockL != null && Number.isFinite(Number(x.stockL))) o.stockL = Number(x.stockL);
       o.returnGift = !!x.returnGift;
-      o.delisted = !!x.delisted;
+      o.delisted = x.listed === false;
+      o.listed = x.listed !== false;
+      o.outOfStock = x.outOfStock === true;
+      if (x.name) o.name = x.name;
+      if (x.sizeLabels) o.sizeLabels = x.sizeLabels;
       if (vendorCatalogDb.catalogOptionsHasPayload(x.options)) {
         o.options = vendorCatalogDb.sanitizeOptionsForPublic(x.options);
       }

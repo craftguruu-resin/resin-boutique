@@ -5,7 +5,7 @@
   var CART = window.RESIN_CART;
   if (!D || !CART) return;
 
-  var params = new URLSearchParams(window.location.search);
+  var params = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
   var id = params.get("id");
   var product = id ? D.getProduct(id) : null;
   var ONLINE_DISCOUNT_RATE = 0.10;
@@ -127,7 +127,7 @@
     }
     var pageUrl;
     try {
-      pageUrl = new URL("product.html?id=" + encodeURIComponent(product.id), window.location.href).href;
+      pageUrl = new URL(window.CraftguruRoutes ? window.CraftguruRoutes.product(product.id) : "product.html?id=" + encodeURIComponent(product.id), document.baseURI).href;
     } catch (_) {
       pageUrl = "product.html?id=" + encodeURIComponent(product.id);
     }
@@ -1026,6 +1026,7 @@
     applyCachedCatalogOverrides();
     refreshProductRef();
     if (!product) return;
+    try { if (window.CraftguruMetaPixel) window.CraftguruMetaPixel.viewProduct(product); } catch (_) {}
 
     ensureLayoutBeforePaint();
 
@@ -1047,7 +1048,7 @@
     }
     teardownResinPdpBodyClasses();
 
-    document.title = product.name + " — Craft guru";
+    document.title = product.name + " | Craftguru India";
 
     var catLabel = D.getCategoryLabel(product.category);
     var baseUid = safeId(product.id);
@@ -1238,7 +1239,7 @@
         var buyNow = document.getElementById("buyNowBtn");
         if (buyNow && buyNow.dataset.cgBuyNow === "1") {
           delete buyNow.dataset.cgBuyNow;
-          window.location.href = "checkout.html";
+          window.location.href = "/checkout.html";
           return;
         }
         if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) {
@@ -1466,7 +1467,7 @@
       if (!v) return;
       e.preventDefault();
       window.location.href =
-        "category.html?cat=" +
+        "/category.html?cat=" +
         encodeURIComponent(product.category) +
         "&q=" +
         encodeURIComponent(v);
@@ -1500,7 +1501,7 @@
     }
     if (!ev.persisted) return;
     try {
-      var nextId = new URLSearchParams(window.location.search).get("id");
+      var nextId = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search)).get("id");
       if (!nextId || nextId === id) return;
       id = nextId;
       catalogMergeComplete = false;

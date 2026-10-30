@@ -162,7 +162,7 @@
         var v = query.value.trim();
         if (!v) return;
         e.preventDefault();
-        window.location.href = "index.html?q=" + encodeURIComponent(v) + "#categories";
+        window.location.href = "/index.html?q=" + encodeURIComponent(v) + "#categories";
       });
     }
 
@@ -176,7 +176,7 @@
         if (!v) return;
         e.preventDefault();
         var target = mode === "photo-frame" ? "photo-frames.html" : "raw-material-shop.html";
-        window.location.href = target + "?q=" + encodeURIComponent(v);
+        window.location.href = "/" + target + "?q=" + encodeURIComponent(v);
       });
     }
   }

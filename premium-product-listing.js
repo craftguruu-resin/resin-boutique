@@ -87,7 +87,7 @@
     var key = String(catId || "").trim();
     if (key && CATEGORY_DESCRIPTIONS[key]) return CATEGORY_DESCRIPTIONS[key];
     if (fallback) return String(fallback);
-    return "Browse handcrafted resin pieces from Craft Guru — premium quality, pan-India delivery.";
+    return "Browse handcrafted resin pieces from Craftguru India — premium quality, pan-India delivery.";
   }
 
   function whatsappIconHtml(opts) {
@@ -266,7 +266,7 @@
 
   function trustBarHtml() {
     return (
-      '<ul class="plp-trust-bar" aria-label="Why Craft Guru">' +
+      '<ul class="plp-trust-bar" aria-label="Why Craftguru India">' +
       '<li class="plp-trust-bar__item">' +
       '<span class="plp-trust-bar__icon plp-trust-bar__icon--teal" aria-hidden="true">♥</span>' +
       '<div class="plp-trust-bar__text"><strong>Handcrafted with Love</strong><span>Made in Jaipur</span></div></li>' +

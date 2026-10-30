@@ -1205,7 +1205,7 @@
         return;
       }
       closeCart();
-      window.location.href = "checkout.html";
+      window.location.href = "/checkout.html";
     });
 
   document.addEventListener("keydown", function (e) {
@@ -1225,7 +1225,7 @@
     });
   });
 
-  var hp = new URLSearchParams(window.location.search);
+  var hp = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
   var bootQ = (hp.get("q") || "").trim();
   var bootMaxp = (hp.get("maxp") || "").trim();
   var bootMinp = (hp.get("minp") || "").trim();
@@ -1311,7 +1311,7 @@
       var link = card.querySelector(".craft-cat-card__hit");
       if (link && link.getAttribute("href")) {
         try {
-          var u = new URL(link.href, window.location.href);
+          var u = new URL(link.href, (document.baseURI || window.location.href));
           catId = u.searchParams.get("cat") || "";
         } catch (_) {}
       }
@@ -1364,7 +1364,7 @@
       var link = card.querySelector(".craft-cat-card__hit");
       if (link && link.getAttribute("href")) {
         try {
-          var u = new URL(link.href, window.location.href);
+          var u = new URL(link.href, (document.baseURI || window.location.href));
           catId = u.searchParams.get("cat") || "";
         } catch (_) {}
       }

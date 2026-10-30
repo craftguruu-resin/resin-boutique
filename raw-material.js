@@ -836,7 +836,7 @@
       var discountBlock = disc ? disc.replace("rm-card-shop__pill", "plp-card__discount") : "";
       var abs;
       try {
-        abs = new URL(href, window.location.href).href;
+        abs = new URL(href, (document.baseURI || window.location.href)).href;
       } catch (_) {
         abs = href;
       }
@@ -933,7 +933,7 @@
         var href = a.getAttribute("href") || "";
         if (href.indexOf("raw-material-shop.html") < 0) return;
         try {
-          var abs = new URL(a.href, window.location.href);
+          var abs = new URL(a.href, (document.baseURI || window.location.href));
           if (abs.origin !== window.location.origin) return;
           var file = abs.pathname
             .split("/")
@@ -944,7 +944,7 @@
           return;
         }
         e.preventDefault();
-        var u = new URL(a.href, window.location.href);
+        var u = new URL(a.href, (document.baseURI || window.location.href));
         history.pushState({}, "", u.pathname + u.search + u.hash);
         applyShopShellFromParams();
       },

@@ -68,6 +68,12 @@
   }
 
   function navHrefFile(href) {
+    if (window.CraftguruRoutes) {
+      try {
+        var route = window.CraftguruRoutes.resolve(new URL(href, document.baseURI).pathname);
+        if (route) return route.page;
+      } catch (_) {}
+    }
     return String(href || "")
       .split("#")[0]
       .split("?")[0]
@@ -87,7 +93,7 @@
   };
 
   // Best-effort active state (some pages already set is-active in markup).
-  var path = (window.location.pathname || "").split("/").pop() || "index.html";
+  var path = document.documentElement.dataset.cgPage || (window.location.pathname || "").split("/").pop() || "index.html";
   var activeNavFile = NAV_PARENT_BY_PAGE[path] || path;
   var links = Array.prototype.slice.call(document.querySelectorAll(".nav-dock-link"));
   if (links.length) {

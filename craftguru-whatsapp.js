@@ -25,7 +25,7 @@
 
   function absoluteUrl(pathOrUrl) {
     try {
-      return new URL(String(pathOrUrl || ""), global.location.href).href;
+      return new URL(String(pathOrUrl || ""), (document.baseURI || global.location.href)).href;
     } catch (_) {
       return String(pathOrUrl || (global.location && global.location.href) || "");
     }

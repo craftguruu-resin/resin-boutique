@@ -4,6 +4,17 @@
   var D = typeof window !== "undefined" ? window.RESIN_DATA : null;
   if (!D || typeof D.applyPriceOverrides !== "function") return;
 
+  try {
+    var initialNode = document.getElementById("cgCatalogBootstrap");
+    if (initialNode) {
+      var initial = JSON.parse(initialNode.textContent);
+      D.applyCategoriesMerge(initial.categories || []);
+      D.applyVendorProductsMerge(initial.products || []);
+      D.applyPriceOverrides(initial.overrides || {});
+      D.applyCatalogSuppressions(initial.suppressedProductIds || []);
+    }
+  } catch (_) {}
+
   var STATIC_DEV_PORTS = { "5500": 1, "5501": 1, "8080": 1, "8888": 1, "3001": 1, "5173": 1, "5174": 1, "4173": 1 };
 
   function isPrivateLanHost(hostname) {

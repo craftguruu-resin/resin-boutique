@@ -141,7 +141,7 @@
 
   function pdpAbsUrlFromHref(href) {
     try {
-      return new URL(href, window.location.href).href;
+      return new URL(href, (document.baseURI || window.location.href)).href;
     } catch (_) {
       return href;
     }

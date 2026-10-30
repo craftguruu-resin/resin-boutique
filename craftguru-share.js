@@ -38,7 +38,7 @@
   function absProductUrl(id) {
     var sid = encodeURIComponent(String(id || ""));
     try {
-      return new URL("product.html?id=" + sid, window.location.href).href;
+      return new URL("product.html?id=" + sid, (document.baseURI || window.location.href)).href;
     } catch (_) {
       return (
         String(window.location.origin || "") +

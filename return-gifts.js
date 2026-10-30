@@ -42,7 +42,7 @@
   function productPageUrl(id) {
     var path = "product.html?id=" + encodeURIComponent(id);
     try {
-      return new URL(path, window.location.href).href;
+      return new URL(path, (document.baseURI || window.location.href)).href;
     } catch (_) {
       return path;
     }

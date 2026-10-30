@@ -48,7 +48,7 @@
   function qs() {
     try {
       var u = new URL(window.location.href);
-      return u.searchParams.get("id") || "";
+      return (window.CraftguruRoutes ? window.CraftguruRoutes.params() : u.searchParams).get("id") || "";
     } catch (_) {
       return "";
     }
@@ -478,7 +478,7 @@
         return false;
       }
       if (isBuyNow) {
-        window.location.href = "checkout.html";
+        window.location.href = "/checkout.html";
       } else {
         try {
           if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
@@ -665,7 +665,7 @@
           lineExtra: { productKind: "raw_material" },
         });
         if (buyNow) {
-          window.location.href = "checkout.html";
+          window.location.href = "/checkout.html";
         } else {
           try {
             if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
@@ -768,7 +768,7 @@
     var mid = String(state.material.id || "");
     var pageUrl;
     try {
-      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), window.location.href).href;
+      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), (document.baseURI || window.location.href)).href;
     } catch (_) {
       pageUrl = "raw-material-product.html?id=" + encodeURIComponent(mid);
     }
@@ -787,7 +787,7 @@
     var mid = String(state.material.id || "");
     var pageUrl;
     try {
-      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), window.location.href).href;
+      pageUrl = new URL("raw-material-product.html?id=" + encodeURIComponent(mid), (document.baseURI || window.location.href)).href;
     } catch (_) {
       pageUrl = "raw-material-product.html?id=" + encodeURIComponent(mid);
     }
@@ -872,6 +872,7 @@
       root.setAttribute("data-pdp-ready", "1");
       return;
     }
+    try { if (window.CraftguruMetaPixel) window.CraftguruMetaPixel.viewProduct(m); } catch (_) {}
     var opt = m.options || {};
     var entries = galleryEntries(m, state.sel);
     var idx = Math.min(state.imgIndex, Math.max(0, entries.length - 1));
@@ -1133,7 +1134,7 @@
     if (!id) {
       pdpFetch.status = "done";
       state.material = null;
-      document.title = "Product — Craft guru";
+      document.title = "Product | Craftguru India";
       render();
       var nav0 = document.getElementById("rmNavTree");
       if (nav0 && window.RmShopNav) {
@@ -1158,7 +1159,7 @@
           writeCachedMaterial(id, state.material);
           state._lastHeroResolvedSrc = "";
           syncDefaults(state.material);
-          document.title = (state.material.name || "Product") + " — Craft guru";
+          document.title = (state.material.name || "Product") + " | Craftguru India";
         }
       })
       .catch(function () {
@@ -1167,7 +1168,7 @@
           state.material = cached;
           state.usingStaleCache = true;
           syncDefaults(state.material);
-          document.title = (state.material.name || "Product") + " — Craft guru";
+          document.title = (state.material.name || "Product") + " | Craftguru India";
         } else {
           state.material = null;
           pdpFetch.error = true;

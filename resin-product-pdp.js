@@ -509,7 +509,7 @@
     var WA = window.CRAFTGURU_WA;
     var pageUrl;
     try {
-      pageUrl = new URL("product.html?id=" + encodeURIComponent(id || ""), window.location.href).href;
+      pageUrl = new URL("product.html?id=" + encodeURIComponent(id || ""), (document.baseURI || window.location.href)).href;
     } catch (_) {
       pageUrl = String(window.location.href);
     }
@@ -959,7 +959,7 @@
       if (sh) {
         var pageUrl;
         try {
-          pageUrl = new URL("product.html?id=" + encodeURIComponent(p.id), window.location.href).href;
+          pageUrl = new URL("product.html?id=" + encodeURIComponent(p.id), (document.baseURI || window.location.href)).href;
         } catch (_) {
           pageUrl = "product.html?id=" + encodeURIComponent(p.id);
         }
@@ -1146,7 +1146,7 @@
           lineExtra: Object.assign({ productKind: "catalog" }, ex || {}),
         });
         if (t.id === "resinPdpBuyNow" || (t.closest && t.closest("#resinPdpBuyNow"))) {
-          window.location.href = "checkout.html";
+          window.location.href = "/checkout.html";
           return;
         }
         if (window.RESIN_SHELL && window.RESIN_SHELL.openDrawer) window.RESIN_SHELL.openDrawer();
@@ -1216,7 +1216,7 @@
         '<div class="pdp-ethereal-fx__spark pdp-ethereal-fx__spark--3"></div>';
       document.body.insertBefore(fx, document.body.firstChild);
     }
-    document.title = product.name + " — Craft guru";
+    document.title = product.name + " | Craftguru India";
     renderPdp(root);
     root.setAttribute("data-pdp-ready", "1");
     if (!root.dataset.resinPdpWired) wirePdpClicks(root);

@@ -245,6 +245,7 @@
         break;
       }
     }
+    var previousQty = hit ? safeNumber(hit.qty, 0) : 0;
     if (hit) {
       if (n.stockMax != null) hit.stockMax = n.stockMax;
       var mergedQty = clampLineQty(hit, safeNumber(hit.qty, 1) + safeNumber(n.qty, 1));
@@ -255,6 +256,12 @@
       if (n.qty > 0) lines.push(n);
     }
     save(lines);
+    var addedQty = Math.max(0, (hit ? hit.qty : n.qty) - previousQty);
+    if (addedQty > 0) {
+      try {
+        global.dispatchEvent(new CustomEvent("craftguruCartItemAdded", { detail: { id: n.id, price: n.price, qty: addedQty } }));
+      } catch (_) {}
+    }
     return lines;
   }
 

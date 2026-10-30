@@ -1,0 +1,29 @@
+/* SEO content uses the storefront palette without changing existing purchase controls. */
+.seo-page { max-width: 1080px; margin: 0 auto; padding: 9rem 1.5rem 4rem; color: #183b36; line-height: 1.75; }
+.seo-page h1 { font-size: clamp(2rem, 5vw, 3.5rem); line-height: 1.2; margin: 1.5rem 0; }
+.seo-page h2, .seo-section h2 { font-size: clamp(1.3rem, 3vw, 1.8rem); line-height: 1.35; margin: 1.8rem 0 1rem; }
+.seo-section { max-width: 1080px; margin: 2rem auto; padding: 1.5rem; color: #183b36; line-height: 1.75; }
+.seo-page .seo-section { padding: 0; }
+.seo-section p, .seo-page p { margin: 1rem 0; }
+.seo-page a, .seo-section a, .seo-footer-links a { color: #155e55; text-decoration: underline; text-underline-offset: .2em; }
+.seo-page address { font-style: normal; line-height: 2; }
+.seo-product-grid, .seo-guide-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1.25rem; width: 100%; grid-column: 1 / -1; }
+.seo-product-card, .seo-guide-grid article { min-width: 0; padding: 1rem; border: 1px solid #cdded9; border-radius: 1rem; background: #fff; }
+.seo-product-card h3 { font-size: 1.05rem; line-height: 1.5; }
+.seo-product-card img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: contain; }
+.seo-product-overview img { max-width: min(100%, 320px); height: auto; object-fit: contain; }
+.seo-section details { margin: .7rem 0; padding: 1rem; border: 1px solid #cdded9; border-radius: .7rem; }
+.seo-section summary { cursor: pointer; font-weight: 600; }
+.seo-category-links, .seo-footer-links { display: flex; flex-wrap: wrap; gap: .8rem 1.4rem; }
+.seo-footer-links { max-width: 1080px; margin: 1rem auto; padding: 1rem; }
+.seo-enquiry { display: grid; gap: 1rem; max-width: 700px; }
+.seo-enquiry label { display: grid; gap: .5rem; font-weight: 600; }
+.seo-enquiry input, .seo-enquiry textarea { box-sizing: border-box; width: 100%; padding: .8rem; font: inherit; color: #183b36; background: #fff; border: 1px solid #94afa6; border-radius: .5rem; }
+.seo-enquiry button { justify-self: start; padding: .85rem 1.5rem; background: #155e55; color: #fff; border: 0; border-radius: .6rem; font: inherit; cursor: pointer; }
+.seo-skip { position: fixed; top: 0; left: 1rem; transform: translateY(-150%); padding: .7rem 1rem; background: #fff; color: #183b36; z-index: 99999; }
+.seo-skip:focus { transform: translateY(0); }
+.seo-page :focus-visible, .seo-section :focus-visible, .seo-footer-links :focus-visible { outline: 3px solid #166e60; outline-offset: 4px; }
+.home-landing-hero__hit--browse .seo-hero-label { display: inline-block; padding: .5rem .9rem; color: #fff; background: #155e55; border-radius: 999px; font-weight: 600; }
+@media (max-width: 700px) { .seo-product-grid, .seo-guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; } .seo-page { padding-top: 7rem; } .seo-section { padding: 1rem; } }
+@media (max-width: 440px) { .seo-guide-grid { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .seo-page *, .seo-section * { scroll-behavior: auto !important; } }

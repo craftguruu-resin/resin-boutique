@@ -16,7 +16,10 @@ const customerPages = [
   "checkout.html", "account.html", "about.html", "policies.html", "return-gifts.html"
 ];
 
-customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20261009mobilecleanup6", "Current mobile shell"));
+customerPages.forEach((page) => requireText(page, "guest-layout.js?v=20261015seo1", "Current mobile shell"));
+customerPages.forEach((page) => requireText(page, 'id="cgStorefrontRefresh" rel="stylesheet" href="storefront-refresh.css?v=20261010gloss1"', "Shared glossy styles before first paint"));
+requireText("guest-layout.js", 'pn === "checkout.html" || document.body.classList.contains("page-checkout")', "Checkout floating-social exclusion");
+requireText("checkout.css", "body.guest-site.page-checkout #cgSocialFloatStack", "Checkout floating-social visibility safeguard");
 requireText("guest-layout.js", "ensureMobileHeaderNavigation", "Mobile navigation");
 requireText("guest-layout.js", "ensureMobileCatalogQuickBar", "Mobile catalogue controls");
 requireText("guest-layout.js", "ensureMobilePdpPurchaseBar", "Mobile purchase bar");

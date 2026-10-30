@@ -107,7 +107,7 @@
   /** Default when no visible sort control — stable popularity order. */
   var DEFAULT_SORT = "relevance";
 
-  var params = new URLSearchParams(window.location.search);
+  var params = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
   var cat = D.normalizeCategoryId(params.get("cat"));
   var page = parseInt(params.get("page") || "1", 10) || 1;
   var urlQ = (params.get("q") || "").trim();
@@ -178,7 +178,7 @@
   function productPageUrl(id) {
     var path = "product.html?id=" + encodeURIComponent(id);
     try {
-      return new URL(path, window.location.href).href;
+      return new URL(path, (document.baseURI || window.location.href)).href;
     } catch (_) {
       return path;
     }
@@ -267,7 +267,7 @@
     u.searchParams.delete("maxp");
     if (page > 1) u.searchParams.set("page", String(page));
     else u.searchParams.delete("page");
-    u.searchParams.set("cat", cat);
+    if (window.CraftguruRoutes) { u.pathname = window.CraftguruRoutes.category(cat); u.searchParams.delete("cat"); } else u.searchParams.set("cat", cat);
     u.searchParams.delete("sub");
     try {
       history.replaceState({}, "", u.pathname + "?" + u.searchParams.toString());
@@ -597,7 +597,7 @@
     if (els.desc && PLP) {
       els.desc.textContent = PLP.getCategoryDescription(cat);
     }
-    document.title = labelForList + " — Craft guru";
+    document.title = labelForList + (page > 1 ? " - Page " + page : "") + " | Craftguru India";
 
     try {
       var uCur = new URL(window.location.href);
@@ -752,7 +752,7 @@
     }
     if (ev.persisted) {
       try {
-        var p = new URLSearchParams(window.location.search);
+        var p = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
         var nextCat = D.normalizeCategoryId(p.get("cat"));
         if (nextCat && nextCat !== cat) {
           cat = nextCat;

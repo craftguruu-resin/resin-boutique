@@ -78,7 +78,7 @@
 
   function hrefParams(href) {
     try {
-      var u = new URL(href, window.location.href);
+      var u = new URL(href, (document.baseURI || window.location.href));
       return {
         base: (u.searchParams.get("base") || "").trim(),
         sub: (u.searchParams.get("sub") || "").trim(),

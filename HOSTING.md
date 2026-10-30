@@ -183,3 +183,36 @@ Same machine serves API + static files, so you do **not** need `PUBLIC_BILL_API_
 - `render.yaml` — optional Blueprint for Render (`server` root, health check `/api/health`).
 
 If you tell me your Git branch name and whether you use `BILL_API_SECRET`, the checklist can be narrowed to a 5-line “do this next” list.
+
+## SEO routes and catalog rendering
+
+The storefront now uses the Express service for clean collection/product URLs,
+permanent redirects, server-rendered catalog content, and `/sitemap.xml`.
+Deploy the updated application image before switching traffic to these URLs.
+The existing PostgreSQL catalog remains the source of products and prices;
+no sample products, prices, ratings or business address are published by this change.
+
+If Firebase Hosting is used, `firebase.json` forwards dynamic requests to
+`craftguru-api` in `asia-south1`. The HTML catalog templates are excluded from
+Firebase's static upload so they cannot bypass redirects or server rendering.
+Deploy this Cloud Run service in the Firebase project before deploying Hosting.
+A static-only file server does not implement these routes. Other CDN frontends
+must forward clean paths, legacy catalog requests and `/sitemap.xml` to Express.
+Use `npm run seo:build` after editing editorial copy in `server/seo-content.js`.
+Run it before the existing deployment asset-versioning step.
+
+Run `npm run test:seo` plus the existing checkout, coupons, mobile UI and Meta
+checks before deployment. The SEO tests call the production request handlers
+with isolated catalog fixtures and do not use the live database or send enquiries.
+After deployment, inspect the homepage, collections and products in Search
+Console, submit `/sitemap.xml`, validate Product markup in Rich Results Test,
+and measure mobile/desktop Core Web Vitals in PageSpeed Insights. These account
+and field-data checks are not replaced by the local test suite.
+
+The owner-confirmed public contact email is craftguruu@gmail.com, alongside
++91 88243 50056, and Monday–Saturday 09:30–19:00 IST. A full street address,
+map pin, Google Business Profile details, and independently
+verified reviews must come from the business owner. Contact and wholesale forms
+prepare an email draft for the customer to send; they do not claim to submit a
+message through an unconfigured mail service. Separate policy pages retain the
+existing policy wording, including advertising-cookie preferences.

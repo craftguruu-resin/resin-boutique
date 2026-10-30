@@ -1,0 +1,9 @@
+User-agent: *
+Disallow: /api/
+Disallow: /server/
+Disallow: /android/
+Disallow: /infra/
+Disallow: /tools/
+Disallow: /scripts/
+
+Sitemap: https://www.craftguruindia.com/sitemap.xml

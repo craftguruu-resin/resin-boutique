@@ -6,6 +6,8 @@ var storefrontBootstrap = require("./storefront-bootstrap.js");
 var cloudinaryDelivery = require("./cloudinary-delivery.js");
 var storefrontHeroDb = require("./storefront-hero-db.js");
 
+var seoRoutes = require("../seo-routes.js");
+
 var FEATURED_SKIP = { "craftguru-details": true };
 var INDEX_PATH = path.join(__dirname, "..", "index.html");
 var indexTemplate = null;
@@ -123,9 +125,9 @@ function renderCategoryRail(categories) {
     var id = String(cat.id || "");
     if (!id) return;
     parts.push(
-      '<a class="category-pill category-pill--rail" href="category.html?cat=' +
-        escAttr(encodeURIComponent(id)) +
-        '" data-cat-id="' +
+      '<a class="category-pill category-pill--rail" href="/' +
+        escAttr(id === "mini-resin-deshboard" ? "mini-resin-dashboard" : id) +
+        '/" data-cat-id="' +
         escAttr(id) +
         '" data-search-text="' +
         escAttr((cat.label + " " + id).toLowerCase()) +
@@ -148,7 +150,7 @@ function renderFeaturedCard(req, cat, index, stagger) {
     var m = minPrice(p);
     if (m != null && (minFrom === null || m < minFrom)) minFrom = m;
   });
-  var catHref = "category.html?cat=" + encodeURIComponent(cat.id);
+  var catHref = seoRoutes.category(cat.id);
   var countLabel = String(count) + (count === 1 ? " product" : " products");
   var bits = [(cat.label || "").toLowerCase(), (cat.id || "").toLowerCase(), String(count), "products", "category"];
   if (minFrom != null) bits.push(String(minFrom));
@@ -289,7 +291,7 @@ function injectHomepage(html, injections) {
 // Cap how long the homepage route will wait on each DB-backed step before
 // falling back to the plain static template, so a cold database never turns
 // into a hung/blank first response — a refresh should never be necessary.
-var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 900;
+var BOOTSTRAP_TIMEOUT_MS = Number(process.env.SSR_BOOTSTRAP_TIMEOUT_MS) || 3000;
 var HERO_TIMEOUT_MS = Number(process.env.SSR_HERO_TIMEOUT_MS) || 500;
 
 function withTimeout(fn, ms, cb) {
@@ -312,6 +314,29 @@ function withTimeout(fn, ms, cb) {
     clearTimeout(timer);
     cb(syncErr);
   }
+}
+
+function renderCatalogHomepage(req, template, bootstrap, heroPack) {
+  var staticData = storefrontBootstrap.getStaticCatalog();
+  var seo = require("./storefront-seo.js");
+  var products = seo.mergeProducts(bootstrap, staticData);
+  var index = buildProductIndex({ allProducts: products }, {products:[], overrides:{}, suppressedProductIds:[]});
+  var categoryRail = renderCategoryRail(bootstrap.categories || []);
+  var featuredGrid = renderFeaturedGrid(req, bootstrap.categories || [], index);
+  // Render the first campaign slide on the server, then let app.js hydrate
+  // the accessible carousel without a first-paint flash.
+  var hero = renderHeroPromo(req, heroPack);
+
+  var html = injectHomepage(template, {
+    categoryRail: categoryRail,
+    featuredGrid: featuredGrid,
+    heroPromo: hero.html,
+    showPromoHero: hero.showPromo,
+  });
+
+  html = html.replace('<!-- cg-featured-products -->', products.length ? '<section class="seo-section" aria-labelledby="featuredProductsTitle"><h2 id="featuredProductsTitle">Featured resin products</h2>' + seo.cards(products.slice(0, 8)) + '</section>' : '');
+  html = html.replace('</head>', '<script id="cgCatalogBootstrap" type="application/json">' + seo.json(seo.publicBootstrap(bootstrap, products)) + '</script></head>');
+  return html;
 }
 
 function serveHomepage(req, res, next) {
@@ -337,21 +362,7 @@ function serveHomepage(req, res, next) {
     withTimeout(storefrontHeroDb.listSlidesWithSettings, HERO_TIMEOUT_MS, function (heroErr, heroPack) {
       if (heroErr) heroPack = { slides: [], heroSettings: { customHeroEnabled: false } };
 
-      var staticData = storefrontBootstrap.getStaticCatalog();
-      var index = buildProductIndex(staticData, bootstrap);
-      var categoryRail = renderCategoryRail(bootstrap.categories || []);
-      var featuredGrid = renderFeaturedGrid(req, bootstrap.categories || [], index);
-      // Render the first campaign slide on the server, then let app.js hydrate
-      // the accessible carousel without a first-paint flash.
-      var hero = renderHeroPromo(req, heroPack);
-
-      var html = injectHomepage(template, {
-        categoryRail: categoryRail,
-        featuredGrid: featuredGrid,
-        heroPromo: hero.html,
-        showPromoHero: hero.showPromo,
-      });
-
+      var html = renderCatalogHomepage(req, template, bootstrap, heroPack);
       res.setHeader("Cache-Control", "private, no-store, no-cache, must-revalidate, max-age=0");
       res.setHeader("Pragma", "no-cache");
       res.setHeader("Vary", "Accept-Encoding");
@@ -362,4 +373,5 @@ function serveHomepage(req, res, next) {
 
 module.exports = {
   serveHomepage: serveHomepage,
+  renderCatalogHomepage: renderCatalogHomepage,
 };

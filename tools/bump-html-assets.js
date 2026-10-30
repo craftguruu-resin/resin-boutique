@@ -11,6 +11,12 @@ if (!NEW_V) {
 var htmlFiles = fs.readdirSync(".").filter(function (f) {
   return f.endsWith(".html");
 });
+// Buying guides live in nested directories and need the same deploy versions.
+if (fs.existsSync("blog")) {
+  fs.readdirSync("blog", { recursive: true }).forEach(function (f) {
+    if (String(f).endsWith(".html")) htmlFiles.push(require("path").join("blog", f));
+  });
+}
 
 htmlFiles.forEach(function (f) {
   var s = fs.readFileSync(f, "utf8");

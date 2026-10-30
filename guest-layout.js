@@ -8,7 +8,7 @@
     var link = document.createElement("link");
     link.id = "cgStorefrontRefresh";
     link.rel = "stylesheet";
-    link.href = "storefront-refresh.css?v=20260928storefront1";
+    link.href = "storefront-refresh.css?v=20261010gloss1";
     document.head.appendChild(link);
   }
   loadStorefrontRefresh();
@@ -210,6 +210,7 @@
   }
 
   function currentPageName() {
+    if (document.documentElement.dataset.cgPage) return document.documentElement.dataset.cgPage;
     try {
       var p = (window.location.pathname || "").split("/").pop() || "";
       return String(p).split("?")[0].toLowerCase();
@@ -338,13 +339,13 @@
       }
       if (pn === "category.html") {
         try {
-          var u = new URLSearchParams(window.location.search);
+          var u = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
           if (u.get("cat") === c.id) a.classList.add("is-active");
         } catch (_) {}
       }
       if (pn === "product.html") {
         try {
-          var pid = new URLSearchParams(window.location.search).get("id");
+          var pid = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search)).get("id");
           var prod = pid && D.getProduct ? D.getProduct(pid) : null;
           if (prod && prod.category === c.id) a.classList.add("is-active");
         } catch (_) {}
@@ -356,7 +357,7 @@
       ["raw-material-shop.html", "Resin raw material"],
       ["photo-frame-shop.html", "Photo frames shop"],
       ["photo-frames.html", "Photo frames"],
-      ["return-gifts.html", "Corporate Gifting"],
+      ["/corporate-gifting/", "Corporate Gifting"],
     ].forEach(function (pair) {
       var a2 = document.createElement("a");
       a2.className = "category-pill category-pill--rail guest-page-category-rail__extra-pill";
@@ -436,7 +437,7 @@
   function bootGuestSearchFromUrl(inp) {
     if (!inp) return;
     try {
-      var q = (new URLSearchParams(window.location.search).get("q") || "").trim();
+      var q = ((window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search)).get("q") || "").trim();
       if (!q) return;
       inp.value = q;
       syncGuestSearchToPageFilter(q);
@@ -709,7 +710,7 @@
           pnEnter === "photo-frame-product.html" ||
           pnEnter === "photo-frames.html";
         window.location.href =
-          (isPhotoEnter ? "photo-frames.html?q=" : "raw-material-shop.html?q=") + encodeURIComponent(v);
+          (isPhotoEnter ? "/photo-frames.html?q=" : "/raw-material-shop.html?q=") + encodeURIComponent(v);
         return;
       }
 
@@ -717,13 +718,13 @@
       var product =
         D3 && typeof D3.searchCatalogPartial === "function" ? D3.searchCatalogPartial(v, 1)[0] : null;
       if (product && product.id) {
-        window.location.href = "product.html?id=" + encodeURIComponent(product.id);
+        window.location.href = window.CraftguruRoutes ? window.CraftguruRoutes.product(product.id) : "/product.html?id=" + encodeURIComponent(product.id);
         return;
       }
       var category =
         D3 && typeof D3.searchCategoriesPartial === "function" ? D3.searchCategoriesPartial(v, 1)[0] : null;
       if (category && category.id) {
-        window.location.href = "category.html?cat=" + encodeURIComponent(category.id) + "&q=" + encodeURIComponent(v);
+        window.location.href = "/category.html?cat=" + encodeURIComponent(category.id) + "&q=" + encodeURIComponent(v);
         return;
       }
 
@@ -925,7 +926,7 @@
             if (window.CRAFT_AUTH_HOME && typeof window.CRAFT_AUTH_HOME.openAuth === "function") {
               window.CRAFT_AUTH_HOME.openAuth("login");
             } else {
-              window.location.href = "account.html";
+              window.location.href = "/account.html";
             }
           }
         } catch (_) {}
@@ -1024,7 +1025,7 @@
 
   function injectSocialFloatWidgets() {
     var pn = currentPageName();
-    if (pn.indexOf("vendor") === 0) return;
+    if (pn.indexOf("vendor") === 0 || pn === "checkout.html" || document.body.classList.contains("page-checkout")) return;
     ensureSocialFloatStack();
     ensureStylesheet("social-float-stack.css");
     ensureStylesheet("whatsapp-widget.css");
@@ -1093,7 +1094,7 @@
         !document.querySelector("#rmGrid, #rgGrid")) return;
     if (document.querySelector('script[src*="catalog-experience.js"]')) return;
     var script = document.createElement("script");
-    script.src = "catalog-experience.js?v=20261001catalog7";
+    script.src = "catalog-experience.js?v=20261015seo1";
     script.defer = true;
     document.head.appendChild(script);
   }
@@ -1429,7 +1430,7 @@
       /* Phone Bag opens the existing guest address/payment checkout, rather
          than leaving shoppers in a drawer under the product purchase bar. */
       if (window.matchMedia("(max-width: 640px)").matches && !document.body.classList.contains("page-checkout")) {
-        window.location.href = "checkout.html";
+        window.location.href = "/checkout.html";
         return;
       }
       if (window.RESIN_SHELL && typeof window.RESIN_SHELL.openDrawer === "function") {
@@ -1480,7 +1481,7 @@
       if (heading === "useful links") {
         list.querySelectorAll("li").forEach(function (li) {
           var text = String(li.textContent || "").trim().toLowerCase();
-          if (text === "faqs" || text === "faq" || text === "blog" || text === "careers") li.remove();
+          if (text === "faqs" || text === "faq" || text === "careers") li.remove();
         });
       }
       if (heading === "main menu") {
@@ -1497,7 +1498,7 @@
             label.indexOf("shipping") >= 0 ? "shipping" :
             label.indexOf("terms") >= 0 ? "terms" :
             label.indexOf("return") >= 0 ? "returns" : "";
-          if (anchor) link.setAttribute("href", "policies.html#" + anchor);
+          if (anchor) link.setAttribute("href", ({privacy:"/privacy-policy/", shipping:"/shipping-policy/", terms:"/terms-and-conditions/", returns:"/return-policy/"})[anchor]);
         });
       }
     });
@@ -1514,6 +1515,8 @@
   }
 
   function ensureSeoMetadata() {
+    // Server/static metadata owns canonical identity and social previews.
+    if (document.head.querySelector('link[rel="canonical"]')) return;
     var page = (window.location.pathname || "").split("/").pop() || "index.html";
     var descriptions = {
       "index.html": "Shop handcrafted resin home décor, gifts and keepsakes from Craftguru.",
@@ -1531,7 +1534,7 @@
     var description = descriptions[page] || "Handcrafted resin décor, gifts and supplies from Craftguru.";
     var canonical = window.location.origin + window.location.pathname;
     if ((page === "product.html" || page === "raw-material-product.html" || page === "photo-frame-product.html") && window.location.search) {
-      var id = new URLSearchParams(window.location.search).get("id");
+      var id = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search)).get("id");
       if (id) canonical += "?id=" + encodeURIComponent(id);
     }
     function upsert(selector, attrs) {
@@ -1699,10 +1702,11 @@
     window.__cgStorefrontMicroUX = true;
     document.documentElement.classList.add("cg-ux-polished");
 
-    var currentPath = window.location.pathname.split("/").pop() || "index.html";
+    var currentPath = currentPageName() || "index.html";
     document.querySelectorAll(".nav-dock a[href]").forEach(function (link) {
       var href = String(link.getAttribute("href") || "").split("#")[0].split("?")[0];
-      var linkPath = href.split("/").pop() || "index.html";
+      var linkRoute = window.CraftguruRoutes && window.CraftguruRoutes.resolve(new URL(href || "/", document.baseURI).pathname);
+      var linkPath = linkRoute ? linkRoute.page : href.split("/").pop() || "index.html";
       if (linkPath === currentPath || (currentPath === "index.html" && linkPath === "")) {
         link.setAttribute("aria-current", "page");
       }
@@ -1768,7 +1772,7 @@
     bar.id = "cgMobileCatalogQuickBar";
     bar.className = "cg-mobile-catalog-quickbar";
     var state = String((search && search.value) || "").trim();
-    var params = new URLSearchParams(window.location.search);
+    var params = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search));
     var activeFilters = ["q", "minp", "maxp", "sort"].filter(function (key) { return params.has(key) && params.get(key); });
     var clearLabel = activeFilters.length ? '<button type="button" data-cg-mobile-clear>Clear (' + activeFilters.length + ')</button>' : "";
     bar.innerHTML = '<button type="button" data-cg-mobile-filter>Filter' + (state ? ": " + escapeHtml(state.slice(0, 18)) : "") + '</button><button type="button" data-cg-mobile-sort>Sort</button>' + clearLabel + '<span class="cg-mobile-catalog-count" aria-live="polite"></span>';
@@ -1878,7 +1882,7 @@
         try { saved = sessionStorage.getItem("cgLastCatalogUrl") || ""; } catch (_) {}
         if (saved) window.location.href = saved;
         else if (history.length > 1) history.back();
-        else window.location.href = back.href || "category.html";
+        else window.location.href = back.href || "/";
       });
       back.insertAdjacentElement("afterend", link);
     }
@@ -1919,7 +1923,7 @@
     }).join("");
     var categories = window.RESIN_DATA && Array.isArray(window.RESIN_DATA.categories) ? window.RESIN_DATA.categories : [];
     function categoryLinksHtml() {
-      var activeId = new URLSearchParams(window.location.search).get("cat");
+      var activeId = (window.CraftguruRoutes ? window.CraftguruRoutes.params() : new URLSearchParams(window.location.search)).get("cat");
       var currentCategories = window.RESIN_DATA && Array.isArray(window.RESIN_DATA.categories) ? window.RESIN_DATA.categories : [];
       return currentCategories
         .filter(function (c) { return c && c.id && c.id !== "craftguru-details"; })
@@ -2123,7 +2127,7 @@
         if (completed) return;
         completed = true;
         window.removeEventListener("resinCartChanged", onCartChanged);
-        window.location.href = "checkout.html";
+        window.location.href = "/checkout.html";
       };
       var onCartChanged = function () {
         var afterChange = window.RESIN_CART && window.RESIN_CART.countItems ? window.RESIN_CART.countItems() : before;

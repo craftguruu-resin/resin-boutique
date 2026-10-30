@@ -1715,7 +1715,7 @@
     var q = opts.cod ? "?cod=1" : "?paid=1";
     q += oid ? "&orderId=" + encodeURIComponent(oid) : "";
     q += tag ? "&tag=" + encodeURIComponent(tag) : "";
-    window.location.href = "account.html" + q;
+    window.location.href = "/account.html" + q;
   }
 
   function escapeHtml(s) {
@@ -2438,7 +2438,7 @@
 
     var lines = CART.load();
     if (lines.length === 0) {
-      window.location.href = "index.html";
+      window.location.href = "/index.html";
       return;
     }
 
@@ -2619,9 +2619,10 @@
   function boot() {
     clearCancelledPaymentNotice();
     if (CART.countItems() === 0) {
-      window.location.href = "index.html";
+      window.location.href = "/index.html";
       return;
     }
+    try { if (window.CraftguruMetaPixel) window.CraftguruMetaPixel.initiateCheckout(CART.load()); } catch (_) {}
 
     bindRemoveDelegation();
     bindSavedAddressCards();
@@ -2787,6 +2788,7 @@
                         "Payment verified but no order was saved. Use the full checkout address form and ensure the server has DATABASE_URL."
                       );
                     }
+                    try { if (window.CraftguruMetaPixel) window.CraftguruMetaPixel.recordPurchase(j, items, /^rzp_live_/.test(order.keyId || "")); } catch (_) {}
                     afterPaidCheckoutNavigate(j);
                   })
                   .catch(function (err) {
@@ -2879,6 +2881,7 @@
                     if (!j || !j.orderCreated) {
                       throw new Error("COD advance was paid but the order was not saved. Please contact Craftguru support.");
                     }
+                    try { if (window.CraftguruMetaPixel) window.CraftguruMetaPixel.recordPurchase(j, freshItems, /^rzp_live_/.test(order.keyId || "")); } catch (_) {}
                     afterPaidCheckoutNavigate(j, { cod: true });
                   })
                   .catch(function (err) {
